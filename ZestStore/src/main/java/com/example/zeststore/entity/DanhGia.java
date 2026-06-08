@@ -30,7 +30,7 @@ public class DanhGia {
     @JoinColumn(name = "ma_don_hang", nullable = false)
     private DonHang donHang;
 
-    @Column(name = "so_sao", nullable = false)
+    @Column(name = "so_sao", nullable = false, columnDefinition = "TINYINT")
     private Integer soSao;
 
     @Column(name = "binh_luan", columnDefinition = "NVARCHAR(MAX)")

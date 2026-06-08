@@ -3,6 +3,7 @@ package com.example.zeststore.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Getter
@@ -40,6 +41,7 @@ public class AiChatbot {
 
     @OneToMany(mappedBy = "chatbot")
     @ToString.Exclude
+    @JsonIgnore
     private List<HoiThoaiChatbot> hoiThoais;
 
     @PrePersist

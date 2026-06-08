@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Getter
@@ -62,18 +63,22 @@ public class DonHang {
 
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
+    @JsonIgnore
     private List<MucDonHang> mucDonHangs;
 
     @OneToMany(mappedBy = "donHang")
     @ToString.Exclude
+    @JsonIgnore
     private List<ThanhToan> thanhToans;
 
     @OneToMany(mappedBy = "donHang")
     @ToString.Exclude
+    @JsonIgnore
     private List<DanhGia> danhGias;
 
     @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL)
     @ToString.Exclude
+    @JsonIgnore
     private HoaDon hoaDon;
 
     @PrePersist

@@ -3,6 +3,7 @@ package com.example.zeststore.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Getter
@@ -25,6 +26,7 @@ public class DanhMuc {
 
     @OneToMany(mappedBy = "danhMucCha")
     @ToString.Exclude
+    @JsonIgnore
     private List<DanhMuc> danhMucCons;
 
     @Column(name = "ten_danh_muc", nullable = false, length = 100)
@@ -44,6 +46,7 @@ public class DanhMuc {
 
     @OneToMany(mappedBy = "danhMuc")
     @ToString.Exclude
+    @JsonIgnore
     private List<SanPham> sanPhams;
 
     @PrePersist

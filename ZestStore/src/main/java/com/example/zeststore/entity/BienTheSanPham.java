@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Getter
@@ -54,10 +55,12 @@ public class BienTheSanPham {
 
     @OneToMany(mappedBy = "bienThe")
     @ToString.Exclude
+    @JsonIgnore
     private List<MucGioHang> mucGioHangs;
 
     @OneToMany(mappedBy = "bienThe")
     @ToString.Exclude
+    @JsonIgnore
     private List<MucDonHang> mucDonHangs;
 
     @PrePersist

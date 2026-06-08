@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Getter
@@ -60,34 +61,42 @@ public class NguoiDung {
 
     @OneToMany(mappedBy = "nguoiDung", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
+    @JsonIgnore
     private List<DiaChiNguoiDung> diaChis;
 
     @OneToOne(mappedBy = "nguoiDung", cascade = CascadeType.ALL)
     @ToString.Exclude
+    @JsonIgnore
     private GioHang gioHang;
 
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
+    @JsonIgnore
     private List<DonHang> donHangs;
 
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
+    @JsonIgnore
     private List<DanhGia> danhGias;
 
     @OneToOne(mappedBy = "nguoiDung", cascade = CascadeType.ALL)
     @ToString.Exclude
+    @JsonIgnore
     private DanhSachYeuThich danhSachYeuThich;
 
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
+    @JsonIgnore
     private List<BaoCaoThongKe> baoCaos;
 
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
+    @JsonIgnore
     private List<HoiThoaiChatbot> hoiThoais;
 
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
+    @JsonIgnore
     private List<HanhViNguoiDung> hanhVis;
 
     @PrePersist
