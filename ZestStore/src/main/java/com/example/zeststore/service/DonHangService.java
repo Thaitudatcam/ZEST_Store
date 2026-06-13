@@ -136,11 +136,14 @@ public class DonHangService {
                     .build());
         }
 
+        String paymentRef = "ORD-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
                 .phuongThuc(request.getPhuongThucThanhToan())
                 .trangThaiThanhToan(request.getPhuongThucThanhToan().equals("COD") ? "pending" : "pending")
                 .soTien(finalTotal)
+                .maGiaoDich(paymentRef)
+                .transactionId(paymentRef)
                 .build());
 
         mucGioHangRepository.deleteAll(cartItems);

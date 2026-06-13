@@ -43,17 +43,17 @@ export default function Orders() {
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="text-sm text-gray-500">Đơn hàng #{o.maDonHang}</p>
-                  <p className="text-sm text-gray-500">{o.ngayTao ? new Date(o.ngayTao).toLocaleDateString('vi-VN') : ''}</p>
+                  <p className="text-sm text-gray-500">{o.ngayDat ? new Date(o.ngayDat).toLocaleDateString('vi-VN') : ''}</p>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded ${statusColor[o.trangThai] || 'bg-gray-100'}`}>
-                  {statusText[o.trangThai] || o.trangThai}
+                <span className={`text-xs font-semibold px-2 py-1 rounded ${statusColor[o.trangThaiDon] || 'bg-gray-100'}`}>
+                  {statusText[o.trangThaiDon] || o.trangThaiDon}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <p className="font-bold text-blue-700">{VND(o.tongTien || 0)}</p>
                 <ChevronRight className="h-5 w-5 text-gray-300" />
               </div>
-              {o.trangThai === 'pending' && (
+              {o.trangThaiDon === 'pending' && (
                 <button onClick={(e) => { e.preventDefault(); handleCancel(o.maDonHang) }} className="mt-2 text-sm text-red-500 hover:underline flex items-center gap-1">
                   <XCircle className="h-4 w-4" /> Hủy đơn
                 </button>

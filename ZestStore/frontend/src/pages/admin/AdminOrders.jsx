@@ -3,19 +3,36 @@ import { getAllOrders, updateOrderStatus } from '../../api/admin'
 import StatusBadge, { labels } from '../../components/StatusBadge'
 import { Search, ChevronDown } from 'lucide-react'
 
+const NEXT_STATUS = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['shipping', 'cancelled'],
+  shipping: ['delivered'],
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([])
   const [search, setSearch] = useState('')
+  const [openId, setOpenId] = useState(null)
+  const [error, setError] = useState('')
 
-  useEffect(() => { getAllOrders().then(setOrders).catch(() => {}) }, [])
+  useEffect(() => { getAllOrders().then(setOrders).catch(() => setError('Không thể tải đơn hàng')) }, [])
 
   const handleStatus = async (id, trangThai) => {
-    try { await updateOrderStatus(id, trangThai); getAllOrders().then(setOrders) } catch {}
+    try {
+      await updateOrderStatus(id, trangThai)
+      setOpenId(null)
+      setError('')
+      getAllOrders().then(setOrders)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Cập nhật thất bại')
+    }
   }
 
   const filtered = orders.filter((o) =>
     !search || String(o.maDonHang).includes(search) || (o.nguoiDung?.email || '').toLowerCase().includes(search.toLowerCase())
   )
+
+  const hasActions = filtered.some((o) => NEXT_STATUS[o.trangThaiDon])
 
   return (
     <div>
@@ -27,6 +44,8 @@ export default function AdminOrders() {
         </div>
       </div>
 
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
+
       <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -37,35 +56,42 @@ export default function AdminOrders() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ngày</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Tổng tiền</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
+                {hasActions && <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>}
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((o) => (
-                <tr key={o.maDonHang} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-medium">#{o.maDonHang}</td>
-                  <td className="px-4 py-3">{o.nguoiDung?.hoTen || 'N/A'}<br /><span className="text-xs text-gray-400">{o.nguoiDung?.email}</span></td>
-                  <td className="px-4 py-3">{o.ngayTao ? new Date(o.ngayTao).toLocaleDateString('vi-VN') : '-'}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{VND(o.tongTien || 0)}</td>
-                  <td className="px-4 py-3 text-center"><StatusBadge status={o.trangThai} /></td>
-                  <td className="px-4 py-3 text-center">
-                    {o.trangThai !== 'da_giao' && o.trangThai !== 'da_huy' && (
-                      <div className="relative inline-block group">
-                        <button className="text-xs border rounded-lg px-3 py-1.5 hover:bg-gray-100 flex items-center gap-1 mx-auto">
-                          Cập nhật <ChevronDown className="h-3 w-3" />
-                        </button>
-                        <div className="absolute right-0 mt-1 w-40 bg-white border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition z-20">
-                          {Object.entries(labels).map(([k, v]) =>
-                            k !== o.trangThai ? (
-                              <button key={k} onClick={() => handleStatus(o.maDonHang, k)} className="block w-full text-left px-4 py-2 text-xs hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg">{v}</button>
-                            ) : null
-                          )}
-                        </div>
-                      </div>
+              {filtered.map((o) => {
+                const nextStatuses = NEXT_STATUS[o.trangThaiDon]
+                return (
+                  <tr key={o.maDonHang} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-3 font-medium">#{o.maDonHang}</td>
+                    <td className="px-4 py-3">{o.nguoiDung?.hoTen || 'N/A'}<br /><span className="text-xs text-gray-400">{o.nguoiDung?.email}</span></td>
+                    <td className="px-4 py-3">{o.ngayDat ? new Date(o.ngayDat).toLocaleDateString('vi-VN') : '-'}</td>
+                    <td className="px-4 py-3 text-right font-semibold">{VND(o.tongTien || 0)}</td>
+                    <td className="px-4 py-3 text-center"><StatusBadge status={o.trangThaiDon} /></td>
+                    {hasActions && (
+                      <td className="px-4 py-3 text-center">
+                        {nextStatuses ? (
+                          <div className="relative inline-block">
+                            <button onClick={() => setOpenId(openId === o.maDonHang ? null : o.maDonHang)} className="text-xs border rounded-lg px-3 py-1.5 hover:bg-gray-100 flex items-center gap-1 mx-auto">
+                              Cập nhật <ChevronDown className="h-3 w-3" />
+                            </button>
+                            {openId === o.maDonHang && (
+                              <div className="absolute right-0 mt-1 w-40 bg-white border rounded-lg shadow-lg z-20">
+                                {nextStatuses.map((k) => (
+                                  <button key={k} onClick={() => handleStatus(o.maDonHang, k)} className="block w-full text-left px-4 py-2 text-xs hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg">{labels[k] || k}</button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
                     )}
-                  </td>
-                </tr>
-              ))}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
