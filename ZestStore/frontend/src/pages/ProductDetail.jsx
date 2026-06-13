@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getProductBySlug, getProductImages, getProductVariants } from '../api/products'
+import { getProductBySlug } from '../api/products'
 import { addToCart } from '../api/cart'
 import { useAuth } from '../context/AuthContext'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -23,14 +23,12 @@ export default function ProductDetail() {
 
   const load = async () => {
     try {
-      const isNum = /^\d+$/.test(slug)
-      const p = isNum ? await getProductBySlug(slug) : await getProductBySlug(slug)
-      setProduct(p)
-      if (p.maSanPham) {
-        getProductVariants(p.maSanPham).then(setVariants).catch(() => {})
-        getProductImages(p.maSanPham).then(setImages).catch(() => {})
-        if (user) checkWishlist(p.maSanPham).then((r) => setInWish(r.inWishlist)).catch(() => {})
-      }
+      const p = await getProductBySlug(slug)
+      setProduct(p.product || p)
+      setVariants(p.variants || [])
+      setImages(p.images || [])
+      if (p.product?.maSanPham && user)
+        checkWishlist(p.product.maSanPham).then((r) => setInWish(r.inWishlist)).catch(() => {})
     } catch { navigate('/products') }
     finally { setLoading(false) }
   }
@@ -58,14 +56,14 @@ export default function ProductDetail() {
   if (loading) return <LoadingSpinner className="py-20" />
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
-  const price = product.giaBan ?? product.giaGoc ?? 0
-  const img = images[0]?.url || product.anhChinh || product.anhUrl || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
+  const price = product.gia ?? 0
+  const img = images[0]?.urlAnh || product.anhChinh || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8">
         <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
-          <img src={img} alt={product.tenSanPham} className="w-full h-full object-cover" />
+          <img src={img} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
         </div>
         <div>
           <h1 className="text-2xl font-bold mb-2">{product.tenSanPham}</h1>
@@ -79,7 +77,7 @@ export default function ProductDetail() {
                 {variants.map((v) => (
                   <button key={v.maBienThe} onClick={() => setSelectedVar(v.maBienThe)}
                     className={`px-4 py-1.5 border rounded-lg text-sm ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : 'hover:bg-gray-100'}`}>
-                    {v.tenBienThe || v.kichThuoc || v.mauSac || `#${v.maBienThe}`}
+                    {[v.kichCo, v.mauSac].filter(Boolean).join(' - ') || `#${v.maBienThe}`}
                   </button>
                 ))}
               </div>

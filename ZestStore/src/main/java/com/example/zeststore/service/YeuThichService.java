@@ -29,9 +29,10 @@ public class YeuThichService {
                 });
     }
 
-    public List<MucYeuThich> getWishlistItems(Integer userId) {
+    public List<SanPham> getWishlistItems(Integer userId) {
         DanhSachYeuThich wishlist = getOrCreateWishlist(userId);
-        return mucYeuThichRepository.findByDanhSachYeuThich_MaDsYeuThich(wishlist.getMaDsYeuThich());
+        return mucYeuThichRepository.findByDanhSachYeuThich_MaDsYeuThich(wishlist.getMaDsYeuThich())
+                .stream().map(MucYeuThich::getSanPham).toList();
     }
 
     public boolean isInWishlist(Integer userId, Integer productId) {

@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Upload, Trash2, Star } from 'lucide-react'
 import api from '../../api/axios'
 
 export default function AdminProductForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
-  const [form, setForm] = useState({ tenSanPham: '', slug: '', moTa: '', giaBan: '', giaGoc: '', soLuongTon: 0, maDanhMuc: '' })
+  const [form, setForm] = useState({ tenSanPham: '', slug: '', moTa: '', gia: '', maDanhMuc: '' })
   const [categories, setCategories] = useState([])
   const [sub, setSub] = useState(false)
+  const [images, setImages] = useState([])
+  const [files, setFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     api.get('/categories').then((r) => setCategories(r.data)).catch(() => {})
     if (isEdit) api.get(`/products/detail/${id}`).then((r) => {
-      const p = r.data
-      setForm({ tenSanPham: p.tenSanPham || '', slug: p.slug || '', moTa: p.moTa || '', giaBan: p.giaBan || '', giaGoc: p.giaGoc || '', soLuongTon: p.soLuongTon || 0, maDanhMuc: p.maDanhMuc || '' })
+      const p = r.data.product || r.data
+      setForm({ tenSanPham: p.tenSanPham || '', slug: p.slug || '', moTa: p.moTa || '', gia: p.gia || '', maDanhMuc: p.danhMuc?.maDanhMuc || '' })
+      setImages(r.data.images || [])
     }).catch(() => navigate('/admin/products'))
   }, [id])
 
@@ -23,11 +28,34 @@ export default function AdminProductForm() {
   const handleSubmit = async (e) => {
     e.preventDefault(); setSub(true)
     try {
-      const body = { ...form, giaBan: Number(form.giaBan), giaGoc: Number(form.giaGoc), soLuongTon: Number(form.soLuongTon), maDanhMuc: form.maDanhMuc ? Number(form.maDanhMuc) : null }
-      if (isEdit) await api.put(`/products/${id}`, body)
-      else await api.post('/products', body)
-      navigate('/admin/products')
+      const body = { tenSanPham: form.tenSanPham, slug: form.slug, moTa: form.moTa, gia: Number(form.gia), maDanhMuc: form.maDanhMuc ? Number(form.maDanhMuc) : null, trangThai: 'active' }
+      if (isEdit) { await api.put(`/products/${id}`, body); navigate('/admin/products') }
+      else { const res = await api.post('/products', body); navigate(`/admin/products/${res.data.maSanPham}/edit`) }
     } catch { alert('Lỗi lưu sản phẩm') } finally { setSub(false) }
+  }
+
+  const handleUpload = async () => {
+    if (!files.length) return
+    setUploading(true)
+    try {
+      for (const img of images) await api.delete(`/products/images/${img.maAnh}`)
+      const newImgs = []
+      for (let i = 0; i < files.length; i++) {
+        const fd = new FormData()
+        fd.append('file', files[i])
+        fd.append('isMain', (i === 0).toString())
+        const res = await api.post(`/upload/product/${id}`, fd)
+        newImgs.push(res.data)
+      }
+      setImages(newImgs)
+      setFiles([])
+    } catch { alert('Lỗi upload ảnh') }
+    finally { setUploading(false) }
+  }
+
+  const handleDeleteImage = async (imageId) => {
+    try { await api.delete(`/products/images/${imageId}`); setImages((prev) => prev.filter((img) => img.maAnh !== imageId)) }
+    catch { alert('Lỗi xóa ảnh') }
   }
 
   return (
@@ -51,16 +79,8 @@ export default function AdminProductForm() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Giá bán</label>
-            <input name="giaBan" type="number" value={form.giaBan} onChange={handleChange} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Giá gốc</label>
-            <input name="giaGoc" type="number" value={form.giaGoc} onChange={handleChange} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Tồn kho</label>
-            <input name="soLuongTon" type="number" value={form.soLuongTon} onChange={handleChange} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="text-sm font-medium text-gray-700">Giá</label>
+            <input name="gia" type="number" value={form.gia} onChange={handleChange} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
         <div>
@@ -72,6 +92,30 @@ export default function AdminProductForm() {
           <button type="button" onClick={() => navigate('/admin/products')} className="border px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
         </div>
       </form>
+
+      {isEdit && (
+        <div className="bg-white rounded-2xl shadow-sm border p-6 mt-6 space-y-4">
+          <h2 className="font-semibold text-lg">Hình ảnh sản phẩm</h2>
+          {images.length > 0 && (
+            <div className="grid grid-cols-4 gap-3">
+              {images.map((img) => (
+                <div key={img.maAnh} className="relative group rounded-lg overflow-hidden border bg-gray-100">
+                  <img src={img.urlAnh} alt="" className="aspect-square w-full object-cover object-center" />
+                  {img.laAnhChinh && <Star className="absolute top-1 left-1 h-4 w-4 text-yellow-400 fill-yellow-400" />}
+                  <button type="button" onClick={() => handleDeleteImage(img.maAnh)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"><Trash2 className="h-3 w-3" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700">Thêm ảnh</label>
+              <input type="file" accept="image/*" multiple onChange={(e) => setFiles([...e.target.files])} className="w-full border rounded-lg px-3 py-2 mt-1 text-sm" />
+            </div>
+            <button type="button" onClick={handleUpload} disabled={!files.length || uploading} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"><Upload className="h-4 w-4" /> {uploading ? 'Đang tải...' : 'Tải lên'}</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

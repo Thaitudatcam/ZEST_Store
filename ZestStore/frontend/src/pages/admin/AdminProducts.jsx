@@ -54,8 +54,8 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{p.danhMuc?.tenDanhMuc || '-'}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{VND(p.giaBan ?? p.giaGoc ?? 0)}</td>
-                  <td className="px-4 py-3 text-center">{p.soLuongTon ?? 0}</td>
+                  <td className="px-4 py-3 text-right font-semibold">{VND(p.gia ?? 0)}</td>
+                  <td className="px-4 py-3 text-center">{'-'}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
                       <Link to={`/admin/products/${p.maSanPham}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil className="h-4 w-4" /></Link>

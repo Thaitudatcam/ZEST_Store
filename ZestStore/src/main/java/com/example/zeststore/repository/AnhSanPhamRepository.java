@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface AnhSanPhamRepository extends JpaRepository<AnhSanPham, Integer> {
 
-    List<AnhSanPham> findBySanPham_MaSanPham(Integer maSanPham);
+    List<AnhSanPham> findBySanPham_MaSanPhamAndNgayXoaIsNull(Integer maSanPham);
 
-    Optional<AnhSanPham> findBySanPham_MaSanPhamAndLaAnhChinhTrue(Integer maSanPham);
+    Optional<AnhSanPham> findBySanPham_MaSanPhamAndLaAnhChinhTrueAndNgayXoaIsNull(Integer maSanPham);
 }

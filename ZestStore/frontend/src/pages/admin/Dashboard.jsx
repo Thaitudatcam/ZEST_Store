@@ -33,7 +33,7 @@ export default function Dashboard() {
         {cards.map((c, i) => {
           const Icon = c.icon
           return (
-            <div key={c.label} className={`relative overflow-hidden rounded-2xl bg-gradient-br ${colors[i]} text-white p-5 shadow-lg`}>
+            <div key={c.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${colors[i]} text-white p-5 shadow-lg`}>
               <div className="relative z-10">
                 <p className="text-sm opacity-80">{c.label}</p>
                 <p className="text-2xl font-bold mt-1">{c.value}</p>

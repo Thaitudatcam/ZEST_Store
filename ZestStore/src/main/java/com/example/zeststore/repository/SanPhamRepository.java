@@ -19,9 +19,9 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
 
     Page<SanPham> findByDanhMuc_MaDanhMuc(Integer maDanhMuc, Pageable pageable);
 
-    Page<SanPham> findByTrangThai(String trangThai, Pageable pageable);
+    Page<SanPham> findByTrangThaiAndNgayXoaIsNull(String trangThai, Pageable pageable);
 
-    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 'active' AND "
+    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 'active' AND s.ngayXoa IS NULL AND "
             + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc) AND "
             + "(:giaMin IS NULL OR s.gia >= :giaMin) AND "
             + "(:giaMax IS NULL OR s.gia <= :giaMax)")
@@ -30,12 +30,14 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
                                   @Param("giaMax") BigDecimal giaMax,
                                   Pageable pageable);
 
-    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 'active' AND "
+    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 'active' AND s.ngayXoa IS NULL AND "
             + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
     Page<SanPham> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    List<SanPham> findTop10ByTrangThaiOrderByNgayTaoDesc(String trangThai);
+    List<SanPham> findTop10ByTrangThaiAndNgayXoaIsNullOrderByNgayTaoDesc(String trangThai);
 
-    @Query("SELECT s FROM SanPham s WHERE s.danhMuc.maDanhMuc IN :maDanhMucIds AND s.trangThai = 'active'")
+    @Query("SELECT s FROM SanPham s WHERE s.danhMuc.maDanhMuc IN :maDanhMucIds AND s.trangThai = 'active' AND s.ngayXoa IS NULL")
     Page<SanPham> findByMultipleCategoryIds(@Param("maDanhMucIds") List<Integer> maDanhMucIds, Pageable pageable);
+
+    long countByNgayXoaIsNull();
 }

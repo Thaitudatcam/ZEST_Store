@@ -1,12 +1,23 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Heart, User, LogOut, Menu, X, Store } from 'lucide-react'
+import { ShoppingCart, Heart, User, Menu, X, Store, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
+        setDropdownOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const handleLogout = () => { logout(); navigate('/login') }
 
@@ -21,13 +32,30 @@ export default function Navbar() {
             <Link to="/products" className="text-gray-600 hover:text-blue-700 transition">Sản phẩm</Link>
             {user ? (
               <>
-                <Link to="/cart" className="relative text-gray-600 hover:text-blue-700"><ShoppingCart className="h-5 w-5" /></Link>
                 <Link to="/wishlist" className="text-gray-600 hover:text-blue-700"><Heart className="h-5 w-5" /></Link>
-                <Link to="/orders" className="text-gray-600 hover:text-blue-700">Đơn hàng</Link>
-                <Link to="/profile" className="flex items-center gap-1 text-gray-600 hover:text-blue-700">
-                  <User className="h-5 w-5" /> {user.hoTen?.split(' ').pop()}
-                </Link>
-                <button onClick={handleLogout} className="text-gray-400 hover:text-red-500"><LogOut className="h-5 w-5" /></button>
+                <Link to="/cart" className="relative text-gray-600 hover:text-blue-700"><ShoppingCart className="h-5 w-5" /></Link>
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-1 text-gray-600 hover:text-blue-700 transition"
+                  >
+                    <User className="h-5 w-5" />
+                    {user.hoTen?.split(' ').pop()}
+                    <ChevronDown className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {dropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border py-2 z-50">
+                      <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Tài khoản</Link>
+                      <Link to="/orders" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đơn hàng</Link>
+                      <Link to="/change-password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đổi mật khẩu</Link>
+                      <hr className="my-1" />
+                      {user?.vaiTro === 'ADMIN' && (
+                        <Link to="/admin" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Quản trị</Link>
+                      )}
+                      <button onClick={() => { handleLogout(); setDropdownOpen(false) }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Đăng xuất</button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -46,10 +74,12 @@ export default function Navbar() {
           <Link to="/products" onClick={() => setOpen(false)} className="block text-gray-600">Sản phẩm</Link>
           {user ? (
             <>
-              <Link to="/cart" onClick={() => setOpen(false)} className="block text-gray-600">Giỏ hàng</Link>
               <Link to="/wishlist" onClick={() => setOpen(false)} className="block text-gray-600">Yêu thích</Link>
+              <Link to="/cart" onClick={() => setOpen(false)} className="block text-gray-600">Giỏ hàng</Link>
               <Link to="/orders" onClick={() => setOpen(false)} className="block text-gray-600">Đơn hàng</Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block text-gray-600">Tài khoản</Link>
+              <Link to="/change-password" onClick={() => setOpen(false)} className="block text-gray-600">Đổi mật khẩu</Link>
+              {user?.vaiTro === 'ADMIN' && <Link to="/admin" onClick={() => setOpen(false)} className="block text-gray-600">Quản trị</Link>}
               <button onClick={() => { handleLogout(); setOpen(false) }} className="block text-red-500">Đăng xuất</button>
             </>
           ) : (

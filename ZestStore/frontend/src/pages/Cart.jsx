@@ -22,7 +22,7 @@ export default function Cart() {
   const handleRemove = async (vid) => { await removeCartItem(vid); load() }
   const handleClear = async () => { await clearCart(); load() }
 
-  const total = items.reduce((s, i) => s + ((i.giaBan || i.giaGoc || 0) * (i.soLuong || 1)), 0)
+  const total = items.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
 
   if (loading) return <LoadingSpinner className="py-20" />
 
@@ -45,12 +45,12 @@ export default function Cart() {
             {items.map((i) => (
               <div key={i.maBienThe} className="bg-white rounded-xl border p-4 flex items-center gap-4">
                 <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                  <img src={i.anhUrl || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover" />
+                  <img src={i.urlAnh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{i.tenSanPham || `Sản phẩm #${i.maSanPham}`}</p>
                   <p className="text-sm text-gray-500">{i.tenBienThe || ''}</p>
-                  <p className="text-blue-700 font-bold">{VND(i.giaBan || i.giaGoc || 0)}</p>
+                  <p className="text-blue-700 font-bold">{VND(i.donGia || 0)}</p>
                 </div>
                 <div className="flex items-center border rounded-lg">
                   <button onClick={() => handleQty(i.maBienThe, -1)} className="px-2 py-1 hover:bg-gray-100"><Minus className="h-4 w-4" /></button>

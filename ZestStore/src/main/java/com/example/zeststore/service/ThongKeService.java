@@ -28,7 +28,7 @@ public class ThongKeService {
         LocalDateTime startOfYear = now.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0);
 
         Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalProducts", sanPhamRepository.count());
+        stats.put("totalProducts", sanPhamRepository.countByNgayXoaIsNull());
         stats.put("totalUsers", nguoiDungRepository.count());
         stats.put("totalOrders", donHangRepository.count());
         stats.put("pendingOrders", donHangRepository.countByTrangThaiDon("pending"));

@@ -35,7 +35,7 @@ public class SanPhamService {
     public Page<SanPham> getProducts(int page, int size, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        return sanPhamRepository.findByTrangThai("active", pageable);
+        return sanPhamRepository.findByTrangThaiAndNgayXoaIsNull("active", pageable);
     }
 
     public Page<SanPham> searchProducts(String keyword, int page, int size) {
@@ -62,7 +62,7 @@ public class SanPhamService {
     public Map<String, Object> getProductDetail(Integer id) {
         SanPham product = getById(id);
         List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(id);
-        List<AnhSanPham> images = anhSanPhamRepository.findBySanPham_MaSanPham(id);
+        List<AnhSanPham> images = anhSanPhamRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(id);
         Double avgRating = danhGiaRepository.averageRatingBySanPhamId(id);
         Long reviewCount = danhGiaRepository.countBySanPhamId(id);
 
@@ -161,14 +161,14 @@ public class SanPhamService {
     }
 
     public List<AnhSanPham> getImages(Integer productId) {
-        return anhSanPhamRepository.findBySanPham_MaSanPham(productId);
+        return anhSanPhamRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(productId);
     }
 
     @Transactional
     public AnhSanPham addImage(Integer productId, String url, boolean isMain) {
         SanPham product = getById(productId);
         if (isMain) {
-            anhSanPhamRepository.findBySanPham_MaSanPhamAndLaAnhChinhTrue(productId)
+            anhSanPhamRepository.findBySanPham_MaSanPhamAndLaAnhChinhTrueAndNgayXoaIsNull(productId)
                     .ifPresent(img -> {
                         img.setLaAnhChinh(false);
                         anhSanPhamRepository.save(img);

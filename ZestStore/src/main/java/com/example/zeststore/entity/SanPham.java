@@ -5,6 +5,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @Getter
@@ -77,6 +78,24 @@ public class SanPham {
     @ToString.Exclude
     @JsonIgnore
     private List<HanhViNguoiDung> hanhVis;
+
+    @Transient
+    @JsonProperty("anhChinh")
+    public String getAnhChinh() {
+        if (anhs != null) {
+            return anhs.stream()
+                .filter(a -> a.getNgayXoa() == null)
+                .filter(AnhSanPham::getLaAnhChinh)
+                .findFirst()
+                .map(AnhSanPham::getUrlAnh)
+                .orElse(anhs.stream()
+                    .filter(a -> a.getNgayXoa() == null)
+                    .findFirst()
+                    .map(AnhSanPham::getUrlAnh)
+                    .orElse(null));
+        }
+        return null;
+    }
 
     @PrePersist
     protected void onCreate() {
