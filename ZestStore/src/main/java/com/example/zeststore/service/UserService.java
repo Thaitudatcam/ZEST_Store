@@ -99,6 +99,13 @@ public class UserService {
     }
 
     @Transactional
+    public void updateAvatar(Integer userId, String url) {
+        NguoiDung user = getUserById(userId);
+        user.setAnhDaiDien(url);
+        nguoiDungRepository.save(user);
+    }
+
+    @Transactional
     public void setDefaultAddress(Integer userId, Integer addressId) {
         DiaChiNguoiDung address = diaChiRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", addressId));
