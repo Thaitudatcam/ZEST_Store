@@ -30,6 +30,10 @@ public class DanhGia {
     @JoinColumn(name = "ma_don_hang", nullable = false)
     private DonHang donHang;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_bien_the", nullable = false)
+    private BienTheSanPham bienThe;
+
     @Column(name = "so_sao", nullable = false, columnDefinition = "TINYINT")
     private Integer soSao;
 

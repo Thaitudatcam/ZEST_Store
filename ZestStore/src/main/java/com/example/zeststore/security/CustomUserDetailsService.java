@@ -28,7 +28,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new User(
                 nguoiDung.getEmail(),
                 nguoiDung.getMatKhauMaHoa(),
-                nguoiDung.getTrangThai().equals("active"),
+                Integer.valueOf(1).equals(nguoiDung.getTrangThai()),
                 true, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_" + nguoiDung.getVaiTro().getTenVaiTro()))
         );

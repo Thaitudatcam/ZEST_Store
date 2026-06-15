@@ -21,7 +21,7 @@ export default function Dashboard() {
   const cards = stats ? [
     { label: 'Người dùng', value: stats.totalUsers ?? 0, icon: Users },
     { label: 'Đơn hàng', value: stats.totalOrders ?? 0, icon: ShoppingCart },
-    { label: 'Doanh thu', value: VND(stats.totalRevenue ?? 0), icon: DollarSign },
+    { label: 'Doanh thu (tháng)', value: VND(stats.monthlyRevenue ?? 0), icon: DollarSign },
     { label: 'Sản phẩm', value: stats.totalProducts ?? 0, icon: Package },
   ] : []
 

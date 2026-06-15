@@ -25,6 +25,7 @@ public class DonHangService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final ThanhToanRepository thanhToanRepository;
+    private final LichSuDonHangRepository lichSuDonHangRepository;
 
     public List<DonHang> getOrdersByUser(Integer userId) {
         return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
@@ -96,7 +97,7 @@ public class DonHangService {
                 throw new BadRequestException("Minimum order value not met for this coupon");
             }
 
-            if ("percent".equals(coupon.getKieuGiamGia())) {
+            if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
                 soTienGiam = tongTien.multiply(coupon.getGiaTriGiam())
                         .divide(BigDecimal.valueOf(100));
             } else {
@@ -107,7 +108,8 @@ public class DonHangService {
             }
         }
 
-        BigDecimal finalTotal = tongTien.subtract(soTienGiam);
+        BigDecimal phiVanChuyen = request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
+        BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             finalTotal = BigDecimal.ZERO;
         }
@@ -116,8 +118,9 @@ public class DonHangService {
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
                 .soTienGiam(soTienGiam)
+                .phiVanChuyen(phiVanChuyen)
                 .tongTien(finalTotal)
-                .trangThaiDon("pending")
+                .trangThaiDon(1)
                 .tenNguoiNhan(request.getTenNguoiNhan())
                 .sdtNguoiNhan(request.getSdtNguoiNhan())
                 .diaChiGiaoHang(request.getDiaChiGiaoHang())
@@ -140,10 +143,16 @@ public class DonHangService {
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
                 .phuongThuc(request.getPhuongThucThanhToan())
-                .trangThaiThanhToan(request.getPhuongThucThanhToan().equals("COD") ? "pending" : "pending")
+                .trangThaiThanhToan(1)
                 .soTien(finalTotal)
                 .maGiaoDich(paymentRef)
-                .transactionId(paymentRef)
+                .build());
+
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order)
+                .trangThaiCu(null)
+                .trangThaiMoi(1)
+                .nguoiCapNhat(user)
                 .build());
 
         mucGioHangRepository.deleteAll(cartItems);
@@ -152,20 +161,30 @@ public class DonHangService {
         result.put("maDonHang", order.getMaDonHang());
         result.put("tongTien", finalTotal);
         result.put("soTienGiam", soTienGiam);
+        result.put("phiVanChuyen", phiVanChuyen);
         result.put("trangThai", order.getTrangThaiDon());
         result.put("message", "Order placed successfully");
         return result;
     }
 
     @Transactional
-    public DonHang updateOrderStatus(Integer orderId, String status) {
-        List<String> validStatuses = List.of("confirmed", "shipping", "delivered", "cancelled");
+    public DonHang updateOrderStatus(Integer orderId, Integer status) {
+        List<Integer> validStatuses = List.of(2, 3, 4, 5);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
         }
         DonHang order = getOrderById(orderId);
+        Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
-        return donHangRepository.save(order);
+        order = donHangRepository.save(order);
+
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order)
+                .trangThaiCu(oldStatus)
+                .trangThaiMoi(status)
+                .build());
+
+        return order;
     }
 
     @Transactional
@@ -174,7 +193,7 @@ public class DonHangService {
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
-        if (!order.getTrangThaiDon().equals("pending")) {
+        if (!Integer.valueOf(1).equals(order.getTrangThaiDon())) {
             throw new BadRequestException("Can only cancel pending orders");
         }
 
@@ -185,7 +204,14 @@ public class DonHangService {
             bienTheRepository.save(variant);
         }
 
-        order.setTrangThaiDon("cancelled");
+        Integer oldStatus = order.getTrangThaiDon();
+        order.setTrangThaiDon(5);
         donHangRepository.save(order);
+
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order)
+                .trangThaiCu(oldStatus)
+                .trangThaiMoi(5)
+                .build());
     }
 }

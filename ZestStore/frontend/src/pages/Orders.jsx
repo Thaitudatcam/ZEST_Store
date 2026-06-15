@@ -6,15 +6,15 @@ import { Link } from 'react-router-dom'
 import { VND } from '../components/ProductCard'
 
 const statusColor = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  shipping: 'bg-purple-100 text-purple-800',
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+  1: 'bg-yellow-100 text-yellow-800',
+  2: 'bg-blue-100 text-blue-800',
+  3: 'bg-purple-100 text-purple-800',
+  4: 'bg-green-100 text-green-800',
+  5: 'bg-red-100 text-red-800',
 }
 const statusText = {
-  pending: 'Chờ xác nhận', confirmed: 'Đã xác nhận',
-  shipping: 'Đang giao', delivered: 'Đã giao', cancelled: 'Đã hủy',
+  1: 'Chờ xác nhận', 2: 'Đã xác nhận',
+  3: 'Đang giao', 4: 'Đã giao', 5: 'Đã hủy',
 }
 
 export default function Orders() {
@@ -53,7 +53,7 @@ export default function Orders() {
                 <p className="font-bold text-blue-700">{VND(o.tongTien || 0)}</p>
                 <ChevronRight className="h-5 w-5 text-gray-300" />
               </div>
-              {o.trangThaiDon === 'pending' && (
+              {o.trangThaiDon === 1 && (
                 <button onClick={(e) => { e.preventDefault(); handleCancel(o.maDonHang) }} className="mt-2 text-sm text-red-500 hover:underline flex items-center gap-1">
                   <XCircle className="h-4 w-4" /> Hủy đơn
                 </button>

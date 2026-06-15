@@ -9,10 +9,10 @@ import { MapPin, CreditCard, Tag, ArrowLeft, Loader } from 'lucide-react'
 import api from '../api/axios'
 
 const PAYMENT_METHODS = [
-  { value: 'COD', label: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền khi nhận hàng' },
-  { value: 'VNPay', label: 'VNPay', desc: 'Sắp ra mắt', disabled: true },
-  { value: 'Momo', label: 'Ví MoMo', desc: 'Sắp ra mắt', disabled: true },
-  { value: 'ZaloPay', label: 'ZaloPay', desc: 'Sắp ra mắt', disabled: true },
+  { value: 1, label: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền khi nhận hàng' },
+  { value: 2, label: 'VNPay', desc: 'Sắp ra mắt', disabled: true },
+  { value: 3, label: 'Ví MoMo', desc: 'Sắp ra mắt', disabled: true },
+  { value: 4, label: 'ZaloPay', desc: 'Sắp ra mắt', disabled: true },
 ]
 
 export default function Checkout() {
@@ -31,7 +31,7 @@ export default function Checkout() {
     sdtNguoiNhan: '',
     diaChiGiaoHang: '',
     ghiChu: '',
-    phuongThucThanhToan: 'COD',
+    phuongThucThanhToan: 1,
   })
 
   useEffect(() => {
@@ -81,7 +81,8 @@ export default function Checkout() {
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
-  const finalTotal = Math.max(0, rawTotal - discount)
+  const shippingFee = rawTotal >= 500000 ? 0 : 30000
+  const finalTotal = Math.max(0, rawTotal - discount + shippingFee)
 
   const handlePlaceOrder = async () => {
     if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) {
@@ -101,6 +102,7 @@ export default function Checkout() {
         ghiChu: form.ghiChu,
         phuongThucThanhToan: form.phuongThucThanhToan,
         maCode: couponCode.trim() || undefined,
+        phiVanChuyen: shippingFee,
       })
       navigate(`/orders/${result.maDonHang}`)
     } catch (err) {
@@ -162,7 +164,7 @@ export default function Checkout() {
             <div className="space-y-2">
               {PAYMENT_METHODS.map((pm) => (
                 <label key={pm.value} className={`flex items-start gap-3 p-3 border rounded-lg ${pm.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${form.phuongThucThanhToan === pm.value ? 'border-blue-500 bg-blue-50' : ''}`}>
-                  <input type="radio" name="payment" value={pm.value} checked={form.phuongThucThanhToan === pm.value} disabled={pm.disabled} onChange={(e) => setForm((f) => ({ ...f, phuongThucThanhToan: e.target.value }))} className="mt-1" />
+                  <input type="radio" name="payment" value={pm.value} checked={form.phuongThucThanhToan === pm.value} disabled={pm.disabled} onChange={(e) => setForm((f) => ({ ...f, phuongThucThanhToan: Number(e.target.value) }))} className="mt-1" />
                   <div>
                     <p className="font-medium text-sm">{pm.label}</p>
                     <p className="text-xs text-gray-400">{pm.desc}</p>
@@ -213,6 +215,10 @@ export default function Checkout() {
                   <span>-{VND(discount)}</span>
                 </div>
               )}
+              <div className="flex justify-between text-gray-600">
+                <span>Phí vận chuyển</span>
+                <span>{shippingFee === 0 ? 'Miễn phí' : VND(shippingFee)}</span>
+              </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Tổng cộng</span>
                 <span className="text-blue-700">{VND(finalTotal)}</span>

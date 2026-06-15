@@ -31,7 +31,7 @@ public class ThongKeService {
         stats.put("totalProducts", sanPhamRepository.countByNgayXoaIsNull());
         stats.put("totalUsers", nguoiDungRepository.count());
         stats.put("totalOrders", donHangRepository.count());
-        stats.put("pendingOrders", donHangRepository.countByTrangThaiDon("pending"));
+        stats.put("pendingOrders", donHangRepository.countByTrangThaiDon(1));
         stats.put("monthlyRevenue", donHangRepository.sumRevenueByDateRange(startOfMonth, now));
         stats.put("yearlyRevenue", donHangRepository.sumRevenueByDateRange(startOfYear, now));
         return stats;
@@ -40,7 +40,7 @@ public class ThongKeService {
     public Map<String, Object> getRevenueByDateRange(LocalDateTime tuNgay, LocalDateTime denNgay) {
         BigDecimal revenue = donHangRepository.sumRevenueByDateRange(tuNgay, denNgay);
         Long orderCount = donHangRepository.findByNgayDatBetween(tuNgay, denNgay)
-                .stream().filter(o -> o.getTrangThaiDon().equals("delivered")).count();
+                .stream().filter(o -> Integer.valueOf(4).equals(o.getTrangThaiDon())).count();
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("tuNgay", tuNgay);

@@ -19,24 +19,28 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
 
     Page<SanPham> findByDanhMuc_MaDanhMuc(Integer maDanhMuc, Pageable pageable);
 
-    Page<SanPham> findByTrangThaiAndNgayXoaIsNull(String trangThai, Pageable pageable);
+    Page<SanPham> findByTrangThaiAndNgayXoaIsNull(Integer trangThai, Pageable pageable);
 
-    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 'active' AND s.ngayXoa IS NULL AND "
+    @Query(value = "SELECT DISTINCT s FROM SanPham s JOIN s.bienThes b WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
             + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc) AND "
-            + "(:giaMin IS NULL OR s.gia >= :giaMin) AND "
-            + "(:giaMax IS NULL OR s.gia <= :giaMax)")
+            + "(:giaMin IS NULL OR b.gia >= :giaMin) AND "
+            + "(:giaMax IS NULL OR b.gia <= :giaMax)",
+            countQuery = "SELECT COUNT(DISTINCT s) FROM SanPham s JOIN s.bienThes b WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
+            + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc) AND "
+            + "(:giaMin IS NULL OR b.gia >= :giaMin) AND "
+            + "(:giaMax IS NULL OR b.gia <= :giaMax)")
     Page<SanPham> filterProducts(@Param("maDanhMuc") Integer maDanhMuc,
                                   @Param("giaMin") BigDecimal giaMin,
                                   @Param("giaMax") BigDecimal giaMax,
                                   Pageable pageable);
 
-    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 'active' AND s.ngayXoa IS NULL AND "
+    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
             + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
     Page<SanPham> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    List<SanPham> findTop10ByTrangThaiAndNgayXoaIsNullOrderByNgayTaoDesc(String trangThai);
+    List<SanPham> findTop10ByTrangThaiAndNgayXoaIsNullOrderByNgayTaoDesc(Integer trangThai);
 
-    @Query("SELECT s FROM SanPham s WHERE s.danhMuc.maDanhMuc IN :maDanhMucIds AND s.trangThai = 'active' AND s.ngayXoa IS NULL")
+    @Query("SELECT s FROM SanPham s WHERE s.danhMuc.maDanhMuc IN :maDanhMucIds AND s.trangThai = 1 AND s.ngayXoa IS NULL")
     Page<SanPham> findByMultipleCategoryIds(@Param("maDanhMucIds") List<Integer> maDanhMucIds, Pageable pageable);
 
     long countByNgayXoaIsNull();

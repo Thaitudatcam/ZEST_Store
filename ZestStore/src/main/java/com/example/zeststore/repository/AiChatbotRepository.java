@@ -12,5 +12,5 @@ public interface AiChatbotRepository extends JpaRepository<AiChatbot, Integer> {
 
     Optional<AiChatbot> findByTenChatbot(String tenChatbot);
 
-    List<AiChatbot> findByTrangThai(String trangThai);
+    List<AiChatbot> findByTrangThai(Integer trangThai);
 }

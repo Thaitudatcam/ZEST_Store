@@ -29,15 +29,12 @@ public class AiChatbot {
     @Column(name = "url_chatbot", nullable = false, length = 500)
     private String urlChatbot;
 
-    @Column(name = "trang_thai", nullable = false, length = 20)
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private String trangThai = "active";
+    private Integer trangThai = 1;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
-
-    @Column(name = "ngay_xoa")
-    private LocalDateTime ngayXoa;
 
     @OneToMany(mappedBy = "chatbot")
     @ToString.Exclude
@@ -47,6 +44,6 @@ public class AiChatbot {
     @PrePersist
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
-        if (this.trangThai == null) this.trangThai = "active";
+        if (this.trangThai == null) this.trangThai = 1;
     }
 }

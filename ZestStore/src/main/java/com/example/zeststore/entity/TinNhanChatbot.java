@@ -31,9 +31,6 @@ public class TinNhanChatbot {
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 
-    @Column(name = "ngay_xoa")
-    private LocalDateTime ngayXoa;
-
     @PrePersist
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();

@@ -15,17 +15,17 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
     List<DonHang> findByNguoiDung_MaNguoiDung(Integer maNguoiDung);
 
-    List<DonHang> findByTrangThaiDon(String trangThaiDon);
+    List<DonHang> findByTrangThaiDon(Integer trangThaiDon);
 
     @Query("SELECT d FROM DonHang d WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay")
     List<DonHang> findByNgayDatBetween(@Param("tuNgay") LocalDateTime tuNgay,
                                         @Param("denNgay") LocalDateTime denNgay);
 
     @Query("SELECT COUNT(d) FROM DonHang d WHERE d.trangThaiDon = :trangThai")
-    Long countByTrangThaiDon(@Param("trangThai") String trangThai);
+    Long countByTrangThaiDon(@Param("trangThai") Integer trangThai);
 
     @Query("SELECT COALESCE(SUM(d.tongTien), 0) FROM DonHang d "
-            + "WHERE d.trangThaiDon = 'delivered' AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
+            + "WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
                                       @Param("denNgay") LocalDateTime denNgay);
 }

@@ -13,6 +13,4 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
     List<ThanhToan> findByDonHang_MaDonHang(Integer maDonHang);
 
     Optional<ThanhToan> findByMaGiaoDich(String maGiaoDich);
-
-    Optional<ThanhToan> findByTransactionId(String transactionId);
 }

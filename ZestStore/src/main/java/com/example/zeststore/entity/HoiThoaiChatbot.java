@@ -31,9 +31,6 @@ public class HoiThoaiChatbot {
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 
-    @Column(name = "ngay_xoa")
-    private LocalDateTime ngayXoa;
-
     @OneToMany(mappedBy = "hoiThoai", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore

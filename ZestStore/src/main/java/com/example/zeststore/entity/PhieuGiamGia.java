@@ -24,30 +24,27 @@ public class PhieuGiamGia {
     @Column(name = "ma_code", nullable = false, length = 50, unique = true)
     private String maCode;
 
-    @Column(name = "kieu_giam_gia", nullable = false, length = 20)
-    private String kieuGiamGia;
+    @Column(name = "kieu_giam_gia", nullable = false, columnDefinition = "TINYINT")
+    private Integer kieuGiamGia;
 
-    @Column(name = "gia_tri_giam", nullable = false, precision = 18, scale = 0)
+    @Column(name = "gia_tri_giam", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaTriGiam;
 
-    @Column(name = "gia_tri_don_toi_thieu", precision = 18, scale = 0)
+    @Column(name = "gia_tri_don_toi_thieu", precision = 18, scale = 2)
     private BigDecimal giaTriDonToiThieu;
 
-    @Column(name = "ngay_bat_dau", nullable = false)
+    @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
 
-    @Column(name = "ngay_ket_thuc", nullable = false)
+    @Column(name = "ngay_ket_thuc")
     private LocalDateTime ngayKetThuc;
 
-    @Column(name = "trang_thai", nullable = false, length = 20)
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private String trangThai = "active";
+    private Integer trangThai = 1;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
-
-    @Column(name = "ngay_cap_nhat")
-    private LocalDateTime ngayCapNhat;
 
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
@@ -60,11 +57,7 @@ public class PhieuGiamGia {
     @PrePersist
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
-        if (this.trangThai == null) this.trangThai = "active";
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.ngayCapNhat = LocalDateTime.now();
+        if (this.trangThai == null) this.trangThai = 1;
+        if (this.kieuGiamGia == null) this.kieuGiamGia = 1;
     }
 }

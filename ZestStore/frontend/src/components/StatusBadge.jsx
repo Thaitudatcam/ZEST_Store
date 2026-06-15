@@ -1,21 +1,21 @@
 const styles = {
-  pending: 'bg-amber-100 text-amber-800 border-amber-200',
-  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
-  shipping: 'bg-purple-100 text-purple-800 border-purple-200',
-  delivered: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  cancelled: 'bg-rose-100 text-rose-800 border-rose-200',
+  1: 'bg-amber-100 text-amber-800 border-amber-200',
+  2: 'bg-blue-100 text-blue-800 border-blue-200',
+  3: 'bg-purple-100 text-purple-800 border-purple-200',
+  4: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  5: 'bg-rose-100 text-rose-800 border-rose-200',
 }
 
 const labels = {
-  pending: 'Chờ xác nhận',
-  confirmed: 'Đã xác nhận',
-  shipping: 'Đang giao',
-  delivered: 'Đã giao',
-  cancelled: 'Đã hủy',
+  1: 'Chờ xác nhận',
+  2: 'Đã xác nhận',
+  3: 'Đang giao',
+  4: 'Đã giao',
+  5: 'Đã hủy',
 }
 
 export default function StatusBadge({ status }) {
-  const s = (status || '').toLowerCase()
+  const s = Number(status)
   return (
     <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${styles[s] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
       {labels[s] || status}

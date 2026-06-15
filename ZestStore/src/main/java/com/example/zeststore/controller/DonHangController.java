@@ -53,6 +53,6 @@ public class DonHangController {
     @PutMapping("/admin/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(donHangService.updateOrderStatus(id, body.get("trangThai")));
+        return ResponseEntity.ok(donHangService.updateOrderStatus(id, Integer.valueOf(body.get("trangThai"))));
     }
 }

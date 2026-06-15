@@ -10,23 +10,19 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "anh_san_pham")
-public class AnhSanPham {
+@Table(name = "mau_sac")
+public class MauSac {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ma_anh")
-    private Integer maAnh;
+    @Column(name = "ma_mau_sac")
+    private Integer maMauSac;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_bien_the", nullable = false)
-    private BienTheSanPham bienThe;
+    @Column(name = "mau_sac", nullable = false, length = 50, unique = true)
+    private String mauSac;
 
-    @Column(name = "url_anh", nullable = false, length = 500)
-    private String urlAnh;
-
-    @Column(name = "thu_tu_hien_thi")
-    private Integer thuTuHienThi;
+    @Column(name = "ma_mau_hex", length = 7)
+    private String maMauHex;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;

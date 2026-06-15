@@ -21,6 +21,9 @@ public class NguoiDung {
     @Column(name = "ma_nguoi_dung")
     private Integer maNguoiDung;
 
+    @Column(name = "ma_nguoi_dung_code", length = 20, unique = true)
+    private String maNguoiDungCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_vai_tro", nullable = false)
     private VaiTro vaiTro;
@@ -37,18 +40,21 @@ public class NguoiDung {
     @Column(name = "so_dien_thoai", length = 15, unique = true)
     private String soDienThoai;
 
-    @Column(name = "trang_thai", nullable = false, length = 20)
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private String trangThai = "active";
+    private Integer trangThai = 1;
 
     @Column(name = "anh_dai_dien", length = 500)
     private String anhDaiDien;
 
-    @Column(name = "gioi_tinh", length = 10)
-    private String gioiTinh;
+    @Column(name = "gioi_tinh")
+    private Boolean gioiTinh;
 
     @Column(name = "ngay_sinh")
     private LocalDate ngaySinh;
+
+    @Column(name = "ngay_dang_nhap_cuoi")
+    private LocalDateTime ngayDangNhapCuoi;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
@@ -99,10 +105,20 @@ public class NguoiDung {
     @JsonIgnore
     private List<HanhViNguoiDung> hanhVis;
 
+    @OneToMany(mappedBy = "nguoiDung")
+    @ToString.Exclude
+    @JsonIgnore
+    private List<RefreshToken> refreshTokens;
+
+    @OneToMany(mappedBy = "nguoiDung")
+    @ToString.Exclude
+    @JsonIgnore
+    private List<ThongBao> thongBaos;
+
     @PrePersist
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
-        if (this.trangThai == null) this.trangThai = "active";
+        if (this.trangThai == null) this.trangThai = 1;
     }
 
     @PreUpdate

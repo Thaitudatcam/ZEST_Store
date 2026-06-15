@@ -4,9 +4,9 @@ import StatusBadge, { labels } from '../../components/StatusBadge'
 import { Search, ChevronDown } from 'lucide-react'
 
 const NEXT_STATUS = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['shipping', 'cancelled'],
-  shipping: ['delivered'],
+  1: [2, 5],
+  2: [3, 5],
+  3: [4],
 }
 
 export default function AdminOrders() {

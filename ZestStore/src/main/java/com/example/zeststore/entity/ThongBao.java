@@ -10,33 +10,36 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "hanh_vi_nguoi_dung")
-public class HanhViNguoiDung {
+@Table(name = "thong_bao")
+public class ThongBao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ma_hanh_vi")
-    private Integer maHanhVi;
+    @Column(name = "ma_thong_bao")
+    private Integer maThongBao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_san_pham")
-    private SanPham sanPham;
+    @Column(name = "tieu_de", nullable = false, length = 200)
+    private String tieuDe;
 
-    @Column(name = "ma_tu_khoa", length = 200)
-    private String maTuKhoa;
+    @Column(name = "noi_dung", columnDefinition = "NVARCHAR(MAX)")
+    private String noiDung;
 
-    @Column(name = "hanh_dong", nullable = false, length = 20)
-    private String hanhDong;
+    @Column(name = "loai", length = 50)
+    private String loai;
+
+    @Column(name = "da_doc", nullable = false)
+    @Builder.Default
+    private Boolean daDoc = false;
+
+    @Column(name = "lien_ket", length = 500)
+    private String lienKet;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
-
-    @Column(name = "ngay_xoa")
-    private LocalDateTime ngayXoa;
 
     @PrePersist
     protected void onCreate() {

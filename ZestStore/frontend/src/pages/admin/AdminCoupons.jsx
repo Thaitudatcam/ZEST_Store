@@ -5,7 +5,7 @@ import { Plus, Trash2 } from 'lucide-react'
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ maCode: '', kieuGiamGia: 'PERCENT', giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '' })
+  const [form, setForm] = useState({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '' })
 
   const load = () => getCoupons().then(setCoupons).catch(() => {})
   useEffect(() => { load() }, [])
@@ -21,7 +21,7 @@ export default function AdminCoupons() {
         ngayBatDau: form.ngayBatDau || null,
         ngayKetThuc: form.ngayKetThuc || null,
       })
-      setShowForm(false); setForm({ maCode: '', kieuGiamGia: 'PERCENT', giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '' }); load()
+      setShowForm(false); setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '' }); load()
     } catch { alert('Lỗi tạo coupon') }
   }
 
@@ -56,11 +56,11 @@ export default function AdminCoupons() {
                   <tr key={c.maPhieuGiamGia} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono font-semibold text-blue-700">{c.maCode}</td>
                     <td className="px-4 py-3 text-center">
-                      {c.kieuGiamGia === 'PERCENT' ? `${c.giaTriGiam}%` : VND(c.giaTriGiam)}
+                      {c.kieuGiamGia === 1 ? `${c.giaTriGiam}%` : VND(c.giaTriGiam)}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.trangThai === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
-                        {c.trangThai === 'active' ? 'Đang chạy' : 'Tắt'}
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.trangThai === 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
+                        {c.trangThai === 1 ? 'Đang chạy' : 'Tắt'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -79,11 +79,11 @@ export default function AdminCoupons() {
             <h2 className="font-semibold mb-4">Thêm mã giảm giá</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input value={form.maCode} onChange={(e) => setForm({ ...form, maCode: e.target.value.toUpperCase() })} placeholder="Mã code" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <select value={form.kieuGiamGia} onChange={(e) => setForm({ ...form, kieuGiamGia: e.target.value })} className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="PERCENT">Giảm theo %</option>
-                <option value="FIXED">Giảm tiền mặt</option>
+              <select value={form.kieuGiamGia} onChange={(e) => setForm({ ...form, kieuGiamGia: Number(e.target.value) })} className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value={1}>Giảm theo %</option>
+                <option value={2}>Giảm tiền mặt</option>
               </select>
-              <input type="number" value={form.giaTriGiam} onChange={(e) => setForm({ ...form, giaTriGiam: e.target.value })} placeholder={form.kieuGiamGia === 'PERCENT' ? 'Phần trăm giảm (vd: 10)' : 'Số tiền giảm'} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="number" value={form.giaTriGiam} onChange={(e) => setForm({ ...form, giaTriGiam: e.target.value })} placeholder={form.kieuGiamGia === 1 ? 'Phần trăm giảm (vd: 10)' : 'Số tiền giảm'} required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <input type="number" value={form.giaTriDonToiThieu} onChange={(e) => setForm({ ...form, giaTriDonToiThieu: e.target.value })} placeholder="Giá trị đơn tối thiểu" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="text-xs text-gray-500">Ngày bắt đầu</label><input type="date" value={form.ngayBatDau} onChange={(e) => setForm({ ...form, ngayBatDau: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>

@@ -23,14 +23,13 @@ public class FileController {
     private final SanPhamService sanPhamService;
     private final UserService userService;
 
-    @PostMapping("/api/upload/product/{productId}")
+    @PostMapping("/api/upload/variant/{variantId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> uploadProductImage(@PathVariable Integer productId,
-                                                 @RequestParam("file") MultipartFile file,
-                                                 @RequestParam(defaultValue = "false") boolean isMain) {
+    public ResponseEntity<?> uploadProductImage(@PathVariable Integer variantId,
+                                                 @RequestParam("file") MultipartFile file) {
         String fileName = fileUploadService.storeFile(file);
         String url = "/api/files/" + fileName;
-        return ResponseEntity.ok(sanPhamService.addImage(productId, url, isMain));
+        return ResponseEntity.ok(sanPhamService.addImage(variantId, url));
     }
 
     @PostMapping("/api/upload/avatar")

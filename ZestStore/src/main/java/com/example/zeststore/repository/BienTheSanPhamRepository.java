@@ -16,12 +16,14 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
 
     Optional<BienTheSanPham> findBySku(String sku);
 
-    Optional<BienTheSanPham> findBySanPham_MaSanPhamAndKichCoAndMauSac(
-            Integer maSanPham, String kichCo, String mauSac);
+    Optional<BienTheSanPham> findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
+            Integer maSanPham, Integer maKichCo, Integer maMauSac);
 
     @Query("SELECT DISTINCT b.kichCo FROM BienTheSanPham b WHERE b.sanPham.maSanPham = :maSanPham AND b.ngayXoa IS NULL")
-    List<String> findDistinctKichCoBySanPhamId(@Param("maSanPham") Integer maSanPham);
+    List<Object> findDistinctKichCoBySanPhamId(@Param("maSanPham") Integer maSanPham);
 
     @Query("SELECT DISTINCT b.mauSac FROM BienTheSanPham b WHERE b.sanPham.maSanPham = :maSanPham AND b.ngayXoa IS NULL")
-    List<String> findDistinctMauSacBySanPhamId(@Param("maSanPham") Integer maSanPham);
+    List<Object> findDistinctMauSacBySanPhamId(@Param("maSanPham") Integer maSanPham);
+
+    List<BienTheSanPham> findBySanPham_MaSanPhamAndNgayXoaIsNull(Integer maSanPham);
 }

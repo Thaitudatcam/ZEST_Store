@@ -34,13 +34,16 @@ public class PhieuGiamGiaService {
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(code)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
 
-        if (!coupon.getTrangThai().equals("active")) {
+        if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
             throw new BadRequestException("Coupon is not active");
         }
 
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(coupon.getNgayBatDau()) || now.isAfter(coupon.getNgayKetThuc())) {
-            throw new BadRequestException("Coupon has expired or not yet valid");
+        if (coupon.getNgayBatDau() != null && now.isBefore(coupon.getNgayBatDau())) {
+            throw new BadRequestException("Coupon is not yet valid");
+        }
+        if (coupon.getNgayKetThuc() != null && now.isAfter(coupon.getNgayKetThuc())) {
+            throw new BadRequestException("Coupon has expired");
         }
 
         if (coupon.getGiaTriDonToiThieu() != null
@@ -49,7 +52,7 @@ public class PhieuGiamGiaService {
         }
 
         BigDecimal giamGia;
-        if ("percent".equals(coupon.getKieuGiamGia())) {
+        if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
             giamGia = giaTriDon.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
         } else {
             giamGia = coupon.getGiaTriGiam();
@@ -79,7 +82,7 @@ public class PhieuGiamGiaService {
                 .giaTriDonToiThieu(request.getGiaTriDonToiThieu())
                 .ngayBatDau(request.getNgayBatDau())
                 .ngayKetThuc(request.getNgayKetThuc())
-                .trangThai(request.getTrangThai() != null ? request.getTrangThai() : "active")
+                .trangThai(request.getTrangThai() != null ? request.getTrangThai() : 1)
                 .build());
     }
 

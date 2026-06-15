@@ -16,9 +16,9 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     Optional<PhieuGiamGia> findByMaCode(String maCode);
 
-    List<PhieuGiamGia> findByTrangThai(String trangThai);
+    List<PhieuGiamGia> findByTrangThai(Integer trangThai);
 
-    @Query("SELECT p FROM PhieuGiamGia p WHERE p.trangThai = 'active' "
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.trangThai = 1 "
             + "AND p.ngayBatDau <= :now AND p.ngayKetThuc >= :now "
             + "AND (:giaTriDon IS NULL OR p.giaTriDonToiThieu IS NULL OR p.giaTriDonToiThieu <= :giaTriDon)")
     List<PhieuGiamGia> findValidCoupons(@Param("now") LocalDateTime now,

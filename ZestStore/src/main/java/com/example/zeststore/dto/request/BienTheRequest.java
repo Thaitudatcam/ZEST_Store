@@ -15,11 +15,14 @@ public class BienTheRequest {
     @NotBlank
     private String sku;
 
-    @NotBlank
-    private String kichCo;
+    @NotNull
+    private Integer maThuongHieu;
 
-    @NotBlank
-    private String mauSac;
+    @NotNull
+    private Integer maKichCo;
+
+    @NotNull
+    private Integer maMauSac;
 
     @NotNull @PositiveOrZero
     private BigDecimal gia;

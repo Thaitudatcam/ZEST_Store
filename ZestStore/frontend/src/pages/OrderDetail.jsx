@@ -7,16 +7,16 @@ import { VND } from '../components/ProductCard'
 import { Package, MapPin, CreditCard, ArrowLeft } from 'lucide-react'
 
 const PAYMENT_LABELS = {
-  COD: 'Thanh toán khi nhận hàng (COD)',
-  VNPay: 'VNPay',
-  Momo: 'Momo',
-  ZaloPay: 'ZaloPay',
+  1: 'Thanh toán khi nhận hàng (COD)',
+  2: 'VNPay',
+  3: 'Momo',
+  4: 'ZaloPay',
 }
 
 const PAYMENT_STATUS = {
-  pending: 'Chờ thanh toán',
-  success: 'Đã thanh toán',
-  fail: 'Thất bại',
+  1: 'Chờ thanh toán',
+  2: 'Đã thanh toán',
+  3: 'Thất bại',
 }
 
 export default function OrderDetail() {
@@ -68,7 +68,7 @@ export default function OrderDetail() {
           <StatusBadge status={order.trangThaiDon || order.trangThai} />
         </div>
 
-        {order.trangThaiDon === 'pending' && (
+        {order.trangThaiDon === 1 && (
           <button onClick={handleCancel} disabled={cancelling} className="text-sm text-red-500 hover:underline disabled:opacity-50">
             {cancelling ? 'Đang hủy...' : 'Hủy đơn hàng'}
           </button>
@@ -81,7 +81,7 @@ export default function OrderDetail() {
           {items.map((item) => {
             const variant = item.bienThe || {}
             const product = variant.sanPham || {}
-            const anh = variant.urlAnh || product.anhChinh || ''
+            const anh = variant.urlAnh || product.urlAnhDaiDien || ''
             return (
               <div key={item.maMucDonHang} className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
@@ -89,7 +89,7 @@ export default function OrderDetail() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
-                  <p className="text-xs text-gray-500">{[variant.kichCo, variant.mauSac].filter(Boolean).join(' - ') || '—'}</p>
+                  <p className="text-xs text-gray-500">{[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}</p>
                   <p className="text-xs text-gray-500">x{item.soLuong}</p>
                 </div>
                 <div className="text-right">
@@ -103,6 +103,7 @@ export default function OrderDetail() {
         <div className="border-t mt-4 pt-4 space-y-1 text-sm">
           <div className="flex justify-between text-gray-600"><span>Tạm tính</span><span>{VND(items.reduce((s, i) => s + Number(i.thanhTien), 0))}</span></div>
           {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-green-600"><span>Giảm giá</span><span>-{VND(order.soTienGiam)}</span></div>}
+          {(order.phiVanChuyen || 0) > 0 && <div className="flex justify-between text-gray-600"><span>Phí vận chuyển</span><span>{VND(order.phiVanChuyen)}</span></div>}
           <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-blue-700">{VND(order.tongTien)}</span></div>
         </div>
       </div>

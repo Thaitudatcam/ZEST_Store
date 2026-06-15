@@ -39,8 +39,7 @@ export default function AdminProducts() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Sản phẩm</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Danh mục</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Giá</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600">SL</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Giá TB</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
               </tr>
             </thead>
@@ -49,13 +48,12 @@ export default function AdminProducts() {
                 <tr key={p.maSanPham} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={p.anhChinh || 'https://placehold.co/40x40/e2e8f0/475569?text=P'} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                      <img src={p.urlAnhDaiDien || 'https://placehold.co/40x40/e2e8f0/475569?text=P'} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                       <span className="font-medium truncate max-w-[200px]">{p.tenSanPham}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{p.danhMuc?.tenDanhMuc || '-'}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{VND(p.gia ?? 0)}</td>
-                  <td className="px-4 py-3 text-center">{'-'}</td>
+                  <td className="px-4 py-3 text-right font-semibold">{VND(p.giaTrungBinh ?? 0)}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
                       <Link to={`/admin/products/${p.maSanPham}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil className="h-4 w-4" /></Link>

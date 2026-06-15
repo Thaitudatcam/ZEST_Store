@@ -56,8 +56,8 @@ export default function ProductDetail() {
   if (loading) return <LoadingSpinner className="py-20" />
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
-  const price = product.gia ?? 0
-  const img = images[0]?.urlAnh || product.anhChinh || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
+  const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
+  const img = images[0]?.urlAnh || product.urlAnhDaiDien || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -67,17 +67,17 @@ export default function ProductDetail() {
         </div>
         <div>
           <h1 className="text-2xl font-bold mb-2">{product.tenSanPham}</h1>
-          <p className="text-3xl text-blue-700 font-bold mb-4">{VND(price)}</p>
+          <p className="text-3xl text-blue-700 font-bold mb-4">{VND(variantPrice)}</p>
           {product.moTa && <p className="text-gray-600 mb-4">{product.moTa}</p>}
 
           {variants.length > 0 && (
             <div className="mb-4">
               <label className="font-semibold text-sm">Phân loại:</label>
-              <div className="flex gap-2 mt-1">
+              <div className="flex gap-2 mt-1 flex-wrap">
                 {variants.map((v) => (
                   <button key={v.maBienThe} onClick={() => setSelectedVar(v.maBienThe)}
                     className={`px-4 py-1.5 border rounded-lg text-sm ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : 'hover:bg-gray-100'}`}>
-                    {[v.kichCo, v.mauSac].filter(Boolean).join(' - ') || `#${v.maBienThe}`}
+                    {[v.kichCo?.kichCo, v.mauSac?.mauSac].filter(Boolean).join(' - ') || `#${v.maBienThe}`}
                   </button>
                 ))}
               </div>

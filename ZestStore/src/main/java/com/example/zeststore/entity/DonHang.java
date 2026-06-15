@@ -21,6 +21,9 @@ public class DonHang {
     @Column(name = "ma_don_hang")
     private Integer maDonHang;
 
+    @Column(name = "ma_don_hang_code", length = 20, unique = true)
+    private String maDonHangCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
@@ -29,16 +32,20 @@ public class DonHang {
     @JoinColumn(name = "ma_phieu_giam_gia")
     private PhieuGiamGia phieuGiamGia;
 
-    @Column(name = "so_tien_giam", nullable = false, precision = 18, scale = 0)
+    @Column(name = "so_tien_giam", precision = 18, scale = 2)
     @Builder.Default
     private BigDecimal soTienGiam = BigDecimal.ZERO;
 
-    @Column(name = "tong_tien", nullable = false, precision = 18, scale = 0)
+    @Column(name = "phi_van_chuyen", precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal phiVanChuyen = BigDecimal.ZERO;
+
+    @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
 
-    @Column(name = "trang_thai_don", nullable = false, length = 20)
+    @Column(name = "trang_thai_don", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private String trangThaiDon = "pending";
+    private Integer trangThaiDon = 1;
 
     @Column(name = "ten_nguoi_nhan", nullable = false, length = 100)
     private String tenNguoiNhan;
@@ -81,11 +88,17 @@ public class DonHang {
     @JsonIgnore
     private HoaDon hoaDon;
 
+    @OneToMany(mappedBy = "donHang")
+    @ToString.Exclude
+    @JsonIgnore
+    private List<LichSuDonHang> lichSuDonHangs;
+
     @PrePersist
     protected void onCreate() {
         this.ngayDat = LocalDateTime.now();
-        if (this.trangThaiDon == null) this.trangThaiDon = "pending";
+        if (this.trangThaiDon == null) this.trangThaiDon = 1;
         if (this.soTienGiam == null) this.soTienGiam = BigDecimal.ZERO;
+        if (this.phiVanChuyen == null) this.phiVanChuyen = BigDecimal.ZERO;
     }
 
     @PreUpdate

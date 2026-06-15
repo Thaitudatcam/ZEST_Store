@@ -31,11 +31,14 @@ public class SanPhamService {
     private final DanhMucRepository danhMucRepository;
     private final DanhGiaRepository danhGiaRepository;
     private final HanhViNguoiDungRepository hanhViRepository;
+    private final ThuongHieuRepository thuongHieuRepository;
+    private final KichCoRepository kichCoRepository;
+    private final MauSacRepository mauSacRepository;
 
     public Page<SanPham> getProducts(int page, int size, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        return sanPhamRepository.findByTrangThaiAndNgayXoaIsNull("active", pageable);
+        return sanPhamRepository.findByTrangThaiAndNgayXoaIsNull(1, pageable);
     }
 
     public Page<SanPham> searchProducts(String keyword, int page, int size) {
@@ -62,12 +65,13 @@ public class SanPhamService {
     public Map<String, Object> getProductDetail(Integer id) {
         SanPham product = getById(id);
         List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(id);
-        List<AnhSanPham> images = anhSanPhamRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(id);
+        List<AnhSanPham> images = anhSanPhamRepository.findByBienThe_MaBienTheOrderByThuTuHienThiAsc(
+                variants.isEmpty() ? 0 : variants.get(0).getMaBienThe());
         Double avgRating = danhGiaRepository.averageRatingBySanPhamId(id);
         Long reviewCount = danhGiaRepository.countBySanPhamId(id);
 
-        List<String> sizes = bienTheRepository.findDistinctKichCoBySanPhamId(id);
-        List<String> colors = bienTheRepository.findDistinctMauSacBySanPhamId(id);
+        List<?> sizes = bienTheRepository.findDistinctKichCoBySanPhamId(id);
+        List<?> colors = bienTheRepository.findDistinctMauSacBySanPhamId(id);
 
         Map<String, Object> result = new HashMap<>();
         result.put("product", product);
@@ -90,8 +94,8 @@ public class SanPhamService {
                 .slug(request.getSlug())
                 .moTa(request.getMoTa())
                 .moTaAi(request.getMoTaAi())
-                .gia(request.getGia())
-                .trangThai(request.getTrangThai() != null ? request.getTrangThai() : "active")
+                .urlAnhDaiDien(request.getUrlAnhDaiDien())
+                .trangThai(request.getTrangThai() != null ? request.getTrangThai() : 1)
                 .build());
     }
 
@@ -106,7 +110,7 @@ public class SanPhamService {
         if (request.getSlug() != null) product.setSlug(request.getSlug());
         if (request.getMoTa() != null) product.setMoTa(request.getMoTa());
         if (request.getMoTaAi() != null) product.setMoTaAi(request.getMoTaAi());
-        if (request.getGia() != null) product.setGia(request.getGia());
+        if (request.getUrlAnhDaiDien() != null) product.setUrlAnhDaiDien(request.getUrlAnhDaiDien());
         if (request.getTrangThai() != null) product.setTrangThai(request.getTrangThai());
         return sanPhamRepository.save(product);
     }
@@ -128,11 +132,18 @@ public class SanPhamService {
         if (bienTheRepository.findBySku(request.getSku()).isPresent()) {
             throw new BadRequestException("SKU already exists: " + request.getSku());
         }
+        ThuongHieu thuongHieu = thuongHieuRepository.findById(request.getMaThuongHieu())
+                .orElseThrow(() -> new ResourceNotFoundException("Brand", request.getMaThuongHieu()));
+        KichCo kichCo = kichCoRepository.findById(request.getMaKichCo())
+                .orElseThrow(() -> new ResourceNotFoundException("Size", request.getMaKichCo()));
+        MauSac mauSac = mauSacRepository.findById(request.getMaMauSac())
+                .orElseThrow(() -> new ResourceNotFoundException("Color", request.getMaMauSac()));
         return bienTheRepository.save(BienTheSanPham.builder()
                 .sanPham(product)
+                .thuongHieu(thuongHieu)
+                .kichCo(kichCo)
+                .mauSac(mauSac)
                 .sku(request.getSku())
-                .kichCo(request.getKichCo())
-                .mauSac(request.getMauSac())
                 .gia(request.getGia())
                 .urlAnh(request.getUrlAnh())
                 .tonKho(request.getTonKho() != null ? request.getTonKho() : 0)
@@ -144,8 +155,18 @@ public class SanPhamService {
         BienTheSanPham variant = bienTheRepository.findById(variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", variantId));
         if (request.getSku() != null) variant.setSku(request.getSku());
-        if (request.getKichCo() != null) variant.setKichCo(request.getKichCo());
-        if (request.getMauSac() != null) variant.setMauSac(request.getMauSac());
+        if (request.getMaThuongHieu() != null) {
+            variant.setThuongHieu(thuongHieuRepository.findById(request.getMaThuongHieu())
+                    .orElseThrow(() -> new ResourceNotFoundException("Brand", request.getMaThuongHieu())));
+        }
+        if (request.getMaKichCo() != null) {
+            variant.setKichCo(kichCoRepository.findById(request.getMaKichCo())
+                    .orElseThrow(() -> new ResourceNotFoundException("Size", request.getMaKichCo())));
+        }
+        if (request.getMaMauSac() != null) {
+            variant.setMauSac(mauSacRepository.findById(request.getMaMauSac())
+                    .orElseThrow(() -> new ResourceNotFoundException("Color", request.getMaMauSac())));
+        }
         if (request.getGia() != null) variant.setGia(request.getGia());
         if (request.getTonKho() != null) variant.setTonKho(request.getTonKho());
         if (request.getUrlAnh() != null) variant.setUrlAnh(request.getUrlAnh());
@@ -160,32 +181,22 @@ public class SanPhamService {
         bienTheRepository.save(variant);
     }
 
-    public List<AnhSanPham> getImages(Integer productId) {
-        return anhSanPhamRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(productId);
+    public List<AnhSanPham> getImages(Integer variantId) {
+        return anhSanPhamRepository.findByBienThe_MaBienTheOrderByThuTuHienThiAsc(variantId);
     }
 
     @Transactional
-    public AnhSanPham addImage(Integer productId, String url, boolean isMain) {
-        SanPham product = getById(productId);
-        if (isMain) {
-            anhSanPhamRepository.findBySanPham_MaSanPhamAndLaAnhChinhTrueAndNgayXoaIsNull(productId)
-                    .ifPresent(img -> {
-                        img.setLaAnhChinh(false);
-                        anhSanPhamRepository.save(img);
-                    });
-        }
+    public AnhSanPham addImage(Integer variantId, String url) {
+        BienTheSanPham variant = bienTheRepository.findById(variantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Variant", variantId));
         return anhSanPhamRepository.save(AnhSanPham.builder()
-                .sanPham(product)
+                .bienThe(variant)
                 .urlAnh(url)
-                .laAnhChinh(isMain)
                 .build());
     }
 
     @Transactional
     public void deleteImage(Integer imageId) {
-        AnhSanPham image = anhSanPhamRepository.findById(imageId)
-                .orElseThrow(() -> new ResourceNotFoundException("Image", imageId));
-        image.setNgayXoa(LocalDateTime.now());
-        anhSanPhamRepository.save(image);
+        anhSanPhamRepository.deleteById(imageId);
     }
 }

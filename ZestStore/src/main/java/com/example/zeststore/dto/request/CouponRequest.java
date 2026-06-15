@@ -16,8 +16,8 @@ public class CouponRequest {
     @NotBlank
     private String maCode;
 
-    @NotBlank
-    private String kieuGiamGia;
+    @NotNull
+    private Integer kieuGiamGia;
 
     @NotNull @Positive
     private BigDecimal giaTriGiam;
@@ -30,5 +30,5 @@ public class CouponRequest {
     @NotNull
     private LocalDateTime ngayKetThuc;
 
-    private String trangThai;
+    private Integer trangThai;
 }

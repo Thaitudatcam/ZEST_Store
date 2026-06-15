@@ -43,8 +43,8 @@ public class GioHangService {
             itemMap.put("maSanPham", product.getMaSanPham());
             itemMap.put("tenSanPham", product.getTenSanPham());
             itemMap.put("slug", product.getSlug());
-            itemMap.put("kichCo", variant.getKichCo());
-            itemMap.put("mauSac", variant.getMauSac());
+            itemMap.put("kichCo", variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);
+            itemMap.put("mauSac", variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
             itemMap.put("donGia", variant.getGia());
             itemMap.put("soLuong", item.getSoLuong());
             itemMap.put("thanhTien", variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())));

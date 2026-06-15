@@ -49,7 +49,7 @@ export default function Cart() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{i.tenSanPham || `Sản phẩm #${i.maSanPham}`}</p>
-                  <p className="text-sm text-gray-500">{i.tenBienThe || ''}</p>
+                  <p className="text-sm text-gray-500">{[i.kichCo, i.mauSac].filter(Boolean).join(' - ')}</p>
                   <p className="text-blue-700 font-bold">{VND(i.donGia || 0)}</p>
                 </div>
                 <div className="flex items-center border rounded-lg">

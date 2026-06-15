@@ -30,7 +30,7 @@ public class ThanhToanController {
     public ResponseEntity<?> completePayment(@PathVariable Integer id,
                                               @RequestBody Map<String, String> body) {
         return ResponseEntity.ok(thanhToanService.completePayment(id,
-                body.get("maGiaoDich"), body.get("transactionId")));
+                body.get("maGiaoDich")));
     }
 
     @PutMapping("/{id}/fail")

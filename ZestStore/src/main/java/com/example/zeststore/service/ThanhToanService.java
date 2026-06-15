@@ -28,16 +28,15 @@ public class ThanhToanService {
     }
 
     @Transactional
-    public ThanhToan completePayment(Integer paymentId, String maGiaoDich, String transactionId) {
+    public ThanhToan completePayment(Integer paymentId, String maGiaoDich) {
         ThanhToan payment = getPaymentById(paymentId);
         payment.setMaGiaoDich(maGiaoDich);
-        payment.setTransactionId(transactionId);
-        payment.setTrangThaiThanhToan("success");
+        payment.setTrangThaiThanhToan(2);
         payment.setThoiGianTt(java.time.LocalDateTime.now());
 
         DonHang order = payment.getDonHang();
-        if (order.getTrangThaiDon().equals("pending")) {
-            order.setTrangThaiDon("confirmed");
+        if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+            order.setTrangThaiDon(2);
             donHangRepository.save(order);
         }
 
@@ -47,7 +46,7 @@ public class ThanhToanService {
     @Transactional
     public ThanhToan failPayment(Integer paymentId) {
         ThanhToan payment = getPaymentById(paymentId);
-        payment.setTrangThaiThanhToan("failed");
+        payment.setTrangThaiThanhToan(3);
         return thanhToanRepository.save(payment);
     }
 }

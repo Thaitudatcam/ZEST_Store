@@ -5,7 +5,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @Getter
@@ -21,6 +20,9 @@ public class SanPham {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ma_san_pham")
     private Integer maSanPham;
+
+    @Column(name = "ma_san_pham_code", length = 20, unique = true)
+    private String maSanPhamCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_danh_muc", nullable = false)
@@ -38,12 +40,15 @@ public class SanPham {
     @Column(name = "mo_ta_ai", columnDefinition = "NVARCHAR(MAX)")
     private String moTaAi;
 
-    @Column(name = "gia", nullable = false, precision = 18, scale = 0)
-    private BigDecimal gia;
+    @Column(name = "gia_trung_binh", precision = 18, scale = 2)
+    private BigDecimal giaTrungBinh;
 
-    @Column(name = "trang_thai", nullable = false, length = 20)
+    @Column(name = "url_anh_dai_dien", length = 500)
+    private String urlAnhDaiDien;
+
+    @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private String trangThai = "active";
+    private Integer trangThai = 1;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
@@ -58,11 +63,6 @@ public class SanPham {
     @ToString.Exclude
     @JsonIgnore
     private List<BienTheSanPham> bienThes;
-
-    @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    @JsonIgnore
-    private List<AnhSanPham> anhs;
 
     @OneToMany(mappedBy = "sanPham")
     @ToString.Exclude
@@ -79,28 +79,10 @@ public class SanPham {
     @JsonIgnore
     private List<HanhViNguoiDung> hanhVis;
 
-    @Transient
-    @JsonProperty("anhChinh")
-    public String getAnhChinh() {
-        if (anhs != null) {
-            return anhs.stream()
-                .filter(a -> a.getNgayXoa() == null)
-                .filter(AnhSanPham::getLaAnhChinh)
-                .findFirst()
-                .map(AnhSanPham::getUrlAnh)
-                .orElse(anhs.stream()
-                    .filter(a -> a.getNgayXoa() == null)
-                    .findFirst()
-                    .map(AnhSanPham::getUrlAnh)
-                    .orElse(null));
-        }
-        return null;
-    }
-
     @PrePersist
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
-        if (this.trangThai == null) this.trangThai = "active";
+        if (this.trangThai == null) this.trangThai = 1;
     }
 
     @PreUpdate

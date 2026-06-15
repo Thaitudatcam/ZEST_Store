@@ -23,8 +23,8 @@ public class ThanhToan {
     @JoinColumn(name = "ma_don_hang", nullable = false)
     private DonHang donHang;
 
-    @Column(name = "phuong_thuc", nullable = false, length = 20)
-    private String phuongThuc;
+    @Column(name = "phuong_thuc", nullable = false, columnDefinition = "TINYINT")
+    private Integer phuongThuc;
 
     @Column(name = "nha_cung_cap", length = 50)
     private String nhaCungCap;
@@ -32,14 +32,11 @@ public class ThanhToan {
     @Column(name = "ma_giao_dich", length = 100, unique = true)
     private String maGiaoDich;
 
-    @Column(name = "transaction_id", length = 100, unique = true)
-    private String transactionId;
-
-    @Column(name = "trang_thai_thanh_toan", nullable = false, length = 20)
+    @Column(name = "trang_thai_thanh_toan", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private String trangThaiThanhToan = "pending";
+    private Integer trangThaiThanhToan = 1;
 
-    @Column(name = "so_tien", nullable = false, precision = 18, scale = 0)
+    @Column(name = "so_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal soTien;
 
     @Column(name = "thoi_gian_tao", nullable = false, updatable = false)
@@ -51,6 +48,6 @@ public class ThanhToan {
     @PrePersist
     protected void onCreate() {
         this.thoiGianTao = LocalDateTime.now();
-        if (this.trangThaiThanhToan == null) this.trangThaiThanhToan = "pending";
+        if (this.trangThaiThanhToan == null) this.trangThaiThanhToan = 1;
     }
 }

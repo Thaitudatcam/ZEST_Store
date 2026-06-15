@@ -19,7 +19,7 @@ public class UserUpdateRequest {
     @Size(max = 500)
     private String anhDaiDien;
 
-    private String gioiTinh;
+    private Boolean gioiTinh;
 
     private LocalDate ngaySinh;
 }

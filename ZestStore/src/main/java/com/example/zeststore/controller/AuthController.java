@@ -80,7 +80,7 @@ public class AuthController {
                 .email(request.getEmail())
                 .matKhauMaHoa(passwordEncoder.encode(request.getMatKhau()))
                 .soDienThoai(request.getSoDienThoai())
-                .trangThai("active")
+                .trangThai(1)
                 .build();
         nguoiDung = nguoiDungRepository.save(nguoiDung);
 

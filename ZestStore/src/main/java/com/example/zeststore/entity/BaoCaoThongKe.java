@@ -44,17 +44,16 @@ public class BaoCaoThongKe {
     @Column(name = "nguoi_nhan_email", length = 150)
     private String nguoiNhanEmail;
 
-    @Column(name = "trang_thai_email", length = 20)
-    private String trangThaiEmail;
+    @Column(name = "trang_thai_email", nullable = false, length = 20)
+    @Builder.Default
+    private String trangThaiEmail = "pending";
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 
-    @Column(name = "ngay_xoa")
-    private LocalDateTime ngayXoa;
-
     @PrePersist
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
+        if (this.trangThaiEmail == null) this.trangThaiEmail = "pending";
     }
 }

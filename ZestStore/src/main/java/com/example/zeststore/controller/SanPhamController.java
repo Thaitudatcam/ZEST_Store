@@ -96,17 +96,19 @@ public class SanPhamController {
         return ResponseEntity.ok(Map.of("message", "Variant deleted"));
     }
 
-    @GetMapping("/{id}/images")
-    public ResponseEntity<?> getImages(@PathVariable Integer id) {
-        return ResponseEntity.ok(sanPhamService.getImages(id));
+    @GetMapping("/{id}/images/{variantId}")
+    public ResponseEntity<?> getImages(@PathVariable Integer id,
+                                       @PathVariable Integer variantId) {
+        return ResponseEntity.ok(sanPhamService.getImages(variantId));
     }
 
-    @PostMapping("/{id}/images")
+    @PostMapping("/{id}/images/{variantId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> addImage(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> addImage(@PathVariable Integer id,
+                                       @PathVariable Integer variantId,
+                                       @RequestBody Map<String, Object> body) {
         String url = (String) body.get("url");
-        boolean isMain = body.get("laAnhChinh") != null && (Boolean) body.get("laAnhChinh");
-        return ResponseEntity.ok(sanPhamService.addImage(id, url, isMain));
+        return ResponseEntity.ok(sanPhamService.addImage(variantId, url));
     }
 
     @DeleteMapping("/images/{imageId}")

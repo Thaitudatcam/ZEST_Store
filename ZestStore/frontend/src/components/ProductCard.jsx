@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 const VND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
 export default function ProductCard({ product }) {
-  const price = product.gia ?? 0
-  const img = product.anhChinh || 'https://placehold.co/300x300/e2e8f0/475569?text=Polo'
+  const price = product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
+  const img = product.urlAnhDaiDien || 'https://placehold.co/300x300/e2e8f0/475569?text=Polo'
   const slug = product.slug || product.maSanPham
 
   return (
