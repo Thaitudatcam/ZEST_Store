@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import Wishlist from './pages/Wishlist'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
+import PaymentResult from './pages/PaymentResult'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import AdminOrders from './pages/admin/AdminOrders'
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+              <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
           </main>
           <Footer />

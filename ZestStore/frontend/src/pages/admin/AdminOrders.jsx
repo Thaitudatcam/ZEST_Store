@@ -1,12 +1,30 @@
 import { useState, useEffect } from 'react'
 import { getAllOrders, updateOrderStatus } from '../../api/admin'
 import StatusBadge, { labels } from '../../components/StatusBadge'
-import { Search, ChevronDown } from 'lucide-react'
+import { Search, ChevronDown, CreditCard } from 'lucide-react'
 
 const NEXT_STATUS = {
   1: [2, 5],
   2: [3, 5],
   3: [4],
+}
+
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'MoMo', 4: 'ZaloPay' }
+const PAYMENT_STATUS_LABELS = { 1: 'Chờ TT', 2: 'Đã TT', 3: 'Thất bại' }
+
+function PaymentInfo({ payments }) {
+  if (!payments || payments.length === 0) return <span className="text-xs text-gray-400">—</span>
+  const p = payments[0]
+  const method = PAYMENT_LABELS[p.phuongThuc] || '?'
+  const status = PAYMENT_STATUS_LABELS[p.trangThaiThanhToan] || '?'
+  const color = p.trangThaiThanhToan === 2 ? 'text-green-600' : p.trangThaiThanhToan === 3 ? 'text-red-500' : 'text-amber-600'
+  return (
+    <div className="text-xs">
+      <span>{method}</span>
+      <br />
+      <span className={`font-semibold ${color}`}>{status}</span>
+    </div>
+  )
 }
 
 export default function AdminOrders() {
@@ -55,6 +73,7 @@ export default function AdminOrders() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Khách hàng</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Ngày</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Tổng tiền</th>
+                <th className="text-center px-4 py-3 font-semibold text-gray-600">Thanh toán</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
                 {hasActions && <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>}
               </tr>
@@ -68,6 +87,7 @@ export default function AdminOrders() {
                     <td className="px-4 py-3">{o.nguoiDung?.hoTen || 'N/A'}<br /><span className="text-xs text-gray-400">{o.nguoiDung?.email}</span></td>
                     <td className="px-4 py-3">{o.ngayDat ? new Date(o.ngayDat).toLocaleDateString('vi-VN') : '-'}</td>
                     <td className="px-4 py-3 text-right font-semibold">{VND(o.tongTien || 0)}</td>
+                    <td className="px-4 py-3 text-center"><PaymentInfo payments={o.thanhToans} /></td>
                     <td className="px-4 py-3 text-center"><StatusBadge status={o.trangThaiDon} /></td>
                     {hasActions && (
                       <td className="px-4 py-3 text-center">

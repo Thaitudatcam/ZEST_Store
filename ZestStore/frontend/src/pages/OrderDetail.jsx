@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getOrderDetail, cancelOrder } from '../api/orders'
+import { createVnPayPayment, createMomoPayment, createZaloPayPayment, retryPayment } from '../api/payment'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
-import { Package, MapPin, CreditCard, ArrowLeft } from 'lucide-react'
+import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink } from 'lucide-react'
 
 const PAYMENT_LABELS = {
   1: 'Thanh toán khi nhận hàng (COD)',
@@ -19,11 +20,14 @@ const PAYMENT_STATUS = {
   3: 'Thất bại',
 }
 
+const PAYMENT_METHOD_NAMES = { 1: 'cod', 2: 'vnpay', 3: 'momo', 4: 'zalopay' }
+
 export default function OrderDetail() {
   const { id } = useParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [paying, setPaying] = useState(false)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -36,6 +40,29 @@ export default function OrderDetail() {
       load()
     } catch {} finally {
       setCancelling(false)
+    }
+  }
+
+  const handlePayNow = async (payment) => {
+    if (paying) return
+    setPaying(true)
+    try {
+      const method = payment.phuongThuc
+      if (payment.trangThaiThanhToan === 3) {
+        await retryPayment(payment.maThanhToan)
+      }
+      const orderIdNum = Number(id)
+      let paymentRes
+      if (method === 2) paymentRes = await createVnPayPayment(orderIdNum)
+      else if (method === 3) paymentRes = await createMomoPayment(orderIdNum)
+      else if (method === 4) paymentRes = await createZaloPayPayment(orderIdNum)
+      if (paymentRes?.paymentUrl) {
+        window.location.href = paymentRes.paymentUrl
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể tạo yêu cầu thanh toán')
+    } finally {
+      setPaying(false)
     }
   }
 
@@ -111,13 +138,31 @@ export default function OrderDetail() {
       {payments.length > 0 && (
         <div className="bg-white rounded-xl border p-6 mb-6">
           <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-700" /> Thanh toán</h2>
-          <div className="space-y-2 text-sm">
-            {payments.map((p) => (
-              <div key={p.maThanhToan} className="flex justify-between">
-                <span className="text-gray-600">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
-                <span className="font-medium">{PAYMENT_STATUS[p.trangThaiThanhToan] || p.trangThaiThanhToan}</span>
-              </div>
-            ))}
+          <div className="space-y-3 text-sm">
+            {payments.map((p) => {
+              const isOnline = p.phuongThuc > 1
+              const canRetry = p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)
+              return (
+                <div key={p.maThanhToan} className="flex items-center justify-between">
+                  <div>
+                    <span className="text-gray-600">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
+                    <span className="ml-2 font-medium">{PAYMENT_STATUS[p.trangThaiThanhToan] || p.trangThaiThanhToan}</span>
+                    {p.maGiaoDich && p.trangThaiThanhToan === 2 && (
+                      <p className="text-xs text-gray-400 mt-0.5">GD: {p.maGiaoDich}</p>
+                    )}
+                  </div>
+                  {canRetry && order.trangThaiDon === 1 && (
+                    <button
+                      onClick={() => handlePayNow(p)}
+                      disabled={paying}
+                      className="flex items-center gap-1 text-xs bg-blue-700 text-white px-3 py-1.5 rounded-lg hover:bg-blue-800 transition disabled:opacity-50"
+                    >
+                      <ExternalLink className="h-3 w-3" /> {paying ? 'Đang xử lý...' : 'Thanh toán ngay'}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

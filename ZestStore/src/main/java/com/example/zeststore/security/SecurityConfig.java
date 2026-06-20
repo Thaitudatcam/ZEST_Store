@@ -43,6 +43,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/files/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/return").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/vnpay/ipn").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/momo/return").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/payments/zalopay/callback").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
