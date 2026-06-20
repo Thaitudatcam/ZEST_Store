@@ -65,7 +65,8 @@ public class VnPayService {
         return config.getUrl() + "?" + query + "&vnp_SecureHash=" + secureHash;
     }
 
-    public boolean verifyReturn(Map<String, String> params) {
+    public boolean verifyReturn(Map<String, String> rawParams) {
+        Map<String, String> params = new HashMap<>(rawParams);
         String secureHash = params.remove("vnp_SecureHash");
         params.remove("vnp_SecureHashType");
 

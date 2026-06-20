@@ -27,8 +27,9 @@ public class DonHangController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOrderDetail(@PathVariable Integer id) {
-        return ResponseEntity.ok(donHangService.getOrderDetail(id));
+    public ResponseEntity<?> getOrderDetail(@PathVariable Integer id, Authentication auth) {
+        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
+        return ResponseEntity.ok(donHangService.getOrderDetailForUser(id, userId));
     }
 
     @PostMapping
@@ -52,7 +53,9 @@ public class DonHangController {
 
     @PutMapping("/admin/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(donHangService.updateOrderStatus(id, Integer.valueOf(body.get("trangThai"))));
+    public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> body,
+                                           Authentication auth) {
+        Integer adminUserId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
+        return ResponseEntity.ok(donHangService.updateOrderStatus(id, Integer.valueOf(body.get("trangThai")), adminUserId));
     }
 }

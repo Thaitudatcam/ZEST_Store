@@ -69,10 +69,11 @@ public class MomoController {
     }
 
     private Integer extractOrderId(String ref) {
+        if (ref == null) return null;
         try {
             String[] parts = ref.split("-");
-            return Integer.parseInt(parts[1]);
-        } catch (Exception e) {
+            return parts.length >= 2 ? Integer.parseInt(parts[1]) : null;
+        } catch (NumberFormatException e) {
             return null;
         }
     }

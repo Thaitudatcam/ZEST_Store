@@ -36,7 +36,11 @@ public class GioHangController {
     public ResponseEntity<?> updateQuantity(Authentication auth, @PathVariable Integer maBienThe,
                                              @RequestBody Map<String, Integer> body) {
         Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(gioHangService.updateQuantity(userId, maBienThe, body.get("soLuong")));
+        Integer soLuong = body.get("soLuong");
+        if (soLuong == null || soLuong < 1) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Số lượng phải lớn hơn 0"));
+        }
+        return ResponseEntity.ok(gioHangService.updateQuantity(userId, maBienThe, soLuong));
     }
 
     @DeleteMapping("/items/{maBienThe}")

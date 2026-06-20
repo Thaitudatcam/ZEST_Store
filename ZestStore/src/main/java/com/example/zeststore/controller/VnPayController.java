@@ -6,6 +6,7 @@ import com.example.zeststore.service.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/payments/vnpay")
 @RequiredArgsConstructor
+@Slf4j
 public class VnPayController {
 
     private final VnPayService vnPayService;
@@ -71,19 +73,26 @@ public class VnPayController {
         String responseCode = params.get("vnp_ResponseCode");
         String txnRef = params.get("vnp_TxnRef");
 
-        if (verified && "00".equals(responseCode) && txnRef != null) {
-            vnPayService.handleSuccessPayment(txnRef, params.get("vnp_TransactionNo"));
-            return ResponseEntity.ok(Map.of("RspCode", "00", "Message", "Success"));
+        try {
+            if (verified && "00".equals(responseCode) && txnRef != null) {
+                vnPayService.handleSuccessPayment(txnRef, params.get("vnp_TransactionNo"));
+                return ResponseEntity.ok(Map.of("RspCode", "00", "Message", "Success"));
+            }
+            if (txnRef != null) vnPayService.handleFailedPayment(txnRef);
+            return ResponseEntity.ok(Map.of("RspCode", "01", "Message", "Failed"));
+        } catch (Exception e) {
+            log.error("VNPay IPN processing failed: {}", e.getMessage());
+            return ResponseEntity.ok(Map.of("RspCode", "01", "Message", "Order not found"));
         }
-        if (txnRef != null) vnPayService.handleFailedPayment(txnRef);
-        return ResponseEntity.ok(Map.of("RspCode", "01", "Message", "Failed"));
     }
 
     private Integer extractOrderId(String txnRef) {
+        if (txnRef == null) return null;
         try {
             String[] parts = txnRef.split("-");
-            return Integer.parseInt(parts[1]);
-        } catch (Exception e) {
+            return parts.length >= 2 ? Integer.parseInt(parts[1]) : null;
+        } catch (NumberFormatException e) {
+            log.warn("Cannot extract orderId from txnRef: {}", txnRef);
             return null;
         }
     }

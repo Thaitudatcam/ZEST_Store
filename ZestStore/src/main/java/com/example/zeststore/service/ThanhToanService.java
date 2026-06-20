@@ -69,6 +69,16 @@ public class ThanhToanService {
                 .findByTrangThaiThanhToanAndThoiGianTaoBefore(1, threshold);
         for (ThanhToan payment : expired) {
             DonHang order = payment.getDonHang();
+            List<ThanhToan> orderPayments = thanhToanRepository
+                    .findByDonHang_MaDonHang(order.getMaDonHang());
+            boolean hasSuccessfulPayment = orderPayments.stream()
+                    .anyMatch(p -> Integer.valueOf(2).equals(p.getTrangThaiThanhToan()));
+            if (hasSuccessfulPayment) {
+                log.warn("Order #{} already has a successful payment, skipping cancel", order.getMaDonHang());
+                payment.setTrangThaiThanhToan(3);
+                thanhToanRepository.save(payment);
+                continue;
+            }
             if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
                 List<MucDonHang> items = mucDonHangRepository
                         .findByDonHang_MaDonHang(order.getMaDonHang());
@@ -87,15 +97,19 @@ public class ThanhToanService {
     }
 
     @Transactional
-    public ThanhToan retryPayment(Integer paymentId) {
+    public ThanhToan retryPayment(Integer paymentId, Integer userId) {
         ThanhToan payment = getPaymentById(paymentId);
         if (!Integer.valueOf(3).equals(payment.getTrangThaiThanhToan())) {
             throw new BadRequestException("Can only retry failed payments");
+        }
+        if (!payment.getDonHang().getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Payment does not belong to current user");
         }
         payment.setTrangThaiThanhToan(1);
         payment.setMaGiaoDich("ORD-" + payment.getDonHang().getMaDonHang()
                 + "-" + System.currentTimeMillis());
         payment.setThoiGianTt(null);
+        payment.setThoiGianTao(LocalDateTime.now());
         return thanhToanRepository.save(payment);
     }
 }

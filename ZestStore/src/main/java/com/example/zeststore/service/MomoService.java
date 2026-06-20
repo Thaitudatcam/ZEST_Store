@@ -80,8 +80,9 @@ public class MomoService {
         }
     }
 
-    public boolean verifyReturn(Map<String, String> params) {
+    public boolean verifyReturn(Map<String, String> rawParams) {
         PaymentConfig.MomoConfig config = paymentConfig.getMomo();
+        Map<String, String> params = new HashMap<>(rawParams);
         String signature = params.remove("signature");
         params.remove("extraData");
 

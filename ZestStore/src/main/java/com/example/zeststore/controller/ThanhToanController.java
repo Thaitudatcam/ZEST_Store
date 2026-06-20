@@ -1,9 +1,12 @@
 package com.example.zeststore.controller;
 
+import com.example.zeststore.entity.NguoiDung;
 import com.example.zeststore.service.ThanhToanService;
+import com.example.zeststore.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -14,6 +17,7 @@ import java.util.Map;
 public class ThanhToanController {
 
     private final ThanhToanService thanhToanService;
+    private final UserService userService;
 
     @GetMapping("/order/{orderId}")
     public ResponseEntity<?> getPaymentsByOrder(@PathVariable Integer orderId) {
@@ -40,7 +44,8 @@ public class ThanhToanController {
     }
 
     @PostMapping("/{id}/retry")
-    public ResponseEntity<?> retryPayment(@PathVariable Integer id) {
-        return ResponseEntity.ok(thanhToanService.retryPayment(id));
+    public ResponseEntity<?> retryPayment(@PathVariable Integer id, Authentication auth) {
+        NguoiDung user = userService.getUserByEmail(auth.getName());
+        return ResponseEntity.ok(thanhToanService.retryPayment(id, user.getMaNguoiDung()));
     }
 }

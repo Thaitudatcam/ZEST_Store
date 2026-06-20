@@ -4,6 +4,7 @@ import com.example.zeststore.dto.request.BienTheRequest;
 import com.example.zeststore.dto.request.SanPhamRequest;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
+import com.example.zeststore.exception.DuplicateResourceException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -86,9 +87,12 @@ public class SanPhamService {
 
     @Transactional
     public SanPham createProduct(SanPhamRequest request) {
+        if (sanPhamRepository.findBySlug(request.getSlug()).isPresent()) {
+            throw new DuplicateResourceException("Slug already exists: " + request.getSlug());
+        }
         DanhMuc category = danhMucRepository.findById(request.getMaDanhMuc())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", request.getMaDanhMuc()));
-        return sanPhamRepository.save(SanPham.builder()
+        SanPham product = sanPhamRepository.save(SanPham.builder()
                 .danhMuc(category)
                 .tenSanPham(request.getTenSanPham())
                 .slug(request.getSlug())
@@ -97,6 +101,8 @@ public class SanPhamService {
                 .urlAnhDaiDien(request.getUrlAnhDaiDien())
                 .trangThai(request.getTrangThai() != null ? request.getTrangThai() : 1)
                 .build());
+        product.setMaSanPhamCode(String.format("SP%04d", product.getMaSanPham()));
+        return sanPhamRepository.save(product);
     }
 
     @Transactional
@@ -107,7 +113,12 @@ public class SanPhamService {
                     .orElseThrow(() -> new ResourceNotFoundException("Category", request.getMaDanhMuc())));
         }
         if (request.getTenSanPham() != null) product.setTenSanPham(request.getTenSanPham());
-        if (request.getSlug() != null) product.setSlug(request.getSlug());
+        if (request.getSlug() != null && !request.getSlug().equals(product.getSlug())) {
+            if (sanPhamRepository.findBySlug(request.getSlug()).isPresent()) {
+                throw new DuplicateResourceException("Slug already exists: " + request.getSlug());
+            }
+            product.setSlug(request.getSlug());
+        }
         if (request.getMoTa() != null) product.setMoTa(request.getMoTa());
         if (request.getMoTaAi() != null) product.setMoTaAi(request.getMoTaAi());
         if (request.getUrlAnhDaiDien() != null) product.setUrlAnhDaiDien(request.getUrlAnhDaiDien());

@@ -36,19 +36,19 @@ public class GioHangService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (MucGioHang item : items) {
             BienTheSanPham variant = item.getBienThe();
-            SanPham product = variant.getSanPham();
+            SanPham product = variant != null ? variant.getSanPham() : null;
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("maMucGioHang", item.getMaMucGioHang());
-            itemMap.put("maBienThe", variant.getMaBienThe());
-            itemMap.put("maSanPham", product.getMaSanPham());
-            itemMap.put("tenSanPham", product.getTenSanPham());
-            itemMap.put("slug", product.getSlug());
-            itemMap.put("kichCo", variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);
-            itemMap.put("mauSac", variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
-            itemMap.put("donGia", variant.getGia());
+            itemMap.put("maBienThe", variant != null ? variant.getMaBienThe() : null);
+            itemMap.put("maSanPham", product != null ? product.getMaSanPham() : null);
+            itemMap.put("tenSanPham", product != null ? product.getTenSanPham() : null);
+            itemMap.put("slug", product != null ? product.getSlug() : null);
+            itemMap.put("kichCo", variant != null && variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);
+            itemMap.put("mauSac", variant != null && variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
+            itemMap.put("donGia", variant != null ? variant.getGia() : BigDecimal.ZERO);
             itemMap.put("soLuong", item.getSoLuong());
-            itemMap.put("thanhTien", variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())));
-            itemMap.put("urlAnh", variant.getUrlAnh());
+            itemMap.put("thanhTien", variant != null ? variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())) : BigDecimal.ZERO);
+            itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
             result.add(itemMap);
         }
         return result;

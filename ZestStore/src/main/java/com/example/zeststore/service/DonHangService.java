@@ -53,6 +53,14 @@ public class DonHangService {
         return result;
     }
 
+    public Map<String, Object> getOrderDetailForUser(Integer orderId, Integer userId) {
+        DonHang order = getOrderById(orderId);
+        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Order does not belong to current user");
+        }
+        return getOrderDetail(orderId);
+    }
+
     @Transactional
     public Map<String, Object> placeOrder(Integer userId, OrderRequest request) {
         NguoiDung user = nguoiDungRepository.findById(userId)
@@ -97,6 +105,9 @@ public class DonHangService {
             if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
                 throw new BadRequestException("Minimum order value not met for this coupon");
             }
+            if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
+                throw new BadRequestException("Phiếu giảm giá đã hết lượt sử dụng");
+            }
 
             if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
                 soTienGiam = tongTien.multiply(coupon.getGiaTriGiam())
@@ -107,15 +118,12 @@ public class DonHangService {
             if (soTienGiam.compareTo(tongTien) > 0) {
                 soTienGiam = tongTien;
             }
-            if (coupon != null && coupon.getSoLuong()!=null){
-                if (coupon.getSoLuong() <= 0){
-                    throw new BadRequestException("Phiếu giảm giá đã hết lượt sử dụng");
-                }
+            if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
+                soTienGiam = coupon.getGiaTriGiamToiDa();
+            }
+            if (coupon.getSoLuong() != null) {
                 coupon.setSoLuong(coupon.getSoLuong() - 1);
                 phieuGiamGiaRepository.save(coupon);
-            }
-            if (coupon != null && coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa())>0){
-                soTienGiam = coupon.getGiaTriGiamToiDa();
             }
         }
 
@@ -151,9 +159,16 @@ public class DonHangService {
         }
 
         String paymentRef = "ORD-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
+        String nhaCungCap = switch (request.getPhuongThucThanhToan()) {
+            case 2 -> "VNPay";
+            case 3 -> "MoMo";
+            case 4 -> "ZaloPay";
+            default -> null;
+        };
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
                 .phuongThuc(request.getPhuongThucThanhToan())
+                .nhaCungCap(nhaCungCap)
                 .trangThaiThanhToan(1)
                 .soTien(finalTotal)
                 .maGiaoDich(paymentRef)
@@ -184,7 +199,7 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHang updateOrderStatus(Integer orderId, Integer status) {
+    public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
         List<Integer> validStatuses = List.of(2, 3, 4, 5);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
@@ -194,10 +209,13 @@ public class DonHangService {
         order.setTrangThaiDon(status);
         order = donHangRepository.save(order);
 
+        NguoiDung admin = nguoiDungRepository.findById(adminUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(oldStatus)
                 .trangThaiMoi(status)
+                .nguoiCapNhat(admin)
                 .build());
 
         return order;
@@ -220,14 +238,23 @@ public class DonHangService {
             bienTheRepository.save(variant);
         }
 
+        if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {
+            PhieuGiamGia coupon = order.getPhieuGiamGia();
+            coupon.setSoLuong(coupon.getSoLuong() + 1);
+            phieuGiamGiaRepository.save(coupon);
+        }
+
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(5);
         donHangRepository.save(order);
 
+        NguoiDung user = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(oldStatus)
                 .trangThaiMoi(5)
+                .nguoiCapNhat(user)
                 .build());
     }
 }

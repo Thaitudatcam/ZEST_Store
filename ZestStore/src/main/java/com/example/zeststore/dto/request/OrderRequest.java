@@ -2,6 +2,7 @@ package com.example.zeststore.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import java.math.BigDecimal;
@@ -29,5 +30,6 @@ public class OrderRequest {
     @NotNull
     private Integer phuongThucThanhToan;
 
+    @PositiveOrZero
     private BigDecimal phiVanChuyen;
 }

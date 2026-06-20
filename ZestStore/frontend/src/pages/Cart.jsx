@@ -15,12 +15,22 @@ export default function Cart() {
   const handleQty = async (vid, delta) => {
     const item = items.find((i) => i.maBienThe === vid)
     const newQty = Math.max(1, (item.soLuong || 1) + delta)
-    await updateCartItem(vid, { soLuong: newQty })
+    try {
+      await updateCartItem(vid, { soLuong: newQty })
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể cập nhật số lượng')
+    }
     load()
   }
 
-  const handleRemove = async (vid) => { await removeCartItem(vid); load() }
-  const handleClear = async () => { await clearCart(); load() }
+  const handleRemove = async (vid) => {
+    try { await removeCartItem(vid) } catch { alert('Không thể xóa sản phẩm') }
+    load()
+  }
+  const handleClear = async () => {
+    try { await clearCart() } catch { alert('Không thể xóa giỏ hàng') }
+    load()
+  }
 
   const total = items.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getStats, getRevenue, getTopProducts } from '../../api/admin'
-import { Users, ShoppingCart, DollarSign, Package } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { Users, ShoppingCart, DollarSign, Package, TrendingUp } from 'lucide-react'
 
 
 const colors = ['from-blue-500 to-blue-600', 'from-emerald-500 to-emerald-600', 'from-violet-500 to-violet-600', 'from-amber-500 to-amber-600']
@@ -9,12 +8,12 @@ const icons = [Users, ShoppingCart, DollarSign, Package]
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
-  const [revenue, setRevenue] = useState([])
+  const [revenueData, setRevenueData] = useState(null)
   const [topProducts, setTopProducts] = useState([])
 
   useEffect(() => {
     getStats().then(setStats).catch(() => {})
-    getRevenue().then((d) => setRevenue(Array.isArray(d) ? d : [])).catch(() => {})
+    getRevenue().then((d) => setRevenueData(d)).catch(() => {})
     getTopProducts().then((d) => setTopProducts(Array.isArray(d) ? d : [])).catch(() => {})
   }, [])
 
@@ -44,24 +43,19 @@ export default function Dashboard() {
         })}
       </div>
 
-      {revenue.length > 0 && (
+      {revenueData && (
         <div className="bg-white rounded-2xl shadow-sm border p-6">
-          <h2 className="font-semibold text-lg mb-4">Doanh thu theo ngày</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={revenue}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="ngay" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => (v / 1000).toFixed(0) + 'k'} />
-              <Tooltip formatter={(v) => VND(v)} labelStyle={{ fontWeight: 600 }} />
-              <Area type="monotone" dataKey="doanhThu" stroke="#3b82f6" fill="url(#revGrad)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <h2 className="font-semibold text-lg mb-4 flex items-center gap-2"><TrendingUp className="h-5 w-5 text-blue-600" /> Doanh thu</h2>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="bg-blue-50 rounded-xl p-4">
+              <p className="text-sm text-gray-500">Doanh thu</p>
+              <p className="text-2xl font-bold text-blue-700">{VND(revenueData.doanhThu ?? 0)}</p>
+            </div>
+            <div className="bg-green-50 rounded-xl p-4">
+              <p className="text-sm text-gray-500">Đơn hoàn thành</p>
+              <p className="text-2xl font-bold text-green-700">{revenueData.soDonHoanThanh ?? 0}</p>
+            </div>
+          </div>
         </div>
       )}
 
