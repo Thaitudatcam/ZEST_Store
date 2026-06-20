@@ -38,4 +38,9 @@ public class ThanhToanController {
     public ResponseEntity<?> failPayment(@PathVariable Integer id) {
         return ResponseEntity.ok(thanhToanService.failPayment(id));
     }
+
+    @PostMapping("/{id}/retry")
+    public ResponseEntity<?> retryPayment(@PathVariable Integer id) {
+        return ResponseEntity.ok(thanhToanService.retryPayment(id));
+    }
 }

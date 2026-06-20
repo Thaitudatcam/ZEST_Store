@@ -26,6 +26,7 @@ public class DonHangService {
     private final NguoiDungRepository nguoiDungRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
+    private final HoaDonService hoaDonService;
 
     public List<DonHang> getOrdersByUser(Integer userId) {
         return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
@@ -158,6 +159,10 @@ public class DonHangService {
                 .maGiaoDich(paymentRef)
                 .build());
 
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
+            hoaDonService.createInvoice(order);
+        }
+
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(null)
@@ -173,6 +178,7 @@ public class DonHangService {
         result.put("soTienGiam", soTienGiam);
         result.put("phiVanChuyen", phiVanChuyen);
         result.put("trangThai", order.getTrangThaiDon());
+        result.put("phuongThucThanhToan", request.getPhuongThucThanhToan());
         result.put("message", "Order placed successfully");
         return result;
     }

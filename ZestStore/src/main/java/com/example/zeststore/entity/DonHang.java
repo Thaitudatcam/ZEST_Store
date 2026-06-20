@@ -75,7 +75,6 @@ public class DonHang {
 
     @OneToMany(mappedBy = "donHang")
     @ToString.Exclude
-    @JsonIgnore
     private List<ThanhToan> thanhToans;
 
     @OneToMany(mappedBy = "donHang")
