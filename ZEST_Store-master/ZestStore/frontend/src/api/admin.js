@@ -11,3 +11,10 @@ export const deleteCoupon = (id) => api.delete(`/coupons/${id}`).then((r) => r.d
 export const createCategory = (data) => api.post('/categories', data).then((r) => r.data)
 export const updateCategory = (id, data) => api.put(`/categories/${id}`, data).then((r) => r.data)
 export const deleteCategory = (id) => api.delete(`/categories/${id}`).then((r) => r.data)
+export const getRevenueByDay = (tuNgay, denNgay) => api.get('/dashboard/revenue/day', { params: { tuNgay, denNgay } }).then(r => r.data)
+export const getRevenueByMonth = (nam) => api.get('/dashboard/revenue/month', { params: { nam } }).then(r => r.data)
+export const getRevenueByYear = () => api.get('/dashboard/revenue/year').then(r => r.data)
+export const getBestSelling = (limit = 10) => api.get('/dashboard/best-selling', { params: { limit } }).then(r => r.data)
+export const getOrderStats = () => api.get('/dashboard/order-stats').then(r => r.data)
+export const exportAndSendEmail = (tuNgay, denNgay) => 
+  api.post('/dashboard/export-email', { tuNgay, denNgay }).then(r => r.data)

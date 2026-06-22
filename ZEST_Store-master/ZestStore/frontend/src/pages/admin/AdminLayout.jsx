@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, LogOut, ChevronDown, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags,BarChart3, Ticket, LogOut, ChevronDown, Menu, X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
 
@@ -9,6 +9,7 @@ const nav = [
   { to: '/admin/products', label: 'Sản phẩm', icon: Package },
   { to: '/admin/categories', label: 'Danh mục', icon: Tags },
   { to: '/admin/coupons', label: 'Mã giảm giá', icon: Ticket },
+  { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
 ]
 
 export default function AdminLayout() {

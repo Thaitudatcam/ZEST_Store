@@ -113,8 +113,7 @@ export default function AdminProductForm() {
         </div>
       </form>
 
-      {isEdit && (
-        <>
+     
           <div className="bg-white rounded-2xl shadow-sm border p-6 mt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">Biến thể</h2>
@@ -179,8 +178,7 @@ export default function AdminProductForm() {
               <Upload className="h-4 w-4" /> Upload ảnh
             </button>
           </div>
-        </>
-      )}
+        
     </div>
   )
 }

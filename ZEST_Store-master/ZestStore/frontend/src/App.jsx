@@ -21,6 +21,7 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminCoupons from './pages/admin/AdminCoupons'
+import AdminThongKe from './pages/admin/AdminThongKe'
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="products/create" element={<AdminProductForm />} />
         <Route path="products/:id/edit" element={<AdminProductForm />} />
         <Route path="categories" element={<AdminCategories />} />
+        <Route path="thong-ke" element={<AdminThongKe />} />
         <Route path="coupons" element={<AdminCoupons />} />
       </Route>
 

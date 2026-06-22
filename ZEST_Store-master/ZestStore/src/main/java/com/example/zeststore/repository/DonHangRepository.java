@@ -28,4 +28,26 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             + "WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
                                       @Param("denNgay") LocalDateTime denNgay);
+
+
+    @Query("SELECT d.trangThaiDon, COUNT(d) FROM DonHang d GROUP BY d.trangThaiDon")
+    List<Object[]> countOrdersByStatus();
+
+    @Query("SELECT FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd'), COALESCE(SUM(d.tongTien), 0) "
+            + "FROM DonHang d WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd') ORDER BY 1")
+    List<Object[]> sumRevenueByDay(@Param("tuNgay") LocalDateTime tuNgay,
+                                   @Param("denNgay") LocalDateTime denNgay);
+
+
+    @Query("SELECT FUNCTION('MONTH', d.ngayDat), COALESCE(SUM(d.tongTien), 0) "
+            + "FROM DonHang d WHERE d.trangThaiDon = 4 AND FUNCTION('YEAR', d.ngayDat) = :nam "
+            + "GROUP BY FUNCTION('MONTH', d.ngayDat) ORDER BY 1")
+    List<Object[]> sumRevenueByMonth(@Param("nam") int nam);
+
+
+    @Query("SELECT FUNCTION('YEAR', d.ngayDat), COALESCE(SUM(d.tongTien), 0) "
+            + "FROM DonHang d WHERE d.trangThaiDon = 4 "
+            + "GROUP BY FUNCTION('YEAR', d.ngayDat) ORDER BY 1")
+    List<Object[]> sumRevenueByYear();
 }
