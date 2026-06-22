@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -28,6 +29,14 @@ public class DanhGiaService {
 
     public List<DanhGia> getReviewsByUser(Integer userId) {
         return danhGiaRepository.findByNguoiDung_MaNguoiDung(userId);
+    }
+
+    public Map<String, Object> getProductReviews(Integer productId) {
+        return Map.of(
+                "reviews", getReviewsByProduct(productId),
+                "averageRating", getAverageRating(productId),
+                "reviewCount", getReviewCount(productId)
+        );
     }
 
     @Transactional

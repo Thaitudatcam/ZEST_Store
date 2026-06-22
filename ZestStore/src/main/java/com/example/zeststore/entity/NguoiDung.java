@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,15 +29,19 @@ public class NguoiDung {
     @JoinColumn(name = "ma_vai_tro", nullable = false)
     private VaiTro vaiTro;
 
+    @NotBlank @Size(max = 100)
     @Column(name = "ho_ten", nullable = false, length = 100)
     private String hoTen;
 
+    @NotBlank @Email @Size(max = 150)
     @Column(name = "email", nullable = false, length = 150, unique = true)
     private String email;
 
+    @NotBlank @Size(max = 255)
     @Column(name = "mat_khau_ma_hoa", nullable = false, length = 255)
     private String matKhauMaHoa;
 
+    @Size(max = 15)
     @Column(name = "so_dien_thoai", length = 15, unique = true)
     private String soDienThoai;
 
@@ -50,6 +55,7 @@ public class NguoiDung {
     @Column(name = "gioi_tinh")
     private Boolean gioiTinh;
 
+    @Past
     @Column(name = "ngay_sinh")
     private LocalDate ngaySinh;
 

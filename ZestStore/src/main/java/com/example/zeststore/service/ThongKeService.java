@@ -6,6 +6,7 @@ import com.example.zeststore.repository.NguoiDungRepository;
 import com.example.zeststore.repository.HanhViNguoiDungRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ public class ThongKeService {
     private final NguoiDungRepository nguoiDungRepository;
     private final HanhViNguoiDungRepository hanhViRepository;
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getDashboardStats() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
@@ -37,7 +39,11 @@ public class ThongKeService {
         return stats;
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getRevenueByDateRange(LocalDateTime tuNgay, LocalDateTime denNgay) {
+        if (tuNgay == null) tuNgay = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+        if (denNgay == null) denNgay = LocalDateTime.now();
+
         BigDecimal revenue = donHangRepository.sumRevenueByDateRange(tuNgay, denNgay);
         Long orderCount = donHangRepository.findByNgayDatBetween(tuNgay, denNgay)
                 .stream().filter(o -> Integer.valueOf(4).equals(o.getTrangThaiDon())).count();
@@ -50,6 +56,7 @@ public class ThongKeService {
         return result;
     }
 
+    @Transactional(readOnly = true)
     public List<Object[]> getTopProducts(String hanhDong, int limit) {
         LocalDateTime lastMonth = LocalDateTime.now().minusMonths(1);
         return hanhViRepository.findTopSanPhamByHanhDongAndDateRange(

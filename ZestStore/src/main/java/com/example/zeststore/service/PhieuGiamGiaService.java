@@ -22,7 +22,7 @@ public class PhieuGiamGiaService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
 
     public List<PhieuGiamGia> getAll() {
-        return phieuGiamGiaRepository.findAll();
+        return phieuGiamGiaRepository.findByNgayXoaIsNull();
     }
 
     public PhieuGiamGia getById(Integer id) {
@@ -30,7 +30,16 @@ public class PhieuGiamGiaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Coupon", id));
     }
 
+    public Map<String, Object> validateCoupon(Map<String, Object> body) {
+        String code = (String) body.get("maCode");
+        BigDecimal giaTriDon = body.get("giaTriDon") != null
+                ? new BigDecimal(body.get("giaTriDon").toString())
+                : BigDecimal.ZERO;
+        return validateCoupon(code, giaTriDon);
+    }
+
     public Map<String, Object> validateCoupon(String code, BigDecimal giaTriDon) {
+        if (giaTriDon == null) giaTriDon = BigDecimal.ZERO;
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(code)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
 
@@ -60,6 +69,12 @@ public class PhieuGiamGiaService {
         if (giamGia.compareTo(giaTriDon) > 0) {
             giamGia = giaTriDon;
         }
+        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0){
+            throw new BadRequestException("Phiếu giảm giá đã hết số lượng sử dụng");
+        }
+        if (coupon.getGiaTriGiamToiDa()!=null && giamGia.compareTo(coupon.getGiaTriGiamToiDa()) > 0){
+            giamGia = coupon.getGiaTriGiamToiDa();
+        }
 
         return Map.of(
                 "maCode", coupon.getMaCode(),
@@ -83,13 +98,16 @@ public class PhieuGiamGiaService {
                 .ngayBatDau(request.getNgayBatDau())
                 .ngayKetThuc(request.getNgayKetThuc())
                 .trangThai(request.getTrangThai() != null ? request.getTrangThai() : 1)
+                .soLuong(request.getSoLuong())
+                .giaTriGiamToiDa(request.getGiaTriGiamToiDa())
                 .build());
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public Map<String, String> delete(Integer id) {
         PhieuGiamGia coupon = getById(id);
         coupon.setNgayXoa(LocalDateTime.now());
         phieuGiamGiaRepository.save(coupon);
+        return Map.of("message", "Coupon deleted");
     }
 }

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getOrderDetail, cancelOrder } from '../api/orders'
-import { addReview } from '../api/reviews'
+import { getOrderDetail, cancelOrder, requestReturn } from '../api/orders'
+import { createVnPayPayment, createMomoPayment, createZaloPayPayment, retryPayment } from '../api/payment'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
-import { Package, MapPin, CreditCard, ArrowLeft, Star, MessageSquare, X } from 'lucide-react'
+import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink } from 'lucide-react'
 
 const PAYMENT_LABELS = {
   1: 'Thanh toán khi nhận hàng (COD)',
@@ -20,14 +20,17 @@ const PAYMENT_STATUS = {
   3: 'Thất bại',
 }
 
+const PAYMENT_METHOD_NAMES = { 1: 'cod', 2: 'vnpay', 3: 'momo', 4: 'zalopay' }
+
 export default function OrderDetail() {
   const { id } = useParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
-  const [reviewModal, setReviewModal] = useState(null)
-  const [reviewForm, setReviewForm] = useState({ soSao: 5, binhLuan: '' })
-  const [reviewMsg, setReviewMsg] = useState('')
+  const [paying, setPaying] = useState(false)
+  const [returnOpen, setReturnOpen] = useState(false)
+  const [returnLyDo, setReturnLyDo] = useState('')
+  const [returning, setReturning] = useState(false)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -40,6 +43,41 @@ export default function OrderDetail() {
       load()
     } catch {} finally {
       setCancelling(false)
+    }
+  }
+
+  const handleRequestReturn = async () => {
+    if (!returnLyDo.trim()) return alert('Vui lòng nhập lý do trả hàng')
+    setReturning(true)
+    try {
+      await requestReturn(id, returnLyDo.trim())
+      setReturnOpen(false)
+      setReturnLyDo('')
+      load()
+    } catch { alert('Yêu cầu trả hàng thất bại') }
+    finally { setReturning(false) }
+  }
+
+  const handlePayNow = async (payment) => {
+    if (paying) return
+    setPaying(true)
+    try {
+      const method = payment.phuongThuc
+      if (payment.trangThaiThanhToan === 3) {
+        await retryPayment(payment.maThanhToan)
+      }
+      const orderIdNum = Number(id)
+      let paymentRes
+      if (method === 2) paymentRes = await createVnPayPayment(orderIdNum)
+      else if (method === 3) paymentRes = await createMomoPayment(orderIdNum)
+      else if (method === 4) paymentRes = await createZaloPayPayment(orderIdNum)
+      if (paymentRes?.paymentUrl) {
+        window.location.href = paymentRes.paymentUrl
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể tạo yêu cầu thanh toán')
+    } finally {
+      setPaying(false)
     }
   }
 
@@ -75,6 +113,13 @@ export default function OrderDetail() {
         {order.trangThaiDon === 1 && (
           <button onClick={handleCancel} disabled={cancelling} className="text-sm text-red-500 hover:underline disabled:opacity-50">
             {cancelling ? 'Đang hủy...' : 'Hủy đơn hàng'}
+          </button>
+        )}
+
+        {(order.trangThaiDon === 4 || order.trangThaiDon === 6) && (
+          <button onClick={() => setReturnOpen(true)} disabled={returnOpen}
+            className="text-sm text-orange-600 border border-orange-300 px-4 py-1.5 rounded-lg hover:bg-orange-50 transition">
+            Yêu cầu trả hàng
           </button>
         )}
       </div>
@@ -121,13 +166,31 @@ export default function OrderDetail() {
       {payments.length > 0 && (
         <div className="bg-white rounded-xl border p-6 mb-6">
           <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-700" /> Thanh toán</h2>
-          <div className="space-y-2 text-sm">
-            {payments.map((p) => (
-              <div key={p.maThanhToan} className="flex justify-between">
-                <span className="text-gray-600">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
-                <span className="font-medium">{PAYMENT_STATUS[p.trangThaiThanhToan] || p.trangThaiThanhToan}</span>
-              </div>
-            ))}
+          <div className="space-y-3 text-sm">
+            {payments.map((p) => {
+              const isOnline = p.phuongThuc > 1
+              const canRetry = p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)
+              return (
+                <div key={p.maThanhToan} className="flex items-center justify-between">
+                  <div>
+                    <span className="text-gray-600">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
+                    <span className="ml-2 font-medium">{PAYMENT_STATUS[p.trangThaiThanhToan] || p.trangThaiThanhToan}</span>
+                    {p.maGiaoDich && p.trangThaiThanhToan === 2 && (
+                      <p className="text-xs text-gray-400 mt-0.5">GD: {p.maGiaoDich}</p>
+                    )}
+                  </div>
+                  {canRetry && order.trangThaiDon === 1 && (
+                    <button
+                      onClick={() => handlePayNow(p)}
+                      disabled={paying}
+                      className="flex items-center gap-1 text-xs bg-blue-700 text-white px-3 py-1.5 rounded-lg hover:bg-blue-800 transition disabled:opacity-50"
+                    >
+                      <ExternalLink className="h-3 w-3" /> {paying ? 'Đang xử lý...' : 'Thanh toán ngay'}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -141,44 +204,24 @@ export default function OrderDetail() {
           {order.ghiChu && <p><span className="text-gray-500">Ghi chú:</span> {order.ghiChu}</p>}
         </div>
       </div>
-      {reviewModal && (() => {
-        const variant = reviewModal.bienThe || {}
-        const product = variant.sanPham || {}
-        const handleSubmit = async () => {
-          try {
-            await addReview({ maSanPham: product.maSanPham, maDonHang: order.maDonHang, maBienThe: reviewModal.bienThe?.maBienThe, soSao: reviewForm.soSao, binhLuan: reviewForm.binhLuan })
-            setReviewMsg('Đánh giá thành công!')
-            setTimeout(() => setReviewModal(null), 1200)
-          } catch (err) {
-            setReviewMsg(err.response?.data?.message || 'Đánh giá thất bại')
-          }
-        }
-        return (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setReviewModal(null)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-lg">Đánh giá sản phẩm</h2>
-                <button onClick={() => setReviewModal(null)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
-              </div>
-              <p className="text-sm font-medium mb-3">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
-              <div className="flex items-center gap-1 mb-4">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <button key={s} onClick={() => setReviewForm({ ...reviewForm, soSao: s })}>
-                    <Star className={`h-7 w-7 ${s <= reviewForm.soSao ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
-                  </button>
-                ))}
-              </div>
-              <textarea value={reviewForm.binhLuan} onChange={(e) => setReviewForm({ ...reviewForm, binhLuan: e.target.value })}
-                placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
-                className="w-full border rounded-lg px-4 py-2 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              {reviewMsg && <p className={`mt-2 text-sm font-semibold ${reviewMsg.includes('thành công') ? 'text-green-600' : 'text-red-600'}`}>{reviewMsg}</p>}
-              {!reviewMsg.includes('thành công') && (
-                <button onClick={handleSubmit} className="mt-4 w-full bg-blue-700 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-800">Gửi đánh giá</button>
-              )}
+
+      {returnOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in" onClick={() => setReturnOpen(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-3">Yêu cầu trả hàng</h3>
+            <textarea value={returnLyDo} onChange={e => setReturnLyDo(e.target.value)}
+              placeholder="Vui lòng nhập lý do trả hàng..."
+              className="w-full border rounded-lg p-3 text-sm min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setReturnOpen(false)} className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">Hủy</button>
+              <button onClick={handleRequestReturn} disabled={returning}
+                className="flex-1 bg-orange-600 text-white rounded-lg py-2 text-sm hover:bg-orange-700 transition disabled:opacity-50">
+                {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
+              </button>
             </div>
           </div>
-        )
-      })()}
+        </div>
+      )}
     </div>
   )
 }

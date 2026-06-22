@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -34,9 +35,11 @@ public class DanhGia {
     @JoinColumn(name = "ma_bien_the", nullable = false)
     private BienTheSanPham bienThe;
 
+    @NotNull @Min(1) @Max(5)
     @Column(name = "so_sao", nullable = false, columnDefinition = "TINYINT")
     private Integer soSao;
 
+    @Size(max = 1000)
     @Column(name = "binh_luan", columnDefinition = "NVARCHAR(MAX)")
     private String binhLuan;
 
