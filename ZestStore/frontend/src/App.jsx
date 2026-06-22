@@ -21,6 +21,10 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminCoupons from './pages/admin/AdminCoupons'
+import AdminInvoices from './pages/admin/AdminInvoices'
+import AdminReviews from './pages/admin/AdminReviews'
+import AdminCustomers from './pages/admin/AdminCustomers'
+import AdminEmployees from './pages/admin/AdminEmployees'
 
 export default function App() {
   return (
@@ -28,11 +32,15 @@ export default function App() {
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<AdminOrders />} />
+        <Route path="invoices" element={<AdminInvoices />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/create" element={<AdminProductForm />} />
         <Route path="products/:id/edit" element={<AdminProductForm />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="reviews" element={<AdminReviews />} />
+        <Route path="customers" element={<AdminCustomers />} />
+        <Route path="employees" element={<AdminEmployees />} />
       </Route>
 
       <Route path="*" element={

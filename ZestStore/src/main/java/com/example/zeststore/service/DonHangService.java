@@ -6,6 +6,8 @@ import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -168,7 +170,7 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHang updateOrderStatus(Integer orderId, Integer status) {
+    public void updateOrderStatus(Integer orderId, Integer status) {
         List<Integer> validStatuses = List.of(2, 3, 4, 5);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
@@ -178,13 +180,18 @@ public class DonHangService {
         order.setTrangThaiDon(status);
         order = donHangRepository.save(order);
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        NguoiDung nguoiCapNhat = null;
+        if (auth != null && auth.getName() != null) {
+            nguoiCapNhat = nguoiDungRepository.findByEmail(auth.getName()).orElse(null);
+        }
+
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(oldStatus)
                 .trangThaiMoi(status)
+                .nguoiCapNhat(nguoiCapNhat)
                 .build());
-
-        return order;
     }
 
     @Transactional

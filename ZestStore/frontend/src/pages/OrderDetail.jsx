@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getOrderDetail, cancelOrder } from '../api/orders'
+import { addReview } from '../api/reviews'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
-import { Package, MapPin, CreditCard, ArrowLeft } from 'lucide-react'
+import { Package, MapPin, CreditCard, ArrowLeft, Star, MessageSquare, X } from 'lucide-react'
 
 const PAYMENT_LABELS = {
   1: 'Thanh toán khi nhận hàng (COD)',
@@ -24,6 +25,9 @@ export default function OrderDetail() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [reviewModal, setReviewModal] = useState(null)
+  const [reviewForm, setReviewForm] = useState({ soSao: 5, binhLuan: '' })
+  const [reviewMsg, setReviewMsg] = useState('')
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -96,6 +100,12 @@ export default function OrderDetail() {
                   <p className="text-sm font-semibold">{VND(item.thanhTien)}</p>
                   <p className="text-xs text-gray-400">{VND(item.donGia)} / cái</p>
                 </div>
+                {order.trangThaiDon === 4 && (
+                  <button onClick={() => { setReviewModal(item); setReviewForm({ soSao: 5, binhLuan: '' }); setReviewMsg('') }}
+                    className="text-xs text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 shrink-0 flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5" /> Đánh giá
+                  </button>
+                )}
               </div>
             )
           })}
@@ -131,6 +141,44 @@ export default function OrderDetail() {
           {order.ghiChu && <p><span className="text-gray-500">Ghi chú:</span> {order.ghiChu}</p>}
         </div>
       </div>
+      {reviewModal && (() => {
+        const variant = reviewModal.bienThe || {}
+        const product = variant.sanPham || {}
+        const handleSubmit = async () => {
+          try {
+            await addReview({ maSanPham: product.maSanPham, maDonHang: order.maDonHang, maBienThe: reviewModal.bienThe?.maBienThe, soSao: reviewForm.soSao, binhLuan: reviewForm.binhLuan })
+            setReviewMsg('Đánh giá thành công!')
+            setTimeout(() => setReviewModal(null), 1200)
+          } catch (err) {
+            setReviewMsg(err.response?.data?.message || 'Đánh giá thất bại')
+          }
+        }
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setReviewModal(null)}>
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-lg">Đánh giá sản phẩm</h2>
+                <button onClick={() => setReviewModal(null)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+              </div>
+              <p className="text-sm font-medium mb-3">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
+              <div className="flex items-center gap-1 mb-4">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <button key={s} onClick={() => setReviewForm({ ...reviewForm, soSao: s })}>
+                    <Star className={`h-7 w-7 ${s <= reviewForm.soSao ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+                  </button>
+                ))}
+              </div>
+              <textarea value={reviewForm.binhLuan} onChange={(e) => setReviewForm({ ...reviewForm, binhLuan: e.target.value })}
+                placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                className="w-full border rounded-lg px-4 py-2 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              {reviewMsg && <p className={`mt-2 text-sm font-semibold ${reviewMsg.includes('thành công') ? 'text-green-600' : 'text-red-600'}`}>{reviewMsg}</p>}
+              {!reviewMsg.includes('thành công') && (
+                <button onClick={handleSubmit} className="mt-4 w-full bg-blue-700 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-800">Gửi đánh giá</button>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

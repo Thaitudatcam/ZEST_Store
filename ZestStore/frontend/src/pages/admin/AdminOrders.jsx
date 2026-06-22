@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAllOrders, updateOrderStatus } from '../../api/admin'
-import StatusBadge, { labels } from '../../components/StatusBadge'
-import { Search, ChevronDown } from 'lucide-react'
+import StatusBadge, { labels, styles } from '../../components/StatusBadge'
+import { Search, ChevronDown, Filter } from 'lucide-react'
 
 const NEXT_STATUS = {
   1: [2, 5],
@@ -9,9 +9,19 @@ const NEXT_STATUS = {
   3: [4],
 }
 
+const STATUS_LIST = [
+  { value: 0, label: 'Tất cả' },
+  { value: 1, label: 'Chờ xác nhận' },
+  { value: 2, label: 'Đã xác nhận' },
+  { value: 3, label: 'Đang giao' },
+  { value: 4, label: 'Đã giao' },
+  { value: 5, label: 'Đã hủy' },
+]
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([])
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState(0)
   const [openId, setOpenId] = useState(null)
   const [error, setError] = useState('')
 
@@ -28,19 +38,33 @@ export default function AdminOrders() {
     }
   }
 
-  const filtered = orders.filter((o) =>
-    !search || String(o.maDonHang).includes(search) || (o.nguoiDung?.email || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = orders.filter((o) => {
+    const matchSearch = !search || String(o.maDonHang).includes(search) || (o.nguoiDung?.email || '').toLowerCase().includes(search.toLowerCase()) || (o.nguoiDung?.soDienThoai || '').includes(search)
+    const matchStatus = statusFilter === 0 || o.trangThaiDon === statusFilter
+    return matchSearch && matchStatus
+  })
 
   const hasActions = filtered.some((o) => NEXT_STATUS[o.trangThaiDon])
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Quản lý đơn hàng</h1>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm đơn hàng..." className="pl-9 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <Filter className="h-4 w-4 text-gray-400" />
+        <div className="flex gap-1 flex-wrap">
+          {STATUS_LIST.map((s) => (
+            <button key={s.value} onClick={() => setStatusFilter(s.value)}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>
+              {s.label}
+            </button>
+          ))}
         </div>
       </div>
 
