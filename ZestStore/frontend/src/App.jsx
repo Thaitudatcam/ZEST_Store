@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -28,9 +29,17 @@ import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminEmployees from './pages/admin/AdminEmployees'
 import AdminPOS from './pages/admin/AdminPOS'
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<AdminOrders />} />
@@ -69,5 +78,6 @@ export default function App() {
         </div>
       } />
     </Routes>
+    </>
   )
 }
