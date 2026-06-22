@@ -2,8 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, Check } from 'lucide-react'
+import { createVietQrPayment, confirmVietQrPayment } from '../../api/payment'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, Check, QrCode, Loader, DollarSign } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
+
+const PAYMENT_OPTIONS = [
+  { value: 5, label: 'Tiền mặt', icon: DollarSign },
+  { value: 6, label: 'VietQR', icon: QrCode },
+]
 
 export default function AdminPOS() {
   const navigate = useNavigate()
@@ -18,11 +24,24 @@ export default function AdminPOS() {
   const [variantModal, setVariantModal] = useState(null)
   const [selectedVar, setSelectedVar] = useState(null)
   const [vQty, setVQty] = useState(1)
+  const [paymentMethod, setPaymentMethod] = useState(5)
+  const [vietQrData, setVietQrData] = useState(null)
+  const [confirmingQr, setConfirmingQr] = useState(false)
+
+  const loadCart = async () => {
+    try {
+      const data = await api.get('/admin/pos/cart').then(r => r.data)
+      setCart(data)
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
-    api.get('/products', { params: { size: 100 } })
-      .then(r => setProducts(r.data.content || []))
-      .catch(() => setMsg({ type: 'error', text: 'Không thể tải sản phẩm' }))
+    Promise.all([
+      api.get('/products', { params: { size: 100 } }).then(r => r.data.content || []),
+      loadCart(),
+    ])
+      .then(([products]) => setProducts(products))
+      .catch(() => setMsg({ type: 'error', text: 'Không thể tải dữ liệu' }))
       .finally(() => setLoading(false))
   }, [])
 
@@ -41,7 +60,7 @@ export default function AdminPOS() {
     }
   }
 
-  const addToCart = () => {
+  const addToCart = async () => {
     if (!selectedVar) return
     const detail = variantModal
     const variant = detail.variants?.find(v => v.maBienThe === selectedVar)
@@ -50,40 +69,36 @@ export default function AdminPOS() {
       setMsg({ type: 'error', text: 'Số lượng vượt quá tồn kho' })
       return
     }
-    setCart(prev => {
-      const existing = prev.findIndex(c => c.maBienThe === selectedVar)
-      if (existing >= 0) {
-        const next = [...prev]
-        next[existing] = { ...next[existing], soLuong: next[existing].soLuong + vQty }
-        return next
-      }
-      return [...prev, {
-        maBienThe: variant.maBienThe,
-        tenSanPham: detail.product?.tenSanPham || 'SP',
-        kichCo: variant.kichCo?.kichCo || '',
-        mauSac: variant.mauSac?.mauSac || '',
-        gia: variant.gia || 0,
-        soLuong: vQty,
-        tonKho: variant.tonKho || 0,
-        urlAnh: variant.urlAnh || detail.product?.urlAnhDaiDien || '',
-      }]
-    })
-    setVariantModal(null)
+    try {
+      await api.post('/admin/pos/cart/add', { maBienThe: selectedVar, soLuong: vQty })
+      await loadCart()
+      setVariantModal(null)
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Thêm vào giỏ thất bại' })
+    }
   }
 
-  const updateQty = (idx, delta) => {
-    setCart(prev => prev.map((c, i) => {
-      if (i !== idx) return c
-      const newQty = Math.max(1, c.soLuong + delta)
-      if (newQty > c.tonKho) {
-        setMsg({ type: 'error', text: 'Vượt quá tồn kho' })
-        return c
+  const updateQty = async (cartItem, delta) => {
+    try {
+      if (delta > 0) {
+        await api.post('/admin/pos/cart/add', { maBienThe: cartItem.maBienThe, soLuong: delta })
+      } else {
+        await api.post('/admin/pos/cart/release', { maBienThe: cartItem.maBienThe, soLuong: Math.abs(delta) })
       }
-      return { ...c, soLuong: newQty }
-    }))
+      await loadCart()
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Cập nhật thất bại' })
+    }
   }
 
-  const removeItem = (idx) => setCart(prev => prev.filter((_, i) => i !== idx))
+  const removeItem = async (cartItem) => {
+    try {
+      await api.post('/admin/pos/cart/release', { maBienThe: cartItem.maBienThe, soLuong: cartItem.soLuong })
+      await loadCart()
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Xóa thất bại' })
+    }
+  }
 
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
 
@@ -91,16 +106,39 @@ export default function AdminPOS() {
     if (cart.length === 0) return
     setPlacing(true)
     try {
-      const res = await api.post('/admin/pos/orders', {
-        items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
-        tenKhachHang: tenKhach.trim() || undefined,
-        sdtKhachHang: sdtKhach.trim() || undefined,
-      }).then(r => r.data)
-      navigate(`/admin/orders`)
+      if (paymentMethod === 6) {
+        const res = await api.post('/admin/pos/orders', {
+          phuongThucThanhToan: 6,
+          tenKhachHang: tenKhach.trim() || undefined,
+          sdtKhachHang: sdtKhach.trim() || undefined,
+        }).then(r => r.data)
+        const qrRes = await createVietQrPayment(res.maDonHang)
+        setVietQrData(qrRes)
+      } else {
+        await api.post('/admin/pos/orders', {
+          phuongThucThanhToan: 5,
+          tenKhachHang: tenKhach.trim() || undefined,
+          sdtKhachHang: sdtKhach.trim() || undefined,
+        }).then(r => r.data)
+        navigate('/admin/orders')
+      }
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || 'Tạo đơn thất bại' })
     } finally {
       setPlacing(false)
+    }
+  }
+
+  const handleConfirmQr = async () => {
+    if (!vietQrData) return
+    setConfirmingQr(true)
+    try {
+      await confirmVietQrPayment(vietQrData.paymentId)
+      navigate('/admin/orders')
+    } catch (err) {
+      setMsg({ type: 'error', text: 'Xác nhận thanh toán thất bại' })
+    } finally {
+      setConfirmingQr(false)
     }
   }
 
@@ -160,7 +198,7 @@ export default function AdminPOS() {
             <div className="text-center py-8 text-gray-400 text-sm">Chưa có sản phẩm</div>
           ) : (
             cart.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-lg p-2.5">
+              <div key={c.id || i} className="flex items-start gap-3 bg-gray-50 rounded-lg p-2.5">
                   <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden shrink-0">
                     <SafeImg src={c.urlAnh} alt="" className="w-full h-full object-cover"
                       fallback="https://placehold.co/100x100/e2e8f0/475569?text=P" />
@@ -171,16 +209,16 @@ export default function AdminPOS() {
                   <p className="text-xs text-blue-700 font-semibold">{VND(c.gia)}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => updateQty(i, -1)}
+                  <button onClick={() => updateQty(c, -1)}
                     className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-xs">
                     <Minus className="h-3 w-3" />
                   </button>
                   <span className="w-6 text-center text-xs font-medium">{c.soLuong}</span>
-                  <button onClick={() => updateQty(i, 1)}
+                  <button onClick={() => updateQty(c, 1)}
                     className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-xs">
                     <Plus className="h-3 w-3" />
                   </button>
-                  <button onClick={() => removeItem(i)}
+                  <button onClick={() => removeItem(c)}
                     className="w-6 h-6 flex items-center justify-center rounded text-red-400 hover:text-red-600 text-xs">
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -197,13 +235,31 @@ export default function AdminPOS() {
           <input value={sdtKhach} onChange={e => setSdtKhach(e.target.value)}
             placeholder="SĐT (không bắt buộc)"
             className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+          {cart.length > 0 && (
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Phương thức thanh toán:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {PAYMENT_OPTIONS.map(opt => {
+                  const Icon = opt.icon
+                  return (
+                    <button key={opt.value} onClick={() => setPaymentMethod(opt.value)}
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium border transition ${paymentMethod === opt.value ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
+                      <Icon className="h-4 w-4" /> {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Tổng cộng:</span>
             <span className="text-lg font-bold text-blue-700">{VND(total)}</span>
           </div>
           <button onClick={handlePlace} disabled={cart.length === 0 || placing}
             className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
-            {placing ? 'Đang xử lý...' : 'Thanh toán tiền mặt'}
+            {placing ? 'Đang xử lý...' : paymentMethod === 5 ? 'Thanh toán tiền mặt' : 'Tạo đơn VietQR'}
           </button>
         </div>
       </div>
@@ -257,6 +313,36 @@ export default function AdminPOS() {
                 <Plus className="h-5 w-5" /> Thêm vào giỏ hàng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {vietQrData && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
+          onClick={() => setVietQrData(null)}>
+          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 animate-scale-in text-center"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Quét mã QR để thanh toán</h3>
+              <button onClick={() => setVietQrData(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="bg-white rounded-xl p-4 border mb-4 inline-block">
+              <img src={vietQrData.qrUrl} alt="VietQR" className="w-64 h-64 mx-auto" />
+            </div>
+            <div className="text-left space-y-2 text-sm mb-4">
+              <p><span className="text-gray-500">Ngân hàng:</span> <span className="font-medium">{vietQrData.bankName}</span></p>
+              <p><span className="text-gray-500">Số tài khoản:</span> <span className="font-medium">{vietQrData.accountNumber}</span></p>
+              <p><span className="text-gray-500">Chủ tài khoản:</span> <span className="font-medium">{vietQrData.accountName}</span></p>
+              <p><span className="text-gray-500">Số tiền:</span> <span className="font-medium text-blue-700">{VND(vietQrData.amount)}</span></p>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">Khách hàng dùng ứng dụng ngân hàng quét mã QR để thanh toán</p>
+            <button onClick={handleConfirmQr} disabled={confirmingQr}
+              className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 disabled:opacity-50 flex items-center justify-center gap-2">
+              {confirmingQr ? <Loader className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+              {confirmingQr ? 'Đang xử lý...' : 'Xác nhận đã nhận tiền'}
+            </button>
           </div>
         </div>
       )}

@@ -43,6 +43,7 @@ public class ThanhToanService {
 
         DonHang order = payment.getDonHang();
         if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+            deductStock(order.getMaDonHang());
             order.setTrangThaiDon(2);
             donHangRepository.save(order);
         }
@@ -93,6 +94,19 @@ public class ThanhToanService {
             }
             payment.setTrangThaiThanhToan(3);
             thanhToanRepository.save(payment);
+        }
+    }
+
+    private void deductStock(Integer orderId) {
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            if (variant.getTonKho() < item.getSoLuong()) {
+                throw new BadRequestException("Insufficient stock for " + variant.getSku()
+                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+            }
+            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
+            bienTheRepository.save(variant);
         }
     }
 

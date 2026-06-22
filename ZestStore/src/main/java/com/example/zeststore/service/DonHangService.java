@@ -92,9 +92,6 @@ public class DonHangService {
             BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
             tongTien = tongTien.add(thanhTien);
 
-            variant.setTonKho(variant.getTonKho() - cartItem.getSoLuong());
-            bienTheRepository.save(variant);
-
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("bienThe", variant);
             itemMap.put("donGia", variant.getGia());
@@ -171,6 +168,7 @@ public class DonHangService {
             case 2 -> "VNPay";
             case 3 -> "MoMo";
             case 4 -> "ZaloPay";
+            case 6 -> "VietQR";
             default -> "Tiền mặt";
         };
         thanhToanRepository.save(ThanhToan.builder()
@@ -215,6 +213,14 @@ public class DonHangService {
         DonHang order = getOrderById(orderId);
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
+
+        if (Integer.valueOf(2).equals(status)) {
+            deductStock(orderId);
+        }
+
+        if (Integer.valueOf(5).equals(status)) {
+            restoreStock(orderId);
+        }
 
         if (Integer.valueOf(8).equals(status)) {
             restoreStock(orderId);
@@ -315,6 +321,19 @@ public class DonHangService {
                 .ghiChu(lyDo)
                 .build());
         return Map.of("message", "Return requested");
+    }
+
+    private void deductStock(Integer orderId) {
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            if (variant.getTonKho() < item.getSoLuong()) {
+                throw new BadRequestException("Insufficient stock for " + variant.getSku()
+                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+            }
+            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
+            bienTheRepository.save(variant);
+        }
     }
 
     private void restoreStock(Integer orderId) {

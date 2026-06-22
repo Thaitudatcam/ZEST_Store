@@ -9,5 +9,11 @@ export const createMomoPayment = (orderId) =>
 export const createZaloPayPayment = (orderId) =>
   api.post(`/payments/zalopay/create/${orderId}`).then((r) => r.data)
 
+export const createVietQrPayment = (orderId) =>
+  api.post(`/payments/vietqr/create/${orderId}`).then((r) => r.data)
+
+export const confirmVietQrPayment = (paymentId) =>
+  api.post(`/payments/vietqr/confirm/${paymentId}`).then((r) => r.data)
+
 export const retryPayment = (paymentId) =>
   api.post(`/payments/${paymentId}/retry`).then((r) => r.data)
