@@ -40,7 +40,7 @@ export default function AdminOrders() {
       await updateOrderStatus(id, trangThai)
       setOpenId(null)
       setError('')
-      getAllOrders().then(setOrders)
+      getAllOrders().then(setOrders).catch(() => setError('Không thể tải lại đơn hàng'))
     } catch (err) {
       setError(err.response?.data?.message || 'Cập nhật thất bại')
     }

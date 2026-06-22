@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,15 +28,19 @@ public class PhieuGiamGia {
     @Column(name = "kieu_giam_gia", nullable = false, columnDefinition = "TINYINT")
     private Integer kieuGiamGia;
 
+    @NotNull @PositiveOrZero
     @Column(name = "gia_tri_giam", nullable = false, precision = 18, scale = 2)
     private BigDecimal giaTriGiam;
 
+    @PositiveOrZero
     @Column(name = "gia_tri_don_toi_thieu", precision = 18, scale = 2)
     private BigDecimal giaTriDonToiThieu;
 
+    @FutureOrPresent
     @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
 
+    @Future
     @Column(name = "ngay_ket_thuc")
     private LocalDateTime ngayKetThuc;
 
@@ -61,9 +66,11 @@ public class PhieuGiamGia {
         if (this.kieuGiamGia == null) this.kieuGiamGia = 1;
     }
 
+    @PositiveOrZero
     @Column(name = "so_luong")
     private Integer soLuong;
 
+    @PositiveOrZero
     @Column(name = "gia_tri_giam_toi_da", precision = 18, scale = 2)
     private BigDecimal giaTriGiamToiDa;
 }

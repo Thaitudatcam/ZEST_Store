@@ -1,17 +1,16 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.dto.request.BienTheRequest;
+import com.example.zeststore.dto.request.ImageRequest;
 import com.example.zeststore.dto.request.SanPhamRequest;
 import com.example.zeststore.service.SanPhamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -30,20 +29,13 @@ public class SanPhamController {
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice) {
-
-        if (keyword != null) {
-            return ResponseEntity.ok(sanPhamService.searchProducts(keyword, page, size));
-        }
-        if (categoryId != null || minPrice != null || maxPrice != null) {
-            return ResponseEntity.ok(sanPhamService.filterProducts(categoryId, minPrice, maxPrice, page, size));
-        }
-        return ResponseEntity.ok(sanPhamService.getProducts(page, size, sortBy, sortDir));
+        return ResponseEntity.ok(sanPhamService.getProducts(
+                keyword, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir));
     }
 
     @GetMapping("/{slug}")
     public ResponseEntity<?> getBySlug(@PathVariable String slug) {
-        return ResponseEntity.ok(sanPhamService.getProductDetail(
-                sanPhamService.getBySlug(slug).getMaSanPham()));
+        return ResponseEntity.ok(sanPhamService.getProductDetailBySlug(slug));
     }
 
     @GetMapping("/detail/{id}")
@@ -66,8 +58,7 @@ public class SanPhamController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(@PathVariable Integer id) {
-        sanPhamService.deleteProduct(id);
-        return ResponseEntity.ok(Map.of("message", "Product deleted"));
+        return ResponseEntity.ok(sanPhamService.deleteProduct(id));
     }
 
     @GetMapping("/{id}/variants")
@@ -92,8 +83,7 @@ public class SanPhamController {
     @DeleteMapping("/variants/{variantId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteVariant(@PathVariable Integer variantId) {
-        sanPhamService.deleteVariant(variantId);
-        return ResponseEntity.ok(Map.of("message", "Variant deleted"));
+        return ResponseEntity.ok(sanPhamService.deleteVariant(variantId));
     }
 
     @GetMapping("/{id}/images/{variantId}")
@@ -106,15 +96,13 @@ public class SanPhamController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> addImage(@PathVariable Integer id,
                                        @PathVariable Integer variantId,
-                                       @RequestBody Map<String, Object> body) {
-        String url = (String) body.get("url");
-        return ResponseEntity.ok(sanPhamService.addImage(variantId, url));
+                                       @Valid @RequestBody ImageRequest request) {
+        return ResponseEntity.ok(sanPhamService.addImage(variantId, request.getUrl()));
     }
 
     @DeleteMapping("/images/{imageId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteImage(@PathVariable Integer imageId) {
-        sanPhamService.deleteImage(imageId);
-        return ResponseEntity.ok(Map.of("message", "Image deleted"));
+        return ResponseEntity.ok(sanPhamService.deleteImage(imageId));
     }
 }

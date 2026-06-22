@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 
@@ -26,12 +27,15 @@ public class MucDonHang {
     @JoinColumn(name = "ma_bien_the", nullable = false)
     private BienTheSanPham bienThe;
 
+    @NotNull @PositiveOrZero
     @Column(name = "don_gia", nullable = false, precision = 18, scale = 0)
     private BigDecimal donGia;
 
+    @NotNull @Positive
     @Column(name = "so_luong", nullable = false)
     private Integer soLuong;
 
+    @NotNull @PositiveOrZero
     @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 0)
     private BigDecimal thanhTien;
 }

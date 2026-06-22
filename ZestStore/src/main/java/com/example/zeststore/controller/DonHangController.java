@@ -1,6 +1,7 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.dto.request.OrderRequest;
+import com.example.zeststore.dto.request.StatusUpdateRequest;
 import com.example.zeststore.service.DonHangService;
 import com.example.zeststore.service.UserService;
 import jakarta.validation.Valid;
@@ -9,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -22,27 +21,22 @@ public class DonHangController {
 
     @GetMapping
     public ResponseEntity<?> getMyOrders(Authentication auth) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(donHangService.getOrdersByUser(userId));
+        return ResponseEntity.ok(donHangService.getOrdersByUser(userService.getUserIdFromAuth(auth)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrderDetail(@PathVariable Integer id, Authentication auth) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(donHangService.getOrderDetailForUser(id, userId));
+        return ResponseEntity.ok(donHangService.getOrderDetailForUser(id, userService.getUserIdFromAuth(auth)));
     }
 
     @PostMapping
     public ResponseEntity<?> placeOrder(Authentication auth, @Valid @RequestBody OrderRequest request) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(donHangService.placeOrder(userId, request));
+        return ResponseEntity.ok(donHangService.placeOrder(userService.getUserIdFromAuth(auth), request));
     }
 
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelOrder(Authentication auth, @PathVariable Integer id) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        donHangService.cancelOrder(id, userId);
-        return ResponseEntity.ok(Map.of("message", "Order cancelled"));
+        return ResponseEntity.ok(donHangService.cancelOrder(id, userService.getUserIdFromAuth(auth)));
     }
 
     @GetMapping("/admin/all")
@@ -53,9 +47,9 @@ public class DonHangController {
 
     @PutMapping("/admin/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> body,
+    public ResponseEntity<?> updateStatus(@PathVariable Integer id, @Valid @RequestBody StatusUpdateRequest request,
                                            Authentication auth) {
-        Integer adminUserId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(donHangService.updateOrderStatus(id, Integer.valueOf(body.get("trangThai")), adminUserId));
+        return ResponseEntity.ok(donHangService.updateOrderStatus(
+                id, request.getTrangThai(), userService.getUserIdFromAuth(auth)));
     }
 }

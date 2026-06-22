@@ -21,16 +21,11 @@ public class DanhGiaController {
 
     @GetMapping("/product/{productId}")
     public ResponseEntity<?> getByProduct(@PathVariable Integer productId) {
-        return ResponseEntity.ok(Map.of(
-                "reviews", danhGiaService.getReviewsByProduct(productId),
-                "averageRating", danhGiaService.getAverageRating(productId),
-                "reviewCount", danhGiaService.getReviewCount(productId)
-        ));
+        return ResponseEntity.ok(danhGiaService.getProductReviews(productId));
     }
 
     @PostMapping
     public ResponseEntity<?> addReview(Authentication auth, @Valid @RequestBody DanhGiaRequest request) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(danhGiaService.addReview(userId, request));
+        return ResponseEntity.ok(danhGiaService.addReview(userService.getUserIdFromAuth(auth), request));
     }
 }

@@ -95,6 +95,31 @@ public class VnPayService {
         thanhToanService.failPayment(payment.getMaThanhToan());
     }
 
+    public Map<String, String> buildReturnParams(Map<String, String> params) {
+        boolean verified = verifyReturn(params);
+        String responseCode = params.get("vnp_ResponseCode");
+        String txnRef = params.get("vnp_TxnRef");
+        Integer orderId = extractOrderId(txnRef);
+
+        Map<String, String> result = new LinkedHashMap<>();
+        result.put("verified", String.valueOf(verified));
+        result.put("responseCode", responseCode);
+        result.put("txnRef", txnRef);
+        result.put("orderId", orderId != null ? orderId.toString() : null);
+        result.put("transactionNo", params.get("vnp_TransactionNo"));
+        return result;
+    }
+
+    public Integer extractOrderId(String txnRef) {
+        if (txnRef == null) return null;
+        try {
+            String[] parts = txnRef.split("-");
+            return parts.length >= 2 ? Integer.parseInt(parts[1]) : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String hmacSHA512(String key, String data) {
         try {
             Mac hmac = Mac.getInstance("HmacSHA512");

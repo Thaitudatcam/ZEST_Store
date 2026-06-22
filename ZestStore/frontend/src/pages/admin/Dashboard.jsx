@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getStats, getRevenue, getTopProducts } from '../../api/admin'
-import { Users, ShoppingCart, DollarSign, Package, TrendingUp } from 'lucide-react'
-
+import { Users, ShoppingCart, DollarSign, Package, TrendingUp, AlertCircle, Loader2 } from 'lucide-react'
 
 const colors = ['from-blue-500 to-blue-600', 'from-emerald-500 to-emerald-600', 'from-violet-500 to-violet-600', 'from-amber-500 to-amber-600']
 const icons = [Users, ShoppingCart, DollarSign, Package]
@@ -10,12 +9,54 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [revenueData, setRevenueData] = useState(null)
   const [topProducts, setTopProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    getStats().then(setStats).catch(() => {})
-    getRevenue().then((d) => setRevenueData(d)).catch(() => {})
-    getTopProducts().then((d) => setTopProducts(Array.isArray(d) ? d : [])).catch(() => {})
+    let cancelled = false
+    setLoading(true)
+    setError('')
+
+    Promise.all([
+      getStats().catch((err) => { throw { source: 'stats', err } }),
+      getRevenue().catch((err) => { throw { source: 'revenue', err } }),
+      getTopProducts().catch((err) => { throw { source: 'topProducts', err } }),
+    ])
+      .then(([s, r, t]) => {
+        if (cancelled) return
+        setStats(s)
+        setRevenueData(r)
+        setTopProducts(Array.isArray(t) ? t : [])
+      })
+      .catch(({ source, err }) => {
+        if (cancelled) return
+        const msg = err.response?.data?.message || err.message || 'Lỗi kết nối máy chủ'
+        setError(`Không thể tải dữ liệu (${source}): ${msg}`)
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
   }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Bảng điều khiển</h1>
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          {error}
+        </div>
+      </div>
+    )
+  }
 
   const cards = stats ? [
     { label: 'Người dùng', value: stats.totalUsers ?? 0, icon: Users },

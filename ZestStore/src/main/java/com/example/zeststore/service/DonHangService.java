@@ -28,19 +28,23 @@ public class DonHangService {
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final HoaDonService hoaDonService;
 
+    @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
         return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
     }
 
+    @Transactional(readOnly = true)
     public DonHang getOrderById(Integer orderId) {
         return donHangRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
     }
 
+    @Transactional(readOnly = true)
     public List<DonHang> getAllOrders() {
         return donHangRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getOrderDetail(Integer orderId) {
         DonHang order = getOrderById(orderId);
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
@@ -53,6 +57,7 @@ public class DonHangService {
         return result;
     }
 
+    @Transactional(readOnly = true)
     public Map<String, Object> getOrderDetailForUser(Integer orderId, Integer userId) {
         DonHang order = getOrderById(orderId);
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
@@ -209,6 +214,17 @@ public class DonHangService {
         order.setTrangThaiDon(status);
         order = donHangRepository.save(order);
 
+        if (Integer.valueOf(4).equals(status)) {
+            thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                    .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
+                    .findFirst()
+                    .ifPresent(t -> {
+                        t.setTrangThaiThanhToan(2);
+                        t.setThoiGianTt(LocalDateTime.now());
+                        thanhToanRepository.save(t);
+                    });
+        }
+
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
         lichSuDonHangRepository.save(LichSuDonHang.builder()
@@ -222,7 +238,7 @@ public class DonHangService {
     }
 
     @Transactional
-    public void cancelOrder(Integer orderId, Integer userId) {
+    public Map<String, String> cancelOrder(Integer orderId, Integer userId) {
         DonHang order = getOrderById(orderId);
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
@@ -256,5 +272,6 @@ public class DonHangService {
                 .trangThaiMoi(5)
                 .nguoiCapNhat(user)
                 .build());
+        return Map.of("message", "Order cancelled");
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,6 +36,14 @@ public class SanPhamService {
     private final ThuongHieuRepository thuongHieuRepository;
     private final KichCoRepository kichCoRepository;
     private final MauSacRepository mauSacRepository;
+
+    public Page<SanPham> getProducts(String keyword, Integer categoryId, BigDecimal minPrice,
+                                      BigDecimal maxPrice, int page, int size, String sortBy, String sortDir) {
+        if (keyword != null) return searchProducts(keyword, page, size);
+        if (categoryId != null || minPrice != null || maxPrice != null)
+            return filterProducts(categoryId, minPrice, maxPrice, page, size);
+        return getProducts(page, size, sortBy, sortDir);
+    }
 
     public Page<SanPham> getProducts(int page, int size, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
@@ -61,6 +70,10 @@ public class SanPhamService {
     public SanPham getById(Integer id) {
         return sanPhamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+    }
+
+    public Map<String, Object> getProductDetailBySlug(String slug) {
+        return getProductDetail(getBySlug(slug).getMaSanPham());
     }
 
     public Map<String, Object> getProductDetail(Integer id) {
@@ -127,10 +140,11 @@ public class SanPhamService {
     }
 
     @Transactional
-    public void deleteProduct(Integer id) {
+    public Map<String, String> deleteProduct(Integer id) {
         SanPham product = getById(id);
         product.setNgayXoa(LocalDateTime.now());
         sanPhamRepository.save(product);
+        return Map.of("message", "Product deleted");
     }
 
     public List<BienTheSanPham> getVariants(Integer productId) {
@@ -185,11 +199,12 @@ public class SanPhamService {
     }
 
     @Transactional
-    public void deleteVariant(Integer variantId) {
+    public Map<String, String> deleteVariant(Integer variantId) {
         BienTheSanPham variant = bienTheRepository.findById(variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", variantId));
         variant.setNgayXoa(LocalDateTime.now());
         bienTheRepository.save(variant);
+        return Map.of("message", "Variant deleted");
     }
 
     public List<AnhSanPham> getImages(Integer variantId) {
@@ -207,7 +222,8 @@ public class SanPhamService {
     }
 
     @Transactional
-    public void deleteImage(Integer imageId) {
+    public Map<String, String> deleteImage(Integer imageId) {
         anhSanPhamRepository.deleteById(imageId);
+        return Map.of("message", "Image deleted");
     }
 }

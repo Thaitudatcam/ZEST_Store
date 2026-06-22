@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,14 +33,17 @@ public class DonHang {
     @JoinColumn(name = "ma_phieu_giam_gia")
     private PhieuGiamGia phieuGiamGia;
 
+    @PositiveOrZero
     @Column(name = "so_tien_giam", precision = 18, scale = 2)
     @Builder.Default
     private BigDecimal soTienGiam = BigDecimal.ZERO;
 
+    @PositiveOrZero
     @Column(name = "phi_van_chuyen", precision = 18, scale = 2)
     @Builder.Default
     private BigDecimal phiVanChuyen = BigDecimal.ZERO;
 
+    @NotNull @PositiveOrZero
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
 
@@ -47,12 +51,15 @@ public class DonHang {
     @Builder.Default
     private Integer trangThaiDon = 1;
 
+    @NotBlank @Size(max = 100)
     @Column(name = "ten_nguoi_nhan", nullable = false, length = 100)
     private String tenNguoiNhan;
 
+    @NotBlank @Size(max = 15)
     @Column(name = "sdt_nguoi_nhan", nullable = false, length = 15)
     private String sdtNguoiNhan;
 
+    @NotBlank @Size(max = 500)
     @Column(name = "dia_chi_giao_hang", nullable = false, length = 500)
     private String diaChiGiaoHang;
 

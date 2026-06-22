@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,9 +29,11 @@ public class SanPham {
     @JoinColumn(name = "ma_danh_muc", nullable = false)
     private DanhMuc danhMuc;
 
+    @NotBlank @Size(max = 200)
     @Column(name = "ten_san_pham", nullable = false, length = 200)
     private String tenSanPham;
 
+    @NotBlank @Size(max = 200)
     @Column(name = "slug", nullable = false, length = 200, unique = true)
     private String slug;
 
