@@ -1,10 +1,15 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
 
+const posItem = { label: 'Bán hàng', icon: ShoppingCart, children: [
+  { to: '/admin/pos', label: 'Bán tại quầy' },
+]}
+
 const nav = [
   { to: '/admin', label: 'Bảng điều khiển', icon: LayoutDashboard, end: true },
+  posItem,
   { to: '/admin/orders', label: 'Đơn hàng', icon: ShoppingBag },
   { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
   { to: '/admin/products', label: 'Sản phẩm', icon: Package },
@@ -20,6 +25,7 @@ export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [posOpen, setPosOpen] = useState(false)
 
   const handleLogout = () => { logout(); navigate('/login') }
 
@@ -31,13 +37,36 @@ export default function AdminLayout() {
           <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></button>
         </div>
         <nav className="p-4 space-y-1">
-          {nav.map(({ to, label, icon: Icon, end }) => {
-            const active = end ? pathname === to : pathname.startsWith(to)
+          {nav.map((item) => {
+            if (item.children) {
+              const posActive = item.children.some(c => pathname.startsWith(c.to))
+              return (
+                <div key={item.label}>
+                  <button onClick={() => setPosOpen(!posOpen)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${posActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}>
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {item.label}
+                    <ChevronDown className={`h-4 w-4 ml-auto transition ${posOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {posOpen && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {item.children.map(child => (
+                        <Link key={child.to} to={child.to} onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition ${pathname === child.to ? 'bg-blue-500/60 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}>
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            const active = item.end ? pathname === item.to : pathname.startsWith(item.to)
             return (
-              <Link key={to} to={to} onClick={() => setSidebarOpen(false)}
+              <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${active ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}>
-                <Icon className="h-5 w-5 shrink-0" />
-                {label}
+                <item.icon className="h-5 w-5 shrink-0" />
+                {item.label}
               </Link>
             )
           })}

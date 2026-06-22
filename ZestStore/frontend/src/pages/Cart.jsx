@@ -6,6 +6,7 @@ import Toast from '../components/Toast'
 import { Trash2, ShoppingBag, ArrowLeft, Plus, Minus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { VND } from '../components/ProductCard'
+import SafeImg from '../components/SafeImg'
 
 export default function Cart() {
   const [items, setItems] = useState([])
@@ -71,7 +72,7 @@ export default function Cart() {
                 className="bg-white rounded-xl border p-4 flex items-center gap-4 transition-all duration-300 hover:shadow-md animate-fade-in"
                 style={{ animationDelay: `${idx * 50}ms` }}>
                 <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                  <img src={i.urlAnh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
+                  <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{i.tenSanPham || `Sản phẩm #${i.maSanPham}`}</p>

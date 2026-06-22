@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAllOrders, updateOrderStatus } from '../../api/admin'
 import StatusBadge, { labels } from '../../components/StatusBadge'
-import { Search, ChevronDown, CreditCard } from 'lucide-react'
+import { Search, ChevronDown, Filter } from 'lucide-react'
 
 const NEXT_STATUS = {
   1: [2, 5],

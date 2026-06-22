@@ -16,11 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -163,7 +165,7 @@ public class SanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Size", request.getMaKichCo()));
         MauSac mauSac = mauSacRepository.findById(request.getMaMauSac())
                 .orElseThrow(() -> new ResourceNotFoundException("Color", request.getMaMauSac()));
-        return bienTheRepository.save(BienTheSanPham.builder()
+        BienTheSanPham variant = bienTheRepository.save(BienTheSanPham.builder()
                 .sanPham(product)
                 .thuongHieu(thuongHieu)
                 .kichCo(kichCo)
@@ -173,6 +175,8 @@ public class SanPhamService {
                 .urlAnh(request.getUrlAnh())
                 .tonKho(request.getTonKho() != null ? request.getTonKho() : 0)
                 .build());
+        recalculateGiaTrungBinh(product);
+        return variant;
     }
 
     @Transactional
@@ -195,7 +199,9 @@ public class SanPhamService {
         if (request.getGia() != null) variant.setGia(request.getGia());
         if (request.getTonKho() != null) variant.setTonKho(request.getTonKho());
         if (request.getUrlAnh() != null) variant.setUrlAnh(request.getUrlAnh());
-        return bienTheRepository.save(variant);
+        variant = bienTheRepository.save(variant);
+        recalculateGiaTrungBinh(variant.getSanPham());
+        return variant;
     }
 
     @Transactional
@@ -225,5 +231,17 @@ public class SanPhamService {
     public Map<String, String> deleteImage(Integer imageId) {
         anhSanPhamRepository.deleteById(imageId);
         return Map.of("message", "Image deleted");
+    }
+
+    private void recalculateGiaTrungBinh(SanPham product) {
+        List<BienTheSanPham> allVariants = bienTheRepository.findBySanPham_MaSanPham(product.getMaSanPham());
+        List<BienTheSanPham> withPrice = allVariants.stream().filter(v -> v.getGia() != null).toList();
+        if (withPrice.isEmpty()) {
+            product.setGiaTrungBinh(null);
+        } else {
+            BigDecimal sum = withPrice.stream().map(BienTheSanPham::getGia).reduce(BigDecimal.ZERO, BigDecimal::add);
+            product.setGiaTrungBinh(sum.divide(BigDecimal.valueOf(withPrice.size()), 0, RoundingMode.HALF_UP));
+        }
+        sanPhamRepository.save(product);
     }
 }

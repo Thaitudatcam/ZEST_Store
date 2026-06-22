@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader } from 'lucide-react'
 import api from '../api/axios'
+import SafeImg from '../components/SafeImg'
 
 const PAYMENT_METHODS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền khi nhận hàng' },
@@ -208,7 +209,7 @@ export default function Checkout() {
               {cart.map((i) => (
                 <div key={i.maBienThe} className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                    <img src={i.urlAnh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
+                    <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{i.tenSanPham}</p>

@@ -49,7 +49,7 @@ public class ThanhToanService {
 
         thanhToanRepository.save(payment);
 
-        hoaDonService.createInvoice(order);
+        hoaDonService.generateInvoice(order.getMaDonHang());
 
         return payment;
     }

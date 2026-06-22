@@ -91,7 +91,7 @@ public class HoaDonService {
         HoaDon invoice = HoaDon.builder()
                 .donHang(order)
                 .maHoaDonCode(code)
-                .emailKhachHang(order.getNguoiDung().getEmail())
+                .emailKhachHang(order.getNguoiDung().getEmail() != null ? order.getNguoiDung().getEmail() : "")
                 .tongTien(order.getTongTien())
                 .build();
         invoice = hoaDonRepository.save(invoice);

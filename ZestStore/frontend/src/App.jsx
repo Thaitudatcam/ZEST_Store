@@ -26,6 +26,7 @@ import AdminInvoices from './pages/admin/AdminInvoices'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminEmployees from './pages/admin/AdminEmployees'
+import AdminPOS from './pages/admin/AdminPOS'
 
 export default function App() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="employees" element={<AdminEmployees />} />
+        <Route path="pos" element={<AdminPOS />} />
       </Route>
 
       <Route path="*" element={

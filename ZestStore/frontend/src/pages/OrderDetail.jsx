@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink } from 'lucide-react'
+import SafeImg from '../components/SafeImg'
 
 const PAYMENT_LABELS = {
   1: 'Thanh toán khi nhận hàng (COD)',
@@ -134,7 +135,7 @@ export default function OrderDetail() {
             return (
               <div key={item.maMucDonHang} className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                  <img src={anh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
+                  <SafeImg src={anh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>

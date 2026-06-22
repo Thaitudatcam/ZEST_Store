@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Upload, Trash2, Plus } from 'lucide-react'
 import api from '../../api/axios'
 import { VND } from '../../components/ProductCard'
+import SafeImg from '../../components/SafeImg'
 
 export default function AdminProductForm() {
   const { id } = useParams()
@@ -197,7 +198,7 @@ export default function AdminProductForm() {
             <h2 className="font-semibold text-lg mb-4">Ảnh đại diện</h2>
             {form.urlAnhDaiDien && (
               <div className="mb-3 w-32 h-32 rounded-lg overflow-hidden border bg-gray-100">
-                <img src={form.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center" />
+                <SafeImg src={form.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center" />
               </div>
             )}
             <button type="button" onClick={handleUpload} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">

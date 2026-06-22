@@ -143,6 +143,7 @@ public class DonHangService {
         DonHang order = DonHang.builder()
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
+                .maDonHangCode("ORD-" + System.currentTimeMillis())
                 .soTienGiam(soTienGiam)
                 .phiVanChuyen(phiVanChuyen)
                 .tongTien(finalTotal)
@@ -170,7 +171,7 @@ public class DonHangService {
             case 2 -> "VNPay";
             case 3 -> "MoMo";
             case 4 -> "ZaloPay";
-            default -> null;
+            default -> "Tiền mặt";
         };
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
@@ -182,7 +183,7 @@ public class DonHangService {
                 .build());
 
         if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
-            hoaDonService.createInvoice(order);
+            hoaDonService.generateInvoice(order.getMaDonHang());
         }
 
         lichSuDonHangRepository.save(LichSuDonHang.builder()
@@ -247,6 +248,8 @@ public class DonHangService {
                 .trangThaiMoi(status)
                 .nguoiCapNhat(admin)
                 .build());
+
+        return order;
     }
 
     @Transactional

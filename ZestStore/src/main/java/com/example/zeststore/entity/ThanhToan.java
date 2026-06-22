@@ -42,7 +42,7 @@ public class ThanhToan {
     @Column(name = "so_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal soTien;
 
-    @NotNull @PastOrPresent
+    @PastOrPresent
     @Column(name = "thoi_gian_tao", nullable = false)
     private LocalDateTime thoiGianTao;
 

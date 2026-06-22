@@ -47,6 +47,10 @@ public class DonHang {
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
 
+    @Column(name = "loai_don_hang", nullable = false, columnDefinition = "TINYINT")
+    @Builder.Default
+    private Integer loaiDonHang = 1;
+
     @Column(name = "trang_thai_don", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
     private Integer trangThaiDon = 1;

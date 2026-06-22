@@ -7,9 +7,13 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { ShoppingCart, Heart, Star, MessageSquare } from 'lucide-react'
+import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight } from 'lucide-react'
 import { VND } from '../components/ProductCard'
+import Toast from '../components/Toast'
+import VariantModal from '../components/VariantModal'
 import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
+import SafeImg from '../components/SafeImg'
+import { imageUrl } from '../utils/imageUrl'
 
 export default function ProductDetail() {
   const { slug } = useParams()
@@ -29,6 +33,8 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([])
   const [avgRating, setAvgRating] = useState(0)
   const [reviewCount, setReviewCount] = useState(0)
+  const [previewIdx, setPreviewIdx] = useState(0)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const load = async () => {
     try {
@@ -100,7 +106,7 @@ export default function ProductDetail() {
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
   const allImages = images.map(i => i.urlAnh).filter(Boolean)
-  const mainImg = allImages[previewIdx] || product.urlAnhDaiDien || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
+  const mainImg = imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
 
   return (
@@ -118,14 +124,14 @@ export default function ProductDetail() {
       <div className="grid md:grid-cols-2 gap-8">
         <div>
           <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-3">
-            <img src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
+            <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
           </div>
           {allImages.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {allImages.map((url, idx) => (
                 <button key={idx} onClick={() => setPreviewIdx(idx)}
                   className={`w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 ${idx === previewIdx ? 'border-blue-700' : 'border-transparent'}`}>
-                  <img src={url} alt="" className="w-full h-full object-cover object-center" />
+                  <SafeImg src={url} alt="" className="w-full h-full object-cover object-center" />
                 </button>
               ))}
             </div>
@@ -205,6 +211,15 @@ export default function ProductDetail() {
             ))}
           </div>
         </div>
+      )}
+
+      {modalOpen && (
+        <VariantModal
+          variants={variants}
+          images={images}
+          onConfirm={(vid, sl) => handleAddCart(vid, sl)}
+          onClose={() => setModalOpen(false)}
+        />
       )}
     </div>
   )
