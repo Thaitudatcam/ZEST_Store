@@ -4,6 +4,7 @@ import { getProductBySlug } from '../api/products'
 import { addToCart } from '../api/cart'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import VariantModal from '../components/VariantModal'
 import Toast from '../components/Toast'
@@ -15,6 +16,7 @@ export default function ProductDetail() {
   const { slug } = useParams()
   const { user } = useAuth()
   const { refreshCount } = useCart()
+  const { refreshWishlistCount } = useWishlist()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
   const [variants, setVariants] = useState([])
@@ -61,6 +63,7 @@ export default function ProductDetail() {
     try {
       if (inWish) { await removeWishlist(product.maSanPham); setInWish(false) }
       else { await addWishlist(product.maSanPham); setInWish(true) }
+      refreshWishlistCount()
     } catch {}
   }
 

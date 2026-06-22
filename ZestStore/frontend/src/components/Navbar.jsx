@@ -2,11 +2,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Heart, User, Menu, X, Store, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 import { useState, useRef, useEffect } from 'react'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const { count } = useCart()
+  const { wishlistCount } = useWishlist()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -34,7 +36,14 @@ export default function Navbar() {
             <Link to="/products" className="text-gray-600 hover:text-blue-700 transition">Sản phẩm</Link>
             {user ? (
               <>
-                <Link to="/wishlist" className="text-gray-600 hover:text-blue-700"><Heart className="h-5 w-5" /></Link>
+                <Link to="/wishlist" className="relative text-gray-600 hover:text-blue-700">
+                  <Heart className="h-5 w-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none animate-scale-in">
+                      {wishlistCount > 99 ? '99+' : wishlistCount}
+                    </span>
+                  )}
+                </Link>
                 <Link to="/cart" className="relative text-gray-600 hover:text-blue-700">
                   <ShoppingCart className="h-5 w-5" />
                   {count > 0 && (

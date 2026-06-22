@@ -11,6 +11,9 @@ const statusColor = {
   3: "bg-purple-100 text-purple-800",
   4: "bg-green-100 text-green-800",
   5: "bg-red-100 text-red-800",
+  6: "bg-teal-100 text-teal-800",
+  7: "bg-orange-100 text-orange-800",
+  8: "bg-gray-200 text-gray-700",
 };
 const statusText = {
   1: "Chờ xác nhận",
@@ -18,6 +21,9 @@ const statusText = {
   3: "Đang giao",
   4: "Đã giao",
   5: "Đã hủy",
+  6: "Hoàn thành",
+  7: "Yêu cầu trả hàng",
+  8: "Đã trả hàng",
 };
 
 export default function Orders() {

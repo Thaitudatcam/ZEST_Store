@@ -205,16 +205,26 @@ public class DonHangService {
 
     @Transactional
     public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
-        List<Integer> validStatuses = List.of(2, 3, 4, 5);
+        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
         }
         DonHang order = getOrderById(orderId);
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
-        order = donHangRepository.save(order);
 
-        if (Integer.valueOf(4).equals(status)) {
+        if (Integer.valueOf(8).equals(status)) {
+            restoreStock(orderId);
+            thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                    .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
+                    .findFirst()
+                    .ifPresent(t -> {
+                        t.setTrangThaiThanhToan(3);
+                        thanhToanRepository.save(t);
+                    });
+        }
+
+        if (Integer.valueOf(4).equals(status) || Integer.valueOf(6).equals(status)) {
             thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
                     .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
                     .findFirst()
@@ -224,6 +234,8 @@ public class DonHangService {
                         thanhToanRepository.save(t);
                     });
         }
+
+        order = donHangRepository.save(order);
 
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
@@ -235,6 +247,80 @@ public class DonHangService {
                 .build());
 
         return order;
+    }
+
+    @Transactional
+    public Map<String, String> confirmReceived(Integer orderId, Integer userId) {
+        DonHang order = getOrderById(orderId);
+        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Order does not belong to user");
+        }
+        if (!Integer.valueOf(4).equals(order.getTrangThaiDon())) {
+            throw new BadRequestException("Can only confirm received orders that are delivered");
+        }
+
+        Integer oldStatus = order.getTrangThaiDon();
+        order.setTrangThaiDon(6);
+
+        thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
+                .findFirst()
+                .ifPresent(t -> {
+                    t.setTrangThaiThanhToan(2);
+                    t.setThoiGianTt(LocalDateTime.now());
+                    thanhToanRepository.save(t);
+                });
+
+        donHangRepository.save(order);
+
+        NguoiDung user = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order)
+                .trangThaiCu(oldStatus)
+                .trangThaiMoi(6)
+                .nguoiCapNhat(user)
+                .build());
+        return Map.of("message", "Order confirmed as received");
+    }
+
+    @Transactional
+    public Map<String, String> requestReturn(Integer orderId, Integer userId, String lyDo) {
+        DonHang order = getOrderById(orderId);
+        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Order does not belong to user");
+        }
+        Integer currentStatus = order.getTrangThaiDon();
+        if (!Integer.valueOf(4).equals(currentStatus) && !Integer.valueOf(6).equals(currentStatus)) {
+            throw new BadRequestException("Can only request return for delivered or completed orders");
+        }
+        if (lyDo == null || lyDo.isBlank()) {
+            throw new BadRequestException("Return reason is required");
+        }
+
+        Integer oldStatus = order.getTrangThaiDon();
+        order.setTrangThaiDon(7);
+        donHangRepository.save(order);
+
+        NguoiDung user = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order)
+                .trangThaiCu(oldStatus)
+                .trangThaiMoi(7)
+                .nguoiCapNhat(user)
+                .ghiChu(lyDo)
+                .build());
+        return Map.of("message", "Return requested");
+    }
+
+    private void restoreStock(Integer orderId) {
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            variant.setTonKho(variant.getTonKho() + item.getSoLuong());
+            bienTheRepository.save(variant);
+        }
     }
 
     @Transactional

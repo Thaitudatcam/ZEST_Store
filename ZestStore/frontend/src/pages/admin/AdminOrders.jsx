@@ -7,6 +7,8 @@ const NEXT_STATUS = {
   1: [2, 5],
   2: [3, 5],
   3: [4],
+  4: [6],
+  7: [4, 8],
 }
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'MoMo', 4: 'ZaloPay' }

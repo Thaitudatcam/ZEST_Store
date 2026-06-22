@@ -11,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -37,6 +39,18 @@ public class DonHangController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelOrder(Authentication auth, @PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.cancelOrder(id, userService.getUserIdFromAuth(auth)));
+    }
+
+    @PutMapping("/{id}/confirm-received")
+    public ResponseEntity<?> confirmReceived(Authentication auth, @PathVariable Integer id) {
+        return ResponseEntity.ok(donHangService.confirmReceived(id, userService.getUserIdFromAuth(auth)));
+    }
+
+    @PostMapping("/{id}/return-request")
+    public ResponseEntity<?> requestReturn(Authentication auth, @PathVariable Integer id,
+                                            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(donHangService.requestReturn(
+                id, userService.getUserIdFromAuth(auth), body.get("lyDo")));
     }
 
     @GetMapping("/admin/all")
