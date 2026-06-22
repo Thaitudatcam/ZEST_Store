@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProductBySlug } from '../api/products'
 import { addToCart } from '../api/cart'
+import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import VariantModal from '../components/VariantModal'
-import Toast from '../components/Toast'
-import { ShoppingCart, Heart, ChevronRight } from 'lucide-react'
+import { ShoppingCart, Heart, Star, MessageSquare } from 'lucide-react'
 import { VND } from '../components/ProductCard'
 import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
 
@@ -27,17 +26,26 @@ export default function ProductDetail() {
   const [toast, setToast] = useState(null)
   const [inWish, setInWish] = useState(false)
   const [selectedVar, setSelectedVar] = useState(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [previewIdx, setPreviewIdx] = useState(0)
+  const [reviews, setReviews] = useState([])
+  const [avgRating, setAvgRating] = useState(0)
+  const [reviewCount, setReviewCount] = useState(0)
 
   const load = async () => {
     try {
       const p = await getProductBySlug(slug)
-      setProduct(p.product || p)
+      const prod = p.product || p
+      setProduct(prod)
       setVariants(p.variants || [])
       setImages(p.images || [])
-      if (p.product?.maSanPham && user)
-        checkWishlist(p.product.maSanPham).then((r) => setInWish(r.inWishlist)).catch(() => {})
+      if (prod.maSanPham && user)
+        checkWishlist(prod.maSanPham).then((r) => setInWish(r.inWishlist)).catch(() => {})
+      if (prod.maSanPham) {
+        getProductReviews(prod.maSanPham).then((r) => {
+          setReviews(r.reviews || [])
+          setAvgRating(r.averageRating || 0)
+          setReviewCount(r.reviewCount || 0)
+        }).catch(() => {})
+      }
     } catch { navigate('/products') }
     finally { setLoading(false) }
   }
@@ -164,8 +172,39 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {modalOpen && (
-        <VariantModal variants={variants} images={images} onConfirm={handleAddCart} onClose={() => setModalOpen(false)} />
+      {reviewCount > 0 && (
+        <div className="mt-12 max-w-3xl">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-blue-700" />
+            Đánh giá ({reviewCount})
+            <span className="text-sm font-normal text-gray-500 ml-2 flex items-center gap-1">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> {avgRating.toFixed(1)}
+            </span>
+          </h2>
+          <div className="space-y-4">
+            {reviews.map((r) => (
+              <div key={r.maDanhGia} className="bg-white border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xs">
+                      {r.nguoiDung?.hoTen?.charAt(0) || '?'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{r.nguoiDung?.hoTen || 'Khách hàng'}</p>
+                      <p className="text-xs text-gray-400">{r.ngayTao ? new Date(r.ngayTao).toLocaleDateString('vi-VN') : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className={`h-4 w-4 ${i < r.soSao ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+                    ))}
+                  </div>
+                </div>
+                {r.binhLuan && <p className="text-sm text-gray-600">{r.binhLuan}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )

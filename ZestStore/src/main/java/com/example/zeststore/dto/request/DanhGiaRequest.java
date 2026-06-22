@@ -17,6 +17,9 @@ public class DanhGiaRequest {
     @NotNull
     private Integer maDonHang;
 
+    @NotNull
+    private Integer maBienThe;
+
     @NotNull @Min(1) @Max(5)
     private Integer soSao;
 

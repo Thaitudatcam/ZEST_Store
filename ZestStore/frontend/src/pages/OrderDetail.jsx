@@ -145,6 +145,12 @@ export default function OrderDetail() {
                   <p className="text-sm font-semibold">{VND(item.thanhTien)}</p>
                   <p className="text-xs text-gray-400">{VND(item.donGia)} / cái</p>
                 </div>
+                {order.trangThaiDon === 4 && (
+                  <button onClick={() => { setReviewModal(item); setReviewForm({ soSao: 5, binhLuan: '' }); setReviewMsg('') }}
+                    className="text-xs text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 shrink-0 flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5" /> Đánh giá
+                  </button>
+                )}
               </div>
             )
           })}

@@ -1,10 +1,7 @@
 package com.example.zeststore.service;
 
 import com.example.zeststore.dto.request.DanhGiaRequest;
-import com.example.zeststore.entity.DanhGia;
-import com.example.zeststore.entity.DonHang;
-import com.example.zeststore.entity.NguoiDung;
-import com.example.zeststore.entity.SanPham;
+import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
@@ -24,6 +21,7 @@ public class DanhGiaService {
     private final SanPhamRepository sanPhamRepository;
     private final DonHangRepository donHangRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final BienTheSanPhamRepository bienTheRepository;
 
     public List<DanhGia> getReviewsByProduct(Integer productId) {
         return danhGiaRepository.findBySanPham_MaSanPham(productId);
@@ -57,10 +55,14 @@ public class DanhGiaService {
             throw new BadRequestException("You have already reviewed this product for this order");
         }
 
+        BienTheSanPham bienThe = bienTheRepository.findById(request.getMaBienThe())
+                .orElseThrow(() -> new ResourceNotFoundException("ProductVariant", request.getMaBienThe()));
+
         return danhGiaRepository.save(DanhGia.builder()
                 .nguoiDung(user)
                 .sanPham(product)
                 .donHang(order)
+                .bienThe(bienThe)
                 .soSao(request.getSoSao())
                 .binhLuan(request.getBinhLuan())
                 .build());
