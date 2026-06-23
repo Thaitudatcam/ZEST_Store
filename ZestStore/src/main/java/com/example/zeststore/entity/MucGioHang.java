@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -26,6 +27,7 @@ public class MucGioHang {
     @JoinColumn(name = "ma_bien_the", nullable = false)
     private BienTheSanPham bienThe;
 
+    @Positive
     @Column(name = "so_luong", nullable = false)
     @Builder.Default
     private Integer soLuong = 1;

@@ -1,0 +1,201 @@
+2026-06-22T17:40:29.873+07:00  INFO 21760 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : Starting ZestStoreApplication using Java 22.0.2 with PID 21760 (D:\ZEST_Store\ZestStore\target\classes started by DELL in D:\ZEST_Store\ZestStore)
+2026-06-22T17:40:29.883+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : Running with Spring Boot v4.0.6, Spring v7.0.7
+2026-06-22T17:40:29.887+07:00  INFO 21760 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-06-22T17:40:30.032+07:00  INFO 21760 --- [ZestStore] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-06-22T17:40:30.034+07:00  INFO 21760 --- [ZestStore] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-06-22T17:40:33.332+07:00  INFO 21760 --- [ZestStore] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-22T17:40:33.771+07:00  INFO 21760 --- [ZestStore] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 401 ms. Found 29 JPA repository interfaces.
+2026-06-22T17:40:35.969+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-06-22T17:40:36.006+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-22T17:40:36.008+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-06-22T17:40:36.149+07:00  INFO 21760 --- [ZestStore] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 6113 ms
+2026-06-22T17:40:36.914+07:00  INFO 21760 --- [ZestStore] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-06-22T17:40:37.060+07:00  INFO 21760 --- [ZestStore] [restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.12.Final
+2026-06-22T17:40:38.514+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-22T17:40:38.667+07:00  INFO 21760 --- [ZestStore] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-22T17:40:41.520+07:00  INFO 21760 --- [ZestStore] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: 5f5182fd-f378-456e-add2-a2135c2c1417
+2026-06-22T17:40:41.528+07:00  INFO 21760 --- [ZestStore] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-22T17:40:41.755+07:00  WARN 21760 --- [ZestStore] [restartedMain] org.hibernate.orm.deprecation            : HHH90000025: SQLServerDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-22T17:40:41.811+07:00  INFO 21760 --- [ZestStore] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlserver://localhost\SQLEXPRESS:1433;concatNullYieldsNull=ON;quotedIdentifier=ON;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;vectorTypeSupport=v1;cacheBulkCopyMetadata=false;bulkCopyForBatchInsertAllowEncryptedValueModifications=false;bulkCopyForBatchInsertTableLock=false;bulkCopyForBatchInsertKeepNulls=false;bulkCopyForBatchInsertKeepIdentity=false;bulkCopyForBatchInsertFireTriggers=false;bulkCopyForBatchInsertCheckConstraints=false;bulkCopyForBatchInsertBatchSize=0;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=PoloShopDB;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;]
+	Database driver: Microsoft JDBC Driver 13.2 for SQL Server
+	Database dialect: SQLServerDialect
+	Database version: 17.0
+	Default catalog/schema: PoloShopDB/dbo
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 128
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-06-22T17:40:46.540+07:00  INFO 21760 --- [ZestStore] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-22T17:40:47.931+07:00  INFO 21760 --- [ZestStore] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-22T17:40:48.120+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-06-22T17:40:49.026+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] c.e.z.security.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-06-22T17:40:49.030+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] o.s.w.f.ServerHttpObservationFilter      : Filter 'webMvcObservationFilter' configured for use
+2026-06-22T17:40:50.997+07:00  INFO 21760 --- [ZestStore] [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-06-22T17:40:57.232+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 92 mappings in 'requestMappingHandlerMapping'
+2026-06-22T17:40:57.361+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2026-06-22T17:40:57.466+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 2 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-06-22T17:40:57.628+07:00 DEBUG 21760 --- [ZestStore] [restartedMain] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-06-22T17:40:58.834+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-06-22T17:40:59.109+07:00  INFO 21760 --- [ZestStore] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-06-22T17:40:59.144+07:00  INFO 21760 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : Started ZestStoreApplication in 30.784 seconds (process running for 32.22)
+2026-06-22T17:41:12.097+07:00  INFO 21760 --- [ZestStore] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-22T17:41:12.098+07:00  INFO 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-06-22T17:41:12.100+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2026-06-22T17:41:12.101+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2026-06-22T17:41:12.106+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@7291c972
+2026-06-22T17:41:12.107+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@4d1671dc
+2026-06-22T17:41:12.108+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2026-06-22T17:41:12.109+07:00  INFO 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 10 ms
+2026-06-22T17:41:12.168+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] c.e.z.security.JwtAuthenticationFilter   : No token in request
+2026-06-22T17:41:12.191+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2026-06-22T17:41:12.199+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.AuthController#login(LoginRequest)
+2026-06-22T17:41:12.419+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.LoginRequest@53d4178b]
+2026-06-22T17:41:13.372+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:41:13.376+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [com.example.zeststore.dto.response.AuthResponse@271cf970]
+2026-06-22T17:41:13.458+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:41:13.548+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : Token found: eyJhbGciOiJIUzM4NCJ9...
+2026-06-22T17:41:13.663+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : Token valid, email: admin@poloshop.com
+2026-06-22T17:41:13.709+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : User loaded: admin@poloshop.com, authorities: [ROLE_ADMIN]
+2026-06-22T17:41:13.711+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : Authentication set for: admin@poloshop.com
+2026-06-22T17:41:13.714+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : POST "/api/admin/pos/orders", parameters={}
+2026-06-22T17:41:13.714+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.POSController#createOrder(Authentication, PosOrderRequest)
+2026-06-22T17:41:13.744+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.PosOrderRequest@4995b447]
+2026-06-22T17:41:13.986+07:00  WARN 21760 --- [ZestStore] [http-nio-8080-exec-4] org.hibernate.orm.jdbc.error             : HHH000247: ErrorCode: 2627, SQLState: 23000
+2026-06-22T17:41:13.988+07:00  WARN 21760 --- [ZestStore] [http-nio-8080-exec-4] org.hibernate.orm.jdbc.error             : Violation of UNIQUE KEY constraint 'UQ__don_hang__52C75286A67A1F0E'. Cannot insert duplicate key in object 'dbo.don_hang'. The duplicate key value is (<NULL>).
+2026-06-22T17:41:14.014+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] .m.m.a.ExceptionHandlerExceptionResolver : Using @ExceptionHandler com.example.zeststore.exception.GlobalExceptionHandler#handleGeneral(Exception)
+2026-06-22T17:41:14.101+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:41:14.102+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{status=500, message=could not execute statement [Violation of UNIQUE KEY constraint 'UQ__don_hang__ (truncated)...]
+2026-06-22T17:41:14.122+07:00  WARN 21760 --- [ZestStore] [http-nio-8080-exec-4] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.DataIntegrityViolationException: could not execute statement [Violation of UNIQUE KEY constraint 'UQ__don_hang__52C75286A67A1F0E'. Cannot insert duplicate key in object 'dbo.don_hang'. The duplicate key value is (<NULL>).] [insert into don_hang (dia_chi_giao_hang,ghi_chu,loai_don_hang,ma_don_hang_code,ngay_cap_nhat,ngay_dat,ngay_xoa,ma_nguoi_dung,phi_van_chuyen,ma_phieu_giam_gia,sdt_nguoi_nhan,so_tien_giam,ten_nguoi_nhan,tong_tien,trang_thai_don) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]; SQL [insert into don_hang (dia_chi_giao_hang,ghi_chu,loai_don_hang,ma_don_hang_code,ngay_cap_nhat,ngay_dat,ngay_xoa,ma_nguoi_dung,phi_van_chuyen,ma_phieu_giam_gia,sdt_nguoi_nhan,so_tien_giam,ten_nguoi_nhan,tong_tien,trang_thai_don) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]; constraint [UQ__don_hang__52C75286A67A1F0E]]
+2026-06-22T17:41:14.123+07:00 DEBUG 21760 --- [ZestStore] [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 500 INTERNAL_SERVER_ERROR
+2026-06-22T17:43:21.036+07:00  INFO 21532 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : Starting ZestStoreApplication using Java 22.0.2 with PID 21532 (D:\ZEST_Store\ZestStore\target\classes started by DELL in D:\ZEST_Store\ZestStore)
+2026-06-22T17:43:21.045+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : Running with Spring Boot v4.0.6, Spring v7.0.7
+2026-06-22T17:43:21.049+07:00  INFO 21532 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-06-22T17:43:21.253+07:00  INFO 21532 --- [ZestStore] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-06-22T17:43:21.287+07:00  INFO 21532 --- [ZestStore] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-06-22T17:43:26.375+07:00  INFO 21532 --- [ZestStore] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-22T17:43:26.883+07:00  INFO 21532 --- [ZestStore] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 472 ms. Found 29 JPA repository interfaces.
+2026-06-22T17:43:29.230+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-06-22T17:43:29.268+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-22T17:43:29.269+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-06-22T17:43:29.409+07:00  INFO 21532 --- [ZestStore] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 8065 ms
+2026-06-22T17:43:30.222+07:00  INFO 21532 --- [ZestStore] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-06-22T17:43:30.379+07:00  INFO 21532 --- [ZestStore] [restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.12.Final
+2026-06-22T17:43:33.080+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-22T17:43:33.294+07:00  INFO 21532 --- [ZestStore] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-22T17:43:35.261+07:00  INFO 21532 --- [ZestStore] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection ConnectionID:1 ClientConnectionId: a6419f03-50fd-4304-86ce-8c53d6771415
+2026-06-22T17:43:35.269+07:00  INFO 21532 --- [ZestStore] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-22T17:43:35.553+07:00  WARN 21532 --- [ZestStore] [restartedMain] org.hibernate.orm.deprecation            : HHH90000025: SQLServerDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-22T17:43:35.629+07:00  INFO 21532 --- [ZestStore] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlserver://localhost\SQLEXPRESS:1433;concatNullYieldsNull=ON;quotedIdentifier=ON;connectRetryInterval=10;connectRetryCount=1;maxResultBuffer=-1;sendTemporalDataTypesAsStringForBulkCopy=true;delayLoadingLobs=true;useFmtOnly=false;vectorTypeSupport=v1;cacheBulkCopyMetadata=false;bulkCopyForBatchInsertAllowEncryptedValueModifications=false;bulkCopyForBatchInsertTableLock=false;bulkCopyForBatchInsertKeepNulls=false;bulkCopyForBatchInsertKeepIdentity=false;bulkCopyForBatchInsertFireTriggers=false;bulkCopyForBatchInsertCheckConstraints=false;bulkCopyForBatchInsertBatchSize=0;useBulkCopyForBatchInsert=false;cancelQueryTimeout=-1;sslProtocol=TLS;calcBigDecimalPrecision=false;useDefaultJaasConfig=false;jaasConfigurationName=SQLJDBCDriver;statementPoolingCacheSize=0;serverPreparedStatementDiscardThreshold=10;enablePrepareOnFirstPreparedStatementCall=false;fips=false;socketTimeout=0;authentication=NotSpecified;authenticationScheme=nativeAuthentication;xopenStates=false;datetimeParameterType=datetime2;sendTimeAsDatetime=true;replication=false;trustStoreType=JKS;trustServerCertificate=true;TransparentNetworkIPResolution=true;iPAddressPreference=IPv4First;serverNameAsACE=false;sendStringParametersAsUnicode=true;selectMethod=direct;responseBuffering=adaptive;queryTimeout=-1;packetSize=8000;multiSubnetFailover=false;loginTimeout=30;lockTimeout=-1;lastUpdateCount=true;useDefaultGSSCredential=false;prepareMethod=prepexec;encrypt=true;disableStatementPooling=true;databaseName=PoloShopDB;columnEncryptionSetting=Disabled;applicationName=Microsoft JDBC Driver for SQL Server;applicationIntent=readwrite;]
+	Database driver: Microsoft JDBC Driver 13.2 for SQL Server
+	Database dialect: SQLServerDialect
+	Database version: 17.0
+	Default catalog/schema: PoloShopDB/dbo
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 128
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-06-22T17:43:44.778+07:00  INFO 21532 --- [ZestStore] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-22T17:43:47.925+07:00  INFO 21532 --- [ZestStore] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-22T17:43:48.318+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-06-22T17:43:49.723+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] c.e.z.security.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-06-22T17:43:49.728+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] o.s.w.f.ServerHttpObservationFilter      : Filter 'webMvcObservationFilter' configured for use
+2026-06-22T17:43:53.034+07:00  INFO 21532 --- [ZestStore] [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-06-22T17:44:00.075+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 92 mappings in 'requestMappingHandlerMapping'
+2026-06-22T17:44:00.214+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2026-06-22T17:44:00.316+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 2 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-06-22T17:44:00.496+07:00 DEBUG 21532 --- [ZestStore] [restartedMain] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-06-22T17:44:02.172+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-06-22T17:44:02.525+07:00  INFO 21532 --- [ZestStore] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-06-22T17:44:02.569+07:00  INFO 21532 --- [ZestStore] [restartedMain] c.e.zeststore.ZestStoreApplication       : Started ZestStoreApplication in 43.742 seconds (process running for 45.799)
+2026-06-22T17:45:00.743+07:00  INFO 21532 --- [ZestStore] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-22T17:45:00.748+07:00  INFO 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-06-22T17:45:00.750+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2026-06-22T17:45:00.753+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2026-06-22T17:45:00.768+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@1ab633df
+2026-06-22T17:45:00.770+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@22d8d6b6
+2026-06-22T17:45:00.772+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2026-06-22T17:45:00.772+07:00  INFO 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 23 ms
+2026-06-22T17:45:00.868+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] c.e.z.security.JwtAuthenticationFilter   : No token in request
+2026-06-22T17:45:00.896+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2026-06-22T17:45:00.909+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.AuthController#login(LoginRequest)
+2026-06-22T17:45:01.168+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.LoginRequest@33bb0567]
+2026-06-22T17:45:02.661+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:45:02.663+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [com.example.zeststore.dto.response.AuthResponse@1ed0179b]
+2026-06-22T17:45:02.762+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:45:02.885+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] c.e.z.security.JwtAuthenticationFilter   : Token found: eyJhbGciOiJIUzM4NCJ9...
+2026-06-22T17:45:03.054+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] c.e.z.security.JwtAuthenticationFilter   : Token valid, email: admin@poloshop.com
+2026-06-22T17:45:03.083+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] c.e.z.security.JwtAuthenticationFilter   : User loaded: admin@poloshop.com, authorities: [ROLE_ADMIN]
+2026-06-22T17:45:03.086+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] c.e.z.security.JwtAuthenticationFilter   : Authentication set for: admin@poloshop.com
+2026-06-22T17:45:03.090+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : POST "/api/admin/pos/orders", parameters={}
+2026-06-22T17:45:03.091+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.POSController#createOrder(Authentication, PosOrderRequest)
+2026-06-22T17:45:03.144+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.PosOrderRequest@47e81df5]
+2026-06-22T17:45:03.898+07:00  WARN 21532 --- [ZestStore] [http-nio-8080-exec-2] org.hibernate.orm.jdbc.error             : HHH000247: ErrorCode: 547, SQLState: 23000
+2026-06-22T17:45:04.072+07:00  WARN 21532 --- [ZestStore] [http-nio-8080-exec-2] org.hibernate.orm.jdbc.error             : The INSERT statement conflicted with the CHECK constraint "CK__don_hang__trang___2EDAF651". The conflict occurred in database "PoloShopDB", table "dbo.don_hang", column 'trang_thai_don'.
+2026-06-22T17:45:04.164+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] .m.m.a.ExceptionHandlerExceptionResolver : Using @ExceptionHandler com.example.zeststore.exception.GlobalExceptionHandler#handleGeneral(Exception)
+2026-06-22T17:45:04.702+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:45:04.703+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{message=could not execute statement [The INSERT statement conflicted with the CHECK constraint "CK_ (truncated)...]
+2026-06-22T17:45:04.737+07:00  WARN 21532 --- [ZestStore] [http-nio-8080-exec-2] .m.m.a.ExceptionHandlerExceptionResolver : Resolved [org.springframework.dao.DataIntegrityViolationException: could not execute statement [The INSERT statement conflicted with the CHECK constraint "CK__don_hang__trang___2EDAF651". The conflict occurred in database "PoloShopDB", table "dbo.don_hang", column 'trang_thai_don'.] [insert into don_hang (dia_chi_giao_hang,ghi_chu,loai_don_hang,ma_don_hang_code,ngay_cap_nhat,ngay_dat,ngay_xoa,ma_nguoi_dung,phi_van_chuyen,ma_phieu_giam_gia,sdt_nguoi_nhan,so_tien_giam,ten_nguoi_nhan,tong_tien,trang_thai_don) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]; SQL [insert into don_hang (dia_chi_giao_hang,ghi_chu,loai_don_hang,ma_don_hang_code,ngay_cap_nhat,ngay_dat,ngay_xoa,ma_nguoi_dung,phi_van_chuyen,ma_phieu_giam_gia,sdt_nguoi_nhan,so_tien_giam,ten_nguoi_nhan,tong_tien,trang_thai_don) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)]; constraint [CK__don_hang__trang___2EDAF651]]
+2026-06-22T17:45:04.739+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 500 INTERNAL_SERVER_ERROR
+2026-06-22T17:46:26.082+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] c.e.z.security.JwtAuthenticationFilter   : No token in request
+2026-06-22T17:46:26.087+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2026-06-22T17:46:26.089+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.AuthController#login(LoginRequest)
+2026-06-22T17:46:26.093+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.LoginRequest@441c30de]
+2026-06-22T17:46:26.400+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:46:26.403+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [com.example.zeststore.dto.response.AuthResponse@7dc9ffb9]
+2026-06-22T17:46:26.407+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:46:26.503+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : Token found: eyJhbGciOiJIUzM4NCJ9...
+2026-06-22T17:46:26.507+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : Token valid, email: admin@poloshop.com
+2026-06-22T17:46:26.540+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : User loaded: admin@poloshop.com, authorities: [ROLE_ADMIN]
+2026-06-22T17:46:26.541+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] c.e.z.security.JwtAuthenticationFilter   : Authentication set for: admin@poloshop.com
+2026-06-22T17:46:26.543+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : POST "/api/admin/pos/orders", parameters={}
+2026-06-22T17:46:26.545+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.POSController#createOrder(Authentication, PosOrderRequest)
+2026-06-22T17:46:26.548+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.PosOrderRequest@47712009]
+2026-06-22T17:46:27.136+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:46:27.138+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{maDonHang=13, tongTien=250000.00, message=Counter order created successfully}]
+2026-06-22T17:46:27.145+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:46:41.490+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] c.e.z.security.JwtAuthenticationFilter   : No token in request
+2026-06-22T17:46:41.492+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2026-06-22T17:46:41.493+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.AuthController#login(LoginRequest)
+2026-06-22T17:46:41.496+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.LoginRequest@2eb40be8]
+2026-06-22T17:46:41.723+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:46:41.725+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [com.example.zeststore.dto.response.AuthResponse@16613b87]
+2026-06-22T17:46:41.732+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:46:41.772+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] c.e.z.security.JwtAuthenticationFilter   : Token found: eyJhbGciOiJIUzM4NCJ9...
+2026-06-22T17:46:41.776+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] c.e.z.security.JwtAuthenticationFilter   : Token valid, email: admin@poloshop.com
+2026-06-22T17:46:41.807+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] c.e.z.security.JwtAuthenticationFilter   : User loaded: admin@poloshop.com, authorities: [ROLE_ADMIN]
+2026-06-22T17:46:41.808+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] c.e.z.security.JwtAuthenticationFilter   : Authentication set for: admin@poloshop.com
+2026-06-22T17:46:41.812+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : POST "/api/admin/pos/orders", parameters={}
+2026-06-22T17:46:41.813+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.POSController#createOrder(Authentication, PosOrderRequest)
+2026-06-22T17:46:41.817+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.PosOrderRequest@5bec18bf]
+2026-06-22T17:46:41.967+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:46:41.969+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{maDonHang=14, tongTien=500000.00, message=Counter order created successfully}]
+2026-06-22T17:46:41.973+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:47:13.298+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] c.e.z.security.JwtAuthenticationFilter   : No token in request
+2026-06-22T17:47:13.300+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2026-06-22T17:47:13.301+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.AuthController#login(LoginRequest)
+2026-06-22T17:47:13.304+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.LoginRequest@37c3b920]
+2026-06-22T17:47:13.570+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:47:13.573+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [com.example.zeststore.dto.response.AuthResponse@689e3530]
+2026-06-22T17:47:13.576+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:47:13.602+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] c.e.z.security.JwtAuthenticationFilter   : Token found: eyJhbGciOiJIUzM4NCJ9...
+2026-06-22T17:47:13.605+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] c.e.z.security.JwtAuthenticationFilter   : Token valid, email: admin@poloshop.com
+2026-06-22T17:47:13.627+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] c.e.z.security.JwtAuthenticationFilter   : User loaded: admin@poloshop.com, authorities: [ROLE_ADMIN]
+2026-06-22T17:47:13.628+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] c.e.z.security.JwtAuthenticationFilter   : Authentication set for: admin@poloshop.com
+2026-06-22T17:47:13.630+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : POST "/api/admin/pos/orders", parameters={}
+2026-06-22T17:47:13.631+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.example.zeststore.controller.POSController#createOrder(Authentication, PosOrderRequest)
+2026-06-22T17:47:13.634+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.example.zeststore.dto.request.PosOrderRequest@289b0db0]
+2026-06-22T17:47:13.827+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-06-22T17:47:13.828+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{maDonHang=15, tongTien=250000.00, message=Counter order created successfully}]
+2026-06-22T17:47:13.831+07:00 DEBUG 21532 --- [ZestStore] [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-06-22T17:48:26.240+07:00  INFO 21532 --- [ZestStore] [File Watcher] rtingClassPathChangeChangedEventListener : Restarting due to 4 class path changes (0 additions, 3 deletions, 1 modification)
+2026-06-22T17:48:26.259+07:00  INFO 21532 --- [ZestStore] [Thread-1] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-06-22T17:48:26.279+07:00  INFO 21532 --- [ZestStore] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-06-22T17:48:26.316+07:00  INFO 21532 --- [ZestStore] [Thread-1] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-06-22T17:48:26.330+07:00  INFO 21532 --- [ZestStore] [Thread-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-06-22T17:48:26.358+07:00  INFO 21532 --- [ZestStore] [Thread-1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

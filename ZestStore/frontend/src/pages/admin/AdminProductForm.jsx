@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Upload, Trash2, Plus } from 'lucide-react'
 import api from '../../api/axios'
 import { VND } from '../../components/ProductCard'
+import SafeImg from '../../components/SafeImg'
 
 export default function AdminProductForm() {
   const { id } = useParams()
@@ -32,19 +33,41 @@ export default function AdminProductForm() {
     }
   }, [id])
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  const slugify = (s) => s.toLowerCase()
+    .replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a')
+    .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e')
+    .replace(/ì|í|ị|ỉ|ĩ/g, 'i')
+    .replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o')
+    .replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u')
+    .replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((f) => ({
+      ...f,
+      [name]: value,
+      slug: name === 'tenSanPham' && !f.slug ? slugify(value) : name === 'slug' ? value : f.slug,
+    }))
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSub(true)
     try {
-      const body = { tenSanPham: form.tenSanPham, slug: form.slug, moTa: form.moTa, urlAnhDaiDien: form.urlAnhDaiDien, maDanhMuc: form.maDanhMuc ? Number(form.maDanhMuc) : null }
+      const slug = form.slug || slugify(form.tenSanPham)
+      const body = { tenSanPham: form.tenSanPham, slug, moTa: form.moTa, urlAnhDaiDien: form.urlAnhDaiDien, maDanhMuc: form.maDanhMuc ? Number(form.maDanhMuc) : null }
       if (isEdit) { await api.put(`/products/${id}`, body); navigate('/admin/products') }
       else { const res = await api.post('/products', body); navigate(`/admin/products/${res.data.maSanPham}/edit`) }
-    } catch { alert('Lỗi lưu sản phẩm') } finally { setSub(false) }
+    } catch (err) { alert(err.response?.data?.message || err.response?.data?.errors?.[0]?.defaultMessage || 'Lỗi lưu sản phẩm') } finally { setSub(false) }
   }
 
   const addVariant = async () => {
-    if (!vform.sku || !vform.gia) return alert('SKU và giá không được để trống')
+    if (!vform.sku || !vform.gia || !vform.maThuongHieu || !vform.maKichCo || !vform.maMauSac) {
+      return alert('Vui lòng điền đầy đủ: SKU, giá, thương hiệu, kích cỡ, màu sắc')
+    }
     try {
       if (isEdit) {
         const res = await api.post(`/products/${id}/variants`, {
@@ -65,15 +88,18 @@ export default function AdminProductForm() {
   }
 
   const handleUpload = async () => {
+    if (!variants.length) return alert('Vui lòng thêm biến thể trước khi upload ảnh')
     const input = document.createElement('input')
     input.type = 'file'; input.accept = 'image/*'
     input.onchange = async (e) => {
       const file = e.target.files[0]
-      if (!file || !variants.length) return
+      if (!file) return
       const fd = new FormData()
       fd.append('file', file)
-      const res = await api.post(`/upload/variant/${variants[0].maBienThe}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setForm((f) => ({ ...f, urlAnhDaiDien: res.data.urlAnh || `/api/files/${res.data.maAnh}` }))
+      try {
+        const res = await api.post(`/upload/variant/${variants[0].maBienThe}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        setForm((f) => ({ ...f, urlAnhDaiDien: res.data.urlAnh || `/api/files/${res.data.maAnh}` }))
+      } catch { alert('Lỗi upload ảnh') }
     }
     input.click()
   }
@@ -172,7 +198,7 @@ export default function AdminProductForm() {
             <h2 className="font-semibold text-lg mb-4">Ảnh đại diện</h2>
             {form.urlAnhDaiDien && (
               <div className="mb-3 w-32 h-32 rounded-lg overflow-hidden border bg-gray-100">
-                <img src={form.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center" />
+                <SafeImg src={form.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center" />
               </div>
             )}
             <button type="button" onClick={handleUpload} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">

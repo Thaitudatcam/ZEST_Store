@@ -19,26 +19,22 @@ public class YeuThichController {
 
     @GetMapping
     public ResponseEntity<?> getWishlist(Authentication auth) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(yeuThichService.getWishlistItems(userId));
+        return ResponseEntity.ok(yeuThichService.getWishlistItems(userService.getUserIdFromAuth(auth)));
     }
 
     @GetMapping("/check/{productId}")
     public ResponseEntity<?> checkInWishlist(Authentication auth, @PathVariable Integer productId) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(Map.of("inWishlist", yeuThichService.isInWishlist(userId, productId)));
+        return ResponseEntity.ok(Map.of("inWishlist",
+                yeuThichService.isInWishlist(userService.getUserIdFromAuth(auth), productId)));
     }
 
     @PostMapping("/{productId}")
     public ResponseEntity<?> addItem(Authentication auth, @PathVariable Integer productId) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        return ResponseEntity.ok(yeuThichService.addItem(userId, productId));
+        return ResponseEntity.ok(yeuThichService.addItem(userService.getUserIdFromAuth(auth), productId));
     }
 
     @DeleteMapping("/{productId}")
     public ResponseEntity<?> removeItem(Authentication auth, @PathVariable Integer productId) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
-        yeuThichService.removeItem(userId, productId);
-        return ResponseEntity.ok(Map.of("message", "Item removed from wishlist"));
+        return ResponseEntity.ok(yeuThichService.removeItem(userService.getUserIdFromAuth(auth), productId));
     }
 }

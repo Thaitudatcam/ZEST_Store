@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import Wishlist from './pages/Wishlist'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
+import PaymentResult from './pages/PaymentResult'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import AdminOrders from './pages/admin/AdminOrders'
@@ -25,6 +26,7 @@ import AdminInvoices from './pages/admin/AdminInvoices'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminEmployees from './pages/admin/AdminEmployees'
+import AdminPOS from './pages/admin/AdminPOS'
 
 export default function App() {
   return (
@@ -41,6 +43,7 @@ export default function App() {
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="employees" element={<AdminEmployees />} />
+        <Route path="pos" element={<AdminPOS />} />
       </Route>
 
       <Route path="*" element={
@@ -59,6 +62,7 @@ export default function App() {
               <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+              <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
           </main>
           <Footer />

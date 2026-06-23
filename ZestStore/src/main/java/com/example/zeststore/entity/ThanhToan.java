@@ -1,6 +1,7 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +22,7 @@ public class ThanhToan {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_don_hang", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"thanhToans", "mucDonHangs", "danhGias", "hoaDon", "lichSuDonHangs"})
     private DonHang donHang;
 
     @Column(name = "phuong_thuc", nullable = false, columnDefinition = "TINYINT")
@@ -36,10 +38,12 @@ public class ThanhToan {
     @Builder.Default
     private Integer trangThaiThanhToan = 1;
 
+    @NotNull @PositiveOrZero
     @Column(name = "so_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal soTien;
 
-    @Column(name = "thoi_gian_tao", nullable = false, updatable = false)
+    @PastOrPresent
+    @Column(name = "thoi_gian_tao", nullable = false)
     private LocalDateTime thoiGianTao;
 
     @Column(name = "thoi_gian_tt")

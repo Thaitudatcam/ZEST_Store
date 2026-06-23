@@ -20,6 +20,7 @@ public class GioHangService {
     private final BienTheSanPhamRepository bienTheRepository;
     private final NguoiDungRepository nguoiDungRepository;
 
+    @Transactional(readOnly = true)
     public GioHang getOrCreateCart(Integer userId) {
         return gioHangRepository.findByNguoiDung_MaNguoiDung(userId)
                 .orElseGet(() -> {
@@ -36,19 +37,19 @@ public class GioHangService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (MucGioHang item : items) {
             BienTheSanPham variant = item.getBienThe();
-            SanPham product = variant.getSanPham();
+            SanPham product = variant != null ? variant.getSanPham() : null;
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("maMucGioHang", item.getMaMucGioHang());
-            itemMap.put("maBienThe", variant.getMaBienThe());
-            itemMap.put("maSanPham", product.getMaSanPham());
-            itemMap.put("tenSanPham", product.getTenSanPham());
-            itemMap.put("slug", product.getSlug());
-            itemMap.put("kichCo", variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);
-            itemMap.put("mauSac", variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
-            itemMap.put("donGia", variant.getGia());
+            itemMap.put("maBienThe", variant != null ? variant.getMaBienThe() : null);
+            itemMap.put("maSanPham", product != null ? product.getMaSanPham() : null);
+            itemMap.put("tenSanPham", product != null ? product.getTenSanPham() : null);
+            itemMap.put("slug", product != null ? product.getSlug() : null);
+            itemMap.put("kichCo", variant != null && variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);
+            itemMap.put("mauSac", variant != null && variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
+            itemMap.put("donGia", variant != null ? variant.getGia() : BigDecimal.ZERO);
             itemMap.put("soLuong", item.getSoLuong());
-            itemMap.put("thanhTien", variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())));
-            itemMap.put("urlAnh", variant.getUrlAnh());
+            itemMap.put("thanhTien", variant != null ? variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())) : BigDecimal.ZERO);
+            itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
             result.add(itemMap);
         }
         return result;
@@ -56,6 +57,9 @@ public class GioHangService {
 
     @Transactional
     public Map<String, Object> addItem(Integer userId, Integer maBienThe, Integer soLuong) {
+        if (soLuong == null || soLuong < 1) {
+            throw new BadRequestException("Số lượng phải lớn hơn 0");
+        }
         GioHang cart = getOrCreateCart(userId);
         BienTheSanPham variant = bienTheRepository.findById(maBienThe)
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", maBienThe));
@@ -88,6 +92,9 @@ public class GioHangService {
 
     @Transactional
     public Map<String, Object> updateQuantity(Integer userId, Integer maBienThe, Integer soLuong) {
+        if (soLuong == null || soLuong < 1) {
+            throw new BadRequestException("Số lượng phải lớn hơn 0");
+        }
         GioHang cart = getOrCreateCart(userId);
         MucGioHang item = mucGioHangRepository
                 .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), maBienThe)
@@ -104,18 +111,20 @@ public class GioHangService {
     }
 
     @Transactional
-    public void removeItem(Integer userId, Integer maBienThe) {
+    public Map<String, String> removeItem(Integer userId, Integer maBienThe) {
         GioHang cart = getOrCreateCart(userId);
         MucGioHang item = mucGioHangRepository
                 .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), maBienThe)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
         mucGioHangRepository.delete(item);
+        return Map.of("message", "Item removed from cart");
     }
 
     @Transactional
-    public void clearCart(Integer userId) {
+    public Map<String, String> clearCart(Integer userId) {
         GioHang cart = getOrCreateCart(userId);
         List<MucGioHang> items = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
         mucGioHangRepository.deleteAll(items);
+        return Map.of("message", "Cart cleared");
     }
 }

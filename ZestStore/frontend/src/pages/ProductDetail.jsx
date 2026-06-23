@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProductBySlug } from '../api/products'
 import { addToCart } from '../api/cart'
 import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
+import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { ShoppingCart, Heart, Star, MessageSquare } from 'lucide-react'
+import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight } from 'lucide-react'
 import { VND } from '../components/ProductCard'
+import Toast from '../components/Toast'
+import VariantModal from '../components/VariantModal'
 import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
+import SafeImg from '../components/SafeImg'
+import { imageUrl } from '../utils/imageUrl'
 
 export default function ProductDetail() {
   const { slug } = useParams()
   const { user } = useAuth()
+  const { refreshCount } = useCart()
+  const { refreshWishlistCount } = useWishlist()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
   const [variants, setVariants] = useState([])
@@ -19,11 +27,14 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true)
   const [qty, setQty] = useState(1)
   const [msg, setMsg] = useState('')
+  const [toast, setToast] = useState(null)
   const [inWish, setInWish] = useState(false)
   const [selectedVar, setSelectedVar] = useState(null)
   const [reviews, setReviews] = useState([])
   const [avgRating, setAvgRating] = useState(0)
   const [reviewCount, setReviewCount] = useState(0)
+  const [previewIdx, setPreviewIdx] = useState(0)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const load = async () => {
     try {
@@ -47,14 +58,18 @@ export default function ProductDetail() {
 
   useEffect(() => { load() }, [slug])
 
-  const handleAddCart = async () => {
+  const handleAddCart = async (vid, sl) => {
     if (!user) return navigate('/login')
-    const variantId = selectedVar || (variants[0]?.maBienThe)
-    if (!variantId) return setMsg('Sản phẩm chưa có biến thể')
+    const variantId = vid || selectedVar || (variants[0]?.maBienThe)
+    if (!variantId) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
     try {
-      await addToCart({ maBienThe: variantId, soLuong: qty })
-      setMsg('Đã thêm vào giỏ hàng!')
-    } catch { setMsg('Thêm thất bại') }
+      await addToCart({ maBienThe: variantId, soLuong: sl || qty })
+      setToast({ message: 'Đã thêm vào giỏ hàng!', type: 'success' })
+      refreshCount()
+      setModalOpen(false)
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Thêm thất bại', type: 'error' })
+    }
   }
 
   const toggleWish = async () => {
@@ -62,21 +77,67 @@ export default function ProductDetail() {
     try {
       if (inWish) { await removeWishlist(product.maSanPham); setInWish(false) }
       else { await addWishlist(product.maSanPham); setInWish(true) }
+      refreshWishlistCount()
     } catch {}
   }
 
-  if (loading) return <LoadingSpinner className="py-20" />
+  const handleAddClick = () => {
+    if (!user) return navigate('/login')
+    if (variants.length > 1 && !selectedVar) return setModalOpen(true)
+    handleAddCart()
+  }
+
+  if (loading) return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="grid md:grid-cols-2 gap-8 animate-pulse">
+        <div className="aspect-square bg-gray-200 rounded-xl" />
+        <div className="space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-3/4" />
+          <div className="h-8 bg-gray-200 rounded w-1/3" />
+          <div className="h-4 bg-gray-200 rounded w-full" />
+          <div className="h-4 bg-gray-200 rounded w-2/3" />
+          <div className="h-10 bg-gray-200 rounded w-1/2 mt-6" />
+          <div className="h-12 bg-gray-200 rounded w-full mt-4" />
+        </div>
+      </div>
+    </div>
+  )
+
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
+  const allImages = images.map(i => i.urlAnh).filter(Boolean)
+  const mainImg = imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
-  const img = images[0]?.urlAnh || product.urlAnhDaiDien || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      <nav className="flex items-center gap-1 text-sm text-gray-500 mb-6">
+        <Link to="/" className="hover:text-blue-700">Trang chủ</Link>
+        <ChevronRight className="h-3 w-3" />
+        <Link to="/products" className="hover:text-blue-700">Sản phẩm</Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-gray-800 font-semibold truncate max-w-[200px]">{product.tenSanPham}</span>
+      </nav>
+
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
-          <img src={img} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
+        <div>
+          <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-3">
+            <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
+          </div>
+          {allImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {allImages.map((url, idx) => (
+                <button key={idx} onClick={() => setPreviewIdx(idx)}
+                  className={`w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 ${idx === previewIdx ? 'border-blue-700' : 'border-transparent'}`}>
+                  <SafeImg src={url} alt="" className="w-full h-full object-cover object-center" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
         <div>
           <h1 className="text-2xl font-bold mb-2">{product.tenSanPham}</h1>
           <p className="text-3xl text-blue-700 font-bold mb-4">{VND(variantPrice)}</p>
@@ -105,7 +166,7 @@ export default function ProductDetail() {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={handleAddCart} className="flex-1 bg-blue-700 text-white font-semibold py-3 rounded-lg hover:bg-blue-800 transition flex items-center justify-center gap-2">
+            <button onClick={handleAddClick} className="flex-1 bg-blue-700 text-white font-semibold py-3 rounded-lg hover:bg-blue-800 transition flex items-center justify-center gap-2">
               <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
             </button>
             <button onClick={toggleWish} className={`p-3 border rounded-lg ${inWish ? 'text-red-500 border-red-300' : 'hover:bg-gray-100'}`}>
@@ -150,6 +211,15 @@ export default function ProductDetail() {
             ))}
           </div>
         </div>
+      )}
+
+      {modalOpen && (
+        <VariantModal
+          variants={variants}
+          images={images}
+          onConfirm={(vid, sl) => handleAddCart(vid, sl)}
+          onClose={() => setModalOpen(false)}
+        />
       )}
     </div>
   )

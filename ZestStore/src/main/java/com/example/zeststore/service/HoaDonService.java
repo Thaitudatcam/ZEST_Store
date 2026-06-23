@@ -58,6 +58,7 @@ public class HoaDonService {
         orderInfo.put("ngayDat", order.getNgayDat());
         orderInfo.put("soTienGiam", order.getSoTienGiam());
         orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
+        orderInfo.put("tongTien", order.getTongTien());
         orderInfo.put("khachHang", order.getNguoiDung().getHoTen());
         result.put("donHang", orderInfo);
 
@@ -91,7 +92,7 @@ public class HoaDonService {
         HoaDon invoice = HoaDon.builder()
                 .donHang(order)
                 .maHoaDonCode(code)
-                .emailKhachHang(order.getNguoiDung().getEmail())
+                .emailKhachHang(order.getNguoiDung().getEmail() != null ? order.getNguoiDung().getEmail() : "")
                 .tongTien(order.getTongTien())
                 .build();
         invoice = hoaDonRepository.save(invoice);

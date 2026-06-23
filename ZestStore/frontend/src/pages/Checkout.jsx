@@ -3,16 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses } from '../api/users'
 import { placeOrder } from '../api/orders'
+import { createVnPayPayment, createMomoPayment, createZaloPayPayment } from '../api/payment'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader } from 'lucide-react'
 import api from '../api/axios'
+import SafeImg from '../components/SafeImg'
 
 const PAYMENT_METHODS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền khi nhận hàng' },
-  { value: 2, label: 'VNPay', desc: 'Sắp ra mắt', disabled: true },
-  { value: 3, label: 'Ví MoMo', desc: 'Sắp ra mắt', disabled: true },
-  { value: 4, label: 'ZaloPay', desc: 'Sắp ra mắt', disabled: true },
+  { value: 2, label: 'VNPay', desc: 'Thanh toán qua cổng VNPay' },
+  { value: 3, label: 'Ví MoMo', desc: 'Thanh toán qua ví MoMo' },
+  { value: 4, label: 'ZaloPay', desc: 'Thanh toán qua ZaloPay' },
 ]
 
 export default function Checkout() {
@@ -104,7 +106,20 @@ export default function Checkout() {
         maCode: couponCode.trim() || undefined,
         phiVanChuyen: shippingFee,
       })
-      navigate(`/orders/${result.maDonHang}`)
+
+      const method = form.phuongThucThanhToan
+      if (method === 1) {
+        navigate(`/orders/${result.maDonHang}`)
+      } else if (method === 2) {
+        const paymentRes = await createVnPayPayment(result.maDonHang)
+        window.location.href = paymentRes.paymentUrl
+      } else if (method === 3) {
+        const paymentRes = await createMomoPayment(result.maDonHang)
+        window.location.href = paymentRes.paymentUrl
+      } else if (method === 4) {
+        const paymentRes = await createZaloPayPayment(result.maDonHang)
+        window.location.href = paymentRes.paymentUrl
+      }
     } catch (err) {
       alert(err.response?.data?.message || 'Đặt hàng thất bại')
     } finally {
@@ -194,7 +209,7 @@ export default function Checkout() {
               {cart.map((i) => (
                 <div key={i.maBienThe} className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                    <img src={i.urlAnh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
+                    <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{i.tenSanPham}</p>

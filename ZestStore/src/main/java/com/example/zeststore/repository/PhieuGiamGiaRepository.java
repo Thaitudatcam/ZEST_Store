@@ -23,4 +23,5 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             + "AND (:giaTriDon IS NULL OR p.giaTriDonToiThieu IS NULL OR p.giaTriDonToiThieu <= :giaTriDon)")
     List<PhieuGiamGia> findValidCoupons(@Param("now") LocalDateTime now,
                                          @Param("giaTriDon") BigDecimal giaTriDon);
+    List<PhieuGiamGia> findByNgayXoaIsNull();
 }

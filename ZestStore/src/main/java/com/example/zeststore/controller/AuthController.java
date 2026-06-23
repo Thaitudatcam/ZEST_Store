@@ -1,6 +1,7 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.dto.request.LoginRequest;
+import com.example.zeststore.dto.request.RefreshTokenRequest;
 import com.example.zeststore.dto.request.RegisterRequest;
 import com.example.zeststore.dto.response.AuthResponse;
 import com.example.zeststore.entity.GioHang;
@@ -102,9 +103,9 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
-        String oldToken = request.get("token");
-        if (oldToken == null || !jwtTokenProvider.validateToken(oldToken)) {
+    public ResponseEntity<?> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        String oldToken = request.getToken();
+        if (!jwtTokenProvider.validateToken(oldToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid or expired token"));
         }

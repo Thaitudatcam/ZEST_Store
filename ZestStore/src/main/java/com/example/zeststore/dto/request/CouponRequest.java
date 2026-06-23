@@ -1,8 +1,11 @@
 package com.example.zeststore.dto.request;
 
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,11 +27,15 @@ public class CouponRequest {
 
     private BigDecimal giaTriDonToiThieu;
 
-    @NotNull
+    @NotNull @FutureOrPresent
     private LocalDateTime ngayBatDau;
 
-    @NotNull
+    @NotNull @Future
     private LocalDateTime ngayKetThuc;
 
     private Integer trangThai;
+
+    private Integer soLuong;
+
+    private BigDecimal giaTriGiamToiDa;
 }

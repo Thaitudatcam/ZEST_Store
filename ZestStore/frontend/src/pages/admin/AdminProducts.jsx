@@ -3,6 +3,7 @@ import { getProducts } from '../../api/products'
 import api from '../../api/axios'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import SafeImg from '../../components/SafeImg'
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([])
@@ -48,7 +49,7 @@ export default function AdminProducts() {
                 <tr key={p.maSanPham} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={p.urlAnhDaiDien || 'https://placehold.co/40x40/e2e8f0/475569?text=P'} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                      <SafeImg src={p.urlAnhDaiDien} className="w-10 h-10 rounded-lg object-cover bg-gray-100" fallback="https://placehold.co/40x40/e2e8f0/475569?text=P" />
                       <span className="font-medium truncate max-w-[200px]">{p.tenSanPham}</span>
                     </div>
                   </td>

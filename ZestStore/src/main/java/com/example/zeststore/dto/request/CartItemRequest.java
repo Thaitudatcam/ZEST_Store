@@ -13,6 +13,7 @@ public class CartItemRequest {
     @NotNull
     private Integer maBienThe;
 
+    @NotNull
     @Positive
     private Integer soLuong;
 }
