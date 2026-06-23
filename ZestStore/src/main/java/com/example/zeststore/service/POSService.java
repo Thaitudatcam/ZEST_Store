@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -157,9 +158,9 @@ public class POSService {
         String paymentRef = "POS-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
-                .phuongThuc(5)
-                .nhaCungCap("Tiền mặt")
-                .trangThaiThanhToan(2)
+                .phuongThuc(phuongThuc)
+                .nhaCungCap(nhaCungCap)
+                .trangThaiThanhToan(trangThaiThanhToan)
                 .soTien(thanhToanTong)
                 .maGiaoDich(paymentRef)
                 .build());

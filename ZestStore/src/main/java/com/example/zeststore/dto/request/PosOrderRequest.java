@@ -25,6 +25,10 @@ public class PosOrderRequest {
     @Size(max = 50)
     private String maCode;
 
+    @Min(5)
+    @Max(6)
+    private Integer phuongThucThanhToan;
+
     @Getter
     @Setter
     @NoArgsConstructor

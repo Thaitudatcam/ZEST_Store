@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { createCustomer, getCoupons } from '../../api/admin'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag, DollarSign, QrCode, Loader, Check } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 
 const PAYMENT_OPTIONS = [
@@ -44,6 +44,9 @@ export default function AdminPOS() {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [searchingCustomer, setSearchingCustomer] = useState(false)
   const customerRef = useRef(null)
+  const [paymentMethod, setPaymentMethod] = useState(5)
+  const [vietQrData, setVietQrData] = useState(null)
+  const [confirmingQr, setConfirmingQr] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickForm, setQuickForm] = useState({ hoTen: '', soDienThoai: '', email: '', matKhau: '' })
   const [quickSaving, setQuickSaving] = useState(false)
@@ -134,6 +137,15 @@ export default function AdminPOS() {
       setMsg({ type: 'error', text: 'Không thể tải thông tin sản phẩm' })
     }
   }
+
+  const loadCart = async () => {
+    try {
+      const res = await api.get('/admin/pos/cart').then(r => r.data)
+      setCart(res.items || [])
+    } catch { setCart([]) }
+  }
+
+  useEffect(() => { loadCart() }, [])
 
   const addToCart = async () => {
     if (!selectedVar) return
@@ -260,8 +272,18 @@ export default function AdminPOS() {
         maCode: coupon?.maCode || undefined,
         tenKhachHang: tenKhach.trim() || undefined,
         sdtKhachHang: sdtKhach.trim() || undefined,
+        phuongThucThanhToan: paymentMethod,
       }).then(r => r.data)
-      navigate(`/admin/orders`)
+
+      if (paymentMethod === 6) {
+        const qr = await api.post('/payments/vietqr/create/' + res.maDonHang, {
+          soTien: Math.max(0, total - (coupon?.soTienGiam || 0)),
+          noiDung: `ZEST ${res.maDonHang}`,
+        }).then(r => r.data)
+        setVietQrData({ ...qr, paymentId: res.maDonHang })
+      } else {
+        navigate('/admin/orders')
+      }
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || 'Tạo đơn thất bại' })
     } finally {
@@ -273,7 +295,7 @@ export default function AdminPOS() {
     if (!vietQrData) return
     setConfirmingQr(true)
     try {
-      await confirmVietQrPayment(vietQrData.paymentId)
+      await api.post('/payments/vietqr/confirm/' + vietQrData.paymentId)
       navigate('/admin/orders')
     } catch (err) {
       setMsg({ type: 'error', text: 'Xác nhận thanh toán thất bại' })
@@ -474,6 +496,15 @@ export default function AdminPOS() {
               <span className="font-semibold">Phải thanh toán:</span>
               <span className="text-lg font-bold text-blue-700">{VND(Math.max(0, total - (coupon?.soTienGiam || 0)))}</span>
             </div>
+          </div>
+          <div className="flex gap-2">
+            {PAYMENT_OPTIONS.map(opt => (
+              <button key={opt.value} type="button" onClick={() => setPaymentMethod(opt.value)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium border transition ${paymentMethod === opt.value ? 'bg-blue-700 text-white border-blue-700' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                <opt.icon className="h-4 w-4" />
+                {opt.label}
+              </button>
+            ))}
           </div>
           <button onClick={handlePlace} disabled={cart.length === 0 || placing}
             className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
