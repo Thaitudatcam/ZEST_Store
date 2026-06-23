@@ -22,7 +22,9 @@ public class ThanhToanService {
     private final DonHangRepository donHangRepository;
     private final HoaDonService hoaDonService;
     private final MucDonHangRepository mucDonHangRepository;
+    private final MucGioHangRepository mucGioHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
+    private final GioHangRepository gioHangRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
 
     public List<ThanhToan> getPaymentsByOrder(Integer orderId) {
@@ -52,13 +54,29 @@ public class ThanhToanService {
 
         hoaDonService.generateInvoice(order.getMaDonHang());
 
+        clearCartForOrder(order);
+
         return payment;
+    }
+
+    private void clearCartForOrder(DonHang order) {
+        gioHangRepository.findByNguoiDung_MaNguoiDung(order.getNguoiDung().getMaNguoiDung())
+                .ifPresent(cart -> {
+                    List<MucGioHang> items = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
+                    mucGioHangRepository.deleteAll(items);
+                });
     }
 
     @Transactional
     public ThanhToan failPayment(Integer paymentId) {
         ThanhToan payment = getPaymentById(paymentId);
         payment.setTrangThaiThanhToan(3);
+        DonHang order = payment.getDonHang();
+        if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+            order.setTrangThaiDon(5);
+            donHangRepository.save(order);
+            clearCartForOrder(order);
+        }
         return thanhToanRepository.save(payment);
     }
 
@@ -90,6 +108,7 @@ public class ThanhToanService {
                 }
                 order.setTrangThaiDon(5);
                 donHangRepository.save(order);
+                clearCartForOrder(order);
                 log.info("Auto-cancelled expired order #{}", order.getMaDonHang());
             }
             payment.setTrangThaiThanhToan(3);

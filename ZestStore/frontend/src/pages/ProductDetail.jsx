@@ -83,6 +83,7 @@ export default function ProductDetail() {
 
   const handleAddClick = () => {
     if (!user) return navigate('/login')
+    if (isOutOfStock) return setToast({ message: 'Sản phẩm đã hết hàng', type: 'error' })
     if (variants.length > 1 && !selectedVar) return setModalOpen(true)
     handleAddCart()
   }
@@ -108,6 +109,11 @@ export default function ProductDetail() {
   const allImages = images.map(i => i.urlAnh).filter(Boolean)
   const mainImg = imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
+  const selectedVariant = selectedVar ? variants.find(v => v.maBienThe === selectedVar) : (variants[0] || null)
+  const selectedStock = selectedVariant?.tonKho ?? 0
+  const totalStock = variants.reduce((sum, v) => sum + (v.tonKho || 0), 0)
+  const isOutOfStock = totalStock === 0
+  const isSelectedOutOfStock = selectedStock === 0
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -147,13 +153,22 @@ export default function ProductDetail() {
             <div className="mb-4">
               <label className="font-semibold text-sm">Phân loại:</label>
               <div className="flex gap-2 mt-1 flex-wrap">
-                {variants.map((v) => (
-                  <button key={v.maBienThe} onClick={() => setSelectedVar(v.maBienThe)}
-                    className={`px-4 py-1.5 border rounded-lg text-sm ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : 'hover:bg-gray-100'}`}>
-                    {[v.kichCo?.kichCo, v.mauSac?.mauSac].filter(Boolean).join(' - ') || `#${v.maBienThe}`}
-                  </button>
-                ))}
+                {variants.map((v) => {
+                  const variantStock = v.tonKho ?? 0
+                  const disabled = variantStock === 0
+                  return (
+                    <button key={v.maBienThe} onClick={() => !disabled && setSelectedVar(v.maBienThe)}
+                      disabled={disabled}
+                      className={`px-4 py-1.5 border rounded-lg text-sm transition ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : disabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
+                      <span className="flex items-center gap-1">
+                        {[v.kichCo?.kichCo, v.mauSac?.mauSac].filter(Boolean).join(' - ') || `#${v.maBienThe}`}
+                        {disabled && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Hết</span>}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
+              <p className="text-xs text-gray-500 mt-1">Tổng tồn kho: {totalStock} {isOutOfStock && <span className="text-red-500 font-semibold">(Hết hàng)</span>}</p>
             </div>
           )}
 
@@ -166,8 +181,8 @@ export default function ProductDetail() {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={handleAddClick} className="flex-1 bg-blue-700 text-white font-semibold py-3 rounded-lg hover:bg-blue-800 transition flex items-center justify-center gap-2">
-              <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
+            <button onClick={handleAddClick} disabled={isOutOfStock || isSelectedOutOfStock} className={`flex-1 font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2 ${isOutOfStock || isSelectedOutOfStock ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-700 text-white hover:bg-blue-800'}`}>
+              <ShoppingCart className="h-5 w-5" /> {isOutOfStock || isSelectedOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ'}
             </button>
             <button onClick={toggleWish} className={`p-3 border rounded-lg ${inWish ? 'text-red-500 border-red-300' : 'hover:bg-gray-100'}`}>
               <Heart className={`h-5 w-5 ${inWish ? 'fill-red-500' : ''}`} />
