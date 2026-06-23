@@ -58,6 +58,7 @@ public class HoaDonService {
         orderInfo.put("ngayDat", order.getNgayDat());
         orderInfo.put("soTienGiam", order.getSoTienGiam());
         orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
+        orderInfo.put("tongTien", order.getTongTien());
         orderInfo.put("khachHang", order.getNguoiDung().getHoTen());
         result.put("donHang", orderInfo);
 

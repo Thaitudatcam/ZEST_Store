@@ -159,12 +159,12 @@ export default function AdminInvoices() {
                 <div className="w-64 space-y-1 text-sm">
                   {printData.donHang && (
                     <>
-                      <div className="flex justify-between"><span>Tạm tính:</span><span>{VND(printData.donHang.tongTien + (printData.donHang.soTienGiam || 0) - (printData.donHang.phiVanChuyen || 0))}</span></div>
+                      <div className="flex justify-between"><span>Tạm tính:</span><span>{VND(printData.donHang.tongTien ?? printData.tongTien ?? 0)}</span></div>
                       <div className="flex justify-between"><span>Giảm giá:</span><span className="text-red-500">-{VND(printData.donHang.soTienGiam || 0)}</span></div>
                       <div className="flex justify-between"><span>Phí vận chuyển:</span><span>{VND(printData.donHang.phiVanChuyen || 0)}</span></div>
                     </>
                   )}
-                  <div className="flex justify-between font-bold text-base border-t pt-2"><span>Tổng cộng:</span><span className="text-blue-700">{VND(printData.tongTien)}</span></div>
+                  <div className="flex justify-between font-bold text-base border-t pt-2"><span>Tổng cộng:</span><span className="text-blue-700">{VND((printData.donHang?.tongTien ?? printData.tongTien ?? 0) - (printData.donHang?.soTienGiam || 0) + (printData.donHang?.phiVanChuyen || 0))}</span></div>
                 </div>
               </div>
 

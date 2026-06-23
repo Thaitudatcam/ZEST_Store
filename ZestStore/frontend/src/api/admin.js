@@ -23,6 +23,8 @@ export const restoreReview = (id) => api.put(`/admin/reviews/${id}/restore`).the
 export const getCustomers = () => api.get('/admin/customers').then((r) => r.data)
 export const getCustomerDetail = (id) => api.get(`/admin/customers/${id}`).then((r) => r.data)
 export const toggleCustomerStatus = (id) => api.put(`/admin/customers/${id}/status`).then((r) => r.data)
+export const searchCustomers = (q) => api.get('/admin/customers/search', { params: { q } }).then((r) => r.data)
+export const createCustomer = (data) => api.post('/admin/customers', data).then((r) => r.data)
 
 export const getEmployees = () => api.get('/admin/employees').then((r) => r.data)
 export const createEmployee = (data) => api.post('/admin/employees', data).then((r) => r.data)
