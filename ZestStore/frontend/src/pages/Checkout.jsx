@@ -4,6 +4,7 @@ import { getCart } from '../api/cart'
 import { getAddresses } from '../api/users'
 import { placeOrder } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
+import { getShippingFees } from '../api/admin'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode } from 'lucide-react'
@@ -26,6 +27,7 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
+  const [shippingFees, setShippingFees] = useState([])
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
@@ -35,23 +37,27 @@ export default function Checkout() {
     tenNguoiNhan: '',
     sdtNguoiNhan: '',
     diaChiGiaoHang: '',
+    tinhThanhPho: '',
     ghiChu: '',
     phuongThucThanhToan: 1,
   })
 
   useEffect(() => {
-    Promise.all([getCart(), getAddresses()])
-      .then(([cartData, addrData]) => {
+    Promise.all([getCart(), getAddresses(), getShippingFees()])
+      .then(([cartData, addrData, shipData]) => {
         setCart(cartData)
         setAddresses(addrData)
+        setShippingFees(shipData)
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
         if (def) {
+          const fullAddr = def.tinhThanhPho ? `${def.chiTietDiaChi}, ${def.tinhThanhPho}` : def.chiTietDiaChi
           setForm((f) => ({
             ...f,
             maDiaChi: def.maDiaChi,
             tenNguoiNhan: def.tenNguoiNhan,
             sdtNguoiNhan: def.soDienThoai,
-            diaChiGiaoHang: def.chiTietDiaChi,
+            diaChiGiaoHang: fullAddr,
+            tinhThanhPho: def.tinhThanhPho || '',
           }))
         }
       })
@@ -59,12 +65,14 @@ export default function Checkout() {
   }, [])
 
   const selectAddress = (a) => {
+    const fullAddr = a.tinhThanhPho ? `${a.chiTietDiaChi}, ${a.tinhThanhPho}` : a.chiTietDiaChi
     setForm((f) => ({
       ...f,
       maDiaChi: a.maDiaChi,
       tenNguoiNhan: a.tenNguoiNhan,
       sdtNguoiNhan: a.soDienThoai,
-      diaChiGiaoHang: a.chiTietDiaChi,
+      diaChiGiaoHang: fullAddr,
+      tinhThanhPho: a.tinhThanhPho || '',
     }))
   }
 
@@ -86,7 +94,9 @@ export default function Checkout() {
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
-  const shippingFee = rawTotal >= 500000 ? 0 : 30000
+  const matchedFee = shippingFees.find((s) => s.tenTinh === form.tinhThanhPho)
+  const baseFee = matchedFee ? matchedFee.phiVanChuyen : 30000
+  const shippingFee = rawTotal >= 500000 ? 0 : Number(baseFee)
   const finalTotal = Math.max(0, rawTotal - discount + shippingFee)
 
   const handlePlaceOrder = async () => {
@@ -177,7 +187,7 @@ export default function Checkout() {
                     <input type="radio" name="address" checked={form.maDiaChi === a.maDiaChi} onChange={() => selectAddress(a)} className="mt-1" />
                     <div>
                       <p className="font-medium text-sm">{a.tenNguoiNhan} — {a.soDienThoai}</p>
-                      <p className="text-sm text-gray-500">{a.chiTietDiaChi}</p>
+                      <p className="text-sm text-gray-500">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
                       {a.laMacDinh && <span className="text-xs text-blue-600 font-semibold">Mặc định</span>}
                     </div>
                   </label>

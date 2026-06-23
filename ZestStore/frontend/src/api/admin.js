@@ -30,3 +30,8 @@ export const getEmployees = () => api.get('/admin/employees').then((r) => r.data
 export const createEmployee = (data) => api.post('/admin/employees', data).then((r) => r.data)
 export const updateEmployee = (id, data) => api.put(`/admin/employees/${id}`, data).then((r) => r.data)
 export const toggleEmployeeStatus = (id) => api.put(`/admin/employees/${id}/status`).then((r) => r.data)
+
+export const getShippingFees = () => api.get('/admin/shipping-fees').then((r) => r.data)
+export const createShippingFee = (data) => api.post('/admin/shipping-fees', data).then((r) => r.data)
+export const updateShippingFee = (id, data) => api.put(`/admin/shipping-fees/${id}`, data).then((r) => r.data)
+export const deleteShippingFee = (id) => api.delete(`/admin/shipping-fees/${id}`).then((r) => r.data)

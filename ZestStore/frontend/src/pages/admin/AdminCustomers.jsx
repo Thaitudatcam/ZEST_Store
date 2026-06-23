@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { getCustomers, toggleCustomerStatus } from '../../api/admin'
 import { Search, Eye, Lock, Unlock, Filter } from 'lucide-react'
 
+const PAGE_SIZE = 20
+
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [error, setError] = useState('')
   const [detail, setDetail] = useState(null)
+  const [page, setPage] = useState(0)
+  const [confirmToggle, setConfirmToggle] = useState(null)
 
   const load = () => getCustomers().then(setCustomers).catch(() => setError('Không thể tải khách hàng'))
   useEffect(() => { load() }, [])
@@ -18,10 +22,15 @@ export default function AdminCustomers() {
     return matchSearch && matchStatus
   })
 
-  const handleToggle = async (id) => {
-    try { await toggleCustomerStatus(id); setError(''); load() }
-    catch { setError('Cập nhật thất bại') }
+  const handleToggle = async () => {
+    if (!confirmToggle) return
+    try { await toggleCustomerStatus(confirmToggle); setError(''); setConfirmToggle(null); load() }
+    catch { setError('Cập nhật thất bại'); setConfirmToggle(null) }
   }
+
+  useEffect(() => { setPage(0) }, [search, statusFilter])
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   return (
     <div>
@@ -63,7 +72,7 @@ export default function AdminCustomers() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((c) => (
+              {paged.map((c) => (
                 <tr key={c.maNguoiDung} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">{c.hoTen}</td>
                   <td className="px-4 py-3 text-gray-500">{c.email}</td>
@@ -77,7 +86,7 @@ export default function AdminCustomers() {
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
                       <button onClick={() => setDetail(c)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="h-4 w-4" /></button>
-                      <button onClick={() => handleToggle(c.maNguoiDung)} className={`p-1.5 rounded-lg ${c.trangThai === 1 ? 'text-red-500 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}>
+                      <button onClick={() => setConfirmToggle(c.maNguoiDung)} className={`p-1.5 rounded-lg ${c.trangThai === 1 ? 'text-red-500 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}>
                         {c.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                       </button>
                     </div>
@@ -87,7 +96,17 @@ export default function AdminCustomers() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có khách hàng</p>}
+        {paged.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có khách hàng</p>}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 p-4 border-t">
+            <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Trước</button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{i + 1}</button>
+            ))}
+            <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Sau</button>
+          </div>
+        )}
       </div>
 
       {detail && (
@@ -108,6 +127,19 @@ export default function AdminCustomers() {
               </div>
             </div>
             <button onClick={() => setDetail(null)} className="mt-6 w-full border rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {confirmToggle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmToggle(null)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
+            <p className="text-sm text-gray-600 mb-4">Thay đổi trạng thái khách hàng này?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmToggle(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleToggle} className="flex-1 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-medium hover:bg-blue-800">Xác nhận</button>
+            </div>
           </div>
         </div>
       )}

@@ -32,7 +32,7 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
-        return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
+        return donHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(userId);
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +43,7 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public List<DonHang> getAllOrders() {
-        return donHangRepository.findAll();
+        return donHangRepository.findByLoaiDonHangOrderByNgayDatDesc(1);
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +66,21 @@ public class DonHangService {
             throw new BadRequestException("Order does not belong to current user");
         }
         return getOrderDetail(orderId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAdminOrderDetail(Integer orderId) {
+        DonHang order = getOrderById(orderId);
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
+        List<LichSuDonHang> history = lichSuDonHangRepository.findByDonHang_MaDonHangOrderByThoiGianDesc(orderId);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("order", order);
+        result.put("items", items);
+        result.put("payments", payments);
+        result.put("history", history);
+        return result;
     }
 
     @Transactional
@@ -144,6 +159,7 @@ public class DonHangService {
                 .soTienGiam(soTienGiam)
                 .phiVanChuyen(phiVanChuyen)
                 .tongTien(finalTotal)
+                .loaiDonHang(1)
                 .trangThaiDon(1)
                 .tenNguoiNhan(request.getTenNguoiNhan())
                 .sdtNguoiNhan(request.getSdtNguoiNhan())
@@ -207,6 +223,17 @@ public class DonHangService {
         return result;
     }
 
+    private static final Map<Integer, List<Integer>> ALLOWED_TRANSITIONS = Map.of(
+            1, List.of(2, 5),
+            2, List.of(3, 5),
+            3, List.of(4),
+            4, List.of(5, 6, 7),
+            5, List.of(),
+            6, List.of(7),
+            7, List.of(4, 8),
+            8, List.of()
+    );
+
     @Transactional
     public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
         List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8);
@@ -215,6 +242,13 @@ public class DonHangService {
         }
         DonHang order = getOrderById(orderId);
         Integer oldStatus = order.getTrangThaiDon();
+
+        List<Integer> allowed = ALLOWED_TRANSITIONS.get(oldStatus);
+        if (allowed == null || !allowed.contains(status)) {
+            throw new BadRequestException(
+                    "Cannot change status from " + oldStatus + " to " + status);
+        }
+
         order.setTrangThaiDon(status);
 
         if (Integer.valueOf(2).equals(status)) {

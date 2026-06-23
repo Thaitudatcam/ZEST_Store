@@ -129,7 +129,7 @@ public class POSService {
                 .nguoiDung(customer != null ? customer : admin)
                 .loaiDonHang(2)
                 .maDonHangCode(code)
-                .tongTien(tongTien)
+                .tongTien(thanhToanTong)
                 .trangThaiDon(6)
                 .tenNguoiNhan(tenNguoiNhan)
                 .sdtNguoiNhan(sdtNguoiNhan)

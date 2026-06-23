@@ -19,6 +19,7 @@ import PaymentResult from './pages/PaymentResult'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import AdminOrders from './pages/admin/AdminOrders'
+import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminCategories from './pages/admin/AdminCategories'
@@ -28,6 +29,7 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminEmployees from './pages/admin/AdminEmployees'
 import AdminPOS from './pages/admin/AdminPOS'
+import AdminShipping from './pages/admin/AdminShipping'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -43,6 +45,7 @@ export default function App() {
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<AdminOrders />} />
+        <Route path="orders/:id" element={<AdminOrderDetail />} />
         <Route path="invoices" element={<AdminInvoices />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/create" element={<AdminProductForm />} />
@@ -52,6 +55,7 @@ export default function App() {
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="employees" element={<AdminEmployees />} />
+        <Route path="shipping" element={<AdminShipping />} />
         <Route path="pos" element={<AdminPOS />} />
       </Route>
 

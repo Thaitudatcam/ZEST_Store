@@ -3,6 +3,7 @@ import { getAllReviews, deleteReview, restoreReview } from '../../api/admin'
 import { Search, Trash2, Star, RotateCcw, Filter } from 'lucide-react'
 
 const STATUS = { ALL: 'all', ACTIVE: 'active', DELETED: 'deleted' }
+const PAGE_SIZE = 15
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([])
@@ -10,6 +11,8 @@ export default function AdminReviews() {
   const [starFilter, setStarFilter] = useState(0)
   const [statusFilter, setStatusFilter] = useState(STATUS.ALL)
   const [error, setError] = useState('')
+  const [page, setPage] = useState(0)
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   const load = () => getAllReviews().then(setReviews).catch(() => setError('Không thể tải đánh giá'))
   useEffect(() => { load() }, [])
@@ -21,11 +24,15 @@ export default function AdminReviews() {
     return matchSearch && matchStar && matchStatus
   })
 
-  const handleDelete = async (id) => {
-    if (!confirm('Xóa đánh giá này?')) return
-    try { await deleteReview(id); setError(''); load() }
-    catch { setError('Xóa thất bại') }
+  const handleDelete = async () => {
+    if (!confirmDelete) return
+    try { await deleteReview(confirmDelete); setError(''); setConfirmDelete(null); load() }
+    catch { setError('Xóa thất bại'); setConfirmDelete(null) }
   }
+
+  useEffect(() => { setPage(0) }, [search, starFilter, statusFilter])
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const handleRestore = async (id) => {
     try { await restoreReview(id); setError(''); load() }
@@ -83,7 +90,7 @@ export default function AdminReviews() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((r) => (
+              {paged.map((r) => (
                 <tr key={r.maDanhGia} className={`hover:bg-gray-50 ${r.ngayXoa ? 'opacity-60' : ''}`}>
                   <td className="px-4 py-3 font-medium">{r.sanPham}</td>
                   <td className="px-4 py-3">{r.khachHang}<br /><span className="text-xs text-gray-400">{r.email}</span></td>
@@ -102,7 +109,7 @@ export default function AdminReviews() {
                         <RotateCcw className="h-4 w-4" />
                       </button>
                     ) : (
-                      <button onClick={() => handleDelete(r.maDanhGia)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa">
+                      <button onClick={() => setConfirmDelete(r.maDanhGia)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
@@ -113,7 +120,29 @@ export default function AdminReviews() {
           </table>
         </div>
         {filtered.length === 0 && <p className="text-center text-gray-500 py-8">Không có đánh giá nào</p>}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 p-4 border-t">
+            <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Trước</button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{i + 1}</button>
+            ))}
+            <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Sau</button>
+          </div>
+        )}
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
+            <p className="text-sm text-gray-600 mb-4">Xóa đánh giá này?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

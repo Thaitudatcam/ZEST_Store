@@ -94,6 +94,8 @@ public class UserService {
                 .nguoiDung(user)
                 .tenNguoiNhan(request.getTenNguoiNhan())
                 .soDienThoai(request.getSoDienThoai())
+                .tinhThanhPho(request.getTinhThanhPho())
+                .quanHuyen(request.getQuanHuyen())
                 .chiTietDiaChi(request.getChiTietDiaChi())
                 .laMacDinh(Boolean.TRUE.equals(request.getLaMacDinh()))
                 .build());
@@ -105,6 +107,8 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Address", addressId));
         address.setTenNguoiNhan(request.getTenNguoiNhan());
         address.setSoDienThoai(request.getSoDienThoai());
+        address.setTinhThanhPho(request.getTinhThanhPho());
+        address.setQuanHuyen(request.getQuanHuyen());
         address.setChiTietDiaChi(request.getChiTietDiaChi());
         if (Boolean.TRUE.equals(request.getLaMacDinh())) {
             diaChiRepository.resetMacDinhByNguoiDungId(address.getNguoiDung().getMaNguoiDung());

@@ -59,6 +59,12 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.getAllOrders());
     }
 
+    @GetMapping("/admin/detail/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminOrderDetail(@PathVariable Integer id) {
+        return ResponseEntity.ok(donHangService.getAdminOrderDetail(id));
+    }
+
     @PutMapping("/admin/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateStatus(@PathVariable Integer id, @Valid @RequestBody StatusUpdateRequest request,
