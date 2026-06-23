@@ -14,15 +14,16 @@ public class PosOrderRequest {
 
     private List<PosItem> items;
 
+    private Integer maNguoiDung;
+
     @Size(max = 100)
     private String tenKhachHang;
 
     @Size(max = 15)
     private String sdtKhachHang;
 
-    @Min(5)
-    @Max(6)
-    private Integer phuongThucThanhToan;
+    @Size(max = 50)
+    private String maCode;
 
     @Getter
     @Setter
