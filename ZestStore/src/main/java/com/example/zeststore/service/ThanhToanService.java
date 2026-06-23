@@ -22,7 +22,9 @@ public class ThanhToanService {
     private final DonHangRepository donHangRepository;
     private final HoaDonService hoaDonService;
     private final MucDonHangRepository mucDonHangRepository;
+    private final MucGioHangRepository mucGioHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
+    private final GioHangRepository gioHangRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
 
     public List<ThanhToan> getPaymentsByOrder(Integer orderId) {
@@ -43,6 +45,7 @@ public class ThanhToanService {
 
         DonHang order = payment.getDonHang();
         if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+            deductStock(order.getMaDonHang());
             order.setTrangThaiDon(2);
             donHangRepository.save(order);
         }
@@ -51,13 +54,29 @@ public class ThanhToanService {
 
         hoaDonService.generateInvoice(order.getMaDonHang());
 
+        clearCartForOrder(order);
+
         return payment;
+    }
+
+    private void clearCartForOrder(DonHang order) {
+        gioHangRepository.findByNguoiDung_MaNguoiDung(order.getNguoiDung().getMaNguoiDung())
+                .ifPresent(cart -> {
+                    List<MucGioHang> items = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
+                    mucGioHangRepository.deleteAll(items);
+                });
     }
 
     @Transactional
     public ThanhToan failPayment(Integer paymentId) {
         ThanhToan payment = getPaymentById(paymentId);
         payment.setTrangThaiThanhToan(3);
+        DonHang order = payment.getDonHang();
+        if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+            order.setTrangThaiDon(5);
+            donHangRepository.save(order);
+            clearCartForOrder(order);
+        }
         return thanhToanRepository.save(payment);
     }
 
@@ -89,10 +108,24 @@ public class ThanhToanService {
                 }
                 order.setTrangThaiDon(5);
                 donHangRepository.save(order);
+                clearCartForOrder(order);
                 log.info("Auto-cancelled expired order #{}", order.getMaDonHang());
             }
             payment.setTrangThaiThanhToan(3);
             thanhToanRepository.save(payment);
+        }
+    }
+
+    private void deductStock(Integer orderId) {
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            if (variant.getTonKho() < item.getSoLuong()) {
+                throw new BadRequestException("Insufficient stock for " + variant.getSku()
+                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+            }
+            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
+            bienTheRepository.save(variant);
         }
     }
 

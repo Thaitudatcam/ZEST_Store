@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -24,39 +23,50 @@ public class POSService {
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final HoaDonService hoaDonService;
+    private final PosCartRepository posCartRepository;
 
     @Transactional
     public Map<String, Object> createPosOrder(PosOrderRequest request, Integer adminUserId) {
-        if (request.getItems() == null || request.getItems().isEmpty()) {
-            throw new BadRequestException("No items in order");
-        }
-
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        BigDecimal tongTien = BigDecimal.ZERO;
         List<Map<String, Object>> orderItems = new ArrayList<>();
+        BigDecimal tongTien = BigDecimal.ZERO;
 
-        for (PosOrderRequest.PosItem req : request.getItems()) {
-            BienTheSanPham variant = bienTheRepository.findById(req.getMaBienThe())
-                    .orElseThrow(() -> new BadRequestException("Variant not found: " + req.getMaBienThe()));
-
-            if (variant.getTonKho() < req.getSoLuong()) {
-                throw new BadRequestException("Insufficient stock for " + variant.getSku());
+        if (request.getItems() != null && !request.getItems().isEmpty()) {
+            for (PosOrderRequest.PosItem req : request.getItems()) {
+                BienTheSanPham variant = bienTheRepository.findById(req.getMaBienThe())
+                        .orElseThrow(() -> new BadRequestException("Variant not found: " + req.getMaBienThe()));
+                if (variant.getTonKho() < req.getSoLuong()) {
+                    throw new BadRequestException("Insufficient stock for " + variant.getSku());
+                }
+                variant.setTonKho(variant.getTonKho() - req.getSoLuong());
+                bienTheRepository.save(variant);
+                BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(req.getSoLuong()));
+                tongTien = tongTien.add(thanhTien);
+                Map<String, Object> itemMap = new LinkedHashMap<>();
+                itemMap.put("bienThe", variant);
+                itemMap.put("donGia", variant.getGia());
+                itemMap.put("soLuong", req.getSoLuong());
+                itemMap.put("thanhTien", thanhTien);
+                orderItems.add(itemMap);
             }
-
-            BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(req.getSoLuong()));
-            tongTien = tongTien.add(thanhTien);
-
-            variant.setTonKho(variant.getTonKho() - req.getSoLuong());
-            bienTheRepository.save(variant);
-
-            Map<String, Object> itemMap = new LinkedHashMap<>();
-            itemMap.put("bienThe", variant);
-            itemMap.put("donGia", variant.getGia());
-            itemMap.put("soLuong", req.getSoLuong());
-            itemMap.put("thanhTien", thanhTien);
-            orderItems.add(itemMap);
+        } else {
+            List<PosCartItem> cartItems = posCartRepository.findByAdmin_MaNguoiDung(adminUserId);
+            if (cartItems.isEmpty()) {
+                throw new BadRequestException("Cart is empty");
+            }
+            for (PosCartItem cartItem : cartItems) {
+                BienTheSanPham variant = cartItem.getBienThe();
+                BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
+                tongTien = tongTien.add(thanhTien);
+                Map<String, Object> itemMap = new LinkedHashMap<>();
+                itemMap.put("bienThe", variant);
+                itemMap.put("donGia", variant.getGia());
+                itemMap.put("soLuong", cartItem.getSoLuong());
+                itemMap.put("thanhTien", thanhTien);
+                orderItems.add(itemMap);
+            }
         }
 
         NguoiDung customer = null;
@@ -140,6 +150,10 @@ public class POSService {
                     .build());
         }
 
+        Integer phuongThuc = request.getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
+        String nhaCungCap = Integer.valueOf(6).equals(phuongThuc) ? "VietQR" : "Tiền mặt";
+        Integer trangThaiThanhToan = Integer.valueOf(6).equals(phuongThuc) ? 1 : 2;
+
         String paymentRef = "POS-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
@@ -161,6 +175,8 @@ public class POSService {
         try {
             hoaDonService.generateInvoice(order.getMaDonHang());
         } catch (Exception ignored) {}
+
+        posCartRepository.deleteByAdmin_MaNguoiDung(adminUserId);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());

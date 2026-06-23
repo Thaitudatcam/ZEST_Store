@@ -92,9 +92,6 @@ public class DonHangService {
             BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
             tongTien = tongTien.add(thanhTien);
 
-            variant.setTonKho(variant.getTonKho() - cartItem.getSoLuong());
-            bienTheRepository.save(variant);
-
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("bienThe", variant);
             itemMap.put("donGia", variant.getGia());
@@ -171,6 +168,7 @@ public class DonHangService {
             case 2 -> "VNPay";
             case 3 -> "MoMo";
             case 4 -> "ZaloPay";
+            case 6 -> "VietQR";
             default -> "Tiền mặt";
         };
         thanhToanRepository.save(ThanhToan.builder()
@@ -193,7 +191,10 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        mucGioHangRepository.deleteAll(cartItems);
+        boolean isOnlinePayment = List.of(2, 3, 4, 6).contains(request.getPhuongThucThanhToan());
+        if (!isOnlinePayment) {
+            mucGioHangRepository.deleteAll(cartItems);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());
@@ -215,6 +216,14 @@ public class DonHangService {
         DonHang order = getOrderById(orderId);
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
+
+        if (Integer.valueOf(2).equals(status)) {
+            deductStock(orderId);
+        }
+
+        if (Integer.valueOf(5).equals(status)) {
+            restoreStock(orderId);
+        }
 
         if (Integer.valueOf(8).equals(status)) {
             restoreStock(orderId);
@@ -317,6 +326,19 @@ public class DonHangService {
         return Map.of("message", "Return requested");
     }
 
+    private void deductStock(Integer orderId) {
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            if (variant.getTonKho() < item.getSoLuong()) {
+                throw new BadRequestException("Insufficient stock for " + variant.getSku()
+                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+            }
+            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
+            bienTheRepository.save(variant);
+        }
+    }
+
     private void restoreStock(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
@@ -341,6 +363,29 @@ public class DonHangService {
             BienTheSanPham variant = item.getBienThe();
             variant.setTonKho(variant.getTonKho() + item.getSoLuong());
             bienTheRepository.save(variant);
+        }
+
+        GioHang cart = gioHangRepository.findByNguoiDung_MaNguoiDung(userId)
+                .orElseGet(() -> {
+                    GioHang newCart = GioHang.builder().nguoiDung(order.getNguoiDung()).build();
+                    return gioHangRepository.save(newCart);
+                });
+
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            Optional<MucGioHang> existing = mucGioHangRepository
+                    .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), variant.getMaBienThe());
+            if (existing.isPresent()) {
+                MucGioHang cartItem = existing.get();
+                cartItem.setSoLuong(cartItem.getSoLuong() + item.getSoLuong());
+                mucGioHangRepository.save(cartItem);
+            } else {
+                mucGioHangRepository.save(MucGioHang.builder()
+                        .gioHang(cart)
+                        .bienThe(variant)
+                        .soLuong(item.getSoLuong())
+                        .build());
+            }
         }
 
         if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {

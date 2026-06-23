@@ -12,8 +12,6 @@ import java.util.List;
 @Builder
 public class PosOrderRequest {
 
-    @NotEmpty
-    @Valid
     private List<PosItem> items;
 
     private Integer maNguoiDung;
