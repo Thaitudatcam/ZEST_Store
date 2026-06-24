@@ -38,7 +38,7 @@ public class DonHangController {
 
     @GetMapping("/admin/{id}/detail")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getAdminOrderDetail(@PathVariable Integer id) {
+    public ResponseEntity<?> getOrderDetailAdmin(@PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.getOrderDetail(id));
     }
 
@@ -71,7 +71,7 @@ public class DonHangController {
     @GetMapping("/admin/detail/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAdminOrderDetail(@PathVariable Integer id) {
-        return ResponseEntity.ok(donHangService.getAdminOrderDetail(id));
+        return ResponseEntity.ok(donHangService.getOrderDetail(id));
     }
 
     @PutMapping("/admin/{id}/status")

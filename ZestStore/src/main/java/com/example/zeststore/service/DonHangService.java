@@ -35,7 +35,7 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
-        return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
+        return donHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(userId);
     }
 
     @Transactional(readOnly = true)
