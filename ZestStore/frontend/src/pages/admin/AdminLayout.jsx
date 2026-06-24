@@ -32,7 +32,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:inset-auto`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-800 text-white transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-700">
           <Link to="/admin" className="text-lg font-bold tracking-wide">ZestStore<span className="text-blue-400">Admin</span></Link>
           <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></button>
@@ -79,7 +79,7 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         <header className="bg-white border-b h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           <button className="lg:hidden text-gray-600" onClick={() => setSidebarOpen(true)}><Menu className="h-6 w-6" /></button>
           <div />

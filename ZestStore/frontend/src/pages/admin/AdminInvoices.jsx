@@ -4,12 +4,20 @@ import { Search, Printer, FileText, X } from 'lucide-react'
 
 export default function AdminInvoices() {
   const [invoices, setInvoices] = useState([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const [search, setSearch] = useState('')
   const [printData, setPrintData] = useState(null)
   const [error, setError] = useState('')
 
-  const load = () => getInvoices().then(setInvoices).catch(() => setError('Không thể tải hóa đơn'))
-  useEffect(() => { load() }, [])
+  const load = (p) => {
+    getInvoices(p, 10).then(data => {
+      setInvoices(data.content || [])
+      setTotalPages(data.totalPages || 0)
+      setPage(data.number || 0)
+    }).catch(() => setError('Không thể tải hóa đơn'))
+  }
+  useEffect(() => { load(0) }, [])
 
   const filtered = invoices.filter((inv) =>
     !search || inv.maHoaDonCode?.toLowerCase().includes(search.toLowerCase()) || (inv.khachHang || '').toLowerCase().includes(search.toLowerCase()) || (inv.emailKhachHang || '').toLowerCase().includes(search.toLowerCase()) || String(inv.maDonHang).includes(search)
@@ -26,7 +34,7 @@ export default function AdminInvoices() {
     try {
       await generateInvoice(orderId)
       setError('')
-      load()
+      load(page)
     } catch (err) {
       setError(err.response?.data?.message || 'Tạo hóa đơn thất bại')
     }
@@ -83,6 +91,23 @@ export default function AdminInvoices() {
         </div>
         {filtered.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có hóa đơn nào</p>}
       </div>
+
+      {totalPages > 0 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <button onClick={() => load(0)} disabled={page === 0}
+            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Đầu</button>
+          <button onClick={() => load(page - 1)} disabled={page === 0}
+            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Trước</button>
+          {Array.from({ length: totalPages }, (_, i) => i).map(p => (
+            <button key={p} onClick={() => load(p)}
+              className={`px-3 py-1.5 text-sm border rounded-lg ${p === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{p + 1}</button>
+          ))}
+          <button onClick={() => load(page + 1)} disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Sau</button>
+          <button onClick={() => load(totalPages - 1)} disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Cuối</button>
+        </div>
+      )}
 
       <div className="mt-4 bg-white rounded-2xl shadow-sm border p-4">
         <h2 className="font-semibold mb-2">Tạo hóa đơn từ đơn hàng</h2>
@@ -157,14 +182,20 @@ export default function AdminInvoices() {
 
               <div className="flex justify-end">
                 <div className="w-64 space-y-1 text-sm">
-                  {printData.donHang && (
-                    <>
-                      <div className="flex justify-between"><span>Tạm tính:</span><span>{VND(printData.donHang.tongTien ?? printData.tongTien ?? 0)}</span></div>
-                      <div className="flex justify-between"><span>Giảm giá:</span><span className="text-red-500">-{VND(printData.donHang.soTienGiam || 0)}</span></div>
-                      <div className="flex justify-between"><span>Phí vận chuyển:</span><span>{VND(printData.donHang.phiVanChuyen || 0)}</span></div>
+                  {printData.donHang && (() => {
+                    const t = printData.donHang.tongTien ?? printData.tongTien ?? 0
+                    const g = printData.donHang.soTienGiam || 0
+                    const p = printData.donHang.phiVanChuyen || 0
+                    const isOnline = printData.donHang.loaiDonHang === 1
+                    const tamTinh = isOnline ? t + g - p : t
+                    const tongCong = isOnline ? t : t - g + p
+                    return <>
+                      <div className="flex justify-between"><span>Tạm tính:</span><span>{VND(tamTinh)}</span></div>
+                      <div className="flex justify-between"><span>Giảm giá:</span><span className="text-red-500">-{VND(g)}</span></div>
+                      <div className="flex justify-between"><span>Phí vận chuyển:</span><span>{VND(p)}</span></div>
+                      <div className="flex justify-between font-bold text-base border-t pt-2"><span>Tổng cộng:</span><span className="text-blue-700">{VND(tongCong)}</span></div>
                     </>
-                  )}
-                  <div className="flex justify-between font-bold text-base border-t pt-2"><span>Tổng cộng:</span><span className="text-blue-700">{VND((printData.donHang?.tongTien ?? printData.tongTien ?? 0) - (printData.donHang?.soTienGiam || 0) + (printData.donHang?.phiVanChuyen || 0))}</span></div>
+                  })()}
                 </div>
               </div>
 

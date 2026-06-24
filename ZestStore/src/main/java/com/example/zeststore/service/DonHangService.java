@@ -6,6 +6,9 @@ import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -32,7 +35,7 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
-        return donHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(userId);
+        return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
     }
 
     @Transactional(readOnly = true)
@@ -42,8 +45,12 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
-    public List<DonHang> getAllOrders() {
-        return donHangRepository.findByLoaiDonHangOrderByNgayDatDesc(1);
+    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
+        if (loaiDonHang != null) {
+            return donHangRepository.findByLoaiDonHang(loaiDonHang, pageable);
+        }
+        return donHangRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
@@ -66,21 +73,6 @@ public class DonHangService {
             throw new BadRequestException("Order does not belong to current user");
         }
         return getOrderDetail(orderId);
-    }
-
-    @Transactional(readOnly = true)
-    public Map<String, Object> getAdminOrderDetail(Integer orderId) {
-        DonHang order = getOrderById(orderId);
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
-        List<LichSuDonHang> history = lichSuDonHangRepository.findByDonHang_MaDonHangOrderByThoiGianDesc(orderId);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("order", order);
-        result.put("items", items);
-        result.put("payments", payments);
-        result.put("history", history);
-        return result;
     }
 
     @Transactional
@@ -106,6 +98,9 @@ public class DonHangService {
             }
             BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
             tongTien = tongTien.add(thanhTien);
+
+            variant.setTonKho(variant.getTonKho() - cartItem.getSoLuong());
+            bienTheRepository.save(variant);
 
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("bienThe", variant);
@@ -159,7 +154,6 @@ public class DonHangService {
                 .soTienGiam(soTienGiam)
                 .phiVanChuyen(phiVanChuyen)
                 .tongTien(finalTotal)
-                .loaiDonHang(1)
                 .trangThaiDon(1)
                 .tenNguoiNhan(request.getTenNguoiNhan())
                 .sdtNguoiNhan(request.getSdtNguoiNhan())
@@ -184,7 +178,6 @@ public class DonHangService {
             case 2 -> "VNPay";
             case 3 -> "MoMo";
             case 4 -> "ZaloPay";
-            case 6 -> "VietQR";
             default -> "Tiền mặt";
         };
         thanhToanRepository.save(ThanhToan.builder()
@@ -207,10 +200,7 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        boolean isOnlinePayment = List.of(2, 3, 4, 6).contains(request.getPhuongThucThanhToan());
-        if (!isOnlinePayment) {
-            mucGioHangRepository.deleteAll(cartItems);
-        }
+        mucGioHangRepository.deleteAll(cartItems);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());
@@ -223,17 +213,6 @@ public class DonHangService {
         return result;
     }
 
-    private static final Map<Integer, List<Integer>> ALLOWED_TRANSITIONS = Map.of(
-            1, List.of(2, 5),
-            2, List.of(3, 5),
-            3, List.of(4),
-            4, List.of(5, 6, 7),
-            5, List.of(),
-            6, List.of(7),
-            7, List.of(4, 8),
-            8, List.of()
-    );
-
     @Transactional
     public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
         List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8);
@@ -242,22 +221,7 @@ public class DonHangService {
         }
         DonHang order = getOrderById(orderId);
         Integer oldStatus = order.getTrangThaiDon();
-
-        List<Integer> allowed = ALLOWED_TRANSITIONS.get(oldStatus);
-        if (allowed == null || !allowed.contains(status)) {
-            throw new BadRequestException(
-                    "Cannot change status from " + oldStatus + " to " + status);
-        }
-
         order.setTrangThaiDon(status);
-
-        if (Integer.valueOf(2).equals(status)) {
-            deductStock(orderId);
-        }
-
-        if (Integer.valueOf(5).equals(status)) {
-            restoreStock(orderId);
-        }
 
         if (Integer.valueOf(8).equals(status)) {
             restoreStock(orderId);
@@ -360,19 +324,6 @@ public class DonHangService {
         return Map.of("message", "Return requested");
     }
 
-    private void deductStock(Integer orderId) {
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
-            if (variant.getTonKho() < item.getSoLuong()) {
-                throw new BadRequestException("Insufficient stock for " + variant.getSku()
-                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
-            }
-            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
-            bienTheRepository.save(variant);
-        }
-    }
-
     private void restoreStock(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
@@ -397,29 +348,6 @@ public class DonHangService {
             BienTheSanPham variant = item.getBienThe();
             variant.setTonKho(variant.getTonKho() + item.getSoLuong());
             bienTheRepository.save(variant);
-        }
-
-        GioHang cart = gioHangRepository.findByNguoiDung_MaNguoiDung(userId)
-                .orElseGet(() -> {
-                    GioHang newCart = GioHang.builder().nguoiDung(order.getNguoiDung()).build();
-                    return gioHangRepository.save(newCart);
-                });
-
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
-            Optional<MucGioHang> existing = mucGioHangRepository
-                    .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), variant.getMaBienThe());
-            if (existing.isPresent()) {
-                MucGioHang cartItem = existing.get();
-                cartItem.setSoLuong(cartItem.getSoLuong() + item.getSoLuong());
-                mucGioHangRepository.save(cartItem);
-            } else {
-                mucGioHangRepository.save(MucGioHang.builder()
-                        .gioHang(cart)
-                        .bienThe(variant)
-                        .soLuong(item.getSoLuong())
-                        .build());
-            }
         }
 
         if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {

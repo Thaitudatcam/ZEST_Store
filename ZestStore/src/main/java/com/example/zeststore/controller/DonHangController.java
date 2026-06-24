@@ -36,6 +36,12 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.placeOrder(userService.getUserIdFromAuth(auth), request));
     }
 
+    @GetMapping("/admin/{id}/detail")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminOrderDetail(@PathVariable Integer id) {
+        return ResponseEntity.ok(donHangService.getOrderDetail(id));
+    }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelOrder(Authentication auth, @PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.cancelOrder(id, userService.getUserIdFromAuth(auth)));
@@ -55,8 +61,11 @@ public class DonHangController {
 
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getAllOrders() {
-        return ResponseEntity.ok(donHangService.getAllOrders());
+    public ResponseEntity<?> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Integer loaiDonHang) {
+        return ResponseEntity.ok(donHangService.getAllOrders(page, size, loaiDonHang));
     }
 
     @GetMapping("/admin/detail/{id}")

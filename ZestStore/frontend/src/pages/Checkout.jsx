@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses } from '../api/users'
 import { placeOrder } from '../api/orders'
-import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
-import { getShippingFees } from '../api/admin'
+import { createVnPayPayment, createMomoPayment, createZaloPayPayment } from '../api/payment'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Search, ChevronDown, X } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 
@@ -16,7 +15,6 @@ const PAYMENT_METHODS = [
   { value: 2, label: 'VNPay', desc: 'Thanh toán qua cổng VNPay' },
   { value: 3, label: 'Ví MoMo', desc: 'Thanh toán qua ví MoMo' },
   { value: 4, label: 'ZaloPay', desc: 'Thanh toán qua ZaloPay' },
-  { value: 6, label: 'VietQR', desc: 'Quét mã QR bằng ứng dụng ngân hàng' },
 ]
 
 export default function Checkout() {
@@ -25,39 +23,35 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
-  const [vietQrData, setVietQrData] = useState(null)
-  const [confirmingQr, setConfirmingQr] = useState(false)
-  const [shippingFees, setShippingFees] = useState([])
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
+  const [couponModal, setCouponModal] = useState(false)
+  const [availCoupons, setAvailCoupons] = useState([])
+  const [availLoading, setAvailLoading] = useState(false)
   const [form, setForm] = useState({
     maDiaChi: '',
     tenNguoiNhan: '',
     sdtNguoiNhan: '',
     diaChiGiaoHang: '',
-    tinhThanhPho: '',
     ghiChu: '',
     phuongThucThanhToan: 1,
   })
 
   useEffect(() => {
-    Promise.all([getCart(), getAddresses(), getShippingFees()])
-      .then(([cartData, addrData, shipData]) => {
+    Promise.all([getCart(), getAddresses()])
+      .then(([cartData, addrData]) => {
         setCart(cartData)
         setAddresses(addrData)
-        setShippingFees(shipData)
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
         if (def) {
-          const fullAddr = def.tinhThanhPho ? `${def.chiTietDiaChi}, ${def.tinhThanhPho}` : def.chiTietDiaChi
           setForm((f) => ({
             ...f,
             maDiaChi: def.maDiaChi,
             tenNguoiNhan: def.tenNguoiNhan,
             sdtNguoiNhan: def.soDienThoai,
-            diaChiGiaoHang: fullAddr,
-            tinhThanhPho: def.tinhThanhPho || '',
+            diaChiGiaoHang: def.chiTietDiaChi,
           }))
         }
       })
@@ -65,14 +59,12 @@ export default function Checkout() {
   }, [])
 
   const selectAddress = (a) => {
-    const fullAddr = a.tinhThanhPho ? `${a.chiTietDiaChi}, ${a.tinhThanhPho}` : a.chiTietDiaChi
     setForm((f) => ({
       ...f,
       maDiaChi: a.maDiaChi,
       tenNguoiNhan: a.tenNguoiNhan,
       sdtNguoiNhan: a.soDienThoai,
-      diaChiGiaoHang: fullAddr,
-      tinhThanhPho: a.tinhThanhPho || '',
+      diaChiGiaoHang: a.chiTietDiaChi,
     }))
   }
 
@@ -81,7 +73,7 @@ export default function Checkout() {
     setCouponLoading(true)
     setCouponMsg('')
     try {
-      const res = await api.post('/coupons/validate', { maCode: couponCode.trim(), tongTien: rawTotal })
+      const res = await api.post('/coupons/validate', { maCode: couponCode.trim(), giaTriDon: rawTotal })
       setCoupon(res.data)
       setCouponMsg('')
     } catch (err) {
@@ -92,11 +84,38 @@ export default function Checkout() {
     }
   }
 
+  const handleOpenCouponModal = async () => {
+    setCouponModal(true)
+    setAvailLoading(true)
+    try {
+      const data = await api.get('/coupons/available', { params: { tongTien: rawTotal } }).then(r => r.data)
+      setAvailCoupons(data)
+    } catch {
+      setAvailCoupons([])
+    } finally {
+      setAvailLoading(false)
+    }
+  }
+
+  const selectAvailCoupon = async (c) => {
+    setCouponCode(c.maCode)
+    setCouponModal(false)
+    setCoupon(null)
+    setCouponMsg('')
+    try {
+      setCouponLoading(true)
+      const res = await api.post('/coupons/validate', { maCode: c.maCode, giaTriDon: rawTotal })
+      setCoupon(res.data)
+    } catch (err) {
+      setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
-  const matchedFee = shippingFees.find((s) => s.tenTinh === form.tinhThanhPho)
-  const baseFee = matchedFee ? matchedFee.phiVanChuyen : 30000
-  const shippingFee = rawTotal >= 500000 ? 0 : Number(baseFee)
+  const shippingFee = rawTotal >= 500000 ? 0 : 30000
   const finalTotal = Math.max(0, rawTotal - discount + shippingFee)
 
   const handlePlaceOrder = async () => {
@@ -132,28 +151,11 @@ export default function Checkout() {
       } else if (method === 4) {
         const paymentRes = await createZaloPayPayment(result.maDonHang)
         window.location.href = paymentRes.paymentUrl
-      } else if (method === 6) {
-        const qrRes = await createVietQrPayment(result.maDonHang)
-        setVietQrData(qrRes)
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Đặt hàng thất bại')
     } finally {
       setPlacing(false)
-    }
-  }
-
-  const handleConfirmQr = async () => {
-    if (!vietQrData) return
-    setConfirmingQr(true)
-    try {
-      await confirmVietQrPayment(vietQrData.paymentId)
-      setVietQrData(null)
-      navigate(`/orders/${vietQrData.orderId}`)
-    } catch (err) {
-      alert('Xác nhận thanh toán thất bại')
-    } finally {
-      setConfirmingQr(false)
     }
   }
 
@@ -169,7 +171,7 @@ export default function Checkout() {
   }
 
   return (
-    <><div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
       <button onClick={() => navigate('/cart')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
         <ArrowLeft className="h-4 w-4" /> Quay lại giỏ hàng
       </button>
@@ -187,7 +189,7 @@ export default function Checkout() {
                     <input type="radio" name="address" checked={form.maDiaChi === a.maDiaChi} onChange={() => selectAddress(a)} className="mt-1" />
                     <div>
                       <p className="font-medium text-sm">{a.tenNguoiNhan} — {a.soDienThoai}</p>
-                      <p className="text-sm text-gray-500">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
+                      <p className="text-sm text-gray-500">{a.chiTietDiaChi}</p>
                       {a.laMacDinh && <span className="text-xs text-blue-600 font-semibold">Mặc định</span>}
                     </div>
                   </label>
@@ -222,12 +224,20 @@ export default function Checkout() {
           <div className="bg-white rounded-xl border p-6">
             <h2 className="font-semibold mb-4 flex items-center gap-2"><Tag className="h-5 w-5 text-blue-700" /> Mã giảm giá</h2>
             <div className="flex gap-2">
-              <input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Nhập mã giảm giá" className="border rounded-lg px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCoupon(null); setCouponMsg('') }} placeholder="Nhập mã giảm giá" className="border rounded-lg px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <button onClick={handleValidateCoupon} disabled={couponLoading || !couponCode.trim()} className="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-800 disabled:opacity-50">
                 {couponLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Áp dụng'}
               </button>
+              <button onClick={handleOpenCouponModal} type="button" className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border transition flex items-center gap-1">
+                <Search className="h-4 w-4" /> Chọn
+              </button>
             </div>
-            {coupon && <p className="text-green-600 text-sm mt-2">Giảm {VND(coupon.soTienGiam)}</p>}
+            {coupon && (
+              <div className="flex items-center justify-between mt-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <span className="text-sm text-green-700 font-medium">{coupon.maCode} — Giảm {VND(coupon.soTienGiam)}</span>
+                <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg('') }} className="text-green-500 hover:text-green-700"><X className="h-4 w-4" /></button>
+              </div>
+            )}
             {couponMsg && <p className="text-red-500 text-sm mt-2">{couponMsg}</p>}
           </div>
         </div>
@@ -274,37 +284,45 @@ export default function Checkout() {
             </button>
           </div>
         </div>
-      </div>
-    </div>
 
-      {vietQrData && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
-        onClick={() => setVietQrData(null)}>
-        <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 animate-scale-in text-center"
-          onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg">Quét mã QR để thanh toán</h3>
-            <button onClick={() => setVietQrData(null)} className="text-gray-400 hover:text-gray-600">
-              <X className="h-5 w-5" />
-            </button>
+        {couponModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in p-4"
+            onClick={() => setCouponModal(false)}>
+            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[70vh] flex flex-col animate-scale-in"
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="font-bold text-lg">Chọn mã giảm giá</h3>
+                <button onClick={() => setCouponModal(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="overflow-y-auto p-4 space-y-2">
+                {availLoading ? (
+                  <div className="flex justify-center py-8"><div className="h-6 w-6 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" /></div>
+                ) : availCoupons.length === 0 ? (
+                  <p className="text-center text-gray-400 py-8">Không có mã giảm giá nào phù hợp</p>
+                ) : (
+                  availCoupons.map(c => (
+                    <button key={c.maPhieuGiamGia} onClick={() => selectAvailCoupon(c)}
+                      className="w-full text-left border rounded-xl p-3 hover:border-blue-400 hover:bg-blue-50 transition flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                        <Tag className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{c.maCode}</p>
+                        <p className="text-xs text-gray-500">
+                          {c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam}%` : `Giảm ${VND(c.giaTriGiam)}`}
+                          {c.giaTriDonToiThieu ? ` - Đơn tối thiểu ${VND(c.giaTriDonToiThieu)}` : ''}
+                          {c.soLuong != null ? ` - Còn ${c.soLuong} lượt` : ''}
+                        </p>
+                      </div>
+                      <ChevronDown className="h-5 w-5 text-gray-400 -rotate-90 shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-4 border mb-4 inline-block">
-            <img src={vietQrData.qrUrl} alt="VietQR" className="w-64 h-64 mx-auto" />
-          </div>
-          <div className="text-left space-y-2 text-sm mb-4">
-            <p><span className="text-gray-500">Ngân hàng:</span> <span className="font-medium">{vietQrData.bankName}</span></p>
-            <p><span className="text-gray-500">Số tài khoản:</span> <span className="font-medium">{vietQrData.accountNumber}</span></p>
-            <p><span className="text-gray-500">Chủ tài khoản:</span> <span className="font-medium">{vietQrData.accountName}</span></p>
-            <p><span className="text-gray-500">Số tiền:</span> <span className="font-medium text-blue-700">{VND(vietQrData.amount)}</span></p>
-          </div>
-          <p className="text-xs text-gray-400 mb-4">Sử dụng ứng dụng ngân hàng để quét mã QR và thanh toán</p>
-          <button onClick={handleConfirmQr} disabled={confirmingQr}
-            className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 disabled:opacity-50 flex items-center justify-center gap-2">
-            {confirmingQr ? <Loader className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
-            {confirmingQr ? 'Đang xử lý...' : 'Tôi đã thanh toán'}
-          </button>
+        )}
       </div>
     </div>
-    )}
-  </>)
+  )
 }
