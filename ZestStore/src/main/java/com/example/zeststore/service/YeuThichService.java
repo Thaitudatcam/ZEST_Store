@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -58,12 +58,13 @@ public class YeuThichService {
     }
 
     @Transactional
-    public void removeItem(Integer userId, Integer productId) {
+    public Map<String, String> removeItem(Integer userId, Integer productId) {
         DanhSachYeuThich wishlist = getOrCreateWishlist(userId);
         MucYeuThich item = mucYeuThichRepository
                 .findByDanhSachYeuThich_MaDsYeuThichAndSanPham_MaSanPham(
                         wishlist.getMaDsYeuThich(), productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wishlist item not found"));
         mucYeuThichRepository.delete(item);
+        return Map.of("message", "Item removed from wishlist");
     }
 }

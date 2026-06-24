@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getOrderDetail, cancelOrder } from '../api/orders'
+import { getOrderDetail, cancelOrder, requestReturn } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, retryPayment } from '../api/payment'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink } from 'lucide-react'
+import SafeImg from '../components/SafeImg'
 
 const PAYMENT_LABELS = {
   1: 'Thanh toán khi nhận hàng (COD)',
@@ -28,6 +29,9 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
   const [paying, setPaying] = useState(false)
+  const [returnOpen, setReturnOpen] = useState(false)
+  const [returnLyDo, setReturnLyDo] = useState('')
+  const [returning, setReturning] = useState(false)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -41,6 +45,18 @@ export default function OrderDetail() {
     } catch {} finally {
       setCancelling(false)
     }
+  }
+
+  const handleRequestReturn = async () => {
+    if (!returnLyDo.trim()) return alert('Vui lòng nhập lý do trả hàng')
+    setReturning(true)
+    try {
+      await requestReturn(id, returnLyDo.trim())
+      setReturnOpen(false)
+      setReturnLyDo('')
+      load()
+    } catch { alert('Yêu cầu trả hàng thất bại') }
+    finally { setReturning(false) }
   }
 
   const handlePayNow = async (payment) => {
@@ -100,6 +116,13 @@ export default function OrderDetail() {
             {cancelling ? 'Đang hủy...' : 'Hủy đơn hàng'}
           </button>
         )}
+
+        {(order.trangThaiDon === 4 || order.trangThaiDon === 6) && (
+          <button onClick={() => setReturnOpen(true)} disabled={returnOpen}
+            className="text-sm text-orange-600 border border-orange-300 px-4 py-1.5 rounded-lg hover:bg-orange-50 transition">
+            Yêu cầu trả hàng
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border p-6 mb-6">
@@ -112,7 +135,7 @@ export default function OrderDetail() {
             return (
               <div key={item.maMucDonHang} className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                  <img src={anh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
+                  <SafeImg src={anh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
@@ -123,6 +146,12 @@ export default function OrderDetail() {
                   <p className="text-sm font-semibold">{VND(item.thanhTien)}</p>
                   <p className="text-xs text-gray-400">{VND(item.donGia)} / cái</p>
                 </div>
+                {order.trangThaiDon === 4 && (
+                  <button onClick={() => { setReviewModal(item); setReviewForm({ soSao: 5, binhLuan: '' }); setReviewMsg('') }}
+                    className="text-xs text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5 shrink-0 flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5" /> Đánh giá
+                  </button>
+                )}
               </div>
             )
           })}
@@ -176,6 +205,24 @@ export default function OrderDetail() {
           {order.ghiChu && <p><span className="text-gray-500">Ghi chú:</span> {order.ghiChu}</p>}
         </div>
       </div>
+
+      {returnOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in" onClick={() => setReturnOpen(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-3">Yêu cầu trả hàng</h3>
+            <textarea value={returnLyDo} onChange={e => setReturnLyDo(e.target.value)}
+              placeholder="Vui lòng nhập lý do trả hàng..."
+              className="w-full border rounded-lg p-3 text-sm min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setReturnOpen(false)} className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">Hủy</button>
+              <button onClick={handleRequestReturn} disabled={returning}
+                className="flex-1 bg-orange-600 text-white rounded-lg py-2 text-sm hover:bg-orange-700 transition disabled:opacity-50">
+                {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

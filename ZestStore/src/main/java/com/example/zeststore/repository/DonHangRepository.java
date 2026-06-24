@@ -13,7 +13,9 @@ import java.util.List;
 @Repository
 public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
-    List<DonHang> findByNguoiDung_MaNguoiDung(Integer maNguoiDung);
+    List<DonHang> findByLoaiDonHangOrderByNgayDatDesc(Integer loaiDonHang);
+
+    List<DonHang> findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(Integer maNguoiDung);
 
     List<DonHang> findByTrangThaiDon(Integer trangThaiDon);
 

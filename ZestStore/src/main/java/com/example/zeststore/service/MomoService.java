@@ -113,6 +113,31 @@ public class MomoService {
         thanhToanService.failPayment(payment.getMaThanhToan());
     }
 
+    public Map<String, String> buildReturnParams(Map<String, String> rawParams) {
+        boolean verified = verifyReturn(rawParams);
+        String resultCode = rawParams.get("resultCode");
+        String orderId = rawParams.get("orderId");
+        Integer oid = extractOrderId(orderId);
+
+        Map<String, String> result = new LinkedHashMap<>();
+        result.put("verified", String.valueOf(verified));
+        result.put("resultCode", resultCode);
+        result.put("orderId", orderId);
+        result.put("orderIdInt", oid != null ? oid.toString() : null);
+        result.put("transId", rawParams.get("transId"));
+        return result;
+    }
+
+    public Integer extractOrderId(String ref) {
+        if (ref == null) return null;
+        try {
+            String[] parts = ref.split("-");
+            return parts.length >= 2 ? Integer.parseInt(parts[1]) : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String hmacSHA256(String key, String data) {
         try {
             Mac hmac = Mac.getInstance("HmacSHA256");

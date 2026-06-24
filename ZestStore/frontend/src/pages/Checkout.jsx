@@ -3,17 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses } from '../api/users'
 import { placeOrder } from '../api/orders'
-import { createVnPayPayment, createMomoPayment, createZaloPayPayment } from '../api/payment'
+import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
+import { getShippingFees } from '../api/admin'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode } from 'lucide-react'
 import api from '../api/axios'
+import SafeImg from '../components/SafeImg'
 
 const PAYMENT_METHODS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', desc: 'Trả tiền khi nhận hàng' },
   { value: 2, label: 'VNPay', desc: 'Thanh toán qua cổng VNPay' },
   { value: 3, label: 'Ví MoMo', desc: 'Thanh toán qua ví MoMo' },
   { value: 4, label: 'ZaloPay', desc: 'Thanh toán qua ZaloPay' },
+  { value: 6, label: 'VietQR', desc: 'Quét mã QR bằng ứng dụng ngân hàng' },
 ]
 
 export default function Checkout() {
@@ -22,6 +25,9 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
   const [placing, setPlacing] = useState(false)
+  const [vietQrData, setVietQrData] = useState(null)
+  const [confirmingQr, setConfirmingQr] = useState(false)
+  const [shippingFees, setShippingFees] = useState([])
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
@@ -31,23 +37,27 @@ export default function Checkout() {
     tenNguoiNhan: '',
     sdtNguoiNhan: '',
     diaChiGiaoHang: '',
+    tinhThanhPho: '',
     ghiChu: '',
     phuongThucThanhToan: 1,
   })
 
   useEffect(() => {
-    Promise.all([getCart(), getAddresses()])
-      .then(([cartData, addrData]) => {
+    Promise.all([getCart(), getAddresses(), getShippingFees()])
+      .then(([cartData, addrData, shipData]) => {
         setCart(cartData)
         setAddresses(addrData)
+        setShippingFees(shipData)
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
         if (def) {
+          const fullAddr = def.tinhThanhPho ? `${def.chiTietDiaChi}, ${def.tinhThanhPho}` : def.chiTietDiaChi
           setForm((f) => ({
             ...f,
             maDiaChi: def.maDiaChi,
             tenNguoiNhan: def.tenNguoiNhan,
             sdtNguoiNhan: def.soDienThoai,
-            diaChiGiaoHang: def.chiTietDiaChi,
+            diaChiGiaoHang: fullAddr,
+            tinhThanhPho: def.tinhThanhPho || '',
           }))
         }
       })
@@ -55,12 +65,14 @@ export default function Checkout() {
   }, [])
 
   const selectAddress = (a) => {
+    const fullAddr = a.tinhThanhPho ? `${a.chiTietDiaChi}, ${a.tinhThanhPho}` : a.chiTietDiaChi
     setForm((f) => ({
       ...f,
       maDiaChi: a.maDiaChi,
       tenNguoiNhan: a.tenNguoiNhan,
       sdtNguoiNhan: a.soDienThoai,
-      diaChiGiaoHang: a.chiTietDiaChi,
+      diaChiGiaoHang: fullAddr,
+      tinhThanhPho: a.tinhThanhPho || '',
     }))
   }
 
@@ -82,7 +94,9 @@ export default function Checkout() {
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
-  const shippingFee = rawTotal >= 500000 ? 0 : 30000
+  const matchedFee = shippingFees.find((s) => s.tenTinh === form.tinhThanhPho)
+  const baseFee = matchedFee ? matchedFee.phiVanChuyen : 30000
+  const shippingFee = rawTotal >= 500000 ? 0 : Number(baseFee)
   const finalTotal = Math.max(0, rawTotal - discount + shippingFee)
 
   const handlePlaceOrder = async () => {
@@ -118,11 +132,28 @@ export default function Checkout() {
       } else if (method === 4) {
         const paymentRes = await createZaloPayPayment(result.maDonHang)
         window.location.href = paymentRes.paymentUrl
+      } else if (method === 6) {
+        const qrRes = await createVietQrPayment(result.maDonHang)
+        setVietQrData(qrRes)
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Đặt hàng thất bại')
     } finally {
       setPlacing(false)
+    }
+  }
+
+  const handleConfirmQr = async () => {
+    if (!vietQrData) return
+    setConfirmingQr(true)
+    try {
+      await confirmVietQrPayment(vietQrData.paymentId)
+      setVietQrData(null)
+      navigate(`/orders/${vietQrData.orderId}`)
+    } catch (err) {
+      alert('Xác nhận thanh toán thất bại')
+    } finally {
+      setConfirmingQr(false)
     }
   }
 
@@ -138,7 +169,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <><div className="max-w-4xl mx-auto px-4 py-8">
       <button onClick={() => navigate('/cart')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
         <ArrowLeft className="h-4 w-4" /> Quay lại giỏ hàng
       </button>
@@ -156,7 +187,7 @@ export default function Checkout() {
                     <input type="radio" name="address" checked={form.maDiaChi === a.maDiaChi} onChange={() => selectAddress(a)} className="mt-1" />
                     <div>
                       <p className="font-medium text-sm">{a.tenNguoiNhan} — {a.soDienThoai}</p>
-                      <p className="text-sm text-gray-500">{a.chiTietDiaChi}</p>
+                      <p className="text-sm text-gray-500">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
                       {a.laMacDinh && <span className="text-xs text-blue-600 font-semibold">Mặc định</span>}
                     </div>
                   </label>
@@ -208,7 +239,7 @@ export default function Checkout() {
               {cart.map((i) => (
                 <div key={i.maBienThe} className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                    <img src={i.urlAnh || 'https://placehold.co/100x100/e2e8f0/475569?text=Polo'} alt="" className="w-full h-full object-cover object-center" />
+                    <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{i.tenSanPham}</p>
@@ -245,5 +276,35 @@ export default function Checkout() {
         </div>
       </div>
     </div>
-  )
+
+      {vietQrData && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
+        onClick={() => setVietQrData(null)}>
+        <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 animate-scale-in text-center"
+          onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">Quét mã QR để thanh toán</h3>
+            <button onClick={() => setVietQrData(null)} className="text-gray-400 hover:text-gray-600">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="bg-white rounded-xl p-4 border mb-4 inline-block">
+            <img src={vietQrData.qrUrl} alt="VietQR" className="w-64 h-64 mx-auto" />
+          </div>
+          <div className="text-left space-y-2 text-sm mb-4">
+            <p><span className="text-gray-500">Ngân hàng:</span> <span className="font-medium">{vietQrData.bankName}</span></p>
+            <p><span className="text-gray-500">Số tài khoản:</span> <span className="font-medium">{vietQrData.accountNumber}</span></p>
+            <p><span className="text-gray-500">Chủ tài khoản:</span> <span className="font-medium">{vietQrData.accountName}</span></p>
+            <p><span className="text-gray-500">Số tiền:</span> <span className="font-medium text-blue-700">{VND(vietQrData.amount)}</span></p>
+          </div>
+          <p className="text-xs text-gray-400 mb-4">Sử dụng ứng dụng ngân hàng để quét mã QR và thanh toán</p>
+          <button onClick={handleConfirmQr} disabled={confirmingQr}
+            className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 disabled:opacity-50 flex items-center justify-center gap-2">
+            {confirmingQr ? <Loader className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+            {confirmingQr ? 'Đang xử lý...' : 'Tôi đã thanh toán'}
+          </button>
+      </div>
+    </div>
+    )}
+  </>)
 }

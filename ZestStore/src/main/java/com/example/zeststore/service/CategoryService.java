@@ -85,9 +85,10 @@ public class CategoryService {
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public Map<String, String> delete(Integer id) {
         DanhMuc category = getById(id);
         category.setNgayXoa(LocalDateTime.now());
         danhMucRepository.save(category);
+        return Map.of("message", "Category deleted");
     }
 }

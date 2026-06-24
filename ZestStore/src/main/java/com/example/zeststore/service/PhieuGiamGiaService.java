@@ -30,7 +30,16 @@ public class PhieuGiamGiaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Coupon", id));
     }
 
+    public Map<String, Object> validateCoupon(Map<String, Object> body) {
+        String code = (String) body.get("maCode");
+        BigDecimal giaTriDon = body.get("giaTriDon") != null
+                ? new BigDecimal(body.get("giaTriDon").toString())
+                : BigDecimal.ZERO;
+        return validateCoupon(code, giaTriDon);
+    }
+
     public Map<String, Object> validateCoupon(String code, BigDecimal giaTriDon) {
+        if (giaTriDon == null) giaTriDon = BigDecimal.ZERO;
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(code)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
 
@@ -95,9 +104,10 @@ public class PhieuGiamGiaService {
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public Map<String, String> delete(Integer id) {
         PhieuGiamGia coupon = getById(id);
         coupon.setNgayXoa(LocalDateTime.now());
         phieuGiamGiaRepository.save(coupon);
+        return Map.of("message", "Coupon deleted");
     }
 }

@@ -28,6 +28,12 @@ public class DiaChiNguoiDung {
     @Column(name = "so_dien_thoai", nullable = false, length = 15)
     private String soDienThoai;
 
+    @Column(name = "tinh_thanh_pho", length = 100)
+    private String tinhThanhPho;
+
+    @Column(name = "quan_huyen", length = 100)
+    private String quanHuyen;
+
     @Column(name = "chi_tiet_dia_chi", nullable = false, length = 500)
     private String chiTietDiaChi;
 

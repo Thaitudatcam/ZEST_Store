@@ -16,6 +16,12 @@ public class DiaChiRequest {
     @NotBlank @Size(max = 15)
     private String soDienThoai;
 
+    @Size(max = 100)
+    private String tinhThanhPho;
+
+    @Size(max = 100)
+    private String quanHuyen;
+
     @NotBlank @Size(max = 500)
     private String chiTietDiaChi;
 

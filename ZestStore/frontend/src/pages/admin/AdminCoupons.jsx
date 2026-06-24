@@ -2,9 +2,13 @@ import { useState, useEffect } from "react";
 import { getCoupons, createCoupon, deleteCoupon } from "../../api/admin";
 import { Plus, Trash2 } from "lucide-react";
 
+const PAGE_SIZE = 15
+
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [page, setPage] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [form, setForm] = useState({
     maCode: "",
     kieuGiamGia: 1,
@@ -56,13 +60,18 @@ export default function AdminCoupons() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Xóa mã này?")) return;
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
     try {
-      await deleteCoupon(id);
+      await deleteCoupon(confirmDelete);
+      setConfirmDelete(null);
       load();
     } catch {}
   };
+
+  useEffect(() => { setPage(0) }, [coupons.length])
+  const totalPages = Math.ceil(coupons.length / PAGE_SIZE)
+  const paged = coupons.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("vi-VN") : "—");
   return (
     <div>
@@ -107,7 +116,7 @@ export default function AdminCoupons() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {coupons.map((c) => (
+                {paged.map((c) => (
                   <tr key={c.maPhieuGiamGia} className="hover:bg-gray-50">
                     <td className="px-3 py-3 font-mono font-semibold text-blue-700">
                       {c.maCode}
@@ -144,7 +153,7 @@ export default function AdminCoupons() {
                     </td>
                     <td className="px-3 py-3 text-center">
                       <button
-                        onClick={() => handleDelete(c.maPhieuGiamGia)}
+                        onClick={() => setConfirmDelete(c.maPhieuGiamGia)}
                         className="p-1 text-red-500 hover:bg-red-50 rounded"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -159,6 +168,15 @@ export default function AdminCoupons() {
             <p className="text-center text-gray-500 py-8">
               Chưa có mã giảm giá
             </p>
+          )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 p-4 border-t">
+              <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Trước</button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{i + 1}</button>
+              ))}
+              <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Sau</button>
+            </div>
           )}
         </div>
 
@@ -270,6 +288,19 @@ export default function AdminCoupons() {
           </div>
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
+            <p className="text-sm text-gray-600 mb-4">Xóa mã giảm giá này?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

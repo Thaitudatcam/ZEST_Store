@@ -1,8 +1,6 @@
 package com.example.zeststore.controller;
 
-import com.example.zeststore.repository.ThuongHieuRepository;
-import com.example.zeststore.repository.KichCoRepository;
-import com.example.zeststore.repository.MauSacRepository;
+import com.example.zeststore.service.LookupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,22 +12,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class LookupController {
 
-    private final ThuongHieuRepository thuongHieuRepository;
-    private final KichCoRepository kichCoRepository;
-    private final MauSacRepository mauSacRepository;
+    private final LookupService lookupService;
 
     @GetMapping("/brands")
     public ResponseEntity<?> getBrands() {
-        return ResponseEntity.ok(thuongHieuRepository.findAll());
+        return ResponseEntity.ok(lookupService.getBrands());
     }
 
     @GetMapping("/sizes")
     public ResponseEntity<?> getSizes() {
-        return ResponseEntity.ok(kichCoRepository.findAll());
+        return ResponseEntity.ok(lookupService.getSizes());
     }
 
     @GetMapping("/colors")
     public ResponseEntity<?> getColors() {
-        return ResponseEntity.ok(mauSacRepository.findAll());
+        return ResponseEntity.ok(lookupService.getColors());
     }
 }

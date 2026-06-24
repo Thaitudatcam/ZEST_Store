@@ -4,6 +4,9 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -63,6 +66,37 @@ public class FileUploadService {
             Files.deleteIfExists(file);
         } catch (IOException e) {
             throw new RuntimeException("Failed to delete file: " + fileName, e);
+        }
+    }
+
+    public String getFileUrl(String fileName) {
+        return "/api/files/" + fileName;
+    }
+
+    public String determineContentType(String fileName) {
+        String ext = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+        return switch (ext) {
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            default -> "image/jpeg";
+        };
+    }
+
+    public String storeAndGetUrl(MultipartFile file) {
+        return getFileUrl(storeFile(file));
+    }
+
+    public ResponseEntity<?> serveFile(String fileName) {
+        try {
+            Resource resource = loadFile(fileName);
+            String contentType = determineContentType(fileName);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

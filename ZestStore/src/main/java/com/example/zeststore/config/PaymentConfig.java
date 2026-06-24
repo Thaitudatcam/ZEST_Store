@@ -13,7 +13,17 @@ public class PaymentConfig {
     private VnpayConfig vnpay = new VnpayConfig();
     private MomoConfig momo = new MomoConfig();
     private ZalopayConfig zalopay = new ZalopayConfig();
+    private VietQrConfig vietqr = new VietQrConfig();
     private String redirectBaseUrl = "http://localhost:5173";
+
+    @Getter
+    @Setter
+    public static class VietQrConfig {
+        private String bankBin;
+        private String bankNumber;
+        private String bankName;
+        private String template = "compact";
+    }
 
     @Getter
     @Setter

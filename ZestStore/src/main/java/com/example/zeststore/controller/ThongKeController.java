@@ -24,8 +24,6 @@ public class ThongKeController {
     @GetMapping("/revenue")
     public ResponseEntity<?> getRevenue(@RequestParam(required = false) LocalDateTime tuNgay,
                                          @RequestParam(required = false) LocalDateTime denNgay) {
-        if (tuNgay == null) tuNgay = LocalDateTime.now().withDayOfMonth(1);
-        if (denNgay == null) denNgay = LocalDateTime.now();
         return ResponseEntity.ok(thongKeService.getRevenueByDateRange(tuNgay, denNgay));
     }
 
