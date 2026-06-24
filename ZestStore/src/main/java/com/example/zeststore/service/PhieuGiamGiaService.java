@@ -25,6 +25,11 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.findByNgayXoaIsNull();
     }
 
+    public List<PhieuGiamGia> getAvailableCoupons(BigDecimal tongTien) {
+        if (tongTien == null) tongTien = BigDecimal.ZERO;
+        return phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
+    }
+
     public PhieuGiamGia getById(Integer id) {
         return phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Coupon", id));
