@@ -34,4 +34,12 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             + "WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
                                       @Param("denNgay") LocalDateTime denNgay);
+
+    @Query(value = "SELECT CONVERT(date, ngay_dat) as ngay, SUM(tong_tien) as doanh_thu "
+            + "FROM don_hang WHERE trang_thai_don = 4 AND ngay_dat BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY CONVERT(date, ngay_dat) ORDER BY ngay", nativeQuery = true)
+    List<Object[]> sumRevenueGroupByDate(@Param("tuNgay") LocalDateTime tuNgay,
+                                          @Param("denNgay") LocalDateTime denNgay);
+
+    List<DonHang> findTop10ByOrderByNgayDatDesc();
 }

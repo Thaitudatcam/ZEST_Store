@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProductBySlug } from '../api/products'
 import { addToCart } from '../api/cart'
@@ -149,28 +149,75 @@ export default function ProductDetail() {
           <p className="text-3xl text-blue-700 font-bold mb-4">{VND(variantPrice)}</p>
           {product.moTa && <p className="text-gray-600 mb-4">{product.moTa}</p>}
 
-          {variants.length > 0 && (
-            <div className="mb-4">
-              <label className="font-semibold text-sm">Phân loại:</label>
-              <div className="flex gap-2 mt-1 flex-wrap">
-                {variants.map((v) => {
-                  const variantStock = v.tonKho ?? 0
-                  const disabled = variantStock === 0
-                  return (
-                    <button key={v.maBienThe} onClick={() => !disabled && setSelectedVar(v.maBienThe)}
-                      disabled={disabled}
-                      className={`px-4 py-1.5 border rounded-lg text-sm transition ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : disabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
-                      <span className="flex items-center gap-1">
-                        {[v.kichCo?.kichCo, v.mauSac?.mauSac].filter(Boolean).join(' - ') || `#${v.maBienThe}`}
-                        {disabled && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Hết</span>}
-                      </span>
-                    </button>
-                  )
-                })}
+          {variants.length > 0 && (() => {
+            const uniqueColors = []
+            const seenColors = new Set()
+            variants.forEach(v => {
+              const id = v.mauSac?.maMauSac
+              if (id && !seenColors.has(id)) { seenColors.add(id); uniqueColors.push(v) }
+            })
+
+            const uniqueSizes = []
+            const seenSizes = new Set()
+            variants.forEach(v => {
+              const id = v.kichCo?.maKichCo
+              if (id && !seenSizes.has(id)) { seenSizes.add(id); uniqueSizes.push(v) }
+            })
+
+            const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
+            const selectedSizeId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.kichCo?.maKichCo : null
+
+            const sizesForColor = selectedColorId
+              ? variants.filter(v => v.mauSac?.maMauSac === selectedColorId)
+              : variants
+
+            return (
+              <div className="mb-4">
+                {/* Row 1: Color */}
+                <div className="mb-3">
+                  <label className="font-semibold text-sm mb-2 block">Màu sắc:</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {uniqueColors.map((v) => {
+                      const hasStock = variants.some(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0)
+                      return (
+                        <button key={v.mauSac?.maMauSac}
+                          onClick={() => {
+                            const firstAvail = hasStock ? variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0) || variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac) : variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac)
+                            setSelectedVar(firstAvail?.maBienThe || v.maBienThe)
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition ${selectedColorId === v.mauSac?.maMauSac ? 'bg-blue-700 text-white border-blue-700' : 'hover:bg-gray-100'}`}>
+                          {v.mauSac?.maMauHex && <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: v.mauSac.maMauHex }} />}
+                          <span>{v.mauSac?.mauSac}</span>
+                          {!hasStock && <span className="text-[10px] text-red-500">(Hết)</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Row 2: Size */}
+                <div>
+                  <label className="font-semibold text-sm mb-2 block">Kích cỡ:</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {sizesForColor.map((v) => {
+                      const disabled = (v.tonKho || 0) === 0
+                      return (
+                        <button key={v.maBienThe}
+                          onClick={() => !disabled && setSelectedVar(v.maBienThe)}
+                          disabled={disabled}
+                          className={`px-4 py-2 border rounded-lg text-sm font-medium transition ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : disabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
+                          {v.kichCo?.kichCo || 'N/A'}
+                          {disabled && <span className="text-[10px] ml-1 bg-red-100 text-red-700 px-1 py-0.5 rounded">Hết</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500 mt-2">Tổng tồn kho: {totalStock} {isOutOfStock && <span className="text-red-500 font-semibold">(Hết hàng)</span>}</p>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Tổng tồn kho: {totalStock} {isOutOfStock && <span className="text-red-500 font-semibold">(Hết hàng)</span>}</p>
-            </div>
-          )}
+            )
+          })()}
 
           <div className="flex items-center gap-4 mb-4">
             <div className="flex border rounded-lg">

@@ -8,11 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.zeststore.entity.DonHang;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,5 +63,35 @@ public class ThongKeService {
         LocalDateTime lastMonth = LocalDateTime.now().minusMonths(1);
         return hanhViRepository.findTopSanPhamByHanhDongAndDateRange(
                 hanhDong, lastMonth, LocalDateTime.now(), limit);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getRevenueByDate(int days) {
+        LocalDateTime denNgay = LocalDateTime.now();
+        LocalDateTime tuNgay = denNgay.minusDays(days).withHour(0).withMinute(0).withSecond(0);
+
+        List<Object[]> raw = donHangRepository.sumRevenueGroupByDate(tuNgay, denNgay);
+        Map<LocalDate, BigDecimal> map = new LinkedHashMap<>();
+        for (Object[] row : raw) {
+            LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
+            BigDecimal amount = (BigDecimal) row[1];
+            map.put(date, amount);
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (int i = days; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("ngay", date.toString());
+            entry.put("doanhThu", map.getOrDefault(date, BigDecimal.ZERO));
+            result.add(entry);
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<DonHang> getRecentOrders(int limit) {
+        return donHangRepository.findTop10ByOrderByNgayDatDesc()
+                .stream().limit(limit).collect(Collectors.toList());
     }
 }

@@ -17,7 +17,7 @@ export default function ProductCard({ product }) {
   const discount = product.phanTramGiamGia
   const colors = product.mauSacs ?? []
   const isNew = product.ngayTao && Date.now() - new Date(product.ngayTao).getTime() < 7 * 86400000
-  const totalStock = (product.bienThes || []).reduce((sum, v) => sum + (v.tonKho || 0), 0)
+  const totalStock = product.tongTonKho ?? 0
   const isOutOfStock = totalStock === 0
 
   const toggleWish = async (e) => {

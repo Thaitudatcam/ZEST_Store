@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { getAllOrders, updateOrderStatus, getAdminOrderDetail } from '../../api/admin'
 import StatusBadge, { labels } from '../../components/StatusBadge'
 import { Search, ChevronDown, Filter, Eye, X, CreditCard, MapPin, Phone, User, Package } from 'lucide-react'
+import { useToast } from '../../context/ToastContext'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const NEXT_STATUS = {
   1: [2, 5],
@@ -44,6 +46,7 @@ const LOAI_DON = [
 ]
 
 export default function AdminOrders() {
+  const toast = useToast()
   const [orders, setOrders] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -54,14 +57,17 @@ export default function AdminOrders() {
   const [error, setError] = useState('')
   const [detailModal, setDetailModal] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const loadOrders = (p, loai) => {
+    setLoading(true)
     const l = loai ?? loaiDonHang
     getAllOrders(p, 10, l).then(data => {
       setOrders(data.content || [])
       setTotalPages(data.totalPages || 0)
       setPage(data.number || 0)
     }).catch(() => setError('Không thể tải đơn hàng'))
+    .finally(() => setLoading(false))
   }
 
   useEffect(() => { loadOrders(0, loaiDonHang) }, [loaiDonHang])
@@ -73,7 +79,7 @@ export default function AdminOrders() {
       setError('')
       loadOrders(page, loaiDonHang)
     } catch (err) {
-      setError(err.response?.data?.message || 'Cập nhật thất bại')
+      toast.error(err.response?.data?.message || 'Cập nhật thất bại')
     }
   }
 
@@ -131,6 +137,9 @@ export default function AdminOrders() {
 
       <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
+          {orders.length === 0 ? (
+            <div className="p-6"><SkeletonTable rows={8} cols={6} /></div>
+          ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
@@ -185,8 +194,9 @@ export default function AdminOrders() {
               })}
             </tbody>
           </table>
+          )}
         </div>
-        {filtered.length === 0 && <p className="text-center text-gray-500 py-8">Không có đơn hàng</p>}
+        {filtered.length === 0 && !loading && <p className="text-center text-gray-500 py-8">Không có đơn hàng</p>}
       </div>
 
       {totalPages > 0 && (

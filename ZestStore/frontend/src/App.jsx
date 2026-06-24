@@ -1,11 +1,11 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import { ToastProvider } from './context/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import Home from './pages/Home'
-import Products from './pages/Products'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
@@ -22,6 +22,7 @@ import AdminOrders from './pages/admin/AdminOrders'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
+import AdminProductVariantDetail from './pages/admin/AdminProductVariantDetail'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminCoupons from './pages/admin/AdminCoupons'
 import AdminInvoices from './pages/admin/AdminInvoices'
@@ -29,7 +30,6 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminCustomers from './pages/admin/AdminCustomers'
 import AdminEmployees from './pages/admin/AdminEmployees'
 import AdminPOS from './pages/admin/AdminPOS'
-import AdminShipping from './pages/admin/AdminShipping'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -39,7 +39,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <>
+    <ToastProvider>
       <ScrollToTop />
       <Routes>
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
@@ -50,12 +50,12 @@ export default function App() {
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/create" element={<AdminProductForm />} />
         <Route path="products/:id/edit" element={<AdminProductForm />} />
+        <Route path="products/detail" element={<AdminProductVariantDetail />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="coupons" element={<AdminCoupons />} />
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="employees" element={<AdminEmployees />} />
-        <Route path="shipping" element={<AdminShipping />} />
         <Route path="pos" element={<AdminPOS />} />
       </Route>
 
@@ -65,7 +65,7 @@ export default function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Products />} />
+              <Route path="/products" element={<Navigate to="/" replace />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
@@ -82,6 +82,6 @@ export default function App() {
         </div>
       } />
     </Routes>
-    </>
+    </ToastProvider>
   )
 }

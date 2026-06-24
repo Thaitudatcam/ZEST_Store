@@ -6,6 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 @Getter
@@ -61,6 +62,11 @@ public class SanPham {
 
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
+
+    @Transient
+    @JsonProperty("tongTonKho")
+    @Builder.Default
+    private Integer tongTonKho = 0;
 
     @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

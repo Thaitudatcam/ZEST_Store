@@ -50,18 +50,49 @@ public class SanPhamService {
     public Page<SanPham> getProducts(int page, int size, String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        return sanPhamRepository.findByTrangThaiAndNgayXoaIsNull(1, pageable);
+        Page<SanPham> result = sanPhamRepository.findByTrangThaiAndNgayXoaIsNull(1, pageable);
+        populateStock(result);
+        return result;
     }
 
     public Page<SanPham> searchProducts(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return sanPhamRepository.searchByKeyword(keyword, pageable);
+        Page<SanPham> result = sanPhamRepository.searchByKeyword(keyword, pageable);
+        populateStock(result);
+        return result;
     }
 
     public Page<SanPham> filterProducts(Integer categoryId, BigDecimal minPrice, BigDecimal maxPrice,
                                          int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return sanPhamRepository.filterProducts(categoryId, minPrice, maxPrice, pageable);
+        Page<SanPham> result = sanPhamRepository.filterProducts(categoryId, minPrice, maxPrice, pageable);
+        populateStock(result);
+        return result;
+    }
+
+    public List<Map<String, Object>> searchSuggestions(String keyword, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        Page<SanPham> products = sanPhamRepository.searchByKeyword(keyword, pageable);
+        populateStock(products);
+        return products.getContent().stream().map(sp -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("maSanPham", sp.getMaSanPham());
+            m.put("tenSanPham", sp.getTenSanPham());
+            m.put("slug", sp.getSlug());
+            m.put("urlAnhDaiDien", sp.getUrlAnhDaiDien());
+            m.put("gia", sp.getGiaTrungBinh());
+            m.put("tongTonKho", sp.getTongTonKho());
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    private void populateStock(Page<SanPham> page) {
+        if (page.isEmpty()) return;
+        List<Integer> ids = page.getContent().stream().map(SanPham::getMaSanPham).collect(Collectors.toList());
+        List<Object[]> stockData = bienTheRepository.sumTonKhoBySanPhamIds(ids);
+        Map<Integer, Integer> stockMap = stockData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(), row -> ((Number) row[1]).intValue()));
+        page.getContent().forEach(sp -> sp.setTongTonKho(stockMap.getOrDefault(sp.getMaSanPham(), 0)));
     }
 
     public SanPham getBySlug(String slug) {
@@ -98,6 +129,34 @@ public class SanPhamService {
         result.put("sizes", sizes);
         result.put("colors", colors);
         return result;
+    }
+
+    @Transactional
+    public List<BienTheSanPham> createVariantsBatch(Integer productId, List<BienTheRequest> requests) {
+        SanPham product = getById(productId);
+        List<BienTheSanPham> created = new java.util.ArrayList<>();
+        for (BienTheRequest req : requests) {
+            if (bienTheRepository.findBySku(req.getSku()).isPresent()) {
+                throw new DuplicateResourceException("SKU already exists: " + req.getSku());
+            }
+            ThuongHieu thuongHieu = thuongHieuRepository.findById(req.getMaThuongHieu())
+                    .orElseThrow(() -> new ResourceNotFoundException("Brand", req.getMaThuongHieu()));
+            KichCo kichCo = kichCoRepository.findById(req.getMaKichCo())
+                    .orElseThrow(() -> new ResourceNotFoundException("Size", req.getMaKichCo()));
+            MauSac mauSac = mauSacRepository.findById(req.getMaMauSac())
+                    .orElseThrow(() -> new ResourceNotFoundException("Color", req.getMaMauSac()));
+            if (bienTheRepository.findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
+                    productId, req.getMaKichCo(), req.getMaMauSac()).isPresent()) {
+                throw new DuplicateResourceException("Variant already exists for size " + kichCo.getKichCo() + " and color " + mauSac.getMauSac());
+            }
+            BienTheSanPham variant = BienTheSanPham.builder()
+                    .sanPham(product).thuongHieu(thuongHieu).kichCo(kichCo).mauSac(mauSac)
+                    .sku(req.getSku()).gia(req.getGia()).urlAnh(req.getUrlAnh())
+                    .tonKho(req.getTonKho() != null ? req.getTonKho() : 0).build();
+            created.add(bienTheRepository.save(variant));
+        }
+        recalculateGiaTrungBinh(product);
+        return created;
     }
 
     @Transactional
@@ -151,6 +210,17 @@ public class SanPhamService {
 
     public List<BienTheSanPham> getVariants(Integer productId) {
         return bienTheRepository.findBySanPham_MaSanPham(productId);
+    }
+
+    @Transactional
+    public SanPham createProductWithVariants(SanPhamRequest productReq, List<BienTheRequest> variantReqs) {
+        SanPham product = createProduct(productReq);
+        if (variantReqs != null) {
+            for (BienTheRequest req : variantReqs) {
+                createVariant(product.getMaSanPham(), req);
+            }
+        }
+        return sanPhamRepository.findById(product.getMaSanPham()).get();
     }
 
     @Transactional
@@ -231,6 +301,18 @@ public class SanPhamService {
     public Map<String, String> deleteImage(Integer imageId) {
         anhSanPhamRepository.deleteById(imageId);
         return Map.of("message", "Image deleted");
+    }
+
+    @Transactional
+    public Map<String, Object> toggleStatus(Integer id) {
+        SanPham product = getById(id);
+        product.setTrangThai(Integer.valueOf(1).equals(product.getTrangThai()) ? 0 : 1);
+        sanPhamRepository.save(product);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("maSanPham", product.getMaSanPham());
+        result.put("trangThai", product.getTrangThai());
+        result.put("message", "Cập nhật trạng thái thành công");
+        return result;
     }
 
     private void recalculateGiaTrungBinh(SanPham product) {

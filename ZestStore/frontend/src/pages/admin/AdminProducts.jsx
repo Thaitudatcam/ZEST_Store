@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getProducts } from '../../api/products'
+import { toggleProductStatus } from '../../api/admin'
 import api from '../../api/axios'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Eye, EyeOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
 
@@ -13,12 +14,13 @@ export default function AdminProducts() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [error, setError] = useState('')
 
   const load = (pg, q) => {
     getProducts({ page: pg, size: PAGE_SIZE, ...(q ? { keyword: q } : {}) }).then((d) => {
       setProducts(d.content ?? d ?? [])
       setTotalPages(d.totalPages || 1)
-    }).catch(() => {})
+    }).catch(() => setError('Không thể tải sản phẩm'))
   }
 
   useEffect(() => { load(page, search) }, [page])
@@ -38,6 +40,13 @@ export default function AdminProducts() {
     } catch {}
   }
 
+  const handleToggle = async (id) => {
+    try {
+      await toggleProductStatus(id)
+      load(page, search)
+    } catch {}
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -46,6 +55,8 @@ export default function AdminProducts() {
           <Plus className="h-4 w-4" /> Thêm sản phẩm
         </Link>
       </div>
+
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
 
       <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         <div className="p-4 border-b">
@@ -61,6 +72,7 @@ export default function AdminProducts() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Sản phẩm</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Danh mục</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Giá TB</th>
+                <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
               </tr>
             </thead>
@@ -75,6 +87,17 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{p.danhMuc?.tenDanhMuc || '-'}</td>
                   <td className="px-4 py-3 text-right font-semibold">{VND(p.giaTrungBinh ?? 0)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => handleToggle(p.maSanPham)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
+                        p.trangThai === 1
+                          ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
+                          : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+                      }`}>
+                      {p.trangThai === 1 ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                      {p.trangThai === 1 ? 'Hiện' : 'Ẩn'}
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
                       <Link to={`/admin/products/${p.maSanPham}/edit`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil className="h-4 w-4" /></Link>

@@ -1,5 +1,6 @@
 package com.example.zeststore.service;
 
+import com.example.zeststore.dto.request.PhiVanChuyenRequest;
 import com.example.zeststore.entity.PhiVanChuyen;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.PhiVanChuyenRepository;
@@ -41,15 +42,19 @@ public class PhiVanChuyenService {
     }
 
     @Transactional
-    public PhiVanChuyen create(PhiVanChuyen entity) {
+    public PhiVanChuyen createFromRequest(PhiVanChuyenRequest request) {
+        PhiVanChuyen entity = PhiVanChuyen.builder()
+                .tenTinh(request.getTenTinh())
+                .phiVanChuyen(request.getPhiVanChuyen())
+                .build();
         return repository.save(entity);
     }
 
     @Transactional
-    public PhiVanChuyen update(Integer id, PhiVanChuyen entity) {
+    public PhiVanChuyen updateFromRequest(Integer id, PhiVanChuyenRequest request) {
         PhiVanChuyen existing = getById(id);
-        existing.setTenTinh(entity.getTenTinh());
-        existing.setPhiVanChuyen(entity.getPhiVanChuyen());
+        existing.setTenTinh(request.getTenTinh());
+        existing.setPhiVanChuyen(request.getPhiVanChuyen());
         return repository.save(existing);
     }
 

@@ -114,13 +114,22 @@ public class DonHangService {
         PhieuGiamGia coupon = null;
         if (request.getMaCode() != null && !request.getMaCode().isEmpty()) {
             coupon = phieuGiamGiaRepository.findByMaCode(request.getMaCode())
-                    .orElseThrow(() -> new BadRequestException("Invalid coupon"));
+                    .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
-            if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
-                throw new BadRequestException("Minimum order value not met for this coupon");
+            if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
+                throw new BadRequestException("Mã giảm giá đã ngừng hoạt động");
+            }
+            if (coupon.getNgayBatDau() != null && LocalDateTime.now().isBefore(coupon.getNgayBatDau())) {
+                throw new BadRequestException("Mã giảm giá chưa đến hạn sử dụng");
+            }
+            if (coupon.getNgayKetThuc() != null && LocalDateTime.now().isAfter(coupon.getNgayKetThuc())) {
+                throw new BadRequestException("Mã giảm giá đã hết hạn");
             }
             if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-                throw new BadRequestException("Phiếu giảm giá đã hết lượt sử dụng");
+                throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
+            }
+            if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
+                throw new BadRequestException("Chưa đạt giá trị đơn tối thiểu để áp dụng mã này");
             }
 
             if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {

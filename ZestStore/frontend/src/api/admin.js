@@ -32,6 +32,11 @@ export const createEmployee = (data) => api.post('/admin/employees', data).then(
 export const updateEmployee = (id, data) => api.put(`/admin/employees/${id}`, data).then((r) => r.data)
 export const toggleEmployeeStatus = (id) => api.put(`/admin/employees/${id}/status`).then((r) => r.data)
 
+export const toggleProductStatus = (id) => api.put(`/products/${id}/toggle-status`).then((r) => r.data)
+
+export const getRevenueByDate = (days = 30) => api.get('/dashboard/revenue-by-date', { params: { days } }).then((r) => r.data)
+export const getRecentOrders = (limit = 10) => api.get('/dashboard/recent-orders', { params: { limit } }).then((r) => r.data)
+
 export const getShippingFees = () => api.get('/admin/shipping-fees').then((r) => r.data)
 export const createShippingFee = (data) => api.post('/admin/shipping-fees', data).then((r) => r.data)
 export const updateShippingFee = (id, data) => api.put(`/admin/shipping-fees/${id}`, data).then((r) => r.data)
