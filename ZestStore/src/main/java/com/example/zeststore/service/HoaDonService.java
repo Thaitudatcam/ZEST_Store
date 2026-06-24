@@ -6,9 +6,13 @@ import com.example.zeststore.entity.HoaDon;
 import com.example.zeststore.entity.MucDonHang;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,19 +25,24 @@ public class HoaDonService {
     private final MucDonHangRepository mucDonHangRepository;
     private final ChiTietHoaDonRepository chiTietHoaDonRepository;
 
-    public List<Map<String, Object>> getAllInvoices() {
-        return hoaDonRepository.findAll().stream().map(inv -> {
+    public Page<Map<String, Object>> getAllInvoices(int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
+        return hoaDonRepository.findAll(pageable).map(inv -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("maHoaDon", inv.getMaHoaDon());
             m.put("maHoaDonCode", inv.getMaHoaDonCode());
             m.put("maDonHang", inv.getDonHang().getMaDonHang());
             m.put("emailKhachHang", inv.getEmailKhachHang());
-            m.put("tongTien", inv.getTongTien());
+            BigDecimal rawTotal = inv.getDonHang().getTongTien();
+            BigDecimal giam = inv.getDonHang().getSoTienGiam() != null ? inv.getDonHang().getSoTienGiam() : BigDecimal.ZERO;
+            BigDecimal ship = inv.getDonHang().getPhiVanChuyen() != null ? inv.getDonHang().getPhiVanChuyen() : BigDecimal.ZERO;
+            m.put("tongTien", rawTotal.subtract(giam).add(ship).max(BigDecimal.ZERO));
             m.put("trangThaiHoaDon", inv.getTrangThaiHoaDon());
             m.put("ngayTao", inv.getNgayTao());
             m.put("khachHang", inv.getDonHang().getNguoiDung().getHoTen());
+            m.put("loaiDonHang", inv.getDonHang().getLoaiDonHang());
             return m;
-        }).collect(Collectors.toList());
+        });
     }
 
     public Map<String, Object> getInvoiceDetail(Integer id) {
@@ -59,6 +68,7 @@ public class HoaDonService {
         orderInfo.put("soTienGiam", order.getSoTienGiam());
         orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
         orderInfo.put("tongTien", order.getTongTien());
+        orderInfo.put("loaiDonHang", order.getLoaiDonHang());
         orderInfo.put("khachHang", order.getNguoiDung().getHoTen());
         result.put("donHang", orderInfo);
 

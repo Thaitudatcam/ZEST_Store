@@ -17,8 +17,10 @@ public class HoaDonController {
     private final HoaDonService hoaDonService;
 
     @GetMapping
-    public ResponseEntity<?> getAllInvoices() {
-        return ResponseEntity.ok(hoaDonService.getAllInvoices());
+    public ResponseEntity<?> getAllInvoices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(hoaDonService.getAllInvoices(page, size));
     }
 
     @GetMapping("/{id}")

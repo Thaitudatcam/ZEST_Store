@@ -6,6 +6,9 @@ import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -42,8 +45,12 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
-    public List<DonHang> getAllOrders() {
-        return donHangRepository.findAll();
+    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
+        if (loaiDonHang != null) {
+            return donHangRepository.findByLoaiDonHang(loaiDonHang, pageable);
+        }
+        return donHangRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)

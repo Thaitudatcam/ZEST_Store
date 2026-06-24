@@ -5,6 +5,7 @@ import com.example.zeststore.dto.request.CouponValidateRequest;
 import com.example.zeststore.service.PhieuGiamGiaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,11 @@ public class PhieuGiamGiaController {
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request) {
         return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(request.getMaCode(), request.getGiaTriDon()));
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<?> getAvailable(@RequestParam(defaultValue = "0") BigDecimal tongTien) {
+        return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien));
     }
 
     @GetMapping

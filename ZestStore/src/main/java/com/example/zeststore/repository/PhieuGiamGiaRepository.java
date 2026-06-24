@@ -18,9 +18,11 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     List<PhieuGiamGia> findByTrangThai(Integer trangThai);
 
-    @Query("SELECT p FROM PhieuGiamGia p WHERE p.trangThai = 1 "
-            + "AND p.ngayBatDau <= :now AND p.ngayKetThuc >= :now "
-            + "AND (:giaTriDon IS NULL OR p.giaTriDonToiThieu IS NULL OR p.giaTriDonToiThieu <= :giaTriDon)")
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.trangThai = 1 AND p.ngayXoa IS NULL "
+            + "AND (p.ngayBatDau IS NULL OR p.ngayBatDau <= :now) "
+            + "AND (p.ngayKetThuc IS NULL OR p.ngayKetThuc >= :now) "
+            + "AND (:giaTriDon IS NULL OR p.giaTriDonToiThieu IS NULL OR p.giaTriDonToiThieu <= :giaTriDon) "
+            + "AND (p.soLuong IS NULL OR p.soLuong > 0)")
     List<PhieuGiamGia> findValidCoupons(@Param("now") LocalDateTime now,
                                          @Param("giaTriDon") BigDecimal giaTriDon);
     List<PhieuGiamGia> findByNgayXoaIsNull();

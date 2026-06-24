@@ -1,6 +1,8 @@
 package com.example.zeststore.repository;
 
 import com.example.zeststore.entity.DonHang;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,8 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     List<DonHang> findByNguoiDung_MaNguoiDung(Integer maNguoiDung);
 
     List<DonHang> findByTrangThaiDon(Integer trangThaiDon);
+
+    Page<DonHang> findByLoaiDonHang(Integer loaiDonHang, Pageable pageable);
 
     @Query("SELECT d FROM DonHang d WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay")
     List<DonHang> findByNgayDatBetween(@Param("tuNgay") LocalDateTime tuNgay,

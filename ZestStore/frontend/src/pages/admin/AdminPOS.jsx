@@ -17,8 +17,11 @@ export default function AdminPOS() {
   const [placing, setPlacing] = useState(false)
   const [msg, setMsg] = useState(null)
   const [variantModal, setVariantModal] = useState(null)
-  const [selectedVar, setSelectedVar] = useState(null)
+  const [selectedSize, setSelectedSize] = useState(null)
+  const [selectedColor, setSelectedColor] = useState(null)
   const [vQty, setVQty] = useState(1)
+  const [sizes, setSizes] = useState([])
+  const [colors, setColors] = useState([])
   const [categories, setCategories] = useState([])
   const [categoryId, setCategoryId] = useState('')
 
@@ -122,8 +125,15 @@ export default function AdminPOS() {
   const openVariant = async (product) => {
     try {
       const detail = await api.get(`/products/${product.slug || product.maSanPham}`).then(r => r.data)
+      const vars = detail.variants || []
+      const uniqueSizes = [...new Set(vars.map(v => v.kichCo?.kichCo).filter(Boolean))]
+      const uniqueColors = [...new Set(vars.map(v => v.mauSac?.mauSac).filter(Boolean))]
+      const firstAvail = vars.find(v => (v.tonKho || 0) > 0) || vars[0]
       setVariantModal(detail)
-      setSelectedVar(detail.variants?.[0]?.maBienThe || null)
+      setSizes(uniqueSizes)
+      setColors(uniqueColors)
+      setSelectedSize(firstAvail?.kichCo?.kichCo || uniqueSizes[0] || null)
+      setSelectedColor(firstAvail?.mauSac?.mauSac || uniqueColors[0] || null)
       setVQty(1)
     } catch {
       setMsg({ type: 'error', text: 'Không thể tải thông tin sản phẩm' })
@@ -131,9 +141,8 @@ export default function AdminPOS() {
   }
 
   const addToCart = () => {
-    if (!selectedVar) return
     const detail = variantModal
-    const variant = detail.variants?.find(v => v.maBienThe === selectedVar)
+    const variant = detail.variants?.find(v => v.kichCo?.kichCo === selectedSize && v.mauSac?.mauSac === selectedColor)
     if (!variant) return
     if (vQty > (variant.tonKho || 0)) {
       setMsg({ type: 'error', text: 'Số lượng vượt quá tồn kho' })
@@ -548,36 +557,65 @@ export default function AdminPOS() {
       {variantModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
           onClick={() => setVariantModal(null)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto animate-scale-in"
+          <div className="bg-white rounded-2xl max-w-md w-full mx-4 animate-scale-in"
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-bold text-lg">Chọn phân loại</h3>
-              <button onClick={() => setVariantModal(null)} className="text-gray-400 hover:text-gray-600">
+            <div className="flex items-start p-4 border-b gap-4">
+              <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0">
+                <SafeImg src={variantModal.product?.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center"
+                  fallback="https://placehold.co/200x200/e2e8f0/475569?text=Polo" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold">{variantModal.product?.tenSanPham || 'Sản phẩm'}</h3>
+                {(() => {
+                  const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)
+                  return v ? <p className="text-blue-700 font-bold text-lg">{VND(v.gia)}</p> : null
+                })()}
+              </div>
+              <button onClick={() => setVariantModal(null)} className="text-gray-400 hover:text-gray-600 shrink-0">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {(variantModal.variants || []).map(v => {
-                  const active = selectedVar === v.maBienThe
-                  return (
-                    <button key={v.maBienThe} onClick={() => { setSelectedVar(v.maBienThe); setVQty(1) }}
-                      className={`text-left border rounded-xl p-3 transition ${active ? 'border-blue-700 ring-2 ring-blue-200' : 'hover:border-gray-300'}`}>
-                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
-                        <SafeImg src={v.urlAnh || variantModal.product?.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center"
-                          fallback="https://placehold.co/200x200/e2e8f0/475569?text=Polo" />
-                      </div>
-                      <p className="text-sm font-semibold truncate">{v.kichCo?.kichCo} - {v.mauSac?.mauSac}</p>
-                      <p className="text-blue-700 font-bold text-sm">{VND(v.gia || 0)}</p>
-                      <p className="text-xs text-gray-400">Kho: {v.tonKho ?? 0}</p>
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="flex items-center gap-3 mt-4">
-                <span className="font-semibold text-sm">Số lượng:</span>
+            <div className="p-4 space-y-4">
+              {sizes.length > 1 && (
+                <div>
+                  <p className="text-sm font-semibold mb-2">Kích cỡ</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {sizes.map(s => {
+                      const hasStock = (variantModal.variants || []).some(v => v.kichCo?.kichCo === s && (v.tonKho || 0) > 0)
+                      return (
+                        <button key={s} onClick={() => {
+                          const avail = (variantModal.variants || []).find(v => v.kichCo?.kichCo === s && (v.tonKho || 0) > 0)
+                          setSelectedSize(s); setSelectedColor(avail ? avail.mauSac?.mauSac : (colors[0] || null)); setVQty(1)
+                        }}
+                          disabled={!hasStock}
+                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedSize === s ? 'border-blue-700 bg-blue-50 text-blue-700' : hasStock ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
+                          {s}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {colors.length > 1 && (
+                <div>
+                  <p className="text-sm font-semibold mb-2">Màu sắc</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {colors.map(c => {
+                      const hasStock = (variantModal.variants || []).some(v => v.mauSac?.mauSac === c && v.kichCo?.kichCo === selectedSize && (v.tonKho || 0) > 0)
+                      return (
+                        <button key={c} onClick={() => { setSelectedColor(c); setVQty(1) }}
+                          disabled={!hasStock}
+                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedColor === c ? 'border-blue-700 bg-blue-50 text-blue-700' : hasStock ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
+                          {c}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">Số lượng:</span>
                 <div className="flex border rounded-lg">
                   <button onClick={() => setVQty(Math.max(1, vQty - 1))}
                     className="px-3 py-1.5 hover:bg-gray-100">-</button>
@@ -585,12 +623,17 @@ export default function AdminPOS() {
                   <button onClick={() => setVQty(vQty + 1)}
                     className="px-3 py-1.5 hover:bg-gray-100">+</button>
                 </div>
+                {(() => {
+                  const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)
+                  return v ? <span className="text-xs text-gray-400">Kho: {v.tonKho ?? 0}</span> : null
+                })()}
               </div>
             </div>
 
             <div className="border-t p-4">
               <button onClick={addToCart}
-                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition flex items-center justify-center gap-2">
+                disabled={!selectedSize || !selectedColor || !variantModal.variants?.some(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)}
+                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
                 <Plus className="h-5 w-5" /> Thêm vào giỏ hàng
               </button>
             </div>
