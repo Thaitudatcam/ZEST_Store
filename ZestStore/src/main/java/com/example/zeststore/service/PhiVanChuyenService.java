@@ -42,6 +42,19 @@ public class PhiVanChuyenService {
     }
 
     @Transactional
+    public void saveFeeLog(String tenTinh, BigDecimal phiVanChuyen) {
+        if (tenTinh == null || tenTinh.isBlank()) return;
+        repository.findByTenTinhIgnoreCase(tenTinh)
+                .ifPresentOrElse(existing -> {
+                    existing.setPhiVanChuyen(phiVanChuyen);
+                    repository.save(existing);
+                }, () -> repository.save(PhiVanChuyen.builder()
+                        .tenTinh(tenTinh.trim())
+                        .phiVanChuyen(phiVanChuyen)
+                        .build()));
+    }
+
+    @Transactional
     public PhiVanChuyen createFromRequest(PhiVanChuyenRequest request) {
         PhiVanChuyen entity = PhiVanChuyen.builder()
                 .tenTinh(request.getTenTinh())

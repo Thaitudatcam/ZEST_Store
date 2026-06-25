@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/payments/momo/ipn").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/zalopay/callback").permitAll()
                 .requestMatchers("/api/shipping/ghn/**").permitAll()
+                .requestMatchers("/api/shipping/calculate").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

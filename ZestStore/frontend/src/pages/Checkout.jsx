@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
-import { getAddresses } from '../api/users'
+import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
-import { getProvinces, getDistricts, getWards, getServices, calculateFee } from '../api/ghn'
+import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 
@@ -24,6 +24,33 @@ const PAYMENT_CARDS = [
   { value: 4, label: 'ZaloPay', desc: 'Ví điện tử ZaloPay', icon: Smartphone, badge: null },
   { value: 6, label: 'VietQR', desc: 'Quét mã QR ngân hàng', icon: QrCode, badge: null },
 ]
+
+const flexibleMatch = (name, list, nameKey, extensionKey) => {
+  if (!name || !list) return null
+  const lower = name.toLowerCase().trim()
+  return list.find(item => {
+    const main = item[nameKey]?.toLowerCase()
+    if (!main) return false
+    if (main === lower || main.includes(lower) || lower.includes(main)) return true
+    if (extensionKey) {
+      const exts = item[extensionKey] || []
+      return exts.some(n => {
+        const e = n.toLowerCase()
+        return e === lower || e.includes(lower) || lower.includes(e)
+      })
+    }
+    return false
+  }) || null
+}
+
+const matchProvince = (name, list) => flexibleMatch(name, list, 'ProvinceName', 'NameExtension')
+
+const matchDistrict = (name, list) => {
+  const m = flexibleMatch(name, list, 'DistrictName', 'NameExtension')
+  return m ? m.DistrictID : null
+}
+
+const matchWard = (name, list) => flexibleMatch(name, list, 'WardName', 'NameExtension')
 
 function CheckoutStepper({ currentStep }) {
   const stepIndex = STEPS.findIndex(s => s.key === currentStep)
@@ -88,10 +115,20 @@ export default function Checkout() {
   const [selectedWardCode, setSelectedWardCode] = useState('')
   const [selectedServiceId, setSelectedServiceId] = useState(2)
   const [ghnFee, setGhnFee] = useState(null)
+  const [ghnError, setGhnError] = useState(false)
   const [ghnLoading, setGhnLoading] = useState(false)
   const [qrTimer, setQrTimer] = useState(900)
   const qrPollRef = useRef(null)
   const qrTimerRef = useRef(null)
+  const cascadingRef = useRef(false)
+  const [showAddrModal, setShowAddrModal] = useState(false)
+  const [addrForm, setAddrForm] = useState({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false })
+  const [addrProvinceId, setAddrProvinceId] = useState(0)
+  const [addrDistrictId, setAddrDistrictId] = useState(0)
+  const [addrWardCode, setAddrWardCode] = useState('')
+  const [addrDistricts, setAddrDistricts] = useState([])
+  const [addrWards, setAddrWards] = useState([])
+  const [addrLoading, setAddrLoading] = useState(false)
 
   useEffect(() => {
     Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProvinces()])
@@ -110,44 +147,128 @@ export default function Checkout() {
             diaChiGiaoHang: fullAddr,
             tinhThanhPho: def.tinhThanhPho || '',
             quanHuyen: def.quanHuyen || '',
+            phuongXa: def.phuongXa || '',
           }))
+          cascadeAddress(def.tinhThanhPho, def.quanHuyen, provData || [], def.phuongXa, def)
         }
       })
       .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    if (selectedProvinceId) {
+    if (selectedProvinceId && !cascadingRef.current) {
+      setSelectedDistrictId(0); setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false)
       getDistricts(selectedProvinceId).then(setDistricts).catch(() => setDistricts([]))
-      setSelectedDistrictId(0); setSelectedWardCode(''); setWards([]); setServices([]); setGhnFee(null)
     }
   }, [selectedProvinceId])
 
   useEffect(() => {
-    if (selectedDistrictId) {
+    if (selectedDistrictId && !cascadingRef.current) {
+      setSelectedWardCode(''); setGhnFee(null)
       Promise.all([
         getWards(selectedDistrictId).then(setWards).catch(() => setWards([])),
         getServices(selectedDistrictId).then(setServices).catch(() => setServices([])),
       ])
-      setSelectedWardCode(''); setGhnFee(null)
     }
   }, [selectedDistrictId])
 
   useEffect(() => {
+    if (addrProvinceId) {
+      setAddrDistrictId(0); setAddrWardCode(''); setAddrWards([])
+      getDistricts(addrProvinceId).then(setAddrDistricts).catch(() => setAddrDistricts([]))
+    }
+  }, [addrProvinceId])
+
+  useEffect(() => {
+    if (addrDistrictId) {
+      setAddrWardCode('')
+      getWards(addrDistrictId).then(setAddrWards).catch(() => setAddrWards([]))
+    }
+  }, [addrDistrictId])
+
+  const cascadeAddress = async (provinceName, districtName, provs, wardName, address) => {
+    cascadingRef.current = true
+
+    if (address?.provinceId) {
+      setSelectedProvinceId(address.provinceId)
+      setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false)
+
+      let distData = []
+      try { distData = await getDistricts(address.provinceId); setDistricts(distData || []) } catch {}
+
+      if (address.districtId && distData?.length > 0) {
+        setSelectedDistrictId(address.districtId)
+        try {
+          const w = await getWards(address.districtId)
+          setWards(w || [])
+          if (address.wardCode && w?.length > 0) setSelectedWardCode(address.wardCode)
+        } catch {}
+      } else {
+        setSelectedDistrictId(0)
+      }
+
+      cascadingRef.current = false
+      return
+    }
+
+    provs = provs || provinces
+    const matchedProv = matchProvince(provinceName, provs)
+    if (!matchedProv) {
+      cascadingRef.current = false
+      return
+    }
+
+    let distData = []
+    try {
+      distData = await getDistricts(matchedProv.ProvinceID)
+      setDistricts(distData || [])
+    } catch { distData = [] }
+
+    setSelectedProvinceId(matchedProv.ProvinceID)
+    setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false)
+
+    if (districtName && distData?.length > 0) {
+      const matchedDist = matchDistrict(districtName, distData)
+      if (matchedDist) {
+        setSelectedDistrictId(matchedDist)
+        try { const w = await getWards(matchedDist); setWards(w || []) } catch {}
+        if (wardName && w?.length > 0) {
+          const matchedWard = matchWard(wardName, w)
+          if (matchedWard) setSelectedWardCode(matchedWard.WardCode)
+        }
+        cascadingRef.current = false
+        return
+      }
+    }
+    setSelectedDistrictId(0)
+    cascadingRef.current = false
+  }
+
+  useEffect(() => {
     if (selectedWardCode && selectedDistrictId && cart.length > 0) {
       setGhnLoading(true)
+      setGhnError(false)
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
-      calculateFee({
-        serviceTypeId: selectedServiceId,
+      calculateShippingFee({
         toDistrictId: selectedDistrictId,
         toWardCode: selectedWardCode,
         weight: Math.max(weight, 500),
+        provinceName: form.tinhThanhPho,
       }).then((res) => {
-        setGhnFee(res?.total || res?.fee || null)
-      }).catch(() => setGhnFee(null))
+        if (res?.error) {
+          setGhnFee(null)
+          setGhnError(true)
+        } else {
+          setGhnFee(res?.fee ?? null)
+          setGhnError(false)
+        }
+      }).catch(() => {
+        setGhnFee(null)
+        setGhnError(true)
+      })
       .finally(() => setGhnLoading(false))
     }
-  }, [selectedWardCode, selectedDistrictId, selectedServiceId, cart])
+  }, [selectedWardCode, selectedDistrictId, selectedServiceId, cart, form.tinhThanhPho])
 
   useEffect(() => {
     if (!vietQrData) {
@@ -182,7 +303,24 @@ export default function Checkout() {
       diaChiGiaoHang: fullAddr,
       tinhThanhPho: a.tinhThanhPho || '',
       quanHuyen: a.quanHuyen || '',
+      phuongXa: a.phuongXa || '',
     }))
+    cascadeAddress(a.tinhThanhPho, a.quanHuyen, undefined, a.phuongXa, a)
+  }
+
+  const handleAddAddress = async (e) => {
+    e.preventDefault()
+    setAddrLoading(true)
+    try {
+      await addAddress(addrForm)
+      setShowAddrModal(false)
+      setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false })
+      setAddrProvinceId(0); setAddrDistrictId(0); setAddrWardCode(''); setAddrDistricts([]); setAddrWards([])
+      const addrData = await getAddresses()
+      setAddresses(addrData)
+      const added = addrData.find((a) => a.laMacDinh) || addrData[addrData.length - 1]
+      if (added) selectAddress(added)
+    } catch {} finally { setAddrLoading(false) }
   }
 
   const handleValidateCoupon = async () => {
@@ -203,7 +341,7 @@ export default function Checkout() {
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
-  const shippingFee = ghnFee !== null ? Number(ghnFee) : (rawTotal >= 500000 ? 0 : 30000)
+  const shippingFee = ghnFee !== null ? Number(ghnFee) : 0
   const finalTotal = Math.max(0, rawTotal - discount + shippingFee)
 
   const goToStep = (s) => {
@@ -218,6 +356,7 @@ export default function Checkout() {
     if (cart.length === 0) { return }
     setPlacing(true)
     try {
+      const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       const orderPayload = {
         tenNguoiNhan: form.tenNguoiNhan,
         sdtNguoiNhan: form.sdtNguoiNhan,
@@ -226,6 +365,9 @@ export default function Checkout() {
         phuongThucThanhToan: form.phuongThucThanhToan,
         maCode: couponCode.trim() || undefined,
         phiVanChuyen: shippingFee,
+        toDistrictId: selectedDistrictId || undefined,
+        toWardCode: selectedWardCode || undefined,
+        weight: Math.max(weight, 500),
       }
       if (selectedItems) {
         orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
@@ -318,18 +460,22 @@ export default function Checkout() {
                 </div>
               )}
 
+              <button onClick={() => setShowAddrModal(true)} className="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 px-4 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center gap-2 mb-4">
+                <Plus className="h-4 w-4" /> Thêm địa chỉ mới
+              </button>
+
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <input value={form.tenNguoiNhan} onChange={(e) => setForm((f) => ({ ...f, tenNguoiNhan: e.target.value }))} placeholder="Tên người nhận" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <input value={form.sdtNguoiNhan} onChange={(e) => setForm((f) => ({ ...f, sdtNguoiNhan: e.target.value }))} placeholder="Số điện thoại" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
-                <select value={selectedProvinceId} onChange={(e) => { setSelectedProvinceId(Number(e.target.value)); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, tinhThanhPho: name })) }}
+                <select value={selectedProvinceId} onChange={(e) => { const id = Number(e.target.value); setSelectedProvinceId(id); setSelectedDistrictId(0); setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, tinhThanhPho: name })) }}
                   className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value={0}>-- Chọn Tỉnh/Thành phố --</option>
                   {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
                 </select>
                 <div className="grid grid-cols-2 gap-3">
-                  <select value={selectedDistrictId} onChange={(e) => { setSelectedDistrictId(Number(e.target.value)); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, quanHuyen: name })) }}
+                  <select value={selectedDistrictId} onChange={(e) => { setSelectedDistrictId(Number(e.target.value)); setSelectedWardCode(''); setWards([]); setGhnFee(null); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, quanHuyen: name })) }}
                     disabled={!selectedProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value={0}>-- Chọn Quận/Huyện --</option>
                     {districts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
@@ -422,9 +568,10 @@ export default function Checkout() {
                 {couponMsg && <p className="text-red-500 text-xs mt-1">{couponMsg}</p>}
               </div>
 
+              {ghnError && <p className="text-red-500 text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
               <div className="flex gap-3">
                 <button onClick={() => goToStep('payment')} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">Quay lại</button>
-                <button onClick={handlePlaceOrder} disabled={placing}
+                <button onClick={handlePlaceOrder} disabled={placing || ghnError}
                   className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
                   {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : 'Đặt hàng ngay'}
                 </button>
@@ -464,7 +611,7 @@ export default function Checkout() {
               )}
               <div className="flex justify-between text-gray-600">
                 <span>Phí vận chuyển</span>
-                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnFee !== null ? VND(shippingFee) : (rawTotal >= 500000 ? 'Miễn phí' : VND(shippingFee))}</span>
+                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-red-500 text-xs">Lỗi</span> : ghnFee !== null ? VND(shippingFee) : '---'}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Tổng cộng</span>
@@ -472,9 +619,9 @@ export default function Checkout() {
               </div>
             </div>
             {step === 'review' && (
-              <button onClick={handlePlaceOrder} disabled={placing}
+              <button onClick={handlePlaceOrder} disabled={placing || ghnError}
                 className="mt-4 w-full bg-blue-700 text-white font-semibold py-4 rounded-xl hover:bg-blue-800 disabled:opacity-50 transition flex items-center justify-center gap-2 text-lg">
-                {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : 'Đặt hàng ngay'}
+                {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : ghnError ? 'Lỗi phí vận chuyển' : 'Đặt hàng ngay'}
               </button>
             )}
             <p className="text-xs text-gray-400 text-center mt-3">🔒 Thanh toán an toàn & bảo mật</p>
@@ -534,5 +681,62 @@ export default function Checkout() {
       </div>
     </div>
     )}
+
+      {showAddrModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+        onClick={() => setShowAddrModal(false)}>
+        <div className="bg-white rounded-3xl max-w-lg w-full mx-4 p-6 animate-scale-in max-h-[90vh] overflow-y-auto"
+          onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">Thêm địa chỉ mới</h3>
+            <button onClick={() => setShowAddrModal(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleAddAddress} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })} placeholder="Tên người nhận" required
+                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })} placeholder="Số điện thoại" required
+                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <select value={addrProvinceId} onChange={(e) => { const id = Number(e.target.value); setAddrProvinceId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, tinhThanhPho: name, provinceId: id || null }) }}
+              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value={0}>-- Chọn Tỉnh/Thành phố --</option>
+              {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
+            </select>
+            <div className="grid grid-cols-2 gap-3">
+              <select value={addrDistrictId} onChange={(e) => { const id = Number(e.target.value); setAddrDistrictId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, quanHuyen: name, districtId: id || null }) }}
+                disabled={!addrProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value={0}>-- Chọn Quận/Huyện --</option>
+                {addrDistricts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
+              </select>
+              <select value={addrWardCode} onChange={(e) => { setAddrWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, phuongXa: name, wardCode: e.target.value || '' }) }}
+                disabled={!addrDistrictId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Chọn Phường/Xã --</option>
+                {addrWards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
+              </select>
+            </div>
+            <input value={addrForm.chiTietDiaChi} onChange={(e) => setAddrForm({ ...addrForm, chiTietDiaChi: e.target.value })} placeholder="Địa chỉ chi tiết (số nhà, đường)" required
+              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={addrForm.laMacDinh} onChange={(e) => setAddrForm({ ...addrForm, laMacDinh: e.target.checked })} className="accent-blue-700" />
+              Đặt làm mặc định
+            </label>
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => setShowAddrModal(false)}
+                className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition text-sm">
+                Hủy
+              </button>
+              <button type="submit" disabled={addrLoading}
+                className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
+                {addrLoading ? <><Loader className="h-4 w-4 animate-spin" /> Đang lưu...</> : 'Thêm địa chỉ'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      )}
   </>)
 }
