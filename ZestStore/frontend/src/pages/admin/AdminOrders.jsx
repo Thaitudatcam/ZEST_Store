@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { getAllOrders, updateOrderStatus, getAdminOrderDetail } from '../../api/admin'
 import StatusBadge, { labels } from '../../components/StatusBadge'
 import { Search, ChevronDown, Filter, Eye, X, CreditCard, MapPin, Phone, User, Package } from 'lucide-react'
@@ -260,7 +261,11 @@ export default function AdminOrders() {
                   <tbody className="divide-y">
                     {(detailModal.items || []).map((item, i) => (
                       <tr key={i}>
-                        <td className="px-2 py-1.5">{item.bienThe?.sanPham?.tenSanPham || 'SP'}</td>
+                        <td className="px-2 py-1.5">
+                          <Link to={`/products/${item.bienThe?.sanPham?.slug || ''}`} className="text-blue-600 hover:underline font-medium" target="_blank">
+                            {item.bienThe?.sanPham?.tenSanPham || 'SP'}
+                          </Link>
+                        </td>
                         <td className="px-2 py-1.5 text-center">{item.soLuong}</td>
                         <td className="px-2 py-1.5 text-right">{VND(item.donGia)}</td>
                         <td className="px-2 py-1.5 text-right font-semibold">{VND(item.thanhTien)}</td>

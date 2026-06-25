@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getCategories } from '../../api/categories'
 import { uploadProductImage, uploadVariantImage } from '../../api/products'
+import { createCategory, createBrand, createColor, createSize } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
-import { Loader, Plus, Trash2, Pencil, Star, Upload, Check, X } from 'lucide-react'
+import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
@@ -32,6 +33,16 @@ export default function AdminProductForm() {
   const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
   const [uploadingVimg, setUploadingVimg] = useState(false)
   const [savingVar, setSavingVar] = useState(false)
+  const [showCatModal, setShowCatModal] = useState(false)
+  const [showBrandModal, setShowBrandModal] = useState(false)
+  const [quickAddName, setQuickAddName] = useState('')
+  const [showColorModal, setShowColorModal] = useState(false)
+  const [showSizeModal, setShowSizeModal] = useState(false)
+  const [quickColorName, setQuickColorName] = useState('')
+  const [quickColorHex, setQuickColorHex] = useState('#000000')
+  const [quickSizeName, setQuickSizeName] = useState('')
+  const [selectedColorIds, setSelectedColorIds] = useState([])
+  const [selectedSizeIds, setSelectedSizeIds] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -72,23 +83,39 @@ export default function AdminProductForm() {
     setSaving(true)
     try {
       const slug = product.tenSanPham.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
+      let productId = isEdit ? id : null
       if (isEdit) {
         await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug })
-        toast.success('Cập nhật sản phẩm thành công')
       } else {
         const variantReqs = variants.map(v => ({
           maKichCo: Number(v.maKichCo),
           maMauSac: Number(v.maMauSac),
           maThuongHieu: Number(product.maThuongHieu),
-          sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}`,
+          sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
           gia: Number(v.gia),
           tonKho: Number(v.tonKho || 0),
           urlAnh: v.urlAnh || undefined,
         }))
         const res = await api.post('/products/with-variants', { product: { ...product, maDanhMuc: Number(product.maDanhMuc), slug }, variants: variantReqs })
-        navigate(`/admin/products/${res.data.maSanPham}/edit`, { replace: true })
-        toast.success('Tạo sản phẩm thành công')
+        productId = res.data.maSanPham
       }
+      if (!isEdit) {
+        toast.success('Tạo sản phẩm thành công')
+        navigate(`/admin/products/${productId}/edit`, { replace: true })
+        if (uploadedImages.length > 0) {
+          api.put(`/products/${productId}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug, urlAnhDaiDien: uploadedImages[0].url })
+            .catch(e => console.error('Failed to save product image', e))
+        }
+        return
+      }
+      if (uploadedImages.length > 0) {
+        try {
+          await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug, urlAnhDaiDien: uploadedImages[0].url })
+        } catch (imgErr) {
+          console.error('Failed to save product image', imgErr)
+        }
+      }
+      toast.success('Cập nhật sản phẩm thành công')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Lỗi lưu sản phẩm')
     } finally { setSaving(false) }
@@ -97,19 +124,6 @@ export default function AdminProductForm() {
   const openAddForm = () => {
     setEditIdx(null)
     setVform({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
-    setShowForm(true)
-  }
-
-  const openEditForm = (index) => {
-    const v = variants[index]
-    setEditIdx(index)
-    setVform({
-      maKichCo: v.maKichCo || '',
-      maMauSac: v.maMauSac || '',
-      gia: v.gia || '',
-      tonKho: v.tonKho ?? '0',
-      urlAnh: v.urlAnh || '',
-    })
     setShowForm(true)
   }
 
@@ -241,21 +255,96 @@ export default function AdminProductForm() {
     setUploadedImages(prev => prev.filter(img => img.fileId !== fileId))
   }
 
-  const handleSetMainImage = async (url) => {
-    if (!id) return
-    try {
-      await api.put(`/products/${id}`, { urlAnhDaiDien: url })
-      toast.success('Đã đặt ảnh đại diện')
-    } catch { toast.error('Lỗi cập nhật ảnh đại diện') }
-  }
-
-  const handleSetImageColor = (fileId, maMauSac) => {
-    setUploadedImages(prev => prev.map(img => img.fileId === fileId ? { ...img, maMauSac } : img))
-  }
-
   const getColorName = (id) => colors.find(c => c.maMauSac === Number(id))?.mauSac || '-'
   const getColorHex = (id) => colors.find(c => c.maMauSac === Number(id))?.maMauHex
   const getSizeName = (id) => sizes.find(s => s.maKichCo === Number(id))?.kichCo || '-'
+
+  const handleQuickAddCategory = async () => {
+    if (!quickAddName.trim()) return
+    try {
+      const slug = quickAddName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
+      const newCat = await createCategory({ tenDanhMuc: quickAddName.trim(), slug })
+      setCategories(prev => [...prev, newCat])
+      setProduct(p => ({ ...p, maDanhMuc: newCat.maDanhMuc }))
+      setShowCatModal(false)
+      setQuickAddName('')
+      toast.success('Thêm danh mục thành công')
+    } catch { toast.error('Lỗi thêm danh mục') }
+  }
+
+  const handleQuickAddBrand = async () => {
+    if (!quickAddName.trim()) return
+    try {
+      const newBrand = await createBrand({ tenThuongHieu: quickAddName.trim() })
+      setBrands(prev => [...prev, newBrand])
+      setProduct(p => ({ ...p, maThuongHieu: newBrand.maThuongHieu }))
+      setShowBrandModal(false)
+      setQuickAddName('')
+      toast.success('Thêm thương hiệu thành công')
+    } catch { toast.error('Lỗi thêm thương hiệu') }
+  }
+
+  const handleQuickAddColor = async () => {
+    if (!quickColorName.trim()) return
+    try {
+      const newColor = await createColor({ tenMauSac: quickColorName.trim(), maMauHex: quickColorHex })
+      setColors(prev => [...prev, newColor])
+      setShowColorModal(false)
+      setQuickColorName('')
+      setQuickColorHex('#000000')
+      toast.success('Thêm màu sắc thành công')
+    } catch { toast.error('Lỗi thêm màu sắc') }
+  }
+
+  const handleQuickAddSize = async () => {
+    if (!quickSizeName.trim()) return
+    try {
+      const newSize = await createSize({ tenKichCo: quickSizeName.trim() })
+      setSizes(prev => [...prev, newSize])
+      setShowSizeModal(false)
+      setQuickSizeName('')
+      toast.success('Thêm kích cỡ thành công')
+    } catch { toast.error('Lỗi thêm kích cỡ') }
+  }
+
+  const toggleColorId = (id) => {
+    setSelectedColorIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const toggleSizeId = (id) => {
+    setSelectedSizeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const handleGenerateVariants = () => {
+    if (selectedColorIds.length === 0) { toast.error('Chọn ít nhất một màu'); return }
+    if (selectedSizeIds.length === 0) { toast.error('Chọn ít nhất một kích cỡ'); return }
+    const newVariants = []
+    selectedColorIds.forEach(cId => {
+      selectedSizeIds.forEach(sId => {
+        const exists = variants.some(v =>
+          Number(v.maKichCo) === Number(sId) && Number(v.maMauSac) === Number(cId)
+        )
+        if (!exists) {
+          const sizeName = sizes.find(s => s.maKichCo === Number(sId))?.kichCo || ''
+          const colorName = colors.find(c => c.maMauSac === Number(cId))?.mauSac || ''
+          const colorHex = colors.find(c => c.maMauSac === Number(cId))?.maMauHex
+          newVariants.push({
+            maKichCo: Number(sId),
+            maMauSac: Number(cId),
+            kichCo: { kichCo: sizeName },
+            mauSac: { mauSac: colorName, maMauHex: colorHex },
+            gia: 0,
+            tonKho: 0,
+            urlAnh: '',
+            _tempId: Date.now() + newVariants.length,
+          })
+        }
+      })
+    })
+    if (newVariants.length === 0) { toast.error('Các biến thể đã tồn tại'); return }
+    setVariants(prev => [...prev, ...newVariants])
+    toast.success(`Đã tạo ${newVariants.length} biến thể`)
+  }
 
   if (loading) {
     return <div className="animate-pulse space-y-6"><div className="h-8 w-48 bg-gray-200 rounded-lg" /><div className="h-96 bg-gray-100 rounded-2xl" /></div>
@@ -263,50 +352,85 @@ export default function AdminProductForm() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</h1>
-      </div>
+      
 
       <form onSubmit={handleSaveProduct} className="bg-white rounded-2xl border p-6 space-y-6">
-        <div>
-          <h2 className="font-semibold text-lg">Thông tin sản phẩm</h2>
+        <div className="grid grid-cols-[1fr_400px] gap-6">
           <div>
-            <label className="text-sm text-gray-500 font-medium">Tên sản phẩm *</label>
-            <input value={product.tenSanPham} onChange={(e) => setProduct(p => ({ ...p, tenSanPham: e.target.value }))}
-              placeholder="Nhập tên sản phẩm" required
-              className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+            <h2 className="font-semibold text-lg">Thông tin sản phẩm</h2>
             <div>
-              <label className="text-sm text-gray-500 font-medium">Danh mục *</label>
-              <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
-                required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">-- Chọn danh mục --</option>
-                {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
-              </select>
+              <label className="text-sm text-gray-500 font-medium">Tên sản phẩm *</label>
+              <input value={product.tenSanPham} onChange={(e) => setProduct(p => ({ ...p, tenSanPham: e.target.value }))}
+                placeholder="Nhập tên sản phẩm" required
+                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-500 font-medium">Danh mục *</label>
+                  <button type="button" onClick={() => { setQuickAddName(''); setShowCatModal(true) }}
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Thêm danh mục mới">
+                    <FolderPlus className="h-4 w-4" />
+                  </button>
+                </div>
+                <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
+                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">-- Chọn danh mục --</option>
+                  {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
+                </select>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-500 font-medium">Thương hiệu *</label>
+                  <button type="button" onClick={() => { setQuickAddName(''); setShowBrandModal(true) }}
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Thêm thương hiệu mới">
+                    <Tag className="h-4 w-4" />
+                  </button>
+                </div>
+                <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
+                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">-- Chọn thương hiệu --</option>
+                  {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
+                </select>
+              </div>
             </div>
             <div>
-              <label className="text-sm text-gray-500 font-medium">Thương hiệu *</label>
-              <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
-                required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">-- Chọn thương hiệu --</option>
-                {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
-              </select>
+              <label className="text-sm text-gray-500 font-medium">Mô tả</label>
+              <textarea value={product.moTa} onChange={(e) => setProduct(p => ({ ...p, moTa: e.target.value }))}
+                placeholder="Mô tả sản phẩm" rows={4}
+                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-gray-500 font-medium">Trạng thái</label>
+              <button type="button" onClick={() => setProduct(p => ({ ...p, trangThai: p.trangThai === 1 ? 0 : 1 }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${product.trangThai === 1 ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${product.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+              <span className="text-sm text-gray-600">{product.trangThai === 1 ? 'Hoạt động' : 'Ẩn'}</span>
             </div>
           </div>
+
           <div>
-            <label className="text-sm text-gray-500 font-medium">Mô tả</label>
-            <textarea value={product.moTa} onChange={(e) => setProduct(p => ({ ...p, moTa: e.target.value }))}
-              placeholder="Mô tả sản phẩm" rows={4}
-              className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-500 font-medium">Trạng thái</label>
-            <button type="button" onClick={() => setProduct(p => ({ ...p, trangThai: p.trangThai === 1 ? 0 : 1 }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${product.trangThai === 1 ? 'bg-blue-600' : 'bg-gray-300'}`}>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${product.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-            <span className="text-sm text-gray-600">{product.trangThai === 1 ? 'Hoạt động' : 'Ẩn'}</span>
+            <h2 className="font-semibold text-lg mb-4">Ảnh mô tả</h2>
+            {uploadedImages.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2">
+                {uploadedImages.map((img) => (
+                  <div key={img.fileId} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border">
+                    <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
+                     <button type="button" onClick={() => handleRemoveImage(img.fileId)}
+                      className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition opacity-0 group-hover:opacity-100">
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div onClick={() => document.getElementById('imgUpload').click()}
+                className="border-2 border-dashed border-gray-300 rounded-xl aspect-square flex items-center justify-center hover:border-blue-400 transition cursor-pointer">
+                {uploadingImg ? <Loader className="h-6 w-6 animate-spin text-blue-600" /> : <Plus className="h-8 w-8 text-gray-300" />}
+              </div>
+            )}
+            <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />
           </div>
         </div>
 
@@ -317,9 +441,60 @@ export default function AdminProductForm() {
             <h2 className="font-semibold text-lg">Biến thể</h2>
           </div>
 
+          <div className="bg-gray-50 rounded-xl border p-4 mb-6">
+            <p className="text-sm font-semibold text-gray-700 mb-3">Sinh tự động</p>
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <label className="text-xs text-gray-500 font-medium">Màu sắc</label>
+                  <button type="button" onClick={() => { setQuickColorName(''); setQuickColorHex('#000000'); setShowColorModal(true) }}
+                    className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Thêm màu mới">
+                    <Palette className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {colors.map(c => {
+                    const selected = selectedColorIds.includes(c.maMauSac)
+                    return (
+                      <button key={c.maMauSac} type="button" onClick={() => toggleColorId(c.maMauSac)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                        {c.maMauHex && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.maMauHex }} />}
+                        {c.mauSac}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <label className="text-xs text-gray-500 font-medium">Kích cỡ</label>
+                  <button type="button" onClick={() => { setQuickSizeName(''); setShowSizeModal(true) }}
+                    className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Thêm kích cỡ mới">
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {sizes.map(s => {
+                    const selected = selectedSizeIds.includes(s.maKichCo)
+                    return (
+                      <button key={s.maKichCo} type="button" onClick={() => toggleSizeId(s.maKichCo)}
+                        className={`px-3 py-1.5 rounded-lg text-xs border font-medium transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                        {s.kichCo}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+            <button type="button" onClick={handleGenerateVariants}
+              className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 flex items-center gap-1">
+              <Plus className="h-3.5 w-3.5" /> Tạo biến thể
+            </button>
+          </div>
+
           {variants.length === 0 && !showForm ? (
             <div className="mb-4">
-              <EmptyState icon="PackageOpen" title="Chưa có biến thể" description="Nhấn 'Thêm biến thể' để thêm" />
+              <EmptyState icon="PackageOpen" title="Chưa có biến thể" description="Chọn màu & size ở trên và nhấn 'Tạo biến thể'" />
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -377,10 +552,10 @@ export default function AdminProductForm() {
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex justify-center gap-1">
-                          <button onClick={handleSaveVariant} disabled={savingVar}
+                          <button type="button" onClick={handleSaveVariant} disabled={savingVar}
                             className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check className="h-4 w-4" /></button>
-                          <button onClick={cancelForm}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><X className="h-4 w-4" /></button>
+                          <button type="button" onClick={() => setConfirmDelete(editIdx)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       </td>
                     </tr>
@@ -409,10 +584,7 @@ export default function AdminProductForm() {
                         )}
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <div className="flex justify-center gap-1">
-                          <button onClick={() => openEditForm(i)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => setConfirmDelete(i)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
-                        </div>
+                          <button type="button" onClick={() => setConfirmDelete(i)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
                       </td>
                     </tr>
                   ))}
@@ -421,51 +593,7 @@ export default function AdminProductForm() {
             </div>
           )}
 
-          {!showForm && (
-            <button onClick={openAddForm}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
-              <Plus className="h-4 w-4" /> Thêm biến thể
-            </button>
-          )}
-          {!isEdit && variants.length === 0 && !showForm && (
-            <p className="text-xs text-gray-400 mt-2">Thêm biến thể trước khi lưu sản phẩm mới</p>
-          )}
-        </div>
 
-        <hr className="border-t" />
-
-        <div>
-          <h2 className="font-semibold text-lg mb-4">Ảnh sản phẩm</h2>
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); handleUploadProductImage(e.dataTransfer.files) }}
-            className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition cursor-pointer"
-            onClick={() => document.getElementById('imgUpload').click()}
-          >
-            <Upload className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">Kéo thả ảnh vào đây hoặc click để chọn</p>
-            <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />
-          </div>
-          {uploadingImg && <div className="flex items-center justify-center py-3"><Loader className="h-5 w-5 animate-spin text-blue-600" /></div>}
-          {uploadedImages.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              {uploadedImages.map((img) => (
-                <div key={img.fileId} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border">
-                  <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/100x100/e2e8f0/475569?text=?" />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                    <button onClick={() => handleSetMainImage(img.url)} className="p-1 bg-white rounded-full" title="Đặt làm ảnh chính"><Star className="h-3.5 w-3.5 text-yellow-500" /></button>
-                    <button onClick={() => handleRemoveImage(img.fileId)} className="p-1 bg-white rounded-full" title="Xóa"><Trash2 className="h-3.5 w-3.5 text-red-500" /></button>
-                  </div>
-                  <select value={img.maMauSac} onChange={(e) => handleSetImageColor(img.fileId, e.target.value)}
-                    className="absolute bottom-0 left-0 right-0 text-[10px] border-t bg-white/90 px-1 py-0.5 focus:outline-none" onClick={(e) => e.stopPropagation()}>
-                    <option value="">-- Màu --</option>
-                    {colors.map(c => <option key={c.maMauSac} value={c.maMauSac}>{c.mauSac}</option>)}
-                  </select>
-                </div>
-              ))}
-            </div>
-          )}
-          {uploadedImages.length === 0 && <p className="text-xs text-gray-400 text-center mt-3">Chưa có ảnh nào</p>}
         </div>
 
         <button type="submit" disabled={saving}
@@ -474,6 +602,100 @@ export default function AdminProductForm() {
           {isEdit ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm'}
         </button>
       </form>
+
+      {showCatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCatModal(false)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Thêm danh mục mới</h3>
+            <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
+              placeholder="Nhập tên danh mục" autoFocus
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={e => e.key === 'Enter' && handleQuickAddCategory()} />
+            <div className="flex gap-3">
+              <button onClick={() => setShowCatModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleQuickAddCategory} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBrandModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowBrandModal(false)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Thêm thương hiệu mới</h3>
+            <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
+              placeholder="Nhập tên thương hiệu" autoFocus
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={e => e.key === 'Enter' && handleQuickAddBrand()} />
+            <div className="flex gap-3">
+              <button onClick={() => setShowBrandModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleQuickAddBrand} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showColorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowColorModal(false)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Thêm màu sắc mới</h3>
+            <p className="text-xs text-gray-400 mb-3">Chọn một ô màu hoặc nhập mã hex bên dưới</p>
+            <div className="grid grid-cols-8 gap-1.5 mb-4">
+              {[
+                '#FFFFFF', '#F2F2F2', '#D9D9D9', '#BFBFBF', '#A6A6A6', '#8C8C8C', '#737373', '#595959',
+                '#404040', '#262626', '#0D0D0D', '#000000',
+                '#FCE4EC', '#F8BBD0', '#F48FB1', '#F06292', '#EC407A', '#E91E63', '#D81B60', '#C2185B',
+                '#FFEBEE', '#FFCDD2', '#EF9A9A', '#E57373', '#EF5350', '#F44336', '#E53935', '#D32F2F',
+                '#FFF3E0', '#FFE0B2', '#FFCC80', '#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00',
+                '#FFFDE7', '#FFF9C4', '#FFF59D', '#FFF176', '#FFEE58', '#FFEB3B', '#FDD835', '#FBC02D',
+                '#E8F5E9', '#C8E6C9', '#A5D6A7', '#81C784', '#66BB6A', '#4CAF50', '#43A047', '#388E3C',
+                '#E0F2F1', '#B2DFDB', '#80CBC4', '#4DB6AC', '#26A69A', '#009688', '#00897B', '#00796B',
+                '#E1F5FE', '#B3E5FC', '#81D4FA', '#4FC3F7', '#29B6F6', '#03A9F4', '#039BE5', '#0288D1',
+                '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5', '#2196F3', '#1E88E5', '#1976D2',
+                '#EDE7F6', '#D1C4E9', '#B39DDB', '#9575CD', '#7E57C2', '#673AB7', '#5E35B1', '#512DA8',
+                '#F3E5F5', '#E1BEE7', '#CE93D8', '#BA68C8', '#AB47BC', '#9C27B0', '#8E24AA', '#7B1FA2',
+              ].map(hex => (
+                <button key={hex} type="button" onClick={() => setQuickColorHex(hex)}
+                  className={`w-full aspect-square rounded-lg border-2 transition hover:scale-110 ${quickColorHex === hex ? 'border-blue-600 ring-2 ring-blue-300 scale-110 z-10' : 'border-gray-200 hover:border-gray-400'}`}
+                  style={{ backgroundColor: hex }}
+                  title={hex} />
+              ))}
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg border-2 border-gray-200 shrink-0" style={{ backgroundColor: quickColorHex }} />
+              <div className="flex-1 space-y-2">
+                <input value={quickColorHex} onChange={e => setQuickColorHex(e.target.value)}
+                  placeholder="#000000" maxLength={7}
+                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input value={quickColorName} onChange={e => setQuickColorName(e.target.value)}
+                  placeholder="Nhập tên màu (VD: Đỏ, Xanh dương)" autoFocus
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onKeyDown={e => e.key === 'Enter' && handleQuickAddColor()} />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowColorModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleQuickAddColor} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSizeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSizeModal(false)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Thêm kích cỡ mới</h3>
+            <input value={quickSizeName} onChange={e => setQuickSizeName(e.target.value)}
+              placeholder="Nhập tên kích cỡ (VD: M, L, XL)" autoFocus
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={e => e.key === 'Enter' && handleQuickAddSize()} />
+            <div className="flex gap-3">
+              <button onClick={() => setShowSizeModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={handleQuickAddSize} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmDelete !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
