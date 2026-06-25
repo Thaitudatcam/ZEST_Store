@@ -88,6 +88,15 @@ public class DonHangService {
             throw new BadRequestException("Cart is empty");
         }
 
+        if (request.getMaBienTheList() != null && !request.getMaBienTheList().isEmpty()) {
+            cartItems = cartItems.stream()
+                    .filter(ci -> request.getMaBienTheList().contains(ci.getBienThe().getMaBienThe()))
+                    .collect(java.util.stream.Collectors.toList());
+            if (cartItems.isEmpty()) {
+                throw new BadRequestException("No matching items in cart");
+            }
+        }
+
         BigDecimal tongTien = BigDecimal.ZERO;
         List<Map<String, Object>> orderItems = new ArrayList<>();
 

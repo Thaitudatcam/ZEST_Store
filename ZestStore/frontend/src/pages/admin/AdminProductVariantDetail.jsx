@@ -16,49 +16,13 @@ export default function AdminProductVariantDetail() {
 
   useEffect(() => {
     Promise.all([
-      api.get('/products').then(r => r.data),
+      api.get('/products/admin/variant-list').then(r => r.data),
       api.get('/colors').then(r => r.data),
       api.get('/sizes').then(r => r.data),
-    ]).then(([prodData, cl, sz]) => {
+    ]).then(([rowsData, cl, sz]) => {
       setColors(Array.isArray(cl) ? cl : [])
       setSizes(Array.isArray(sz) ? sz : [])
-      const products = prodData.content || prodData || []
-      const allRows = []
-      products.forEach(p => {
-        if (!Array.isArray(p.bienThes)) {
-          allRows.push({
-            maSanPham: p.maSanPham,
-            tenSanPham: p.tenSanPham,
-            slug: p.slug,
-            urlAnhDaiDien: p.urlAnhDaiDien,
-            trangThai: p.trangThai,
-            mauSac: '-',
-            kichCo: '-',
-            gia: p.giaTrungBinh || 0,
-            tonKho: p.tongTonKho || 0,
-            sku: '-',
-          })
-        } else {
-          p.bienThes.forEach(v => {
-            allRows.push({
-              maSanPham: p.maSanPham,
-              tenSanPham: p.tenSanPham,
-              slug: p.slug,
-              urlAnhDaiDien: p.urlAnhDaiDien || v.urlAnh,
-              trangThai: p.trangThai,
-              mauSac: v.mauSac?.mauSac || '-',
-              maMauSac: v.mauSac?.maMauSac,
-              maMauHex: v.mauSac?.maMauHex,
-              kichCo: v.kichCo?.kichCo || '-',
-              maKichCo: v.kichCo?.maKichCo,
-              gia: v.gia || 0,
-              tonKho: v.tonKho || 0,
-              sku: v.sku || '-',
-            })
-          })
-        }
-      })
-      setRows(allRows)
+      setRows(Array.isArray(rowsData) ? rowsData : [])
     }).catch(() => {})
     .finally(() => setLoading(false))
   }, [])

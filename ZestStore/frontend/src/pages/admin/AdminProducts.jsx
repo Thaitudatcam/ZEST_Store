@@ -1,29 +1,59 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getProducts } from '../../api/products'
 import { toggleProductStatus } from '../../api/admin'
+import { searchSuggestions } from '../../api/products'
 import api from '../../api/axios'
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Plus, Pencil, Trash2, Search, Eye, EyeOff, Loader } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
 
 const PAGE_SIZE = 15
 
 export default function AdminProducts() {
+  const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [error, setError] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const searchRef = useRef(null)
+  const debounceRef = useRef(null)
 
   const load = (pg, q) => {
-    getProducts({ page: pg, size: PAGE_SIZE, ...(q ? { keyword: q } : {}) }).then((d) => {
-      setProducts(d.content ?? d ?? [])
-      setTotalPages(d.totalPages || 1)
-    }).catch(() => setError('Không thể tải sản phẩm'))
+    api.get('/products/admin/list', { params: { page: pg, size: PAGE_SIZE, ...(q ? { keyword: q } : {}) } })
+      .then((r) => r.data).then((d) => {
+        setProducts(d.content ?? d ?? [])
+        setTotalPages(d.totalPages || 1)
+      }).catch(() => setError('Không thể tải sản phẩm'))
   }
 
   useEffect(() => { load(page, search) }, [page])
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target))
+        setShowSuggestions(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!search.trim()) { setSuggestions([]); setShowSuggestions(false); return }
+    const q = search.trim()
+    setSearchLoading(true)
+    debounceRef.current = setTimeout(() => {
+      searchSuggestions(q, 5)
+        .then((data) => { if (q === search.trim()) { setSuggestions(data || []); setShowSuggestions(true) } })
+        .catch(() => { if (q === search.trim()) setSuggestions([]) })
+        .finally(() => { if (q === search.trim()) setSearchLoading(false) })
+    }, 300)
+  }, [search])
 
   const handleSearch = (val) => {
     setSearch(val)
@@ -60,9 +90,33 @@ export default function AdminProducts() {
 
       <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         <div className="p-4 border-b">
-          <div className="relative max-w-xs">
+          <div className="relative max-w-xs" ref={searchRef}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input value={search} onChange={(e) => handleSearch(e.target.value)} placeholder="Tìm sản phẩm..." className="pl-9 pr-4 py-2 border rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input value={search} onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true) }}
+              placeholder="Tìm sản phẩm..." className="pl-9 pr-10 py-2 border rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {searchLoading && <Loader className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin" />}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full mt-1 left-0 right-0 bg-white border rounded-xl shadow-lg z-50 py-2 max-h-72 overflow-y-auto">
+                {suggestions.map((p) => (
+                  <button key={p.maSanPham} onClick={() => { setShowSuggestions(false); setSearch(''); navigate(`/admin/products/${p.maSanPham}/edit`) }}
+                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-blue-50 transition text-left">
+                    <SafeImg src={p.urlAnhDaiDien} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" fallback="https://placehold.co/40x40/e2e8f0/475569?text=P" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.tenSanPham}</p>
+                      <p className="text-xs text-blue-700 font-semibold">{VND(p.giaTrungBinh || 0)}</p>
+                    </div>
+                    {p.tongTonKho === 0 && <span className="text-[10px] text-red-500 font-semibold shrink-0">Hết hàng</span>}
+                  </button>
+                ))}
+                <div className="border-t mt-1 pt-1">
+                  <button onClick={() => { setShowSuggestions(false); load(0, search) }}
+                    className="w-full text-left px-4 py-2 text-sm text-blue-600 font-medium hover:bg-blue-50 transition">
+                    Xem tất cả kết quả "{search}"
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="overflow-x-auto">

@@ -82,6 +82,17 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.toggleStatus(id));
     }
 
+    @GetMapping("/admin/list")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAdminProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(defaultValue = "ngayTao") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(sanPhamService.getAdminProducts(keyword, page, size, sortBy, sortDir));
+    }
+
     @GetMapping("/{id}/variants")
     public ResponseEntity<?> getVariants(@PathVariable Integer id) {
         return ResponseEntity.ok(sanPhamService.getVariants(id));
@@ -112,6 +123,12 @@ public class SanPhamController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteVariant(@PathVariable Integer variantId) {
         return ResponseEntity.ok(sanPhamService.deleteVariant(variantId));
+    }
+
+    @GetMapping("/admin/variant-list")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllVariantsFlat() {
+        return ResponseEntity.ok(sanPhamService.getAllVariantsFlat());
     }
 
     @GetMapping("/{id}/images/{variantId}")

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses } from '../api/users'
 import { placeOrder } from '../api/orders'
@@ -21,9 +21,12 @@ const PAYMENT_METHODS = [
 
 export default function Checkout() {
   const navigate = useNavigate()
-  const [cart, setCart] = useState([])
+  const location = useLocation()
+  const selectedItems = location.state?.selectedItems
+
+  const [cart, setCart] = useState(selectedItems || [])
   const [addresses, setAddresses] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!selectedItems)
   const [placing, setPlacing] = useState(false)
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
@@ -55,9 +58,9 @@ export default function Checkout() {
   const [ghnLoading, setGhnLoading] = useState(false)
 
   useEffect(() => {
-    Promise.all([getCart(), getAddresses(), getProvinces()])
+    Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProvinces()])
       .then(([cartData, addrData, provData]) => {
-        setCart(cartData)
+        if (!selectedItems) setCart(cartData)
         setAddresses(addrData)
         setProvinces(provData || [])
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
@@ -155,7 +158,7 @@ export default function Checkout() {
     }
     setPlacing(true)
     try {
-      const result = await placeOrder({
+      const orderPayload = {
         tenNguoiNhan: form.tenNguoiNhan,
         sdtNguoiNhan: form.sdtNguoiNhan,
         diaChiGiaoHang: form.diaChiGiaoHang,
@@ -163,7 +166,12 @@ export default function Checkout() {
         phuongThucThanhToan: form.phuongThucThanhToan,
         maCode: couponCode.trim() || undefined,
         phiVanChuyen: shippingFee,
-      })
+      }
+      if (selectedItems) {
+        orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
+      }
+
+      const result = await placeOrder(orderPayload)
 
       const method = form.phuongThucThanhToan
       if (method === 1) {
@@ -209,6 +217,7 @@ export default function Checkout() {
       <div className="max-w-3xl mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Thanh toán</h1>
         <p className="text-gray-500">Giỏ hàng trống</p>
+        <button onClick={() => navigate('/')} className="mt-4 text-blue-700 font-semibold hover:underline">Tiếp tục mua sắm</button>
       </div>
     )
   }
@@ -296,7 +305,7 @@ export default function Checkout() {
 
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl border p-6 sticky top-4">
-            <h2 className="font-semibold mb-4">Đơn hàng</h2>
+            <h2 className="font-semibold mb-4">Đơn hàng {selectedItems ? `(${cart.length} sản phẩm)` : ''}</h2>
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
               {cart.map((i) => (
                 <div key={i.maBienThe} className="flex items-center gap-3">

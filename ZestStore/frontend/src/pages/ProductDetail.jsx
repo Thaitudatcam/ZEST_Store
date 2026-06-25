@@ -107,7 +107,8 @@ export default function ProductDetail() {
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
   const allImages = images.map(i => i.urlAnh).filter(Boolean)
-  const mainImg = imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
+  const selectedVariantImg = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.urlAnh : null
+  const mainImg = imageUrl(selectedVariantImg) || imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
   const selectedVariant = selectedVar ? variants.find(v => v.maBienThe === selectedVar) : (variants[0] || null)
   const selectedStock = selectedVariant?.tonKho ?? 0

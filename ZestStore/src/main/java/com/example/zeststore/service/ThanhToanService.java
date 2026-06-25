@@ -45,7 +45,6 @@ public class ThanhToanService {
 
         DonHang order = payment.getDonHang();
         if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
-            deductStock(order.getMaDonHang());
             order.setTrangThaiDon(2);
             donHangRepository.save(order);
         }
@@ -53,8 +52,6 @@ public class ThanhToanService {
         thanhToanRepository.save(payment);
 
         hoaDonService.generateInvoice(order.getMaDonHang());
-
-        clearCartForOrder(order);
 
         return payment;
     }

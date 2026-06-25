@@ -27,6 +27,13 @@ public class FileController {
         return ResponseEntity.ok(sanPhamService.addImage(variantId, fileUploadService.storeAndGetUrl(file)));
     }
 
+    @PostMapping("/api/upload/variant-image")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> uploadVariantImageOnly(@RequestParam("file") MultipartFile file) {
+        String url = fileUploadService.storeAndGetUrl(file);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
     @PostMapping("/api/upload/product")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadProductImage(@RequestParam("file") MultipartFile file) {

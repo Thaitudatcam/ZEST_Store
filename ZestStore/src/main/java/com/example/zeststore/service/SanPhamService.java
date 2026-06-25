@@ -70,6 +70,20 @@ public class SanPhamService {
         return result;
     }
 
+    @Transactional(readOnly = true)
+    public Page<SanPham> getAdminProducts(String keyword, int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<SanPham> result;
+        if (keyword != null && !keyword.isBlank()) {
+            result = sanPhamRepository.searchAdminByKeyword(keyword, pageable);
+        } else {
+            result = sanPhamRepository.findByNgayXoaIsNull(pageable);
+        }
+        populateStock(result);
+        return result;
+    }
+
     public List<Map<String, Object>> searchSuggestions(String keyword, int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         Page<SanPham> products = sanPhamRepository.searchByKeyword(keyword, pageable);
@@ -229,12 +243,16 @@ public class SanPhamService {
         if (bienTheRepository.findBySku(request.getSku()).isPresent()) {
             throw new BadRequestException("SKU already exists: " + request.getSku());
         }
-        ThuongHieu thuongHieu = thuongHieuRepository.findById(request.getMaThuongHieu())
-                .orElseThrow(() -> new ResourceNotFoundException("Brand", request.getMaThuongHieu()));
         KichCo kichCo = kichCoRepository.findById(request.getMaKichCo())
                 .orElseThrow(() -> new ResourceNotFoundException("Size", request.getMaKichCo()));
         MauSac mauSac = mauSacRepository.findById(request.getMaMauSac())
                 .orElseThrow(() -> new ResourceNotFoundException("Color", request.getMaMauSac()));
+        if (bienTheRepository.findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
+                productId, request.getMaKichCo(), request.getMaMauSac()).isPresent()) {
+            throw new DuplicateResourceException("Biến thể đã tồn tại cho size " + kichCo.getKichCo() + " và màu " + mauSac.getMauSac());
+        }
+        ThuongHieu thuongHieu = thuongHieuRepository.findById(request.getMaThuongHieu())
+                .orElseThrow(() -> new ResourceNotFoundException("Brand", request.getMaThuongHieu()));
         BienTheSanPham variant = bienTheRepository.save(BienTheSanPham.builder()
                 .sanPham(product)
                 .thuongHieu(thuongHieu)
@@ -312,6 +330,48 @@ public class SanPhamService {
         result.put("maSanPham", product.getMaSanPham());
         result.put("trangThai", product.getTrangThai());
         result.put("message", "Cập nhật trạng thái thành công");
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllVariantsFlat() {
+        List<SanPham> products = sanPhamRepository.findByNgayXoaIsNull();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (SanPham p : products) {
+            List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(p.getMaSanPham());
+            if (variants.isEmpty()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("maSanPham", p.getMaSanPham());
+                row.put("tenSanPham", p.getTenSanPham());
+                row.put("slug", p.getSlug());
+                row.put("urlAnhDaiDien", p.getUrlAnhDaiDien());
+                row.put("trangThai", p.getTrangThai());
+                row.put("mauSac", "-");
+                row.put("kichCo", "-");
+                row.put("gia", p.getGiaTrungBinh() != null ? p.getGiaTrungBinh() : 0);
+                row.put("tonKho", 0);
+                row.put("sku", "-");
+                result.add(row);
+            } else {
+                for (BienTheSanPham v : variants) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("maSanPham", p.getMaSanPham());
+                    row.put("tenSanPham", p.getTenSanPham());
+                    row.put("slug", p.getSlug());
+                    row.put("urlAnhDaiDien", p.getUrlAnhDaiDien() != null ? p.getUrlAnhDaiDien() : v.getUrlAnh());
+                    row.put("trangThai", p.getTrangThai());
+                    row.put("mauSac", v.getMauSac() != null ? v.getMauSac().getMauSac() : "-");
+                    row.put("maMauSac", v.getMauSac() != null ? v.getMauSac().getMaMauSac() : null);
+                    row.put("maMauHex", v.getMauSac() != null ? v.getMauSac().getMaMauHex() : null);
+                    row.put("kichCo", v.getKichCo() != null ? v.getKichCo().getKichCo() : "-");
+                    row.put("maKichCo", v.getKichCo() != null ? v.getKichCo().getMaKichCo() : null);
+                    row.put("gia", v.getGia() != null ? v.getGia() : 0);
+                    row.put("tonKho", v.getTonKho() != null ? v.getTonKho() : 0);
+                    row.put("sku", v.getSku() != null ? v.getSku() : "-");
+                    result.add(row);
+                }
+            }
+        }
         return result;
     }
 

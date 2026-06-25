@@ -5,11 +5,11 @@ export const getProductImages = (id) => api.get(`/products/${id}/images`).then((
 export const getProductVariants = (id) => api.get(`/products/${id}/variants`).then((r) => r.data)
 export const searchSuggestions = (q, limit = 5) => api.get('/products/search/suggestions', { params: { q, limit } }).then((r) => r.data)
 
-export const uploadProductImage = async (file) => {
+const uploadFile = async (url, file) => {
   const formData = new FormData()
   formData.append('file', file)
   const token = localStorage.getItem('token')
-  const res = await fetch('http://localhost:8080/api/upload/product', {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -20,3 +20,7 @@ export const uploadProductImage = async (file) => {
   }
   return res.json()
 }
+
+export const uploadProductImage = (file) => uploadFile('http://localhost:8080/api/upload/product', file)
+
+export const uploadVariantImage = (file) => uploadFile('http://localhost:8080/api/upload/variant-image', file)
