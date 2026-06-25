@@ -129,6 +129,25 @@ export default function Home() {
         </div>
       </section>
 
+      {stripData.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-8">
+          <h2 className="text-2xl font-bold mb-6">Bộ sưu tập</h2>
+          <div className="flex gap-2 h-[500px] overflow-hidden rounded-xl">
+            {stripData.map((item, i) => (
+              <div key={i}
+                className="group relative flex-1 overflow-hidden rounded-lg transition-all duration-500 hover:flex-[2] cursor-default">
+                <img src={item.front}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <p className="font-bold text-sm drop-shadow-lg">{item.title}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ──────── PRODUCT LISTING WITH FILTERS ──────── */}
       <section ref={productRef} id="all-products" className="bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4">
@@ -191,25 +210,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {stripData.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold mb-6">Bộ sưu tập</h2>
-          <div className="flex gap-2 h-[500px] overflow-hidden rounded-xl">
-            {stripData.map((item, i) => (
-              <div key={i}
-                className="group relative flex-1 overflow-hidden rounded-lg transition-all duration-500 hover:flex-[2] cursor-default">
-                <img src={item.front}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <p className="font-bold text-sm drop-shadow-lg">{item.title}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* ──────── LATEST PRODUCTS ──────── */}
       <section className="max-w-7xl mx-auto px-4 py-12">
