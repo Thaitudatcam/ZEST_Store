@@ -32,6 +32,7 @@ public class DonHangService {
     private final ThanhToanRepository thanhToanRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final HoaDonService hoaDonService;
+    private final OrderSseService orderSseService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -59,10 +60,13 @@ public class DonHangService {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
 
+        List<LichSuDonHang> history = lichSuDonHangRepository.findByDonHang_MaDonHangOrderByThoiGianDesc(orderId);
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("order", order);
         result.put("items", items);
         result.put("payments", payments);
+        result.put("history", history);
         return result;
     }
 
@@ -274,6 +278,8 @@ public class DonHangService {
                 .nguoiCapNhat(admin)
                 .build());
 
+        orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", null);
+
         return order;
     }
 
@@ -309,6 +315,9 @@ public class DonHangService {
                 .trangThaiMoi(6)
                 .nguoiCapNhat(user)
                 .build());
+
+        orderSseService.sendOrderStatusUpdate(orderId, 6, oldStatus, "user", null);
+
         return Map.of("message", "Order confirmed as received");
     }
 
@@ -339,6 +348,9 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .ghiChu(lyDo)
                 .build());
+
+        orderSseService.sendOrderStatusUpdate(orderId, 7, oldStatus, "user", lyDo);
+
         return Map.of("message", "Return requested");
     }
 
@@ -386,6 +398,9 @@ public class DonHangService {
                 .trangThaiMoi(5)
                 .nguoiCapNhat(user)
                 .build());
+
+        orderSseService.sendOrderStatusUpdate(orderId, 5, oldStatus, "user", null);
+
         return Map.of("message", "Order cancelled");
     }
 }
