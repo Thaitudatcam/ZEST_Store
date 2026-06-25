@@ -33,13 +33,16 @@ export default function AdminProductForm() {
   const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
   const [uploadingVimg, setUploadingVimg] = useState(false)
   const [savingVar, setSavingVar] = useState(false)
+  const [savingRow, setSavingRow] = useState(null)
+  const [uploadingRowImg, setUploadingRowImg] = useState(null)
+  const [rowUploadIdx, setRowUploadIdx] = useState(null)
   const [showCatModal, setShowCatModal] = useState(false)
   const [showBrandModal, setShowBrandModal] = useState(false)
   const [quickAddName, setQuickAddName] = useState('')
   const [showColorModal, setShowColorModal] = useState(false)
   const [showSizeModal, setShowSizeModal] = useState(false)
   const [quickColorName, setQuickColorName] = useState('')
-  const [quickColorHex, setQuickColorHex] = useState('#000000')
+  const [quickColorHex, setQuickColorHex] = useState('rgba(20,105,139,0.42)')
   const [quickSizeName, setQuickSizeName] = useState('')
   const [selectedColorIds, setSelectedColorIds] = useState([])
   const [selectedSizeIds, setSelectedSizeIds] = useState([])
@@ -235,6 +238,41 @@ export default function AdminProductForm() {
     } catch (err) {
       toast.error(err.message || 'Upload ảnh thất bại')
     } finally { setUploadingVimg(false) }
+  }
+
+  const handleVariantFieldChange = (index, field, value) => {
+    setVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: value } : v))
+  }
+
+  const handleUploadVariantImageRow = async (index, files) => {
+    if (!files || files.length === 0) return
+    setUploadingRowImg(index)
+    try {
+      const data = await uploadVariantImage(files[0])
+      setVariants(prev => prev.map((v, i) => i === index ? { ...v, urlAnh: data.url } : v))
+      toast.success('Upload ảnh biến thể thành công')
+    } catch (err) {
+      toast.error(err.message || 'Upload ảnh thất bại')
+    } finally { setUploadingRowImg(null) }
+  }
+
+  const handleSaveVariantRow = async (index) => {
+    const v = variants[index]
+    setSavingRow(index)
+    try {
+      if (v.maBienThe) {
+        await api.put(`/products/variants/${v.maBienThe}`, {
+          maKichCo: Number(v.maKichCo),
+          maMauSac: Number(v.maMauSac),
+          gia: Number(v.gia),
+          tonKho: Number(v.tonKho || 0),
+          urlAnh: v.urlAnh || undefined,
+        })
+      }
+      toast.success('Đã lưu biến thể')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Lỗi lưu biến thể')
+    } finally { setSavingRow(null) }
   }
 
   const handleUploadProductImage = async (files) => {
@@ -442,7 +480,7 @@ export default function AdminProductForm() {
           </div>
 
           <div className="bg-gray-50 rounded-xl border p-4 mb-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Sinh tự động</p>
+            
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -569,22 +607,39 @@ export default function AdminProductForm() {
                         </div>
                       </td>
                       <td className="px-3 py-2">{v.kichCo?.kichCo || getSizeName(v.maKichCo)}</td>
-                      <td className="px-3 py-2 text-right font-semibold">{VND(v.gia || 0)}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(v.tonKho || 0) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {v.tonKho || 0}
-                        </span>
+                      <td className="px-3 py-2">
+                        <input type="number" min="0" step="1000" value={v.gia}
+                          onChange={e => handleVariantFieldChange(i, 'gia', e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-right font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input type="number" min="0" value={v.tonKho}
+                          onChange={e => handleVariantFieldChange(i, 'tonKho', e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                       </td>
                       <td className="px-3 py-2 text-center">
-                        {v.urlAnh ? (
-                          <SafeImg src={v.urlAnh} className="w-10 h-10 rounded-lg object-cover bg-gray-100 border mx-auto"
-                            fallback="https://placehold.co/40x40/e2e8f0/475569?text=?" />
-                        ) : (
-                          <span className="text-xs text-gray-300">—</span>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          <button type="button" onClick={() => { setRowUploadIdx(i); document.getElementById('vimgRowInput').click() }}
+                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg" title="Upload ảnh biến thể">
+                            {uploadingRowImg === i ? <Loader className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          </button>
+                          {v.urlAnh ? (
+                            <SafeImg src={v.urlAnh} className="w-8 h-8 rounded object-cover bg-gray-100 border shrink-0"
+                              fallback="https://placehold.co/32x32/e2e8f0/475569?text=?" />
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-3 py-2 text-center">
-                          <button type="button" onClick={() => setConfirmDelete(i)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <td className="px-3 py-2">
+                        <div className="flex justify-center gap-1">
+                          <button type="button" onClick={() => handleSaveVariantRow(i)} disabled={savingRow === i}
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50" title="Lưu biến thể">
+                            {savingRow === i ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                          </button>
+                          <button type="button" onClick={() => setConfirmDelete(i)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -637,45 +692,76 @@ export default function AdminProductForm() {
 
       {showColorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowColorModal(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Thêm màu sắc mới</h3>
-            <p className="text-xs text-gray-400 mb-3">Chọn một ô màu hoặc nhập mã hex bên dưới</p>
-            <div className="grid grid-cols-8 gap-1.5 mb-4">
-              {[
-                '#FFFFFF', '#F2F2F2', '#D9D9D9', '#BFBFBF', '#A6A6A6', '#8C8C8C', '#737373', '#595959',
-                '#404040', '#262626', '#0D0D0D', '#000000',
-                '#FCE4EC', '#F8BBD0', '#F48FB1', '#F06292', '#EC407A', '#E91E63', '#D81B60', '#C2185B',
-                '#FFEBEE', '#FFCDD2', '#EF9A9A', '#E57373', '#EF5350', '#F44336', '#E53935', '#D32F2F',
-                '#FFF3E0', '#FFE0B2', '#FFCC80', '#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00',
-                '#FFFDE7', '#FFF9C4', '#FFF59D', '#FFF176', '#FFEE58', '#FFEB3B', '#FDD835', '#FBC02D',
-                '#E8F5E9', '#C8E6C9', '#A5D6A7', '#81C784', '#66BB6A', '#4CAF50', '#43A047', '#388E3C',
-                '#E0F2F1', '#B2DFDB', '#80CBC4', '#4DB6AC', '#26A69A', '#009688', '#00897B', '#00796B',
-                '#E1F5FE', '#B3E5FC', '#81D4FA', '#4FC3F7', '#29B6F6', '#03A9F4', '#039BE5', '#0288D1',
-                '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5', '#2196F3', '#1E88E5', '#1976D2',
-                '#EDE7F6', '#D1C4E9', '#B39DDB', '#9575CD', '#7E57C2', '#673AB7', '#5E35B1', '#512DA8',
-                '#F3E5F5', '#E1BEE7', '#CE93D8', '#BA68C8', '#AB47BC', '#9C27B0', '#8E24AA', '#7B1FA2',
-              ].map(hex => (
-                <button key={hex} type="button" onClick={() => setQuickColorHex(hex)}
-                  className={`w-full aspect-square rounded-lg border-2 transition hover:scale-110 ${quickColorHex === hex ? 'border-blue-600 ring-2 ring-blue-300 scale-110 z-10' : 'border-gray-200 hover:border-gray-400'}`}
-                  style={{ backgroundColor: hex }}
-                  title={hex} />
-              ))}
-            </div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg border-2 border-gray-200 shrink-0" style={{ backgroundColor: quickColorHex }} />
-              <div className="flex-1 space-y-2">
-                <input value={quickColorHex} onChange={e => setQuickColorHex(e.target.value)}
-                  placeholder="#000000" maxLength={7}
-                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <input value={quickColorName} onChange={e => setQuickColorName(e.target.value)}
-                  placeholder="Nhập tên màu (VD: Đỏ, Xanh dương)" autoFocus
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onKeyDown={e => e.key === 'Enter' && handleQuickAddColor()} />
+          <div className="bg-white rounded-2xl max-w-xl w-full mx-4 p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-4">Thêm màu sắc mới</h3>
+            <div className="flex gap-6">
+              <div className="overflow-x-auto flex-1 min-w-0 -mx-1 px-1">
+                {(() => {
+                  const levels = [100, 200, 300, 400, 500, 600, 700]
+                  const lightHexes = new Set(['#FFF9C4','#FFF59D','#FFF176','#FFE0B2','#FFCDD2','#F8BBD0','#F5F5F5','#D7CCC8','#D1C4E9','#BBDEFB','#C8E6C9','#FFEBEE','#E3F2FD','#E8F5E9','#FFF3E0','#FCE4EC','#EDE7F6','#E0F2F1'])
+                  const families = [
+                    { name: 'Đỏ', shades: ['#FFCDD2','#EF9A9A','#E57373','#EF5350','#F44336','#E53935','#D32F2F'] },
+                    { name: 'Hồng', shades: ['#F8BBD0','#F48FB1','#F06292','#EC407A','#E91E63','#D81B60','#C2185B'] },
+                    { name: 'Tím', shades: ['#D1C4E9','#B39DDB','#9575CD','#7E57C2','#673AB7','#5E35B1','#512DA8'] },
+                    { name: 'X.dương', shades: ['#BBDEFB','#90CAF9','#64B5F6','#42A5F5','#2196F3','#1E88E5','#1976D2'] },
+                    { name: 'X.lá', shades: ['#C8E6C9','#A5D6A7','#81C784','#66BB6A','#4CAF50','#43A047','#388E3C'] },
+                    { name: 'Vàng', shades: ['#FFF9C4','#FFF59D','#FFF176','#FFEE58','#FFEB3B','#FDD835','#FBC02D'] },
+                    { name: 'Cam', shades: ['#FFE0B2','#FFCC80','#FFB74D','#FFA726','#FF9800','#FB8C00','#F57C00'] },
+                    { name: 'Nâu', shades: ['#D7CCC8','#BCAAA4','#A1887F','#8D6E63','#795548','#6D4C41','#5D4037'] },
+                    { name: 'Xám', shades: ['#F5F5F5','#E0E0E0','#BDBDBD','#9E9E9E','#757575','#616161','#424242'] },
+                  ]
+                  return (<>
+                    <div className="flex gap-1 mb-1.5 ml-14">
+                      {levels.map(lvl => (
+                        <div key={lvl} className="w-7 shrink-0 text-center text-[10px] font-semibold text-gray-400 tracking-wide">{lvl}</div>
+                      ))}
+                    </div>
+                    {families.map((f, fi) => (
+                      <div key={fi} className="flex gap-1 mb-1 items-center">
+                        <div className="w-12 shrink-0 text-[11px] font-medium text-gray-500 text-right pr-1 truncate">{f.name}</div>
+                        {f.shades.map((hex, si) => (
+                          <button key={hex} type="button"
+                            onClick={() => { setQuickColorHex(hex); setQuickColorName(f.name) }}
+                            className={`w-7 h-7 rounded-full border transition-all duration-150 ${quickColorHex === hex ? 'border-blue-600 ring-2 ring-blue-300 ring-offset-1 scale-110 z-10 shadow-sm' : (lightHexes.has(hex) ? 'border-gray-300 hover:border-gray-500' : 'border-gray-200 hover:border-gray-400')}`}
+                            style={{ backgroundColor: hex }}
+                            title={`${f.name} ${levels[si]} (${hex})`} />
+                        ))}
+                      </div>
+                    ))}
+                  </>)
+                })()}
+                <div className="flex gap-1 mt-3 pt-2.5 border-t border-gray-200">
+                  {[
+                    { hex: '#FFFFFF', name: 'Trắng' },
+                    { hex: '#000000', name: 'Đen' },
+                    { hex: '#2F3640', name: 'Than' },
+                    { hex: '#607D8B', name: 'Rêu' },
+                    { hex: '#9E9E9E', name: 'Ghi' },
+                    { hex: '#D4A574', name: 'Be' },
+                    { hex: '#795548', name: 'Nâu' },
+                    { hex: '#FF5722', name: 'Cam đỏ' },
+                    { hex: '#00BCD4', name: 'Ngọc' },
+                    { hex: '#CDDC39', name: 'Chanh' },
+                  ].map(c => (
+                    <button key={c.hex} type="button"
+                      onClick={() => { setQuickColorHex(c.hex); setQuickColorName(c.name) }}
+                      className={`w-7 h-7 rounded-full border transition-all duration-150 ${quickColorHex === c.hex ? 'border-blue-600 ring-2 ring-blue-300 ring-offset-1 scale-110 z-10 shadow-sm' : (c.hex === '#FFFFFF' ? 'border-gray-300 hover:border-gray-500' : 'border-gray-200 hover:border-gray-400')}`}
+                      style={{ backgroundColor: c.hex }}
+                      title={`${c.name} (${c.hex})`} />
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowColorModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddColor} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+              <div className="flex flex-col items-center gap-3 shrink-0 w-32 pt-2">
+                <div className="w-14 h-14 rounded-full border-2 border-gray-200 shadow-md" style={{ backgroundColor: quickColorHex }} />
+                <span className="text-[11px] font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">{quickColorHex}</span>
+                <input value={quickColorName} onChange={e => setQuickColorName(e.target.value)}
+                  placeholder="Nhập tên màu" autoFocus
+                  className="w-full border rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" />
+                <div className="flex gap-2 w-full mt-1">
+                  <button onClick={() => setShowColorModal(false)} className="flex-1 py-2 border rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">Hủy</button>
+                  <button onClick={handleQuickAddColor} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors">Thêm</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
