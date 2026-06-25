@@ -26,6 +26,7 @@ public class ThanhToanService {
     private final BienTheSanPhamRepository bienTheRepository;
     private final GioHangRepository gioHangRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
+    private final OrderSseService orderSseService;
 
     public List<ThanhToan> getPaymentsByOrder(Integer orderId) {
         return thanhToanRepository.findByDonHang_MaDonHang(orderId);
@@ -47,6 +48,7 @@ public class ThanhToanService {
         if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
             order.setTrangThaiDon(2);
             donHangRepository.save(order);
+            orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
         }
 
         thanhToanRepository.save(payment);

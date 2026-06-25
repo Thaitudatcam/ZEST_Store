@@ -35,9 +35,10 @@ const STATUS_LIST = [
   { value: 0, label: 'Tất cả' },
   { value: 1, label: 'Chờ xác nhận' },
   { value: 2, label: 'Đã xác nhận' },
-  { value: 3, label: 'Đang giao' },
-  { value: 4, label: 'Đã giao' },
+  { value: 3, label: 'Chờ lấy hàng' },
+  { value: 4, label: 'Chờ giao hàng' },
   { value: 5, label: 'Đã hủy' },
+  { value: 6, label: 'Đã giao hàng' },
 ]
 
 const LOAI_DON = [

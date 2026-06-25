@@ -14,7 +14,9 @@ import com.example.zeststore.repository.DanhSachYeuThichRepository;
 import com.example.zeststore.repository.VaiTroRepository;
 import com.example.zeststore.security.JwtTokenProvider;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -49,14 +51,24 @@ public class AuthController {
         String token = jwtTokenProvider.generateToken(
                 nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro());
 
-        return ResponseEntity.ok(AuthResponse.builder()
-                .token(token)
-                .tokenType("Bearer")
-                .maNguoiDung(nguoiDung.getMaNguoiDung())
-                .email(nguoiDung.getEmail())
-                .hoTen(nguoiDung.getHoTen())
-                .vaiTro(nguoiDung.getVaiTro().getTenVaiTro())
-                .build());
+        Cookie jwtCookie = new Cookie("jwtToken", token);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(7 * 24 * 60 * 60);
+        jwtCookie.setAttribute("SameSite", "Lax");
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.getName() + "=" + jwtCookie.getValue()
+                        + "; HttpOnly; Path=/; Max-Age=" + jwtCookie.getMaxAge() + "; SameSite=Lax")
+                .body(AuthResponse.builder()
+                        .token(token)
+                        .tokenType("Bearer")
+                        .maNguoiDung(nguoiDung.getMaNguoiDung())
+                        .email(nguoiDung.getEmail())
+                        .hoTen(nguoiDung.getHoTen())
+                        .vaiTro(nguoiDung.getVaiTro().getTenVaiTro())
+                        .build());
     }
 
     @PostMapping("/register")
@@ -91,7 +103,16 @@ public class AuthController {
         String token = jwtTokenProvider.generateToken(
                 nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro());
 
+        Cookie jwtCookie = new Cookie("jwtToken", token);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(7 * 24 * 60 * 60);
+        jwtCookie.setAttribute("SameSite", "Lax");
+
         return ResponseEntity.status(HttpStatus.CREATED)
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.getName() + "=" + jwtCookie.getValue()
+                        + "; HttpOnly; Path=/; Max-Age=" + jwtCookie.getMaxAge() + "; SameSite=Lax")
                 .body(AuthResponse.builder()
                         .token(token)
                         .tokenType("Bearer")

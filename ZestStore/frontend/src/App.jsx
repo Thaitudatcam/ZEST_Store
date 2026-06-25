@@ -16,6 +16,7 @@ import Wishlist from './pages/Wishlist'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
 import PaymentResult from './pages/PaymentResult'
+import ErrorBoundary from './components/ErrorBoundary'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import AdminOrders from './pages/admin/AdminOrders'
@@ -68,13 +69,13 @@ export default function App() {
               <Route path="/products" element={<Navigate to="/" replace />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+              <Route path="/checkout" element={<ProtectedRoute><ErrorBoundary><Checkout /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-              <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+              <Route path="/orders/:id" element={<ProtectedRoute><ErrorBoundary><OrderDetail /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
           </main>
