@@ -12,15 +12,22 @@ import java.util.List;
 @Builder
 public class PosOrderRequest {
 
-    @NotEmpty
-    @Valid
     private List<PosItem> items;
+
+    private Integer maNguoiDung;
 
     @Size(max = 100)
     private String tenKhachHang;
 
     @Size(max = 15)
     private String sdtKhachHang;
+
+    @Size(max = 50)
+    private String maCode;
+
+    @Min(5)
+    @Max(6)
+    private Integer phuongThucThanhToan;
 
     @Getter
     @Setter
