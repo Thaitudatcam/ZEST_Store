@@ -28,24 +28,16 @@ export default function Dashboard() {
     setError('')
 
     Promise.all([
-<<<<<<< HEAD
-      getStats().catch((err) => { throw { source: 'stats', err } }),
+      getStats(),
       getRevenue(
   new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
   new Date().toISOString().split('T')[0]
-).catch((err) => { throw { source: 'revenue', err } }),
-      getTopProducts().catch((err) => { throw { source: 'topProducts', err } }),
-    ])
-      .then(([s, r, t]) => {
-=======
-      getStats(),
-      getRevenue(),
+),
       getTopProducts(),
       getRevenueByDate(30),
       getRecentOrders(10),
     ].map(p => p.catch(err => ({ _error: err }))))
       .then(([s, r, t, revDate, recent]) => {
->>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
         if (cancelled) return
         setStats(s?._error ? null : s)
         setRevenueData(r?._error ? null : r)

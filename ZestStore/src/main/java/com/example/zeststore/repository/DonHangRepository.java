@@ -33,7 +33,6 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     @Query("SELECT COALESCE(SUM(d.tongTien), 0) FROM DonHang d "
             + "WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
-<<<<<<< HEAD
                                      @Param("denNgay") LocalDateTime denNgay);
 
 
@@ -57,8 +56,6 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             + "FROM DonHang d WHERE d.trangThaiDon = 4 "
             + "GROUP BY FUNCTION('YEAR', d.ngayDat) ORDER BY 1")
     List<Object[]> sumRevenueByYear();
-=======
-                                      @Param("denNgay") LocalDateTime denNgay);
 
     @Query(value = "SELECT CONVERT(date, ngay_dat) as ngay, SUM(tong_tien) as doanh_thu "
             + "FROM don_hang WHERE trang_thai_don = 4 AND ngay_dat BETWEEN :tuNgay AND :denNgay "
@@ -67,5 +64,4 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
                                           @Param("denNgay") LocalDateTime denNgay);
 
     List<DonHang> findTop10ByOrderByNgayDatDesc();
->>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
 }
