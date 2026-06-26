@@ -42,20 +42,6 @@ public class ThongKeController {
 
     @GetMapping("/recent-orders")
     public ResponseEntity<?> getRecentOrders(@RequestParam(defaultValue = "10") int limit) {
-        var orders = thongKeService.getRecentOrders(limit);
-        var result = orders.stream().map(o -> {
-            Map<String, Object> m = new java.util.LinkedHashMap<>();
-            m.put("maDonHang", o.getMaDonHang());
-            m.put("maDonHangCode", o.getMaDonHangCode());
-            m.put("tenNguoiNhan", o.getTenNguoiNhan());
-            m.put("tongTien", o.getTongTien());
-            m.put("trangThaiDon", o.getTrangThaiDon());
-            m.put("ngayDat", o.getNgayDat());
-            if (o.getNguoiDung() != null) {
-                m.put("tenKhachHang", o.getNguoiDung().getHoTen());
-            }
-            return m;
-        }).collect(java.util.stream.Collectors.toList());
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(thongKeService.getRecentOrders(limit));
     }
 }

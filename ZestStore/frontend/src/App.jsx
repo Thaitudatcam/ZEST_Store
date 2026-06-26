@@ -28,8 +28,7 @@ import AdminCategories from './pages/admin/AdminCategories'
 import AdminCoupons from './pages/admin/AdminCoupons'
 import AdminInvoices from './pages/admin/AdminInvoices'
 import AdminReviews from './pages/admin/AdminReviews'
-import AdminCustomers from './pages/admin/AdminCustomers'
-import AdminEmployees from './pages/admin/AdminEmployees'
+import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 
 function ScrollToTop() {
@@ -55,8 +54,9 @@ export default function App() {
         <Route path="categories" element={<AdminCategories />} />
         <Route path="coupons" element={<AdminCoupons />} />
         <Route path="reviews" element={<AdminReviews />} />
-        <Route path="customers" element={<AdminCustomers />} />
-        <Route path="employees" element={<AdminEmployees />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="customers" element={<AdminUsers />} />
+        <Route path="employees" element={<AdminUsers />} />
         <Route path="pos" element={<AdminPOS />} />
       </Route>
 

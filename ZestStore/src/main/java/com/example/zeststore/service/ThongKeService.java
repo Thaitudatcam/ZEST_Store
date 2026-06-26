@@ -47,22 +47,28 @@ public class ThongKeService {
         if (denNgay == null) denNgay = LocalDateTime.now();
 
         BigDecimal revenue = donHangRepository.sumRevenueByDateRange(tuNgay, denNgay);
-        Long orderCount = donHangRepository.findByNgayDatBetween(tuNgay, denNgay)
-                .stream().filter(o -> Integer.valueOf(4).equals(o.getTrangThaiDon())).count();
+        Long orderCount = donHangRepository.countCompletedOrders(tuNgay, denNgay);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("tuNgay", tuNgay);
-        result.put("denNgay", denNgay);
         result.put("doanhThu", revenue);
         result.put("soDonHoanThanh", orderCount);
         return result;
     }
 
     @Transactional(readOnly = true)
-    public List<Object[]> getTopProducts(String hanhDong, int limit) {
+    public List<Map<String, Object>> getTopProducts(String hanhDong, int limit) {
         LocalDateTime lastMonth = LocalDateTime.now().minusMonths(1);
-        return hanhViRepository.findTopSanPhamByHanhDongAndDateRange(
+        List<Object[]> raw = hanhViRepository.findTopSanPhamByHanhDongAndDateRange(
                 hanhDong, lastMonth, LocalDateTime.now(), limit);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : raw) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("maSanPham", row[0]);
+            item.put("tenSanPham", row[1]);
+            item.put("soLanXem", row[2]);
+            result.add(item);
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -70,12 +76,13 @@ public class ThongKeService {
         LocalDateTime denNgay = LocalDateTime.now();
         LocalDateTime tuNgay = denNgay.minusDays(days).withHour(0).withMinute(0).withSecond(0);
 
-        List<Object[]> raw = donHangRepository.sumRevenueGroupByDate(tuNgay, denNgay);
-        Map<LocalDate, BigDecimal> map = new LinkedHashMap<>();
+        List<Object[]> raw = donHangRepository.findRevenueData(tuNgay, denNgay);
+        Map<LocalDate, BigDecimal> map = new HashMap<>();
         for (Object[] row : raw) {
-            LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
+            LocalDateTime dt = (LocalDateTime) row[0];
+            LocalDate date = dt.toLocalDate();
             BigDecimal amount = (BigDecimal) row[1];
-            map.put(date, amount);
+            map.merge(date, amount, BigDecimal::add);
         }
 
         List<Map<String, Object>> result = new ArrayList<>();
@@ -90,8 +97,16 @@ public class ThongKeService {
     }
 
     @Transactional(readOnly = true)
-    public List<DonHang> getRecentOrders(int limit) {
+    public List<Map<String, Object>> getRecentOrders(int limit) {
         return donHangRepository.findTop10ByOrderByNgayDatDesc()
-                .stream().limit(limit).collect(Collectors.toList());
+                .stream().limit(limit).map(o -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("maDonHang", o.getMaDonHang());
+                    m.put("tenNguoiNhan", o.getTenNguoiNhan());
+                    m.put("tongTien", o.getTongTien());
+                    m.put("trangThaiDon", o.getTrangThaiDon());
+                    m.put("ngayDat", o.getNgayDat());
+                    return m;
+                }).collect(Collectors.toList());
     }
 }
