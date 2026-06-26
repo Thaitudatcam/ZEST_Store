@@ -151,7 +151,7 @@ public class POSService {
                     .build());
         }
 
-        Integer phuongThuc = request.getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
+        Integer phuongThuc = request    .getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
         String nhaCungCap = Integer.valueOf(6).equals(phuongThuc) ? "VietQR" : "Tiền mặt";
         Integer trangThaiThanhToan = Integer.valueOf(6).equals(phuongThuc) ? 1 : 2;
 

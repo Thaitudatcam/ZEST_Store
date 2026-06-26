@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
-import { getCoupons, createCoupon, deleteCoupon } from "../../api/admin";
-import { Plus, Trash2 } from "lucide-react";
+import { getCoupons, createCoupon, deleteCoupon , filterCoupons} from "../../api/admin";
+import { Plus, Trash2 ,Filter, X } from "lucide-react";
 
 const PAGE_SIZE = 15
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [filter, setFilter] = useState({
+    ngayBatDau: "",
+    ngayKetThuc: "",
+    kieuGiamGia: "",
+    giaTriGiam: "",
+  });
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [form, setForm] = useState({
@@ -20,16 +26,87 @@ export default function AdminCoupons() {
     giaTriGiamToiDa: "",
   });
 
-  const load = () =>
-    getCoupons()
-      .then(setCoupons)
-      .catch(() => {});
-  useEffect(() => {
-    load();
-  }, []);
+  const load = (filterParams = {}) => {
+  const hasFilter = Object.values(filterParams).some((v) => v !== "");
+
+  if (hasFilter) {
+    const params = new URLSearchParams();
+    if (filterParams.ngayBatDau) params.append("ngayBatDau", filterParams.ngayBatDau + "T00:00:00");
+    if (filterParams.ngayKetThuc) params.append("ngayKetThuc", filterParams.ngayKetThuc + "T23:59:59");
+    if (filterParams.kieuGiamGia) params.append("kieuGiamGia", filterParams.kieuGiamGia);
+    if (filterParams.giaTriGiam) params.append("giaTriGiam", filterParams.giaTriGiam);
+
+    filterCoupons(params.toString()).then(setCoupons).catch(() => {});
+  } else {
+    // Nhánh này phải chạy khi mới vào trang
+    getCoupons().then(setCoupons).catch(() => {});
+  }
+};
+
+useEffect(() => { load(); }, []); // Gọi load() không tham số = lấy tất cả
+const handleFilter = () => {
+  if (filter.ngayBatDau && filter.ngayKetThuc) {
+    if (new Date(filter.ngayBatDau) > new Date(filter.ngayKetThuc)) {
+      alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!"); return;
+    }
+  }
+  if (filter.giaTriGiam && Number(filter.giaTriGiam) < 0) {
+    alert("Giá trị giảm không được âm!"); return;
+  }
+  if(filter.giaTriGiam && Number(filter.giaTriGiam) >100000000){
+    alert("Giá trị giảm quá lớn!"); return;
+  }
+  if (filter.kieuGiamGia === "1" && filter.giaTriGiam && Number(filter.giaTriGiam) > 100) {
+    alert("Phần trăm giảm không được vượt quá 100%!"); return;
+  }
+  load(filter);
+};
+
+const handleResetFilter = () => {
+  const reset = { ngayBatDau: "", ngayKetThuc: "", kieuGiamGia: "", giaTriGiam: "" };
+  setFilter(reset);
+  load({});
+};
+
+const hasFilter = Object.values(filter).some((v) => v !== "");
+
+const validate = () => {
+  if (!form.maCode.trim()) {
+    alert("Vui lòng nhập mã code!"); return false;
+  }
+  if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) {
+    alert("Giá trị giảm phải lớn hơn 0!"); return false;
+  }
+  if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) {
+    alert("Phần trăm giảm không được vượt quá 100%!"); return false;
+  }
+  if (!form.ngayBatDau) {
+    alert("Vui lòng chọn ngày bắt đầu!"); return false;
+  }
+  if (!form.ngayKetThuc) {
+    alert("Vui lòng chọn ngày kết thúc!"); return false;
+  }
+  if (new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) {
+    alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!"); return false;
+  }
+  if (new Date(form.ngayBatDau) < new Date(new Date().toDateString())) {
+    alert("Ngày bắt đầu không được là ngày quá khứ!"); return false;
+  }
+  if (form.giaTriDonToiThieu && Number(form.giaTriDonToiThieu) < 0) {
+    alert("Giá trị đơn tối thiểu không được âm!"); return false;
+  }
+  if (form.soLuong && Number(form.soLuong) <= 0) {
+    alert("Số lượng phải lớn hơn 0!"); return false;
+  }
+  if (form.kieuGiamGia === 1 && form.giaTriGiamToiDa && Number(form.giaTriGiamToiDa) <= 0) {
+    alert("Giá trị giảm tối đa phải lớn hơn 0!"); return false;
+  }
+  return true;
+}
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if(!validate()) return;
     try {
       await createCoupon({
         maCode: form.maCode,
@@ -66,7 +143,10 @@ export default function AdminCoupons() {
       await deleteCoupon(confirmDelete);
       setConfirmDelete(null);
       load();
-    } catch {}
+    } catch (err) {
+       alert(err.response?.data?.message || err.message || "Lỗi xóa coupon");
+      console.error("Delete error:", err);
+    }
   };
 
   useEffect(() => { setPage(0) }, [coupons.length])
@@ -84,7 +164,70 @@ export default function AdminCoupons() {
           <Plus className="h-4 w-4" /> Thêm mã
         </button>
       </div>
-
+      <div className="bg-white rounded-2xl shadow-sm border p-4 mb-6">
+  <div className="flex items-center gap-2 mb-3">
+    <Filter className="h-4 w-4 text-gray-500" />
+    <span className="font-semibold text-sm text-gray-700">Bộ lọc</span>
+  </div>
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div>
+      <label className="text-xs text-gray-500">Ngày bắt đầu</label>
+      <input
+        type="date"
+        value={filter.ngayBatDau}
+        onChange={(e) => setFilter({ ...filter, ngayBatDau: e.target.value })}
+        className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+    <div>
+      <label className="text-xs text-gray-500">Ngày kết thúc</label>
+      <input
+        type="date"
+        value={filter.ngayKetThuc}
+        onChange={(e) => setFilter({ ...filter, ngayKetThuc: e.target.value })}
+        className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+    <div>
+      <label className="text-xs text-gray-500">Kiểu giảm</label>
+      <select
+        value={filter.kieuGiamGia}
+        onChange={(e) => setFilter({ ...filter, kieuGiamGia: e.target.value })}
+        className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Tất cả</option>
+        <option value="1">Giảm theo %</option>
+        <option value="2">Giảm tiền mặt</option>
+      </select>
+    </div>
+    <div>
+      <label className="text-xs text-gray-500">Giá trị giảm</label>
+      <input
+        type="number"
+        value={filter.giaTriGiam}
+        onChange={(e) => setFilter({ ...filter, giaTriGiam: e.target.value })}
+        placeholder="Nhập giá trị..."
+        className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  </div>
+  <div className="flex gap-2 mt-3">
+    <button
+      onClick={handleFilter}
+      className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2"
+    >
+      <Filter className="h-4 w-4" /> Lọc
+    </button>
+    {hasFilter && (
+      <button
+        onClick={handleResetFilter}
+        className="border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 flex items-center gap-2 text-gray-600"
+      >
+        <X className="h-4 w-4" /> Xóa lọc
+      </button>
+    )}
+  </div>
+</div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">

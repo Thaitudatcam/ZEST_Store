@@ -3,12 +3,14 @@ package com.example.zeststore.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLRestriction("ngay_xoa IS NULL")
 @Entity
 @Table(name = "dia_chi_nguoi_dung")
 public class DiaChiNguoiDung {
@@ -33,6 +35,18 @@ public class DiaChiNguoiDung {
 
     @Column(name = "quan_huyen", length = 100)
     private String quanHuyen;
+
+    @Column(name = "phuong_xa", length = 100)
+    private String phuongXa;
+
+    @Column(name = "province_id")
+    private Integer provinceId;
+
+    @Column(name = "district_id")
+    private Integer districtId;
+
+    @Column(name = "ward_code", length = 20)
+    private String wardCode;
 
     @Column(name = "chi_tiet_dia_chi", nullable = false, length = 500)
     private String chiTietDiaChi;

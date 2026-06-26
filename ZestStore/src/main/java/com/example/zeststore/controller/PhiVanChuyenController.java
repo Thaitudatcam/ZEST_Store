@@ -1,6 +1,6 @@
 package com.example.zeststore.controller;
 
-import com.example.zeststore.entity.PhiVanChuyen;
+import com.example.zeststore.dto.request.PhiVanChuyenRequest;
 import com.example.zeststore.service.PhiVanChuyenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +34,13 @@ public class PhiVanChuyenController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody PhiVanChuyen entity) {
-        return ResponseEntity.ok(service.create(entity));
+    public ResponseEntity<?> create(@Valid @RequestBody PhiVanChuyenRequest request) {
+        return ResponseEntity.ok(service.createFromRequest(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody PhiVanChuyen entity) {
-        return ResponseEntity.ok(service.update(id, entity));
+    public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody PhiVanChuyenRequest request) {
+        return ResponseEntity.ok(service.updateFromRequest(id, request));
     }
 
     @DeleteMapping("/{id}")

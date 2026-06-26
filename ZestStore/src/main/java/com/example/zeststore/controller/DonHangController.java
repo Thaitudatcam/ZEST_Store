@@ -3,13 +3,16 @@ package com.example.zeststore.controller;
 import com.example.zeststore.dto.request.OrderRequest;
 import com.example.zeststore.dto.request.StatusUpdateRequest;
 import com.example.zeststore.service.DonHangService;
+import com.example.zeststore.service.OrderSseService;
 import com.example.zeststore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -20,9 +23,11 @@ public class DonHangController {
 
     private final DonHangService donHangService;
     private final UserService userService;
+    private final OrderSseService orderSseService;
 
     @GetMapping
     public ResponseEntity<?> getMyOrders(Authentication auth) {
+        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
         return ResponseEntity.ok(donHangService.getOrdersByUser(userService.getUserIdFromAuth(auth)));
     }
 
@@ -72,6 +77,20 @@ public class DonHangController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAdminOrderDetail(@PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.getOrderDetail(id));
+
+    }
+
+    @GetMapping(value = "/{orderId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamOrderStatus(@PathVariable Integer orderId) {
+        SseEmitter emitter = orderSseService.addEmitter(orderId);
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("connected")
+                    .data(Map.of("orderId", orderId, "message", "Connected")));
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+        return emitter;
     }
 
     @PutMapping("/admin/{id}/status")

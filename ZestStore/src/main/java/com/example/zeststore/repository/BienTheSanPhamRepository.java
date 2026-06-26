@@ -26,4 +26,9 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
     List<Object> findDistinctMauSacBySanPhamId(@Param("maSanPham") Integer maSanPham);
 
     List<BienTheSanPham> findBySanPham_MaSanPhamAndNgayXoaIsNull(Integer maSanPham);
+
+    @Query("SELECT b.sanPham.maSanPham, COALESCE(SUM(b.tonKho), 0) FROM BienTheSanPham b "
+            + "WHERE b.sanPham.maSanPham IN :maSanPhamIds AND b.ngayXoa IS NULL "
+            + "GROUP BY b.sanPham.maSanPham")
+    List<Object[]> sumTonKhoBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
 }
