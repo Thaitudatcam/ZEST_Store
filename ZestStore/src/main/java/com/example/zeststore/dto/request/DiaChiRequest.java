@@ -16,6 +16,21 @@ public class DiaChiRequest {
     @NotBlank @Size(max = 15)
     private String soDienThoai;
 
+    @Size(max = 100)
+    private String tinhThanhPho;
+
+    @Size(max = 100)
+    private String quanHuyen;
+
+    @Size(max = 100)
+    private String phuongXa;
+
+    private Integer provinceId;
+
+    private Integer districtId;
+
+    private String wardCode;
+
     @NotBlank @Size(max = 500)
     private String chiTietDiaChi;
 

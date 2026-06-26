@@ -16,8 +16,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+<<<<<<< HEAD
 import java.time.LocalTime;
 import java.util.List;
+=======
+>>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
 import java.util.Map;
 
 @RestController
@@ -155,5 +158,29 @@ public class ThongKeController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
         }
+    }
+
+    @GetMapping("/revenue-by-date")
+    public ResponseEntity<?> getRevenueByDate(@RequestParam(defaultValue = "30") int days) {
+        return ResponseEntity.ok(thongKeService.getRevenueByDate(days));
+    }
+
+    @GetMapping("/recent-orders")
+    public ResponseEntity<?> getRecentOrders(@RequestParam(defaultValue = "10") int limit) {
+        var orders = thongKeService.getRecentOrders(limit);
+        var result = orders.stream().map(o -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("maDonHang", o.getMaDonHang());
+            m.put("maDonHangCode", o.getMaDonHangCode());
+            m.put("tenNguoiNhan", o.getTenNguoiNhan());
+            m.put("tongTien", o.getTongTien());
+            m.put("trangThaiDon", o.getTrangThaiDon());
+            m.put("ngayDat", o.getNgayDat());
+            if (o.getNguoiDung() != null) {
+                m.put("tenKhachHang", o.getNguoiDung().getHoTen());
+            }
+            return m;
+        }).collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 }

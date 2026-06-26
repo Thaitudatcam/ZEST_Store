@@ -1,32 +1,43 @@
 import { useState, useEffect } from "react";
 import { getOrders, cancelOrder } from "../api/orders";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { Package, XCircle, ChevronRight } from "lucide-react";
+import { Package, XCircle, ChevronRight, ShoppingBag, CheckCircle, Truck, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 import { VND } from "../components/ProductCard";
+import { useToast } from "../context/ToastContext";
 
-const statusColor = {
-  1: "bg-yellow-100 text-yellow-800",
-  2: "bg-blue-100 text-blue-800",
-  3: "bg-purple-100 text-purple-800",
-  4: "bg-green-100 text-green-800",
-  5: "bg-red-100 text-red-800",
-  6: "bg-teal-100 text-teal-800",
-  7: "bg-orange-100 text-orange-800",
-  8: "bg-gray-200 text-gray-700",
-};
-const statusText = {
-  1: "Chờ xác nhận",
-  2: "Đã xác nhận",
-  3: "Đang giao",
-  4: "Đã giao",
-  5: "Đã hủy",
-  6: "Hoàn thành",
-  7: "Yêu cầu trả hàng",
-  8: "Đã trả hàng",
-};
+const STEP_ICONS = { 1: ShoppingBag, 2: CheckCircle, 3: Package, 4: Truck, 6: Home };
+
+function OrderMiniStepper({ status }) {
+  const steps = [1, 2, 3, 4, 6];
+  const currentIdx = steps.indexOf(status);
+  const isSpecial = [5, 7, 8].includes(status);
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {steps.map((s, i) => {
+        const Icon = STEP_ICONS[s];
+        const filled = isSpecial || i <= currentIdx;
+        const isCurrent = !isSpecial && i === currentIdx;
+        return (
+          <div key={s} className="flex items-center">
+            {i > 0 && <div className={`w-3 sm:w-5 h-0.5 ${filled ? 'bg-blue-500' : 'bg-gray-200'}`} />}
+            <div className={`flex items-center justify-center w-5 h-5 rounded-full transition-all duration-300
+              ${isCurrent ? 'bg-blue-600 text-white ring-2 ring-blue-300' : filled ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-300'}`}>
+              <Icon className="h-3 w-3" />
+            </div>
+          </div>
+        );
+      })}
+      {isSpecial && (
+        <span className="ml-2 text-xs font-semibold text-red-600">{status === 5 ? 'Đã hủy' : status === 7 ? 'Trả hàng' : 'Đã trả hàng'}</span>
+      )}
+    </div>
+  );
+}
 
 export default function Orders() {
+  const toast = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = () =>
@@ -38,8 +49,13 @@ export default function Orders() {
   }, []);
 
   const handleCancel = async (id) => {
-    await cancelOrder(id);
-    load();
+    try {
+      await cancelOrder(id);
+      load();
+      toast.success("Đã hủy đơn hàng");
+    } catch {
+      toast.error("Hủy đơn thất bại");
+    }
   };
 
   if (loading) return <LoadingSpinner className="py-20" />;
@@ -71,35 +87,35 @@ export default function Orders() {
                   <p className="text-sm text-gray-500">
                     Đơn hàng #{o.maDonHang}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs text-gray-400">
                     {o.ngayDat
                       ? new Date(o.ngayDat).toLocaleDateString("vi-VN")
                       : ""}
                   </p>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-2 py-1 rounded ${statusColor[o.trangThaiDon] || "bg-gray-100"}`}
-                >
-                  {statusText[o.trangThaiDon] || o.trangThaiDon}
+                <span className="text-xs font-semibold text-blue-600 px-2 py-0.5 rounded-full bg-blue-50">
+                  {VND(o.tongTien || 0)}
                 </span>
               </div>
+              <div className="mb-2">
+                <OrderMiniStepper status={o.trangThaiDon} />
+              </div>
               <div className="flex items-center justify-between">
-                <p className="font-bold text-blue-700">
-                  {VND(o.tongTien || 0)}
-                </p>
+                <div className="flex items-center gap-2">
+                  {o.trangThaiDon === 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (confirm("Hủy đơn hàng này?")) handleCancel(o.maDonHang);
+                      }}
+                      className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                    >
+                      <XCircle className="h-3.5 w-3.5" /> Hủy đơn
+                    </button>
+                  )}
+                </div>
                 <ChevronRight className="h-5 w-5 text-gray-300" />
               </div>
-              {o.trangThaiDon === 1 && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleCancel(o.maDonHang);
-                  }}
-                  className="mt-2 text-sm text-red-500 hover:underline flex items-center gap-1"
-                >
-                  <XCircle className="h-4 w-4" /> Hủy đơn
-                </button>
-              )}
             </Link>
           ))}
         </div>
@@ -107,3 +123,5 @@ export default function Orders() {
     </div>
   );
 }
+
+export { VND };

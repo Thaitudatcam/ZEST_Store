@@ -6,6 +6,9 @@ import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -29,10 +32,12 @@ public class DonHangService {
     private final ThanhToanRepository thanhToanRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final HoaDonService hoaDonService;
+    private final OrderSseService orderSseService;
+    private final GhnService ghnService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
-        return donHangRepository.findByNguoiDung_MaNguoiDung(userId);
+        return donHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(userId);
     }
 
     @Transactional(readOnly = true)
@@ -42,8 +47,12 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
-    public List<DonHang> getAllOrders() {
-        return donHangRepository.findAll();
+    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
+        if (loaiDonHang != null) {
+            return donHangRepository.findByLoaiDonHang(loaiDonHang, pageable);
+        }
+        return donHangRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
@@ -52,10 +61,13 @@ public class DonHangService {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
 
+        List<LichSuDonHang> history = lichSuDonHangRepository.findByDonHang_MaDonHangOrderByThoiGianDesc(orderId);
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("order", order);
         result.put("items", items);
         result.put("payments", payments);
+        result.put("history", history);
         return result;
     }
 
@@ -79,6 +91,15 @@ public class DonHangService {
         List<MucGioHang> cartItems = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
         if (cartItems.isEmpty()) {
             throw new BadRequestException("Cart is empty");
+        }
+
+        if (request.getMaBienTheList() != null && !request.getMaBienTheList().isEmpty()) {
+            cartItems = cartItems.stream()
+                    .filter(ci -> request.getMaBienTheList().contains(ci.getBienThe().getMaBienThe()))
+                    .collect(java.util.stream.Collectors.toList());
+            if (cartItems.isEmpty()) {
+                throw new BadRequestException("No matching items in cart");
+            }
         }
 
         BigDecimal tongTien = BigDecimal.ZERO;
@@ -107,13 +128,22 @@ public class DonHangService {
         PhieuGiamGia coupon = null;
         if (request.getMaCode() != null && !request.getMaCode().isEmpty()) {
             coupon = phieuGiamGiaRepository.findByMaCode(request.getMaCode())
-                    .orElseThrow(() -> new BadRequestException("Invalid coupon"));
+                    .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
-            if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
-                throw new BadRequestException("Minimum order value not met for this coupon");
+            if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
+                throw new BadRequestException("Mã giảm giá đã ngừng hoạt động");
+            }
+            if (coupon.getNgayBatDau() != null && LocalDateTime.now().isBefore(coupon.getNgayBatDau())) {
+                throw new BadRequestException("Mã giảm giá chưa đến hạn sử dụng");
+            }
+            if (coupon.getNgayKetThuc() != null && LocalDateTime.now().isAfter(coupon.getNgayKetThuc())) {
+                throw new BadRequestException("Mã giảm giá đã hết hạn");
             }
             if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-                throw new BadRequestException("Phiếu giảm giá đã hết lượt sử dụng");
+                throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
+            }
+            if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
+                throw new BadRequestException("Chưa đạt giá trị đơn tối thiểu để áp dụng mã này");
             }
 
             if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
@@ -134,7 +164,7 @@ public class DonHangService {
             }
         }
 
-        BigDecimal phiVanChuyen = request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
+        BigDecimal phiVanChuyen = recalculateShippingFee(request, orderItems);
         BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             finalTotal = BigDecimal.ZERO;
@@ -249,6 +279,8 @@ public class DonHangService {
                 .nguoiCapNhat(admin)
                 .build());
 
+        orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", null);
+
         return order;
     }
 
@@ -284,6 +316,9 @@ public class DonHangService {
                 .trangThaiMoi(6)
                 .nguoiCapNhat(user)
                 .build());
+
+        orderSseService.sendOrderStatusUpdate(orderId, 6, oldStatus, "user", null);
+
         return Map.of("message", "Order confirmed as received");
     }
 
@@ -314,7 +349,34 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .ghiChu(lyDo)
                 .build());
+
+        orderSseService.sendOrderStatusUpdate(orderId, 7, oldStatus, "user", lyDo);
+
         return Map.of("message", "Return requested");
+    }
+
+    private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
+        if (request.getToDistrictId() == null || request.getToWardCode() == null) {
+            return request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
+        }
+
+        int weight = request.getWeight() != null ? request.getWeight()
+                : orderItems.stream().mapToInt(item -> ((Integer) item.get("soLuong")) * 500).sum();
+        weight = Math.max(weight, 500);
+
+        Map<String, Object> result = ghnService.calculateFee(2, request.getToDistrictId(), request.getToWardCode(), weight);
+        if (result.containsKey("error")) {
+            throw new BadRequestException("Không thể tính phí vận chuyển, vui lòng thử lại sau");
+        }
+
+        Object data = result.get("data");
+        if (data instanceof Map) {
+            Object total = ((Map<?, ?>) data).get("total");
+            if (total instanceof Number) {
+                return BigDecimal.valueOf(((Number) total).longValue());
+            }
+        }
+        throw new BadRequestException("GHN trả về dữ liệu phí vận chuyển không hợp lệ");
     }
 
     private void restoreStock(Integer orderId) {
@@ -361,6 +423,9 @@ public class DonHangService {
                 .trangThaiMoi(5)
                 .nguoiCapNhat(user)
                 .build());
+
+        orderSseService.sendOrderStatusUpdate(orderId, 5, oldStatus, "user", null);
+
         return Map.of("message", "Order cancelled");
     }
 }

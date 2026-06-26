@@ -44,4 +44,12 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     Page<SanPham> findByMultipleCategoryIds(@Param("maDanhMucIds") List<Integer> maDanhMucIds, Pageable pageable);
 
     long countByNgayXoaIsNull();
+
+    List<SanPham> findByNgayXoaIsNull();
+
+    Page<SanPham> findByNgayXoaIsNull(Pageable pageable);
+
+    @Query("SELECT s FROM SanPham s WHERE s.ngayXoa IS NULL AND "
+            + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
+    Page<SanPham> searchAdminByKeyword(@Param("keyword") String keyword, Pageable pageable);
 }

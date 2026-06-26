@@ -17,6 +17,8 @@ export default function ProductCard({ product }) {
   const discount = product.phanTramGiamGia
   const colors = product.mauSacs ?? []
   const isNew = product.ngayTao && Date.now() - new Date(product.ngayTao).getTime() < 7 * 86400000
+  const totalStock = product.tongTonKho ?? 0
+  const isOutOfStock = totalStock === 0
 
   const toggleWish = async (e) => {
     e.preventDefault()
@@ -30,14 +32,19 @@ export default function ProductCard({ product }) {
   return (
     <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
       <div className="aspect-square bg-gray-100 overflow-hidden relative">
-        <img src={img} alt={product.tenSanPham} className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-500" loading="lazy" />
+        <img src={img} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} loading="lazy" />
         {user && (
-          <button onClick={toggleWish} className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition z-10">
+          <button onClick={toggleWish} className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition z-10" disabled={isOutOfStock}>
             <Heart className={`h-4 w-4 ${wished ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
           </button>
         )}
-        {isNew && <span className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">MỚI</span>}
-        {discount && <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">-{discount}%</span>}
+        {isNew && !isOutOfStock && <span className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">MỚI</span>}
+        {discount && !isOutOfStock && <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">-{discount}%</span>}
+        {isOutOfStock && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-lg z-10">
+            Hết hàng
+          </span>
+        )}
       </div>
       <div className="p-3">
         {avgRating && (

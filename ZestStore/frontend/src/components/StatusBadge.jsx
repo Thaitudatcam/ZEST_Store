@@ -12,10 +12,10 @@ const styles = {
 const labels = {
   1: 'Chờ xác nhận',
   2: 'Đã xác nhận',
-  3: 'Đang giao',
-  4: 'Đã giao',
+  3: 'Chờ lấy hàng',
+  4: 'Chờ giao hàng',
   5: 'Đã hủy',
-  6: 'Hoàn thành',
+  6: 'Đã giao hàng',
   7: 'Yêu cầu trả hàng',
   8: 'Đã trả hàng',
 }
