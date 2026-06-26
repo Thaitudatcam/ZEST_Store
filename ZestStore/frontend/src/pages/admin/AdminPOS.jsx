@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
-import { createCustomer, getCoupons } from '../../api/admin'
+import { createCustomer, getCoupons, getInvoiceByOrderId, generateInvoice } from '../../api/admin'
 import { VND } from '../../components/ProductCard'
 import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
@@ -52,6 +52,8 @@ export default function AdminPOS() {
   const [couponModal, setCouponModal] = useState(false)
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [couponListLoading, setCouponListLoading] = useState(false)
+  const [payResult, setPayResult] = useState(null)
+  const [printInvoice, setPrintInvoice] = useState(null)
 
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -269,13 +271,52 @@ export default function AdminPOS() {
         tenKhachHang: tenKhach.trim() || undefined,
         sdtKhachHang: sdtKhach.trim() || undefined,
       }).then(r => r.data)
-      navigate(`/admin/orders`)
+      if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
+      setCart([])
+      setSelectedCustomer(null)
+      setTenKhach('')
+      setSdtKhach('')
+      setCoupon(null)
+      setCouponCode('')
+      setPayResult(res)
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.message || 'Tạo đơn thất bại' })
+      setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
     } finally {
       setPlacing(false)
     }
   }
+
+  const goToOrders = useCallback(() => {
+    setPayResult(null)
+    setPrintInvoice(null)
+    navigate('/admin/orders', { replace: true })
+  }, [navigate])
+
+  const handlePrintInvoice = async () => {
+    if (!payResult?.maDonHang) return
+    setPrintInvoice('loading')
+    try {
+      await generateInvoice(payResult.maDonHang)
+    } catch {}
+    try {
+      const data = await getInvoiceByOrderId(payResult.maDonHang)
+      setPrintInvoice(data)
+    } catch {
+      setMsg({ type: 'error', text: 'Không thể tải hóa đơn' })
+      setPrintInvoice(null)
+    }
+  }
+
+  useEffect(() => {
+    if (!printInvoice || printInvoice === 'loading') return
+    const timer = setTimeout(() => window.print(), 300)
+    const afterPrint = () => goToOrders()
+    window.addEventListener('afterprint', afterPrint)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('afterprint', afterPrint)
+    }
+  }, [printInvoice, goToOrders])
 
   return (
     <div className="flex gap-4 h-[calc(100vh-6rem)]">
@@ -550,6 +591,113 @@ export default function AdminPOS() {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {payResult && !printInvoice && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <h3 className="font-bold text-lg">Thanh toán thành công</h3>
+              <p className="text-sm text-gray-500 mt-1">Đơn hàng #{payResult.maDonHang}</p>
+              <p className="text-lg font-bold text-blue-700 mt-2">{VND(payResult.thanhToan)}</p>
+            </div>
+            <div className="border-t p-4">
+              <p className="text-sm text-center text-gray-600 mb-4">Bạn có muốn in hóa đơn không?</p>
+              <div className="flex gap-3">
+                <button onClick={goToOrders}
+                  className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                  Không
+                </button>
+                <button onClick={handlePrintInvoice}
+                  className="flex-1 px-4 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold hover:bg-blue-800 transition">
+                  Có
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {printInvoice === 'loading' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="h-8 w-8 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {printInvoice && printInvoice !== 'loading' && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
+              <h2 className="font-bold text-lg">Hóa đơn {printInvoice.maHoaDonCode}</h2>
+              <button onClick={goToOrders} className="p-2 text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+            <div id="invoice-print" className="p-6 space-y-6">
+              <div className="text-center border-b pb-4">
+                <h3 className="text-2xl font-bold">ZEST STORE</h3>
+                <p className="text-sm text-gray-500">HÓA ĐƠN BÁN HÀNG</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p><span className="font-semibold">Mã hóa đơn:</span> {printInvoice.maHoaDonCode}</p>
+                  <p><span className="font-semibold">Ngày tạo:</span> {printInvoice.ngayTao ? new Date(printInvoice.ngayTao).toLocaleDateString('vi-VN') : '-'}</p>
+                  <p><span className="font-semibold">Email:</span> {printInvoice.emailKhachHang}</p>
+                </div>
+                {printInvoice.donHang && (
+                  <div>
+                    <p><span className="font-semibold">Khách hàng:</span> {printInvoice.donHang.khachHang}</p>
+                    <p><span className="font-semibold">Người nhận:</span> {printInvoice.donHang.tenNguoiNhan}</p>
+                    <p><span className="font-semibold">SĐT:</span> {printInvoice.donHang.sdtNguoiNhan}</p>
+                    <p><span className="font-semibold">Địa chỉ:</span> {printInvoice.donHang.diaChiGiaoHang}</p>
+                  </div>
+                )}
+              </div>
+              <table className="w-full text-sm border-t">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-3 py-2">Sản phẩm</th>
+                    <th className="text-center px-3 py-2">SL</th>
+                    <th className="text-right px-3 py-2">Đơn giá</th>
+                    <th className="text-right px-3 py-2">Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(printInvoice.chiTiet || []).map((item, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="px-3 py-2">
+                        <p>{item.tenSanPham}</p>
+                        {item.thongTinBienThe && <p className="text-xs text-gray-400">{item.thongTinBienThe}</p>}
+                      </td>
+                      <td className="text-center px-3 py-2">{item.soLuong}</td>
+                      <td className="text-right px-3 py-2">{VND(item.donGia)}</td>
+                      <td className="text-right px-3 py-2 font-semibold">{VND(item.thanhTien)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {printInvoice.donHang && (() => {
+                const t = printInvoice.donHang.tongTien ?? printInvoice.tongTien ?? 0
+                const g = printInvoice.donHang.soTienGiam || 0
+                return (
+                  <div className="text-right space-y-1 text-sm">
+                    <p><span className="text-gray-500">Tổng:</span> <span className="font-semibold">{VND(Number(t) + Number(g))}</span></p>
+                    {Number(g) > 0 && <p><span className="text-green-600">Giảm giá:</span> <span className="font-semibold text-green-600">-{VND(g)}</span></p>}
+                    <p className="text-lg font-bold text-blue-700">Phải thanh toán: {VND(t)}</p>
+                  </div>
+                )
+              })()}
+            </div>
+            <style>{`
+              @media print {
+                body * { visibility: hidden; }
+                #invoice-print, #invoice-print * { visibility: visible; }
+                #invoice-print { position: fixed; top: 0; left: 0; width: 100%; }
+              }
+            `}</style>
           </div>
         </div>
       )}
