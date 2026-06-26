@@ -109,6 +109,15 @@ public class SanPhamService {
         page.getContent().forEach(sp -> sp.setTongTonKho(stockMap.getOrDefault(sp.getMaSanPham(), 0)));
     }
 
+    public Page<SanPham> getAdminProducts(String keyword, int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        if (keyword != null) {
+            return sanPhamRepository.searchByKeywordAll(keyword, pageable);
+        }
+        return sanPhamRepository.findByNgayXoaIsNull(pageable);
+    }
+
     public SanPham getBySlug(String slug) {
         return sanPhamRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + slug));
@@ -212,6 +221,15 @@ public class SanPhamService {
         if (request.getUrlAnhDaiDien() != null) product.setUrlAnhDaiDien(request.getUrlAnhDaiDien());
         if (request.getTrangThai() != null) product.setTrangThai(request.getTrangThai());
         return sanPhamRepository.save(product);
+    }
+
+    @Transactional
+    public Map<String, Object> toggleStatus(Integer id) {
+        SanPham product = getById(id);
+        product.setTrangThai(product.getTrangThai() == 1 ? 0 : 1);
+        sanPhamRepository.save(product);
+        return Map.of("trangThai", product.getTrangThai(), "message",
+                product.getTrangThai() == 1 ? "Product activated" : "Product deactivated");
     }
 
     @Transactional

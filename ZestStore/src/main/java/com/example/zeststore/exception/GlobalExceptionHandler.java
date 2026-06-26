@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<?> handleDisabled(DisabledException ex) {
-        return buildResponse(HttpStatus.FORBIDDEN, "Tài khoản đã bị vô hiệu hóa");
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Tài khoản đã bị vô hiệu hóa");
     }
 
     @ExceptionHandler(Exception.class)

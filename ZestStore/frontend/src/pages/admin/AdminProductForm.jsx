@@ -1,710 +1,375 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Upload, Trash2, Plus, Pencil, AlertTriangle } from 'lucide-react'
 import api from '../../api/axios'
-import { getCategories } from '../../api/categories'
-import { uploadProductImage, uploadVariantImage } from '../../api/products'
-import { createCategory, createBrand, createColor, createSize } from '../../api/admin'
-import { useToast } from '../../context/ToastContext'
+import { VND } from '../../components/ProductCard'
 import SafeImg from '../../components/SafeImg'
-import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette } from 'lucide-react'
-import EmptyState from '../../components/EmptyState'
-
-const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
+import LoadingSpinner from '../../components/LoadingSpinner'
+import Toast from '../../components/Toast'
 
 export default function AdminProductForm() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const toast = useToast()
   const isEdit = Boolean(id)
-
-  const [product, setProduct] = useState({ tenSanPham: '', maDanhMuc: '', maThuongHieu: '', moTa: '', trangThai: 1 })
+  const [form, setForm] = useState({ tenSanPham: '', slug: '', moTa: '', urlAnhDaiDien: '', maDanhMuc: '' })
   const [categories, setCategories] = useState([])
+  const [brands, setBrands] = useState([])
   const [sizes, setSizes] = useState([])
   const [colors, setColors] = useState([])
-  const [brands, setBrands] = useState([])
-  const [variants, setVariants] = useState([])
-  const [uploadedImages, setUploadedImages] = useState([])
-  const [saving, setSaving] = useState(false)
+  const [sub, setSub] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [uploadingImg, setUploadingImg] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editIdx, setEditIdx] = useState(null)
-  const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
-  const [uploadingVimg, setUploadingVimg] = useState(false)
-  const [savingVar, setSavingVar] = useState(false)
-  const [showCatModal, setShowCatModal] = useState(false)
-  const [showBrandModal, setShowBrandModal] = useState(false)
-  const [quickAddName, setQuickAddName] = useState('')
-  const [showColorModal, setShowColorModal] = useState(false)
-  const [showSizeModal, setShowSizeModal] = useState(false)
-  const [quickColorName, setQuickColorName] = useState('')
-  const [quickColorHex, setQuickColorHex] = useState('#000000')
-  const [quickSizeName, setQuickSizeName] = useState('')
-  const [selectedColorIds, setSelectedColorIds] = useState([])
-  const [selectedSizeIds, setSelectedSizeIds] = useState([])
+  const [variants, setVariants] = useState([])
+  const [showVariantForm, setShowVariantForm] = useState(false)
+  const [vform, setVform] = useState({ sku: '', maThuongHieu: '', maKichCo: '', maMauSac: '', gia: '', tonKho: '' })
+  const [editVariantId, setEditVariantId] = useState(null)
+  const [errors, setErrors] = useState({})
+  const [toast, setToast] = useState(null)
+  const [dirty, setDirty] = useState(false)
+  const [baseSku, setBaseSku] = useState('')
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const pendingNavigation = useRef(null)
+
+  useEffect(() => {
+    if (!dirty || sub) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty, sub])
+
+  const handleNavigate = (path) => {
+    if (dirty && !sub) setShowLeaveConfirm(true)
+    else navigate(path)
+    pendingNavigation.current = path
+  }
 
   useEffect(() => {
     Promise.all([
-      getCategories(),
-      api.get('/sizes').then(r => r.data),
-      api.get('/colors').then(r => r.data),
-      api.get('/brands').then(r => r.data),
-      isEdit ? api.get(`/products/detail/${id}`).then(r => r.data) : Promise.resolve(null),
-    ]).then(([cats, sz, cl, br, detail]) => {
-      setCategories(Array.isArray(cats) ? cats : [])
-      setSizes(Array.isArray(sz) ? sz : [])
-      setColors(Array.isArray(cl) ? cl : [])
-      setBrands(Array.isArray(br) ? br : [])
-      if (detail) {
-        const firstBrand = detail.variants?.find(v => v.thuongHieu)?.thuongHieu
-        setProduct({
-          tenSanPham: detail.product.tenSanPham,
-          maDanhMuc: detail.product.danhMuc?.maDanhMuc || '',
-          maThuongHieu: firstBrand?.maThuongHieu || '',
-          moTa: detail.product.moTa || '',
-          trangThai: detail.product.trangThai ?? 1,
-        })
-        setVariants((detail.variants || []).map(v => ({
-          ...v,
-          maKichCo: v.maKichCo || v.kichCo?.maKichCo || '',
-          maMauSac: v.maMauSac || v.mauSac?.maMauSac || '',
-        })))
+      api.get('/categories/flat').then((r) => setCategories(r.data)).catch(() => {}),
+      api.get('/brands').then((r) => setBrands(r.data)).catch(() => {}),
+      api.get('/sizes').then((r) => setSizes(r.data)).catch(() => {}),
+      api.get('/colors').then((r) => setColors(r.data)).catch(() => {}),
+    ]).finally(() => {
+      if (isEdit) {
+        api.get(`/products/detail/${id}`).then((r) => {
+          const p = r.data.product || r.data
+          setForm({ tenSanPham: p.tenSanPham || '', slug: p.slug || '', moTa: p.moTa || '', urlAnhDaiDien: p.urlAnhDaiDien || '', maDanhMuc: p.danhMuc?.maDanhMuc || '' })
+          setVariants(r.data.variants || [])
+        }).catch(() => { setToast({ type: 'error', message: 'Không thể tải thông tin sản phẩm' }); setTimeout(() => navigate('/admin/products'), 1500) })
+          .finally(() => setLoading(false))
+      } else {
+        setLoading(false)
       }
-    }).catch(() => toast.error('Không thể tải dữ liệu'))
-    .finally(() => setLoading(false))
+    })
   }, [id])
 
-  const handleSaveProduct = async (e) => {
-    e.preventDefault()
-    if (!product.tenSanPham.trim()) { toast.error('Vui lòng nhập tên sản phẩm'); return }
-    if (!product.maDanhMuc) { toast.error('Vui lòng chọn danh mục'); return }
-    if (!product.maThuongHieu) { toast.error('Vui lòng chọn thương hiệu'); return }
-    setSaving(true)
+  const validateForm = useCallback(() => {
+    const e = {}
+    if (!form.tenSanPham.trim()) e.tenSanPham = 'Tên sản phẩm không được để trống'
+    else if (/[^a-zA-Z0-9À-ỹ\s\-_đ]/.test(form.tenSanPham)) e.tenSanPham = 'Tên sản phẩm không được chứa ký tự đặc biệt'
+    if (!form.maDanhMuc) e.maDanhMuc = 'Vui lòng chọn danh mục'
+    if (variants.length === 0) e.variants = 'Phải có ít nhất 1 biến thể'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }, [form, variants])
+
+  const slugify = (s) => s.toLowerCase()
+    .replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a')
+    .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e')
+    .replace(/ì|í|ị|ỉ|ĩ/g, 'i')
+    .replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o')
+    .replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u')
+    .replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setDirty(true)
+    setErrors((prev) => ({ ...prev, [name]: '' }))
+    if (name === 'tenSanPham') setBaseSku(slugify(value))
+    setForm((f) => ({
+      ...f,
+      [name]: value,
+      slug: name === 'tenSanPham' && !f.slug ? slugify(value) : name === 'slug' ? value : f.slug,
+    }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSub(true); setErrors({})
+    if (!validateForm()) { setSub(false); return }
     try {
-      const slug = product.tenSanPham.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
-      let productId = isEdit ? id : null
+      const slug = form.slug || slugify(form.tenSanPham)
+      const body = { tenSanPham: form.tenSanPham, slug, moTa: form.moTa, urlAnhDaiDien: form.urlAnhDaiDien, maDanhMuc: form.maDanhMuc ? Number(form.maDanhMuc) : null }
       if (isEdit) {
-        await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug })
+        await api.put(`/products/${id}`, body)
+        setToast({ type: 'success', message: 'Cập nhật sản phẩm thành công' })
+        setTimeout(() => navigate('/admin/products'), 1000)
       } else {
-        const variantReqs = variants.map(v => ({
-          maKichCo: Number(v.maKichCo),
-          maMauSac: Number(v.maMauSac),
-          maThuongHieu: Number(product.maThuongHieu),
-          sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
-          gia: Number(v.gia),
-          tonKho: Number(v.tonKho || 0),
-          urlAnh: v.urlAnh || undefined,
-        }))
-        const res = await api.post('/products/with-variants', { product: { ...product, maDanhMuc: Number(product.maDanhMuc), slug }, variants: variantReqs })
-        productId = res.data.maSanPham
-      }
-      if (!isEdit) {
-        toast.success('Tạo sản phẩm thành công')
-        navigate(`/admin/products/${productId}/edit`, { replace: true })
-        if (uploadedImages.length > 0) {
-          api.put(`/products/${productId}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug, urlAnhDaiDien: uploadedImages[0].url })
-            .catch(e => console.error('Failed to save product image', e))
+        const res = await api.post('/products', body)
+        const newId = res.data.maSanPham
+        if (variants.length > 0) {
+          await Promise.all(variants.map((v) =>
+            api.post(`/products/${newId}/variants`, {
+              sku: v.sku, maThuongHieu: v.maThuongHieu, maKichCo: v.maKichCo,
+              maMauSac: v.maMauSac, gia: v.gia, tonKho: v.tonKho || 0
+            })
+          ))
         }
-        return
+        setToast({ type: 'success', message: 'Thêm sản phẩm thành công' })
+        setTimeout(() => navigate('/admin/products'), 1000)
       }
-      if (uploadedImages.length > 0) {
-        try {
-          await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug, urlAnhDaiDien: uploadedImages[0].url })
-        } catch (imgErr) {
-          console.error('Failed to save product image', imgErr)
-        }
-      }
-      toast.success('Cập nhật sản phẩm thành công')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Lỗi lưu sản phẩm')
-    } finally { setSaving(false) }
+      const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.defaultMessage || 'Lỗi lưu sản phẩm'
+      setToast({ type: 'error', message: msg })
+    } finally { setSub(false) }
   }
 
-  const openAddForm = () => {
-    setEditIdx(null)
-    setVform({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
-    setShowForm(true)
-  }
-
-  const cancelForm = () => {
-    setShowForm(false)
-    setEditIdx(null)
-    setVform({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
-  }
-
-  const handleSaveVariant = async () => {
-    if (!vform.maKichCo || !vform.maMauSac) { toast.error('Vui lòng chọn kích cỡ và màu sắc'); return }
-    if (!vform.gia || Number(vform.gia) < 0) { toast.error('Giá không hợp lệ'); return }
-
-    const sizeName = sizes.find(s => s.maKichCo === Number(vform.maKichCo))?.kichCo || ''
-    const colorName = colors.find(c => c.maMauSac === Number(vform.maMauSac))?.mauSac || ''
-    const colorHex = colors.find(c => c.maMauSac === Number(vform.maMauSac))?.maMauHex
-
-    const duplicate = variants.some((v, i) =>
-      i !== editIdx &&
-      Number(v.maKichCo) === Number(vform.maKichCo) &&
-      Number(v.maMauSac) === Number(vform.maMauSac)
-    )
-    if (duplicate) {
-      toast.error(`Biến thể ${sizeName} - ${colorName} đã tồn tại`)
-      return
+  const addVariant = async () => {
+    if (!vform.sku || !vform.gia || !vform.maThuongHieu || !vform.maKichCo || !vform.maMauSac) {
+      return setToast({ type: 'error', message: 'Vui lòng điền đầy đủ: SKU, giá, thương hiệu, kích cỡ, màu sắc' })
     }
-
-    setSavingVar(true)
-
-    if (editIdx !== null) {
-      const v = variants[editIdx]
-      const updated = {
-        ...v,
-        maKichCo: Number(vform.maKichCo),
-        maMauSac: Number(vform.maMauSac),
-        kichCo: { kichCo: sizeName },
-        mauSac: { mauSac: colorName, maMauHex: colorHex },
-        gia: Number(vform.gia),
-        tonKho: Number(vform.tonKho || 0),
-        urlAnh: vform.urlAnh,
-      }
-      if (v.maBienThe) {
-        try {
-          await api.put(`/products/variants/${v.maBienThe}`, {
-            maKichCo: Number(vform.maKichCo),
-            maMauSac: Number(vform.maMauSac),
-            gia: Number(vform.gia),
-            tonKho: Number(vform.tonKho || 0),
-            urlAnh: vform.urlAnh || undefined,
-          })
-        } catch (err) {
-          toast.error(err.response?.data?.message || 'Lỗi cập nhật biến thể')
-          setSavingVar(false)
-          return
+    const skuExists = variants.some((v) => v.sku === vform.sku && v.maBienThe !== editVariantId)
+    if (skuExists) {
+      return setToast({ type: 'error', message: 'SKU đã tồn tại trong danh sách' })
+    }
+    const variantData = {
+      sku: vform.sku,
+      maThuongHieu: Number(vform.maThuongHieu),
+      maKichCo: Number(vform.maKichCo),
+      maMauSac: Number(vform.maMauSac),
+      gia: Number(vform.gia),
+      tonKho: Number(vform.tonKho) || 0
+    }
+    try {
+      if (editVariantId) {
+        if (isEdit) {
+          await api.put(`/products/variants/${editVariantId}`, variantData)
         }
+        setVariants((prev) => prev.map((v) =>
+          v.maBienThe === editVariantId ? { ...v, ...variantData, thuongHieu: brands.find((b) => b.maThuongHieu === variantData.maThuongHieu) || v.thuongHieu, kichCo: sizes.find((s) => s.maKichCo === variantData.maKichCo) || v.kichCo, mauSac: colors.find((c) => c.maMauSac === variantData.maMauSac) || v.mauSac } : v
+        ))
+      } else if (isEdit) {
+        const res = await api.post(`/products/${id}/variants`, variantData)
+        setVariants((prev) => [...prev, res.data])
+      } else {
+        const temp = { ...variantData, maBienThe: Date.now() + Math.random() }
+        const brand = brands.find((b) => b.maThuongHieu === variantData.maThuongHieu)
+        const size = sizes.find((s) => s.maKichCo === variantData.maKichCo)
+        const color = colors.find((c) => c.maMauSac === variantData.maMauSac)
+        temp.thuongHieu = brand || { tenThuongHieu: '' }
+        temp.kichCo = size || { kichCo: '' }
+        temp.mauSac = color || { mauSac: '' }
+        setVariants((prev) => [...prev, temp])
       }
-      setVariants(prev => prev.map((x, i) => i === editIdx ? updated : x))
-      toast.success('Cập nhật biến thể thành công')
-    } else {
-      setVariants(prev => [...prev, {
-        maKichCo: Number(vform.maKichCo),
-        maMauSac: Number(vform.maMauSac),
-        kichCo: { kichCo: sizeName },
-        mauSac: { mauSac: colorName, maMauHex: colorHex },
-        gia: Number(vform.gia),
-        tonKho: Number(vform.tonKho || 0),
-        urlAnh: vform.urlAnh,
-        _tempId: Date.now(),
-      }])
-      toast.success('Thêm biến thể thành công')
+      setDirty(true)
+      setErrors((prev) => ({ ...prev, variants: '' }))
+      setVform({ sku: '', maThuongHieu: '', maKichCo: '', maMauSac: '', gia: '', tonKho: '' })
+      setEditVariantId(null)
+      setShowVariantForm(false)
+    } catch (err) { setToast({ type: 'error', message: err.response?.data?.message || 'Lỗi thêm biến thể' }) }
+  }
+
+  const editVariant = (v) => {
+    setVform({ sku: v.sku, maThuongHieu: v.maThuongHieu, maKichCo: v.maKichCo, maMauSac: v.maMauSac, gia: v.gia, tonKho: v.tonKho })
+    setEditVariantId(v.maBienThe)
+    setShowVariantForm(true)
+  }
+
+  const deleteVariant = async (vid) => {
+    try {
+      if (isEdit) await api.delete(`/products/variants/${vid}`)
+      setVariants((prev) => prev.filter((v) => v.maBienThe !== vid))
+      setDirty(true)
+      setErrors((prev) => ({ ...prev, variants: '' }))
+    } catch { setToast({ type: 'error', message: 'Lỗi xóa biến thể' }) }
+  }
+
+  const handleUpload = async () => {
+    if (!variants.length) return setToast({ type: 'error', message: 'Vui lòng thêm biến thể trước khi upload ảnh' })
+    const input = document.createElement('input')
+    input.type = 'file'; input.accept = 'image/*'
+    input.onchange = async (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      const fd = new FormData()
+      fd.append('file', file)
+      try {
+        const res = await api.post(`/upload/variant/${variants[0].maBienThe}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        setForm((f) => ({ ...f, urlAnhDaiDien: res.data.urlAnh || `/api/files/${res.data.maAnh}` }))
+        setToast({ type: 'success', message: 'Upload ảnh thành công' })
+      } catch { setToast({ type: 'error', message: 'Lỗi upload ảnh' }) }
     }
-
-    setSavingVar(false)
-    cancelForm()
+    input.click()
   }
 
-  const handleDeleteVariant = (index) => {
-    if (!isEdit) {
-      setVariants(prev => prev.filter((_, i) => i !== index))
-      setConfirmDelete(null)
-      toast.success('Đã xóa biến thể')
-      return
-    }
-    const v = variants[index]
-    if (!v.maBienThe) {
-      setVariants(prev => prev.filter((_, i) => i !== index))
-      setConfirmDelete(null)
-      return
-    }
-    api.delete(`/products/variants/${v.maBienThe}`).then(() => {
-      toast.success('Đã xóa biến thể')
-      setConfirmDelete(null)
-      return api.get(`/products/detail/${id}`).then(r => r.data)
-    }).then(detail => setVariants((detail.variants || []).map(v => ({
-      ...v,
-      maKichCo: v.maKichCo || v.kichCo?.maKichCo || '',
-      maMauSac: v.maMauSac || v.mauSac?.maMauSac || '',
-    }))))
-    .catch(() => toast.error('Xóa thất bại'))
-  }
-
-  const handleUploadVariantImage = async (files) => {
-    if (!files || files.length === 0) return
-    setUploadingVimg(true)
-    try {
-      const data = await uploadVariantImage(files[0])
-      setVform(prev => ({ ...prev, urlAnh: data.url }))
-      toast.success('Upload ảnh biến thể thành công')
-    } catch (err) {
-      toast.error(err.message || 'Upload ảnh thất bại')
-    } finally { setUploadingVimg(false) }
-  }
-
-  const handleUploadProductImage = async (files) => {
-    if (!files || files.length === 0) return
-    setUploadingImg(true)
-    const file = files[0]
-    try {
-      const data = await uploadProductImage(file)
-      setUploadedImages(prev => [...prev, { url: data.url, maMauSac: '', fileId: Date.now() }])
-      toast.success('Upload ảnh thành công')
-    } catch (err) {
-      console.error('Upload failed:', err)
-      toast.error(err.message || 'Upload ảnh thất bại')
-    } finally { setUploadingImg(false) }
-  }
-
-  const handleRemoveImage = (fileId) => {
-    setUploadedImages(prev => prev.filter(img => img.fileId !== fileId))
-  }
-
-  const getColorName = (id) => colors.find(c => c.maMauSac === Number(id))?.mauSac || '-'
-  const getColorHex = (id) => colors.find(c => c.maMauSac === Number(id))?.maMauHex
-  const getSizeName = (id) => sizes.find(s => s.maKichCo === Number(id))?.kichCo || '-'
-
-  const handleQuickAddCategory = async () => {
-    if (!quickAddName.trim()) return
-    try {
-      const slug = quickAddName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
-      const newCat = await createCategory({ tenDanhMuc: quickAddName.trim(), slug })
-      setCategories(prev => [...prev, newCat])
-      setProduct(p => ({ ...p, maDanhMuc: newCat.maDanhMuc }))
-      setShowCatModal(false)
-      setQuickAddName('')
-      toast.success('Thêm danh mục thành công')
-    } catch { toast.error('Lỗi thêm danh mục') }
-  }
-
-  const handleQuickAddBrand = async () => {
-    if (!quickAddName.trim()) return
-    try {
-      const newBrand = await createBrand({ tenThuongHieu: quickAddName.trim() })
-      setBrands(prev => [...prev, newBrand])
-      setProduct(p => ({ ...p, maThuongHieu: newBrand.maThuongHieu }))
-      setShowBrandModal(false)
-      setQuickAddName('')
-      toast.success('Thêm thương hiệu thành công')
-    } catch { toast.error('Lỗi thêm thương hiệu') }
-  }
-
-  const handleQuickAddColor = async () => {
-    if (!quickColorName.trim()) return
-    try {
-      const newColor = await createColor({ tenMauSac: quickColorName.trim(), maMauHex: quickColorHex })
-      setColors(prev => [...prev, newColor])
-      setShowColorModal(false)
-      setQuickColorName('')
-      setQuickColorHex('#000000')
-      toast.success('Thêm màu sắc thành công')
-    } catch { toast.error('Lỗi thêm màu sắc') }
-  }
-
-  const handleQuickAddSize = async () => {
-    if (!quickSizeName.trim()) return
-    try {
-      const newSize = await createSize({ tenKichCo: quickSizeName.trim() })
-      setSizes(prev => [...prev, newSize])
-      setShowSizeModal(false)
-      setQuickSizeName('')
-      toast.success('Thêm kích cỡ thành công')
-    } catch { toast.error('Lỗi thêm kích cỡ') }
-  }
-
-  const toggleColorId = (id) => {
-    setSelectedColorIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-
-  const toggleSizeId = (id) => {
-    setSelectedSizeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-
-  const handleGenerateVariants = () => {
-    if (selectedColorIds.length === 0) { toast.error('Chọn ít nhất một màu'); return }
-    if (selectedSizeIds.length === 0) { toast.error('Chọn ít nhất một kích cỡ'); return }
-    const newVariants = []
-    selectedColorIds.forEach(cId => {
-      selectedSizeIds.forEach(sId => {
-        const exists = variants.some(v =>
-          Number(v.maKichCo) === Number(sId) && Number(v.maMauSac) === Number(cId)
-        )
-        if (!exists) {
-          const sizeName = sizes.find(s => s.maKichCo === Number(sId))?.kichCo || ''
-          const colorName = colors.find(c => c.maMauSac === Number(cId))?.mauSac || ''
-          const colorHex = colors.find(c => c.maMauSac === Number(cId))?.maMauHex
-          newVariants.push({
-            maKichCo: Number(sId),
-            maMauSac: Number(cId),
-            kichCo: { kichCo: sizeName },
-            mauSac: { mauSac: colorName, maMauHex: colorHex },
-            gia: 0,
-            tonKho: 0,
-            urlAnh: '',
-            _tempId: Date.now() + newVariants.length,
-          })
-        }
-      })
-    })
-    if (newVariants.length === 0) { toast.error('Các biến thể đã tồn tại'); return }
-    setVariants(prev => [...prev, ...newVariants])
-    toast.success(`Đã tạo ${newVariants.length} biến thể`)
-  }
-
-  if (loading) {
-    return <div className="animate-pulse space-y-6"><div className="h-8 w-48 bg-gray-200 rounded-lg" /><div className="h-96 bg-gray-100 rounded-2xl" /></div>
-  }
+  if (loading) return <LoadingSpinner className="py-20" size="lg" />
 
   return (
-    <div>
-      
+    <div className="max-w-3xl">
+      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
 
-      <form onSubmit={handleSaveProduct} className="bg-white rounded-2xl border p-6 space-y-6">
-        <div className="grid grid-cols-[1fr_400px] gap-6">
-          <div>
-            <h2 className="font-semibold text-lg">Thông tin sản phẩm</h2>
-            <div>
-              <label className="text-sm text-gray-500 font-medium">Tên sản phẩm *</label>
-              <input value={product.tenSanPham} onChange={(e) => setProduct(p => ({ ...p, tenSanPham: e.target.value }))}
-                placeholder="Nhập tên sản phẩm" required
-                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-500 font-medium">Danh mục *</label>
-                  <button type="button" onClick={() => { setQuickAddName(''); setShowCatModal(true) }}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Thêm danh mục mới">
-                    <FolderPlus className="h-4 w-4" />
-                  </button>
-                </div>
-                <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
-                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">-- Chọn danh mục --</option>
-                  {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
-                </select>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-500 font-medium">Thương hiệu *</label>
-                  <button type="button" onClick={() => { setQuickAddName(''); setShowBrandModal(true) }}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Thêm thương hiệu mới">
-                    <Tag className="h-4 w-4" />
-                  </button>
-                </div>
-                <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
-                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">-- Chọn thương hiệu --</option>
-                  {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm text-gray-500 font-medium">Mô tả</label>
-              <textarea value={product.moTa} onChange={(e) => setProduct(p => ({ ...p, moTa: e.target.value }))}
-                placeholder="Mô tả sản phẩm" rows={4}
-                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-500 font-medium">Trạng thái</label>
-              <button type="button" onClick={() => setProduct(p => ({ ...p, trangThai: p.trangThai === 1 ? 0 : 1 }))}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${product.trangThai === 1 ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${product.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
-              <span className="text-sm text-gray-600">{product.trangThai === 1 ? 'Hoạt động' : 'Ẩn'}</span>
-            </div>
+      <h1 className="text-2xl font-bold mb-6">{isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</h1>
+
+      {errors.variants && (
+        <div className="mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {errors.variants}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <label className="text-sm font-medium text-gray-700">Tên sản phẩm</label>
+            <input name="tenSanPham" value={form.tenSanPham} onChange={handleChange} maxLength={200}
+              className={`w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.tenSanPham ? 'border-red-400 bg-red-50' : ''}`} />
+            {errors.tenSanPham && <p className="text-red-500 text-xs mt-1">{errors.tenSanPham}</p>}
           </div>
-
           <div>
-            <h2 className="font-semibold text-lg mb-4">Ảnh mô tả</h2>
-            {uploadedImages.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {uploadedImages.map((img) => (
-                  <div key={img.fileId} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border">
-                    <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
-                     <button type="button" onClick={() => handleRemoveImage(img.fileId)}
-                      className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition opacity-0 group-hover:opacity-100">
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div onClick={() => document.getElementById('imgUpload').click()}
-                className="border-2 border-dashed border-gray-300 rounded-xl aspect-square flex items-center justify-center hover:border-blue-400 transition cursor-pointer">
-                {uploadingImg ? <Loader className="h-6 w-6 animate-spin text-blue-600" /> : <Plus className="h-8 w-8 text-gray-300" />}
-              </div>
-            )}
-            <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />
+            <label className="text-sm font-medium text-gray-700">Slug</label>
+            <input name="slug" value={form.slug} onChange={handleChange}
+              className={`w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.slug ? 'border-red-400 bg-red-50' : ''}`} />
+            {errors.slug && <p className="text-red-500 text-xs mt-1">{errors.slug}</p>}
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Danh mục</label>
+            <select name="maDanhMuc" value={form.maDanhMuc} onChange={handleChange}
+              className={`w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.maDanhMuc ? 'border-red-400 bg-red-50' : ''}`}>
+              <option value="">-- Chọn --</option>
+              {categories.map((c) => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
+            </select>
+            {errors.maDanhMuc && <p className="text-red-500 text-xs mt-1">{errors.maDanhMuc}</p>}
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Ảnh đại diện (URL)</label>
+            <input name="urlAnhDaiDien" value={form.urlAnhDaiDien} onChange={handleChange} placeholder="URL hoặc upload bên dưới"
+              className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
-
-        <hr className="border-t" />
-
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg">Biến thể</h2>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl border p-4 mb-6">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Sinh tự động</p>
-            <div className="grid grid-cols-2 gap-4 mb-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <label className="text-xs text-gray-500 font-medium">Màu sắc</label>
-                  <button type="button" onClick={() => { setQuickColorName(''); setQuickColorHex('#000000'); setShowColorModal(true) }}
-                    className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Thêm màu mới">
-                    <Palette className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {colors.map(c => {
-                    const selected = selectedColorIds.includes(c.maMauSac)
-                    return (
-                      <button key={c.maMauSac} type="button" onClick={() => toggleColorId(c.maMauSac)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
-                        {c.maMauHex && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.maMauHex }} />}
-                        {c.mauSac}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <label className="text-xs text-gray-500 font-medium">Kích cỡ</label>
-                  <button type="button" onClick={() => { setQuickSizeName(''); setShowSizeModal(true) }}
-                    className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Thêm kích cỡ mới">
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map(s => {
-                    const selected = selectedSizeIds.includes(s.maKichCo)
-                    return (
-                      <button key={s.maKichCo} type="button" onClick={() => toggleSizeId(s.maKichCo)}
-                        className={`px-3 py-1.5 rounded-lg text-xs border font-medium transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
-                        {s.kichCo}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-            <button type="button" onClick={handleGenerateVariants}
-              className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 flex items-center gap-1">
-              <Plus className="h-3.5 w-3.5" /> Tạo biến thể
-            </button>
-          </div>
-
-          {variants.length === 0 && !showForm ? (
-            <div className="mb-4">
-              <EmptyState icon="PackageOpen" title="Chưa có biến thể" description="Chọn màu & size ở trên và nhấn 'Tạo biến thể'" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b bg-gray-50">
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Màu</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Size</th>
-                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Giá</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Tồn</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Ảnh</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Hành động</th>
-                </tr></thead>
-                <tbody className="divide-y">
-                  {showForm && (
-                    <tr className="bg-blue-50/50">
-                      <td className="px-3 py-2">
-                        <select value={vform.maMauSac} onChange={(e) => setVform(p => ({ ...p, maMauSac: e.target.value }))}
-                          className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                          <option value="">-- Màu --</option>
-                          {colors.map(c => (
-                            <option key={c.maMauSac} value={c.maMauSac}>
-                              {c.mauSac} {c.maMauHex ? `(${c.maMauHex})` : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <select value={vform.maKichCo} onChange={(e) => setVform(p => ({ ...p, maKichCo: e.target.value }))}
-                          className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                          <option value="">-- Size --</option>
-                          {sizes.map(s => <option key={s.maKichCo} value={s.maKichCo}>{s.kichCo}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="number" min="0" step="1000" value={vform.gia} onChange={(e) => setVform(p => ({ ...p, gia: e.target.value }))}
-                          placeholder="Giá" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="number" min="0" value={vform.tonKho} onChange={(e) => setVform(p => ({ ...p, tonKho: e.target.value }))}
-                          className="w-full border rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button type="button" onClick={() => document.getElementById('vimgInput').click()}
-                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg" title="Upload ảnh biến thể">
-                            {uploadingVimg ? <Loader className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          </button>
-                          <input id="vimgInput" type="file" accept="image/*" hidden
-                            onChange={(e) => { handleUploadVariantImage(e.target.files); e.target.value = '' }} />
-                          {vform.urlAnh && (
-                            <SafeImg src={vform.urlAnh} className="w-8 h-8 rounded object-cover bg-gray-100 border shrink-0"
-                              fallback="https://placehold.co/32x32/e2e8f0/475569?text=?" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex justify-center gap-1">
-                          <button type="button" onClick={handleSaveVariant} disabled={savingVar}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check className="h-4 w-4" /></button>
-                          <button type="button" onClick={() => setConfirmDelete(editIdx)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {variants.map((v, i) => (
-                    <tr key={v.maBienThe || v._tempId || i} className="hover:bg-gray-50 transition">
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          {getColorHex(v.maMauSac) && <span className="w-4 h-4 rounded-full border shrink-0" style={{ backgroundColor: getColorHex(v.maMauSac) }} />}
-                          <span>{v.mauSac?.mauSac || getColorName(v.maMauSac)}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">{v.kichCo?.kichCo || getSizeName(v.maKichCo)}</td>
-                      <td className="px-3 py-2 text-right font-semibold">{VND(v.gia || 0)}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(v.tonKho || 0) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {v.tonKho || 0}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        {v.urlAnh ? (
-                          <SafeImg src={v.urlAnh} className="w-10 h-10 rounded-lg object-cover bg-gray-100 border mx-auto"
-                            fallback="https://placehold.co/40x40/e2e8f0/475569?text=?" />
-                        ) : (
-                          <span className="text-xs text-gray-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                          <button type="button" onClick={() => setConfirmDelete(i)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-
+          <label className="text-sm font-medium text-gray-700">Mô tả</label>
+          <textarea name="moTa" value={form.moTa} onChange={handleChange} rows={4} maxLength={5000}
+            className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-
-        <button type="submit" disabled={saving}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
-          {saving ? <Loader className="h-4 w-4 animate-spin" /> : null}
-          {isEdit ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm'}
-        </button>
+        {errors.variants && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {errors.variants}
+          </div>
+        )}
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={sub} className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">{sub ? 'Đang lưu...' : 'Lưu'}</button>
+          <button type="button" onClick={() => handleNavigate('/admin/products')} className="border px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+        </div>
       </form>
 
-      {showCatModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCatModal(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Thêm danh mục mới</h3>
-            <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
-              placeholder="Nhập tên danh mục" autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={e => e.key === 'Enter' && handleQuickAddCategory()} />
-            <div className="flex gap-3">
-              <button onClick={() => setShowCatModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddCategory} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+      <div className="bg-white rounded-2xl shadow-sm border p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-lg">Biến thể</h2>
+          <button type="button" onClick={() => { setShowVariantForm(true); setEditVariantId(null); setVform({ sku: baseSku, maThuongHieu: '', maKichCo: '', maMauSac: '', gia: '', tonKho: '' }) }} title="Thêm biến thể mới cho sản phẩm" className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 hover:bg-blue-700">
+            <Plus className="h-4 w-4" /> Thêm biến thể
+          </button>
+        </div>
+
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700">
+          <p className="font-medium mb-1">Biến thể là gì?</p>
+          <p>Biến thể là các phiên bản khác nhau của sản phẩm. Ví dụ: cùng một áo Polo nhưng có nhiều <strong>kích cỡ</strong> (M, L, XL) và <strong>màu sắc</strong> (Trắng, Đen, Xanh) khác nhau — mỗi tổ hợp là một biến thể với SKU, giá và tồn kho riêng.</p>
+          <p className="mt-1">Thêm ít nhất <strong>1 biến thể</strong> trước khi lưu sản phẩm.</p>
+        </div>
+
+        {variants.length > 0 ? (
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">SKU</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">Thương hiệu</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">Kích cỡ</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">Màu sắc</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">Giá</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">Tồn kho</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-gray-600 w-20">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {variants.map((v) => (
+                  <tr key={v.maBienThe} className="hover:bg-gray-50">
+                    <td className="px-4 py-2.5 font-mono text-blue-700">{v.sku}</td>
+                    <td className="px-4 py-2.5">{v.thuongHieu?.tenThuongHieu || '-'}</td>
+                    <td className="px-4 py-2.5">{v.kichCo?.kichCo || '-'}</td>
+                    <td className="px-4 py-2.5">{v.mauSac?.mauSac || '-'}</td>
+                    <td className="px-4 py-2.5 text-right font-medium">{VND(v.gia)}</td>
+                    <td className="px-4 py-2.5 text-right">{v.tonKho}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <div className="flex justify-center gap-1">
+                        <button onClick={() => editVariant(v)} className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50" title="Sửa biến thể">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => deleteVariant(v.maBienThe)} className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50" title="Xóa biến thể">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 py-4 text-center">Chưa có biến thể. Nhấn "Thêm biến thể" để tạo.</p>
+        )}
+
+        {showVariantForm && (
+          <div className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <input value={vform.sku} onChange={(e) => setVform({ ...vform, sku: e.target.value })} placeholder="SKU" className="border rounded-lg px-3 py-2 text-sm" />
+              <input type="number" value={vform.gia} onChange={(e) => setVform({ ...vform, gia: e.target.value })} placeholder="Giá" className="border rounded-lg px-3 py-2 text-sm" />
+              <select value={vform.maThuongHieu} onChange={(e) => setVform({ ...vform, maThuongHieu: e.target.value })} className="border rounded-lg px-3 py-2 text-sm">
+                <option value="">-- Thương hiệu --</option>
+                {brands.map((b) => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
+              </select>
+              <select value={vform.maKichCo} onChange={(e) => setVform({ ...vform, maKichCo: e.target.value })} className="border rounded-lg px-3 py-2 text-sm">
+                <option value="">-- Kích cỡ --</option>
+                {sizes.map((s) => <option key={s.maKichCo} value={s.maKichCo}>{s.kichCo}</option>)}
+              </select>
+              <select value={vform.maMauSac} onChange={(e) => setVform({ ...vform, maMauSac: e.target.value })} className="border rounded-lg px-3 py-2 text-sm">
+                <option value="">-- Màu sắc --</option>
+                {colors.map((c) => <option key={c.maMauSac} value={c.maMauSac}>{c.mauSac}</option>)}
+              </select>
+              <input type="number" value={vform.tonKho} onChange={(e) => setVform({ ...vform, tonKho: e.target.value })} placeholder="Tồn kho" className="border rounded-lg px-3 py-2 text-sm" />
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={addVariant} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">{editVariantId ? 'Cập nhật' : 'Thêm'}</button>
+              <button type="button" onClick={() => { setShowVariantForm(false); setEditVariantId(null); setVform({ sku: '', maThuongHieu: '', maKichCo: '', maMauSac: '', gia: '', tonKho: '' }) }} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-100">Hủy</button>
             </div>
           </div>
+        )}
+      </div>
+
+      {isEdit && (
+        <div className="bg-white rounded-2xl shadow-sm border p-6 mt-6">
+          <h2 className="font-semibold text-lg mb-4">Ảnh đại diện</h2>
+          {form.urlAnhDaiDien && (
+            <div className="mb-3 w-32 h-32 rounded-lg overflow-hidden border bg-gray-100">
+              <SafeImg src={form.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center" />
+            </div>
+          )}
+          <button type="button" onClick={handleUpload} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-1">
+            <Upload className="h-4 w-4" /> Upload ảnh
+          </button>
         </div>
       )}
 
-      {showBrandModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowBrandModal(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Thêm thương hiệu mới</h3>
-            <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
-              placeholder="Nhập tên thương hiệu" autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={e => e.key === 'Enter' && handleQuickAddBrand()} />
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6">
+            <h3 className="font-bold text-lg mb-2">Thay đổi chưa lưu</h3>
+            <p className="text-sm text-gray-600 mb-4">Bạn có thay đổi chưa lưu. Bạn có chắc muốn rời đi?</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowBrandModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddBrand} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showColorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowColorModal(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Thêm màu sắc mới</h3>
-            <p className="text-xs text-gray-400 mb-3">Chọn một ô màu hoặc nhập mã hex bên dưới</p>
-            <div className="grid grid-cols-8 gap-1.5 mb-4">
-              {[
-                '#FFFFFF', '#F2F2F2', '#D9D9D9', '#BFBFBF', '#A6A6A6', '#8C8C8C', '#737373', '#595959',
-                '#404040', '#262626', '#0D0D0D', '#000000',
-                '#FCE4EC', '#F8BBD0', '#F48FB1', '#F06292', '#EC407A', '#E91E63', '#D81B60', '#C2185B',
-                '#FFEBEE', '#FFCDD2', '#EF9A9A', '#E57373', '#EF5350', '#F44336', '#E53935', '#D32F2F',
-                '#FFF3E0', '#FFE0B2', '#FFCC80', '#FFB74D', '#FFA726', '#FF9800', '#FB8C00', '#F57C00',
-                '#FFFDE7', '#FFF9C4', '#FFF59D', '#FFF176', '#FFEE58', '#FFEB3B', '#FDD835', '#FBC02D',
-                '#E8F5E9', '#C8E6C9', '#A5D6A7', '#81C784', '#66BB6A', '#4CAF50', '#43A047', '#388E3C',
-                '#E0F2F1', '#B2DFDB', '#80CBC4', '#4DB6AC', '#26A69A', '#009688', '#00897B', '#00796B',
-                '#E1F5FE', '#B3E5FC', '#81D4FA', '#4FC3F7', '#29B6F6', '#03A9F4', '#039BE5', '#0288D1',
-                '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5', '#2196F3', '#1E88E5', '#1976D2',
-                '#EDE7F6', '#D1C4E9', '#B39DDB', '#9575CD', '#7E57C2', '#673AB7', '#5E35B1', '#512DA8',
-                '#F3E5F5', '#E1BEE7', '#CE93D8', '#BA68C8', '#AB47BC', '#9C27B0', '#8E24AA', '#7B1FA2',
-              ].map(hex => (
-                <button key={hex} type="button" onClick={() => setQuickColorHex(hex)}
-                  className={`w-full aspect-square rounded-lg border-2 transition hover:scale-110 ${quickColorHex === hex ? 'border-blue-600 ring-2 ring-blue-300 scale-110 z-10' : 'border-gray-200 hover:border-gray-400'}`}
-                  style={{ backgroundColor: hex }}
-                  title={hex} />
-              ))}
-            </div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg border-2 border-gray-200 shrink-0" style={{ backgroundColor: quickColorHex }} />
-              <div className="flex-1 space-y-2">
-                <input value={quickColorHex} onChange={e => setQuickColorHex(e.target.value)}
-                  placeholder="#000000" maxLength={7}
-                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <input value={quickColorName} onChange={e => setQuickColorName(e.target.value)}
-                  placeholder="Nhập tên màu (VD: Đỏ, Xanh dương)" autoFocus
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onKeyDown={e => e.key === 'Enter' && handleQuickAddColor()} />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowColorModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddColor} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showSizeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSizeModal(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Thêm kích cỡ mới</h3>
-            <input value={quickSizeName} onChange={e => setQuickSizeName(e.target.value)}
-              placeholder="Nhập tên kích cỡ (VD: M, L, XL)" autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={e => e.key === 'Enter' && handleQuickAddSize()} />
-            <div className="flex gap-3">
-              <button onClick={() => setShowSizeModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddSize} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmDelete !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-gray-600 mb-4">Bạn chắc chắn muốn xóa biến thể này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={() => handleDeleteVariant(confirmDelete)} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+              <button onClick={() => setShowLeaveConfirm(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Ở lại</button>
+              <button onClick={() => { setShowLeaveConfirm(false); navigate(pendingNavigation.current) }} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Rời đi</button>
             </div>
           </div>
         </div>

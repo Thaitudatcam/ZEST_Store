@@ -21,6 +21,12 @@ public class KichCo {
     @Column(name = "kich_co", nullable = false, length = 10, unique = true)
     private String kichCo;
 
+    @Column(name = "thu_tu")
+    private Integer thuTu;
+
+    @Column(name = "loai", length = 30)
+    private String loai;
+
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 

@@ -38,6 +38,10 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
             + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
     Page<SanPham> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
+    @Query("SELECT s FROM SanPham s WHERE s.ngayXoa IS NULL AND "
+            + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
+    Page<SanPham> searchByKeywordAll(@Param("keyword") String keyword, Pageable pageable);
+
     List<SanPham> findTop10ByTrangThaiAndNgayXoaIsNullOrderByNgayTaoDesc(Integer trangThai);
 
     @Query("SELECT s FROM SanPham s WHERE s.danhMuc.maDanhMuc IN :maDanhMucIds AND s.trangThai = 1 AND s.ngayXoa IS NULL")

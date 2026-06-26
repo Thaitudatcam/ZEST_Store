@@ -21,6 +21,17 @@ public class SanPhamController {
 
     private final SanPhamService sanPhamService;
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(defaultValue = "ngayTao") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(sanPhamService.getAdminProducts(keyword, page, size, sortBy, sortDir));
+    }
+
     @GetMapping
     public ResponseEntity<?> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -68,6 +79,12 @@ public class SanPhamController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody SanPhamRequest request) {
         return ResponseEntity.ok(sanPhamService.updateProduct(id, request));
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
+        return ResponseEntity.ok(sanPhamService.toggleStatus(id));
     }
 
     @DeleteMapping("/{id}")

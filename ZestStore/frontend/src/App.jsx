@@ -25,6 +25,9 @@ import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminProductVariantDetail from './pages/admin/AdminProductVariantDetail'
 import AdminCategories from './pages/admin/AdminCategories'
+import AdminBrands from './pages/admin/AdminBrands'
+import AdminSizes from './pages/admin/AdminSizes'
+import AdminColors from './pages/admin/AdminColors'
 import AdminCoupons from './pages/admin/AdminCoupons'
 import AdminInvoices from './pages/admin/AdminInvoices'
 import AdminReviews from './pages/admin/AdminReviews'
@@ -50,10 +53,13 @@ export default function App() {
         <Route path="orders/:id" element={<AdminOrderDetail />} />
         <Route path="invoices" element={<AdminInvoices />} />
         <Route path="products" element={<AdminProducts />} />
-        <Route path="products/create" element={<AdminProductForm />} />
-        <Route path="products/:id/edit" element={<AdminProductForm />} />
+        <Route path="products/create" element={<AdminProductForm key="create" />} />
+        <Route path="products/:id/edit" element={<AdminProductForm key="edit" />} />
         <Route path="products/detail" element={<AdminProductVariantDetail />} />
         <Route path="categories" element={<AdminCategories />} />
+        <Route path="brands" element={<AdminBrands />} />
+        <Route path="sizes" element={<AdminSizes />} />
+        <Route path="colors" element={<AdminColors />} />
         <Route path="thong-ke" element={<AdminThongKe />} />
         <Route path="coupons" element={<AdminCoupons />} />
         <Route path="reviews" element={<AdminReviews />} />

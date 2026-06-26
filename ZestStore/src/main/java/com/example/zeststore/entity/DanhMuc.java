@@ -35,6 +35,12 @@ public class DanhMuc {
     @Column(name = "duong_dan_slug", nullable = false, length = 150, unique = true)
     private String duongDanSlug;
 
+    @Column(name = "icon", length = 50)
+    private String icon;
+
+    @Column(name = "mo_ta", length = 500)
+    private String moTa;
+
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 

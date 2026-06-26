@@ -24,6 +24,9 @@ public class MauSac {
     @Column(name = "ma_mau_hex", length = 7)
     private String maMauHex;
 
+    @Column(name = "nhom_mau", length = 50)
+    private String nhomMau;
+
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 

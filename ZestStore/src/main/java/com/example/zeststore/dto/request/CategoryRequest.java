@@ -17,4 +17,10 @@ public class CategoryRequest {
     private String slug;
 
     private Integer maDanhMucCha;
+
+    @Size(max = 50)
+    private String icon;
+
+    @Size(max = 500)
+    private String moTa;
 }

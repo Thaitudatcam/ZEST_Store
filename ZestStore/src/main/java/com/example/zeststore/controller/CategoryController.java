@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
@@ -25,6 +27,11 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.getRootCategories());
     }
 
+    @GetMapping("/flat")
+    public ResponseEntity<?> getFlat() {
+        return ResponseEntity.ok(categoryService.getFlatCategories());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(categoryService.getById(id));
@@ -34,14 +41,15 @@ public class CategoryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> create(@Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.ok(categoryService.create(
-                request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha()));
+                request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha(),
+                request.getIcon(), request.getMoTa()));
     }
 
+    @SuppressWarnings("unchecked")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody CategoryRequest request) {
-        return ResponseEntity.ok(categoryService.update(
-                id, request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha()));
+    public ResponseEntity<?> update(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(categoryService.update(id, body));
     }
 
     @DeleteMapping("/{id}")
