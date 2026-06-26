@@ -50,7 +50,8 @@ public class MomoService {
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("partnerCode", config.getPartnerCode());
-        body.put("accessKey", config.getAccessKey());
+        body.put("partnerName", "ZestStore");
+        body.put("storeId", "ZestStore01");
         body.put("requestId", requestId);
         body.put("amount", payment.getSoTien().longValue());
         body.put("orderId", requestId);
@@ -82,21 +83,24 @@ public class MomoService {
 
     public boolean verifyReturn(Map<String, String> rawParams) {
         PaymentConfig.MomoConfig config = paymentConfig.getMomo();
-        Map<String, String> params = new HashMap<>(rawParams);
-        String signature = params.remove("signature");
-        params.remove("extraData");
 
-        List<String> keys = new ArrayList<>(params.keySet());
-        Collections.sort(keys);
+        String rawHash = "accessKey=" + config.getAccessKey()
+                + "&amount=" + rawParams.get("amount")
+                + "&extraData=" + rawParams.getOrDefault("extraData", "")
+                + "&message=" + rawParams.getOrDefault("message", "")
+                + "&orderId=" + rawParams.get("orderId")
+                + "&orderInfo=" + rawParams.getOrDefault("orderInfo", "")
+                + "&orderType=" + rawParams.getOrDefault("orderType", "")
+                + "&partnerCode=" + rawParams.get("partnerCode")
+                + "&payType=" + rawParams.getOrDefault("payType", "")
+                + "&requestId=" + rawParams.get("requestId")
+                + "&responseTime=" + rawParams.getOrDefault("responseTime", "")
+                + "&resultCode=" + rawParams.get("resultCode")
+                + "&transId=" + rawParams.getOrDefault("transId", "");
 
-        StringBuilder raw = new StringBuilder();
-        for (String key : keys) {
-            if (raw.length() > 0) raw.append('&');
-            raw.append(key).append('=').append(params.get(key));
-        }
-
-        String calculated = hmacSHA256(config.getSecretKey(), raw.toString());
-        return calculated.equals(signature);
+        String signature = rawParams.get("signature");
+        String calculated = hmacSHA256(config.getSecretKey(), rawHash);
+        return calculated.equalsIgnoreCase(signature);
     }
 
     @Transactional
