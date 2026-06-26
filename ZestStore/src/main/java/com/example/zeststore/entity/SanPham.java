@@ -68,6 +68,11 @@ public class SanPham {
     @Builder.Default
     private Integer tongTonKho = 0;
 
+    @Transient
+    @JsonProperty("tongGiaTri")
+    @Builder.Default
+    private BigDecimal tongGiaTri = BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore

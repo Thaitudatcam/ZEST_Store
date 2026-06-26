@@ -107,6 +107,11 @@ public class SanPhamService {
         Map<Integer, Integer> stockMap = stockData.stream()
                 .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(), row -> ((Number) row[1]).intValue()));
         page.getContent().forEach(sp -> sp.setTongTonKho(stockMap.getOrDefault(sp.getMaSanPham(), 0)));
+        List<Object[]> giaTriData = bienTheRepository.sumGiaTriBySanPhamIds(ids);
+        Map<Integer, BigDecimal> giaTriMap = giaTriData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
+        page.getContent().forEach(sp -> sp.setTongGiaTri(giaTriMap.getOrDefault(sp.getMaSanPham(), BigDecimal.ZERO)));
     }
 
     public SanPham getBySlug(String slug) {
@@ -126,8 +131,9 @@ public class SanPhamService {
     public Map<String, Object> getProductDetail(Integer id) {
         SanPham product = getById(id);
         List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(id);
-        List<AnhSanPham> images = anhSanPhamRepository.findByBienThe_MaBienTheOrderByThuTuHienThiAsc(
-                variants.isEmpty() ? 0 : variants.get(0).getMaBienThe());
+        List<Integer> variantIds = variants.stream().map(BienTheSanPham::getMaBienThe).collect(Collectors.toList());
+        List<AnhSanPham> images = variantIds.isEmpty() ? List.of()
+                : anhSanPhamRepository.findByBienThe_MaBienTheIn(variantIds);
         Double avgRating = danhGiaRepository.averageRatingBySanPhamId(id);
         Long reviewCount = danhGiaRepository.countBySanPhamId(id);
 

@@ -73,6 +73,19 @@ export default function AdminProductForm() {
           maKichCo: v.maKichCo || v.kichCo?.maKichCo || '',
           maMauSac: v.maMauSac || v.mauSac?.maMauSac || '',
         })))
+        const images = []
+        if (detail.product.urlAnhDaiDien) {
+          images.push({ url: detail.product.urlAnhDaiDien, maMauSac: '', fileId: 'main' })
+        }
+        ;(detail.images || []).forEach(img => {
+          images.push({ url: img.urlAnh, maMauSac: '', fileId: img.maAnh })
+        })
+        ;(detail.variants || []).filter(v => v.urlAnh).forEach(v => {
+          if (!images.some(i => i.url === v.urlAnh)) {
+            images.push({ url: v.urlAnh, maMauSac: v.maMauSac || '', fileId: `var-${v.maBienThe || Date.now()}` })
+          }
+        })
+        setUploadedImages(images)
       }
     }).catch(() => toast.error('Không thể tải dữ liệu'))
     .finally(() => setLoading(false))
@@ -89,6 +102,19 @@ export default function AdminProductForm() {
       let productId = isEdit ? id : null
       if (isEdit) {
         await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug })
+        const unsavedVariants = variants.filter(v => !v.maBienThe)
+        for (const v of unsavedVariants) {
+          const res = await api.post(`/products/${id}/variants`, {
+            maKichCo: Number(v.maKichCo),
+            maMauSac: Number(v.maMauSac),
+            maThuongHieu: Number(product.maThuongHieu),
+            gia: Number(v.gia),
+            tonKho: Number(v.tonKho || 0),
+            urlAnh: v.urlAnh || undefined,
+            sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+          })
+          v.maBienThe = res.data.maBienThe
+        }
       } else {
         const variantReqs = variants.map(v => ({
           maKichCo: Number(v.maKichCo),
@@ -268,6 +294,17 @@ export default function AdminProductForm() {
           tonKho: Number(v.tonKho || 0),
           urlAnh: v.urlAnh || undefined,
         })
+      } else if (id) {
+        const res = await api.post(`/products/${id}/variants`, {
+          maKichCo: Number(v.maKichCo),
+          maMauSac: Number(v.maMauSac),
+          maThuongHieu: Number(product.maThuongHieu),
+          gia: Number(v.gia),
+          tonKho: Number(v.tonKho || 0),
+          urlAnh: v.urlAnh || undefined,
+          sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+        })
+        setVariants(prev => prev.map((x, i) => i === index ? { ...x, maBienThe: res.data.maBienThe } : x))
       }
       toast.success('Đã lưu biến thể')
     } catch (err) {
@@ -451,11 +488,14 @@ export default function AdminProductForm() {
           <div>
             <h2 className="font-semibold text-lg mb-4">Ảnh mô tả</h2>
             {uploadedImages.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-3 gap-3">
                 {uploadedImages.map((img) => (
                   <div key={img.fileId} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border">
                     <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
-                     <button type="button" onClick={() => handleRemoveImage(img.fileId)}
+                    {img.maMauSac ? (
+                      <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/60 text-white px-1.5 py-0.5 rounded">{getColorName(img.maMauSac) || 'Ảnh biến thể'}</span>
+                    ) : null}
+                    <button type="button" onClick={() => handleRemoveImage(img.fileId)}
                       className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition opacity-0 group-hover:opacity-100">
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </button>
@@ -538,9 +578,9 @@ export default function AdminProductForm() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b bg-gray-50">
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Màu</th>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-600">Size</th>
-                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Giá</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Màu</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Size</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Giá</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Tồn</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Ảnh</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Hành động</th>
@@ -600,17 +640,17 @@ export default function AdminProductForm() {
                   )}
                   {variants.map((v, i) => (
                     <tr key={v.maBienThe || v._tempId || i} className="hover:bg-gray-50 transition">
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
                           {getColorHex(v.maMauSac) && <span className="w-4 h-4 rounded-full border shrink-0" style={{ backgroundColor: getColorHex(v.maMauSac) }} />}
                           <span>{v.mauSac?.mauSac || getColorName(v.maMauSac)}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2">{v.kichCo?.kichCo || getSizeName(v.maKichCo)}</td>
+                      <td className="px-3 py-2 text-center font-medium">{v.kichCo?.kichCo || getSizeName(v.maKichCo)}</td>
                       <td className="px-3 py-2">
                         <input type="number" min="0" step="1000" value={v.gia}
                           onChange={e => handleVariantFieldChange(i, 'gia', e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-right font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                       </td>
                       <td className="px-3 py-2">
                         <input type="number" min="0" value={v.tonKho}
@@ -631,18 +671,14 @@ export default function AdminProductForm() {
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-2">
-                        <div className="flex justify-center gap-1">
-                          <button type="button" onClick={() => handleSaveVariantRow(i)} disabled={savingRow === i}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50" title="Lưu biến thể">
-                            {savingRow === i ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                          </button>
-                          <button type="button" onClick={() => setConfirmDelete(i)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
-                        </div>
+                      <td className="px-3 py-2 text-center">
+                        <button type="button" onClick={() => setConfirmDelete(i)}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
                       </td>
                     </tr>
                   ))}
+                  <input id="vimgRowInput" type="file" accept="image/*" hidden
+                    onChange={(e) => { if (rowUploadIdx !== null) { handleUploadVariantImageRow(rowUploadIdx, e.target.files); setRowUploadIdx(null); e.target.value = '' } }} />
                 </tbody>
               </table>
             </div>
