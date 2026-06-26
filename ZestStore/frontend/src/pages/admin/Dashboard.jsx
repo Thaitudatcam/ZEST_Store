@@ -19,7 +19,10 @@ export default function Dashboard() {
 
     Promise.all([
       getStats().catch((err) => { throw { source: 'stats', err } }),
-      getRevenue().catch((err) => { throw { source: 'revenue', err } }),
+      getRevenue(
+  new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+  new Date().toISOString().split('T')[0]
+).catch((err) => { throw { source: 'revenue', err } }),
       getTopProducts().catch((err) => { throw { source: 'topProducts', err } }),
     ])
       .then(([s, r, t]) => {

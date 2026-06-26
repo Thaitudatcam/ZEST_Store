@@ -1,6 +1,7 @@
 package com.example.zeststore.service;
 
 import com.example.zeststore.dto.request.CouponRequest;
+import com.example.zeststore.dto.response.CouponResponse;
 import com.example.zeststore.entity.PhieuGiamGia;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.DuplicateResourceException;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,6 +93,14 @@ public class PhieuGiamGiaService {
         if (phieuGiamGiaRepository.findByMaCode(request.getMaCode()).isPresent()) {
             throw new DuplicateResourceException("Coupon code already exists: " + request.getMaCode());
         }
+        if (request.getNgayBatDau() != null &&
+                request.getNgayBatDau().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Ngày bắt đầu phải từ hôm nay trở đi");
+        }
+        if (request.getNgayKetThuc() != null &&
+                request.getNgayKetThuc().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Ngày kết thúc phải ở tương lai");
+        }
         return phieuGiamGiaRepository.save(PhieuGiamGia.builder()
                 .maCode(request.getMaCode())
                 .kieuGiamGia(request.getKieuGiamGia())
@@ -107,7 +118,25 @@ public class PhieuGiamGiaService {
     public Map<String, String> delete(Integer id) {
         PhieuGiamGia coupon = getById(id);
         coupon.setNgayXoa(LocalDateTime.now());
-        phieuGiamGiaRepository.save(coupon);
+        phieuGiamGiaRepository.save(coupon); // ✅ không bị chặn
         return Map.of("message", "Coupon deleted");
+    }
+
+    public List<CouponResponse> filterPhieuGiamGia(LocalDateTime ngayBatDau, LocalDateTime ngayKetThuc, Integer kieuGiamGia, BigDecimal giaTriGiam){
+        return phieuGiamGiaRepository.filterPhieuGiamGia(ngayBatDau, ngayKetThuc, kieuGiamGia, giaTriGiam).stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+    private CouponResponse mapToResponse(PhieuGiamGia coupon) {
+        return CouponResponse.builder().
+                maCode(coupon.getMaCode()).
+                kieuGiamGia(coupon.getKieuGiamGia()).
+                giaTriGiam(coupon.getGiaTriGiam()).
+                giaTriDonToiThieu(coupon.getGiaTriDonToiThieu()).
+                ngayBatDau(coupon.getNgayBatDau()).
+                ngayKetThuc(coupon.getNgayKetThuc()).
+                trangThai(coupon.getTrangThai()).
+                soLuong(coupon.getSoLuong()).
+                giaTriGiamToiDa(coupon.getGiaTriGiamToiDa()).
+                build();
+
     }
 }
