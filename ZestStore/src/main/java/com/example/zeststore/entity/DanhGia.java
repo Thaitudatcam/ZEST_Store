@@ -28,11 +28,11 @@ public class DanhGia {
     private SanPham sanPham;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_don_hang", nullable = false)
+    @JoinColumn(name = "ma_don_hang")
     private DonHang donHang;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_bien_the", nullable = false)
+    @JoinColumn(name = "ma_bien_the")
     private BienTheSanPham bienThe;
 
     @NotNull @Min(1) @Max(5)

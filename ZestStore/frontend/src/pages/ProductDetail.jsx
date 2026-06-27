@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getProductBySlug } from '../api/products'
+import { getProductBySlug, getProducts } from '../api/products'
 import { addToCart } from '../api/cart'
 import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
@@ -13,6 +13,7 @@ import Toast from '../components/Toast'
 import VariantModal from '../components/VariantModal'
 import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
 import SafeImg from '../components/SafeImg'
+import ProductCard from '../components/ProductCard'
 import { imageUrl } from '../utils/imageUrl'
 
 export default function ProductDetail() {
@@ -35,6 +36,7 @@ export default function ProductDetail() {
   const [reviewCount, setReviewCount] = useState(0)
   const [previewIdx, setPreviewIdx] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
+  const [relatedProducts, setRelatedProducts] = useState([])
 
   const load = async () => {
     try {
@@ -51,6 +53,13 @@ export default function ProductDetail() {
           setAvgRating(r.averageRating || 0)
           setReviewCount(r.reviewCount || 0)
         }).catch(() => {})
+        const catId = prod.danhMuc?.maDanhMuc
+        if (catId) {
+          getProducts({ categoryId: catId, page: 0, size: 8 }).then(data => {
+            const list = (data.content || data).filter(x => x.maSanPham !== prod.maSanPham).slice(0, 4)
+            setRelatedProducts(list)
+          }).catch(() => {})
+        }
       }
     } catch { navigate('/products') }
     finally { setLoading(false) }
@@ -88,6 +97,7 @@ export default function ProductDetail() {
     handleAddCart()
   }
 
+
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8 animate-pulse">
@@ -106,7 +116,20 @@ export default function ProductDetail() {
 
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
-  const allImages = images.map(i => i.urlAnh).filter(Boolean)
+  const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
+  const filteredImages = images
+  const thumbnails = [
+    ...filteredImages.map(i => ({ url: i.urlAnh, maBienThe: i.maBienThe ?? i.bienThe?.maBienThe })),
+    ...variants
+      .filter(v => v.urlAnh)
+      .sort((a, b) => (a.kichCo?.maKichCo || 0) - (b.kichCo?.maKichCo || 0))
+      .filter((v, i, arr) => {
+        const colorId = v.mauSac?.maMauSac
+        return !colorId || arr.findIndex(x => x.mauSac?.maMauSac === colorId) === i
+      })
+      .map(v => ({ url: v.urlAnh, maBienThe: v.maBienThe })),
+  ].filter((t, i, arr) => t.url && arr.findIndex(x => x.url === t.url) === i)
+  const allImages = thumbnails.map(t => t.url)
   const selectedVariantImg = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.urlAnh : null
   const mainImg = imageUrl(selectedVariantImg) || imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
@@ -136,7 +159,11 @@ export default function ProductDetail() {
           {allImages.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {allImages.map((url, idx) => (
-                <button key={idx} onClick={() => setPreviewIdx(idx)}
+                  <button key={idx} onClick={() => {
+                      setPreviewIdx(idx)
+                      const vId = thumbnails[idx]?.maBienThe
+                      if (vId) setSelectedVar(vId)
+                    }}
                   className={`w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 ${idx === previewIdx ? 'border-blue-700' : 'border-transparent'}`}>
                   <SafeImg src={url} alt="" className="w-full h-full object-cover object-center" />
                 </button>
@@ -148,7 +175,6 @@ export default function ProductDetail() {
         <div>
           <h1 className="text-2xl font-bold mb-2">{product.tenSanPham}</h1>
           <p className="text-3xl text-blue-700 font-bold mb-4">{VND(variantPrice)}</p>
-          {product.moTa && <p className="text-gray-600 mb-4">{product.moTa}</p>}
 
           {variants.length > 0 && (() => {
             const uniqueColors = []
@@ -165,12 +191,14 @@ export default function ProductDetail() {
               if (id && !seenSizes.has(id)) { seenSizes.add(id); uniqueSizes.push(v) }
             })
 
-            const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
             const selectedSizeId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.kichCo?.maKichCo : null
 
-            const sizesForColor = selectedColorId
+            const sizesForColor = (selectedColorId
               ? variants.filter(v => v.mauSac?.maMauSac === selectedColorId)
-              : variants
+              : variants).filter((v, i, arr) => {
+                const id = v.kichCo?.maKichCo
+                return id && arr.findIndex(x => x.kichCo?.maKichCo === id) === i
+              })
 
             return (
               <div className="mb-4">
@@ -184,7 +212,10 @@ export default function ProductDetail() {
                         <button key={v.mauSac?.maMauSac}
                           onClick={() => {
                             const firstAvail = hasStock ? variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0) || variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac) : variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac)
-                            setSelectedVar(firstAvail?.maBienThe || v.maBienThe)
+                            const vId = firstAvail?.maBienThe || v.maBienThe
+                            setSelectedVar(vId)
+                            const idx = thumbnails.findIndex(t => t.maBienThe === vId)
+                            setPreviewIdx(idx >= 0 ? idx : 0)
                           }}
                           className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition ${selectedColorId === v.mauSac?.maMauSac ? 'bg-blue-700 text-white border-blue-700' : 'hover:bg-gray-100'}`}>
                           {v.mauSac?.maMauHex && <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: v.mauSac.maMauHex }} />}
@@ -204,7 +235,12 @@ export default function ProductDetail() {
                       const disabled = (v.tonKho || 0) === 0
                       return (
                         <button key={v.maBienThe}
-                          onClick={() => !disabled && setSelectedVar(v.maBienThe)}
+                          onClick={() => {
+                            if (disabled) return
+                            setSelectedVar(v.maBienThe)
+                            const idx = thumbnails.findIndex(t => t.maBienThe === v.maBienThe)
+                            setPreviewIdx(idx >= 0 ? idx : 0)
+                          }}
                           disabled={disabled}
                           className={`px-4 py-2 border rounded-lg text-sm font-medium transition ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : disabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
                           {v.kichCo?.kichCo || 'N/A'}
@@ -241,6 +277,37 @@ export default function ProductDetail() {
         </div>
       </div>
 
+      {product.moTa && (
+        <div className="mt-10">
+          <div className="bg-white border rounded-xl p-6">
+            <h2 className="text-lg font-bold mb-4 pb-3 border-b">Mô tả sản phẩm</h2>
+            <div className="text-gray-700 leading-relaxed whitespace-pre-line text-sm">
+              {product.moTa}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-10">
+        <div className="bg-white border rounded-xl p-6">
+          <h2 className="text-lg font-bold mb-4 pb-3 border-b">Đánh giá sản phẩm</h2>
+          <div className="flex items-center gap-6">
+            <div className="text-center min-w-[80px]">
+              <span className="text-4xl font-bold text-gray-800">{avgRating > 0 ? avgRating.toFixed(1) : '0'}</span>
+              <span className="text-gray-500 text-xs block mt-0.5">trên 5</span>
+            </div>
+            <div>
+              <div className="flex gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={`h-6 w-6 ${avgRating > 0 && i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{reviewCount} đánh giá</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {reviewCount > 0 && (
         <div className="mt-12 max-w-3xl">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -271,6 +338,17 @@ export default function ProductDetail() {
                 </div>
                 {r.binhLuan && <p className="text-sm text-gray-600">{r.binhLuan}</p>}
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {relatedProducts.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-xl font-bold mb-4">Có thể bạn cũng thích</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {relatedProducts.map(p => (
+              <ProductCard key={p.maSanPham} product={p} />
             ))}
           </div>
         </div>
