@@ -16,6 +16,7 @@ import Wishlist from './pages/Wishlist'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
 import PaymentResult from './pages/PaymentResult'
+import PolicyPage from './pages/PolicyPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<Navigate to="/" replace />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
+              <Route path="/policies/:slug" element={<PolicyPage />} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><ErrorBoundary><Checkout /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/login" element={<Login />} />
