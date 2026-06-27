@@ -35,6 +35,7 @@ public class MomoService {
         String orderInfo = "Thanh toan don hang #" + orderId;
         String extraData = "";
 
+        String requestType = "payWithATM";
         String rawSignature = "accessKey=" + config.getAccessKey()
                 + "&amount=" + payment.getSoTien().longValue()
                 + "&extraData=" + extraData
@@ -44,7 +45,7 @@ public class MomoService {
                 + "&partnerCode=" + config.getPartnerCode()
                 + "&redirectUrl=" + config.getReturnUrl()
                 + "&requestId=" + requestId
-                + "&requestType=captureWallet";
+                + "&requestType=" + requestType;
 
         String signature = hmacSHA256(config.getSecretKey(), rawSignature);
 
@@ -59,7 +60,7 @@ public class MomoService {
         body.put("redirectUrl", config.getReturnUrl());
         body.put("ipnUrl", config.getIpnUrl());
         body.put("extraData", extraData);
-        body.put("requestType", "captureWallet");
+        body.put("requestType", requestType);
         body.put("signature", signature);
         body.put("lang", "vi");
 

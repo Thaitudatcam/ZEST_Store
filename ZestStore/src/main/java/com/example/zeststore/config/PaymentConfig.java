@@ -52,6 +52,7 @@ public class PaymentConfig {
         private String key1;
         private String key2;
         private String endpoint;
+        private String queryEndpoint;
         private String callbackUrl;
     }
 }

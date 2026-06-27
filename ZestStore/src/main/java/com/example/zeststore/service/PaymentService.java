@@ -122,4 +122,8 @@ public class PaymentService {
         }
         return Map.of("return_code", -1, "return_message", "invalid mac");
     }
+
+    public String handleZaloPayReturn(Map<String, String> params) {
+        return zaloPayService.handleReturn(params);
+    }
 }
