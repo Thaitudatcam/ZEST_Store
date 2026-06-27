@@ -5,7 +5,7 @@ import { getRevenueByDay, getRevenueByMonth, getRevenueByYear,
          exportAndSendEmail
 } from '../../api/admin'
 import { DollarSign, ShoppingCart, Package, Users, TrendingUp, XCircle, CheckCircle, Clock, Loader } from 'lucide-react'
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
 
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6']
 
@@ -210,13 +210,7 @@ const validateFilter = () => {
 )}
         {revenueData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={revenueData}>
-              <defs>
-                <linearGradient id="revGrad2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey={tab === 'day' ? 'ngay' : tab === 'month' ? 'thang' : 'nam'} 
   tick={{ fontSize: 12 }} 
@@ -224,8 +218,8 @@ const validateFilter = () => {
   tickFormatter={(value) => tab === 'month' ? `Tháng ${value}` : value} />
               <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => (v / 1000).toFixed(0) + 'k'} />
               <Tooltip formatter={(v) => VND(v)} />
-              <Area type="monotone" dataKey="doanhThu" stroke="#3b82f6" fill="url(#revGrad2)" strokeWidth={2} />
-            </AreaChart>
+              <Line type="monotone" dataKey="doanhThu" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
+            </LineChart>
           </ResponsiveContainer>
         ) : <p className="text-center text-gray-400 py-10">Chưa có dữ liệu</p>}
       </div>

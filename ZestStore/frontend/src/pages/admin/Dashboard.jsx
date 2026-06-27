@@ -22,39 +22,33 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError('')
 
     Promise.all([
-<<<<<<< HEAD
-      getStats().catch((err) => { throw { source: 'stats', err } }),
+      getStats().catch(err => ({ _error: err })),
       getRevenue(
-  new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-  new Date().toISOString().split('T')[0]
-).catch((err) => { throw { source: 'revenue', err } }),
-      getTopProducts().catch((err) => { throw { source: 'topProducts', err } }),
-    ])
-      .then(([s, r, t]) => {
-=======
-      getStats(),
-      getRevenue(),
-      getTopProducts(),
-      getRevenueByDate(30),
-      getRecentOrders(10),
-    ].map(p => p.catch(err => ({ _error: err }))))
-      .then(([s, r, t, revDate, recent]) => {
->>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
-        if (cancelled) return
-        setStats(s?._error ? null : s)
-        setRevenueData(r?._error ? null : r)
-        setTopProducts(Array.isArray(t) ? t : (t?._error ? [] : []))
-        setRevenueByDate(Array.isArray(revDate) ? revDate : [])
-        setRecentOrders(Array.isArray(recent) ? recent : [])
-      })
-      .catch(() => { if (!cancelled) setError('Không thể tải dữ liệu') })
-      .finally(() => { if (!cancelled) setLoading(false) })
+        new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        new Date().toISOString().split('T')[0]
+      ).catch(err => ({ _error: err })),
+      getTopProducts().catch(err => ({ _error: err })),
+      getRevenueByDate(30).catch(err => ({ _error: err })),
+      getRecentOrders(10).catch(err => ({ _error: err })),
+    ]).then(([s, r, t, revDate, recent]) => {
+      if (cancelled) return
+      setStats(s?._error ? null : s)
+      setRevenueData(r?._error ? null : r)
+      setTopProducts(Array.isArray(t) ? t : [])
+      setRevenueByDate(Array.isArray(revDate) ? revDate : [])
+      setRecentOrders(Array.isArray(recent) ? recent : [])
+    }).catch(() => {
+      if (!cancelled) setError('Không thể tải dữ liệu')
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
 
     return () => { cancelled = true }
   }, [])

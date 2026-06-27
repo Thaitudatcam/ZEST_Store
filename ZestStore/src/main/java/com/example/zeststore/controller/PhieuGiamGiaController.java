@@ -6,11 +6,11 @@ import com.example.zeststore.dto.response.CouponResponse;
 import com.example.zeststore.service.PhieuGiamGiaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-<<<<<<< HEAD
+
 import org.springframework.format.annotation.DateTimeFormat;
-=======
+
 import java.math.BigDecimal;
->>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;

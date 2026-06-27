@@ -16,11 +16,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-<<<<<<< HEAD
+
 import java.time.LocalTime;
 import java.util.List;
-=======
->>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
+
 import java.util.Map;
 
 @RestController

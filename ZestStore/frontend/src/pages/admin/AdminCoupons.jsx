@@ -7,17 +7,17 @@ const PAGE_SIZE = 15
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
   const [showForm, setShowForm] = useState(false);
-<<<<<<< HEAD
+
   const [filter, setFilter] = useState({
   ngayBatDau: "",
   ngayKetThuc: "",
   kieuGiamGia: "",
   giaTriGiam: "",
 });
-=======
+
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(null);
->>>>>>> 393536e33d73ef0c78343db998b60a6973c9ba10
+
   const [form, setForm] = useState({
     maCode: "",
     kieuGiamGia: 1,
