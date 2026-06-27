@@ -44,6 +44,7 @@ export default function ProductCard({ product }) {
           </span>
         )}
       </div>
+
       <div className="p-3">
         <h3 className="font-semibold text-sm text-gray-800 truncate">{product.tenSanPham}</h3>
         {colors.length > 0 && (
