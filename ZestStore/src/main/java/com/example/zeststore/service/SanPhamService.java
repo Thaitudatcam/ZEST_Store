@@ -109,15 +109,6 @@ public class SanPhamService {
         page.getContent().forEach(sp -> sp.setTongTonKho(stockMap.getOrDefault(sp.getMaSanPham(), 0)));
     }
 
-    public Page<SanPham> getAdminProducts(String keyword, int page, int size, String sortBy, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-        if (keyword != null) {
-            return sanPhamRepository.searchByKeywordAll(keyword, pageable);
-        }
-        return sanPhamRepository.findByNgayXoaIsNull(pageable);
-    }
-
     public SanPham getBySlug(String slug) {
         return sanPhamRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + slug));
@@ -337,18 +328,6 @@ public class SanPhamService {
     public Map<String, String> deleteImage(Integer imageId) {
         anhSanPhamRepository.deleteById(imageId);
         return Map.of("message", "Image deleted");
-    }
-
-    @Transactional
-    public Map<String, Object> toggleStatus(Integer id) {
-        SanPham product = getById(id);
-        product.setTrangThai(Integer.valueOf(1).equals(product.getTrangThai()) ? 0 : 1);
-        sanPhamRepository.save(product);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("maSanPham", product.getMaSanPham());
-        result.put("trangThai", product.getTrangThai());
-        result.put("message", "Cập nhật trạng thái thành công");
-        return result;
     }
 
     @Transactional(readOnly = true)

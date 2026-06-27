@@ -48,3 +48,20 @@ export const getShippingFees = () => api.get('/admin/shipping-fees').then((r) =>
 export const createShippingFee = (data) => api.post('/admin/shipping-fees', data).then((r) => r.data)
 export const updateShippingFee = (id, data) => api.put(`/admin/shipping-fees/${id}`, data).then((r) => r.data)
 export const deleteShippingFee = (id) => api.delete(`/admin/shipping-fees/${id}`).then((r) => r.data)
+
+export const toggleProductStatus = (id) => api.put(`/products/${id}/toggle-status`).then((r) => r.data)
+
+export const getRevenueByDay = (tuNgay, denNgay) => api.get('/dashboard/revenue/day', { params: { tuNgay, denNgay } }).then(r => r.data)
+export const getRevenueByMonth = (thang, nam) =>
+  api.get('/dashboard/revenue/month', { params: { thang, nam } }).then(r => r.data)
+export const getRevenueByYear = () => api.get('/dashboard/revenue/year').then(r => r.data)
+export const getBestSelling = (limit = 10) => api.get('/dashboard/best-selling', { params: { limit } }).then(r => r.data)
+export const getOrderStats = () => api.get('/dashboard/order-stats').then(r => r.data)
+export const exportAndSendEmail = (tuNgay, denNgay) =>
+  api.post('/dashboard/export-email', { tuNgay, denNgay }).then(r => r.data)
+export const filterCoupons = (queryString) =>
+  api.get(`/coupons/filter?${queryString}`).then((r) => r.data)
+
+export const getRecentOrders = (limit = 10) => api.get('/dashboard/recent-orders', { params: { limit } }).then((r) => r.data)
+
+export const getRevenueByDate = (days = 30) => api.get('/dashboard/revenue-by-date', { params: { days } }).then((r) => r.data)

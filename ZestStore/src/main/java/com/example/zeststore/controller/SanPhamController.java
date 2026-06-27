@@ -93,12 +93,6 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.deleteProduct(id));
     }
 
-    @PutMapping("/{id}/toggle-status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
-        return ResponseEntity.ok(sanPhamService.toggleStatus(id));
-    }
-
     @GetMapping("/admin/list")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAdminProducts(
