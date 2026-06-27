@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Heart, Star } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { addWishlist, removeWishlist } from '../api/wishlist'
 import { useState } from 'react'
@@ -12,8 +12,6 @@ export default function ProductCard({ product }) {
   const [wished, setWished] = useState(false)
   const price = product.giaThapNhat ?? product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
   const slug = product.slug || product.maSanPham
-  const avgRating = product.averageRating
-  const reviewCount = product.reviewCount ?? 0
   const discount = product.phanTramGiamGia
   const colors = product.mauSacs ?? []
   const isNew = product.ngayTao && Date.now() - new Date(product.ngayTao).getTime() < 7 * 86400000
@@ -47,14 +45,6 @@ export default function ProductCard({ product }) {
         )}
       </div>
       <div className="p-3">
-        {avgRating && (
-          <div className="flex items-center gap-1 mb-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} className={`h-3 w-3 ${i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-            ))}
-            <span className="text-[10px] text-gray-400 ml-1">({reviewCount})</span>
-          </div>
-        )}
         <h3 className="font-semibold text-sm text-gray-800 truncate">{product.tenSanPham}</h3>
         {colors.length > 0 && (
           <div className="flex gap-1 mt-1.5">

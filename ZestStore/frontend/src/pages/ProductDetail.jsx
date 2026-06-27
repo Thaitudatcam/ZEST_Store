@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getProductBySlug } from '../api/products'
+import { getProductBySlug, getProducts } from '../api/products'
 import { addToCart } from '../api/cart'
 import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
@@ -13,6 +13,7 @@ import Toast from '../components/Toast'
 import VariantModal from '../components/VariantModal'
 import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
 import SafeImg from '../components/SafeImg'
+import ProductCard from '../components/ProductCard'
 import { imageUrl } from '../utils/imageUrl'
 
 export default function ProductDetail() {
@@ -35,6 +36,7 @@ export default function ProductDetail() {
   const [reviewCount, setReviewCount] = useState(0)
   const [previewIdx, setPreviewIdx] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
+  const [relatedProducts, setRelatedProducts] = useState([])
 
   const load = async () => {
     try {
@@ -51,6 +53,13 @@ export default function ProductDetail() {
           setAvgRating(r.averageRating || 0)
           setReviewCount(r.reviewCount || 0)
         }).catch(() => {})
+        const catId = prod.danhMuc?.maDanhMuc
+        if (catId) {
+          getProducts({ categoryId: catId, page: 0, size: 8 }).then(data => {
+            const list = (data.content || data).filter(x => x.maSanPham !== prod.maSanPham).slice(0, 4)
+            setRelatedProducts(list)
+          }).catch(() => {})
+        }
       }
     } catch { navigate('/products') }
     finally { setLoading(false) }
@@ -87,6 +96,7 @@ export default function ProductDetail() {
     if (variants.length > 1 && !selectedVar) return setModalOpen(true)
     handleAddCart()
   }
+
 
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -278,6 +288,26 @@ export default function ProductDetail() {
         </div>
       )}
 
+      <div className="mt-10">
+        <div className="bg-white border rounded-xl p-6">
+          <h2 className="text-lg font-bold mb-4 pb-3 border-b">Đánh giá sản phẩm</h2>
+          <div className="flex items-center gap-6">
+            <div className="text-center min-w-[80px]">
+              <span className="text-4xl font-bold text-gray-800">{avgRating > 0 ? avgRating.toFixed(1) : '0'}</span>
+              <span className="text-gray-500 text-xs block mt-0.5">trên 5</span>
+            </div>
+            <div>
+              <div className="flex gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={`h-6 w-6 ${avgRating > 0 && i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">{reviewCount} đánh giá</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {reviewCount > 0 && (
         <div className="mt-12 max-w-3xl">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -308,6 +338,17 @@ export default function ProductDetail() {
                 </div>
                 {r.binhLuan && <p className="text-sm text-gray-600">{r.binhLuan}</p>}
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {relatedProducts.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-xl font-bold mb-4">Có thể bạn cũng thích</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {relatedProducts.map(p => (
+              <ProductCard key={p.maSanPham} product={p} />
             ))}
           </div>
         </div>

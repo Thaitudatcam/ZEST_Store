@@ -118,6 +118,17 @@ public class SanPhamService {
                 .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
                         row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
         page.getContent().forEach(sp -> sp.setGiaThapNhat(minGiaMap.get(sp.getMaSanPham())));
+        List<Object[]> ratingData = danhGiaRepository.avgRatingBySanPhamIds(ids);
+        Map<Integer, Double> avgRatingMap = ratingData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] != null ? ((Number) row[1]).doubleValue() : 0.0));
+        Map<Integer, Long> countMap = ratingData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[2] != null ? ((Number) row[2]).longValue() : 0L));
+        page.getContent().forEach(sp -> {
+            sp.setAverageRating(avgRatingMap.get(sp.getMaSanPham()));
+            sp.setReviewCount(countMap.get(sp.getMaSanPham()));
+        });
     }
 
     public SanPham getBySlug(String slug) {

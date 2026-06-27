@@ -45,23 +45,27 @@ public class DanhGiaService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         SanPham product = sanPhamRepository.findById(request.getMaSanPham())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", request.getMaSanPham()));
-        DonHang order = donHangRepository.findById(request.getMaDonHang())
-                .orElseThrow(() -> new ResourceNotFoundException("Order", request.getMaDonHang()));
 
-        Optional<DanhGia> existing = danhGiaRepository
-                .findByNguoiDung_MaNguoiDungAndSanPham_MaSanPhamAndDonHang_MaDonHang(
-                        userId, request.getMaSanPham(), request.getMaDonHang());
-        if (existing.isPresent()) {
-            throw new BadRequestException("You have already reviewed this product for this order");
+        if (request.getMaDonHang() != null) {
+            DonHang order = donHangRepository.findById(request.getMaDonHang())
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", request.getMaDonHang()));
+            Optional<DanhGia> existing = danhGiaRepository
+                    .findByNguoiDung_MaNguoiDungAndSanPham_MaSanPhamAndDonHang_MaDonHang(
+                            userId, request.getMaSanPham(), request.getMaDonHang());
+            if (existing.isPresent()) {
+                throw new BadRequestException("You have already reviewed this product for this order");
+            }
         }
 
-        BienTheSanPham bienThe = bienTheRepository.findById(request.getMaBienThe())
-                .orElseThrow(() -> new ResourceNotFoundException("ProductVariant", request.getMaBienThe()));
+        BienTheSanPham bienThe = request.getMaBienThe() != null
+                ? bienTheRepository.findById(request.getMaBienThe())
+                        .orElseThrow(() -> new ResourceNotFoundException("ProductVariant", request.getMaBienThe()))
+                : null;
 
         return danhGiaRepository.save(DanhGia.builder()
                 .nguoiDung(user)
                 .sanPham(product)
-                .donHang(order)
+                .donHang(null)
                 .bienThe(bienThe)
                 .soSao(request.getSoSao())
                 .binhLuan(request.getBinhLuan())
