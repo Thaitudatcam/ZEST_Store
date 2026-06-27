@@ -26,4 +26,19 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     List<PhieuGiamGia> findValidCoupons(@Param("now") LocalDateTime now,
                                          @Param("giaTriDon") BigDecimal giaTriDon);
     List<PhieuGiamGia> findByNgayXoaIsNull();
+
+    @Query("""
+        SELECT p FROM PhieuGiamGia p
+        WHERE (:ngayBatDau IS NULL OR p.ngayBatDau >= :ngayBatDau)
+        AND (:ngayKetThuc IS NULL OR p.ngayKetThuc <= :ngayKetThuc)
+        AND (:kieuGiamGia IS NULL OR p.kieuGiamGia = :kieuGiamGia)
+        AND (:giaTriGiam IS NULL OR p.giaTriGiam = :giaTriGiam)
+        AND p.ngayXoa IS NULL
+        """)
+    List<PhieuGiamGia> filterPhieuGiamGia(
+            @Param("ngayBatDau") LocalDateTime ngayBatDau,
+            @Param("ngayKetThuc") LocalDateTime ngayKetThuc,
+            @Param("kieuGiamGia") Integer kieuGiamGia,  // 1 = phần trăm, 2 = tiền mặt
+            @Param("giaTriGiam") BigDecimal giaTriGiam
+    );
 }

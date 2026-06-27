@@ -13,4 +13,6 @@ public class GhnConfig {
     private String token;
     private int shopId;
     private String baseUrl;
+    private int fromDistrictId;
+    private String fromWardCode;
 }

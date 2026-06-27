@@ -53,6 +53,7 @@ public class ThanhToanService {
 
         thanhToanRepository.save(payment);
 
+        clearCartForOrder(order);
         hoaDonService.generateInvoice(order.getMaDonHang());
 
         return payment;
@@ -74,7 +75,6 @@ public class ThanhToanService {
         if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
             order.setTrangThaiDon(5);
             donHangRepository.save(order);
-            clearCartForOrder(order);
         }
         return thanhToanRepository.save(payment);
     }
@@ -107,7 +107,6 @@ public class ThanhToanService {
                 }
                 order.setTrangThaiDon(5);
                 donHangRepository.save(order);
-                clearCartForOrder(order);
                 log.info("Auto-cancelled expired order #{}", order.getMaDonHang());
             }
             payment.setTrangThaiThanhToan(3);

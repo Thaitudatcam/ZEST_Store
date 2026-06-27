@@ -1,10 +1,14 @@
 import api from './axios'
 
 export const getStats = () => api.get('/dashboard/stats').then((r) => r.data)
-export const getRevenue = (tuNgay, denNgay) => api.get('/dashboard/revenue', { params: { tuNgay, denNgay } }).then((r) => r.data)
-export const getTopProducts = (hanhDong = 'view', limit = 10) => api.get('/dashboard/top-products', { params: { hanhDong, limit } }).then((r) => r.data)
+export const getRevenue = (tuNgay, denNgay) => api.get('/dashboard/revenue/day', { params: { tuNgay, denNgay } }).then((r) => r.data)
+export const getTopProducts = (hanhDong = 'view', limit = 10) =>
+  api.get('/dashboard/best-selling', {
+    params: { limit }
+  }).then((r) => r.data)
 export const getAllOrders = (page = 0, size = 20, loaiDonHang) => api.get('/orders/admin/all', { params: { page, size, loaiDonHang } }).then((r) => r.data)
-export const updateOrderStatus = (id, trangThai) => api.put(`/orders/admin/${id}/status`, { trangThai }).then((r) => r.data)
+export const updateOrderStatus = (id, trangThai) =>
+  api.put(`/orders/admin/${id}/status`, { trangThai }).then((r) => r.data)
 export const getAdminOrderDetail = (id) => api.get(`/orders/admin/${id}/detail`).then((r) => r.data)
 export const getCoupons = () => api.get('/coupons').then((r) => r.data)
 export const createCoupon = (data) => api.post('/coupons', data).then((r) => r.data)
@@ -18,6 +22,7 @@ export const deleteCategory = (id) => api.delete(`/categories/${id}`).then((r) =
 
 export const getInvoices = (page = 0, size = 20) => api.get('/invoices', { params: { page, size } }).then((r) => r.data)
 export const getInvoiceDetail = (id) => api.get(`/invoices/${id}`).then((r) => r.data)
+export const getInvoiceByOrderId = (orderId) => api.get(`/invoices/by-order/${orderId}`).then((r) => r.data)
 export const generateInvoice = (orderId) => api.post(`/invoices/generate/${orderId}`).then((r) => r.data)
 
 export const getAllReviews = () => api.get('/admin/reviews').then((r) => r.data)
@@ -34,6 +39,17 @@ export const getEmployees = () => api.get('/admin/employees').then((r) => r.data
 export const createEmployee = (data) => api.post('/admin/employees', data).then((r) => r.data)
 export const updateEmployee = (id, data) => api.put(`/admin/employees/${id}`, data).then((r) => r.data)
 export const toggleEmployeeStatus = (id) => api.put(`/admin/employees/${id}/status`).then((r) => r.data)
+
+export const getRevenueByDay = (tuNgay, denNgay) => api.get('/dashboard/revenue/day', { params: { tuNgay, denNgay } }).then(r => r.data)
+export const getRevenueByMonth = (thang, nam) => 
+  api.get('/dashboard/revenue/month', { params: { thang, nam } }).then(r => r.data)
+export const getRevenueByYear = () => api.get('/dashboard/revenue/year').then(r => r.data)
+export const getBestSelling = (limit = 10) => api.get('/dashboard/best-selling', { params: { limit } }).then(r => r.data)
+export const getOrderStats = () => api.get('/dashboard/order-stats').then(r => r.data)
+export const exportAndSendEmail = (tuNgay, denNgay) => 
+  api.post('/dashboard/export-email', { tuNgay, denNgay }).then(r => r.data)
+export const filterCoupons = (queryString) =>
+  api.get(`/coupons/filter?${queryString}`).then((r) => r.data);
 
 export const toggleProductStatus = (id) => api.put(`/products/${id}/toggle-status`).then((r) => r.data)
 

@@ -33,6 +33,7 @@ public class DonHangService {
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final HoaDonService hoaDonService;
     private final OrderSseService orderSseService;
+    private final GhnService ghnService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -163,7 +164,7 @@ public class DonHangService {
             }
         }
 
-        BigDecimal phiVanChuyen = request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
+        BigDecimal phiVanChuyen = recalculateShippingFee(request, orderItems);
         BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             finalTotal = BigDecimal.ZERO;
@@ -222,7 +223,9 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        mucGioHangRepository.deleteAll(cartItems);
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
+            mucGioHangRepository.deleteAll(cartItems);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());
@@ -352,6 +355,30 @@ public class DonHangService {
         orderSseService.sendOrderStatusUpdate(orderId, 7, oldStatus, "user", lyDo);
 
         return Map.of("message", "Return requested");
+    }
+
+    private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
+        if (request.getToDistrictId() == null || request.getToWardCode() == null) {
+            return request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
+        }
+
+        int weight = request.getWeight() != null ? request.getWeight()
+                : orderItems.stream().mapToInt(item -> ((Integer) item.get("soLuong")) * 500).sum();
+        weight = Math.max(weight, 500);
+
+        Map<String, Object> result = ghnService.calculateFee(2, request.getToDistrictId(), request.getToWardCode(), weight);
+        if (result.containsKey("error")) {
+            throw new BadRequestException("Không thể tính phí vận chuyển, vui lòng thử lại sau");
+        }
+
+        Object data = result.get("data");
+        if (data instanceof Map) {
+            Object total = ((Map<?, ?>) data).get("total");
+            if (total instanceof Number) {
+                return BigDecimal.valueOf(((Number) total).longValue());
+            }
+        }
+        throw new BadRequestException("GHN trả về dữ liệu phí vận chuyển không hợp lệ");
     }
 
     private void restoreStock(Integer orderId) {

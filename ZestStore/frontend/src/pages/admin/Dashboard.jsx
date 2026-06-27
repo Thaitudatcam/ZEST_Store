@@ -29,7 +29,10 @@ export default function Dashboard() {
 
     Promise.all([
       getStats(),
-      getRevenue(),
+      getRevenue(
+  new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+  new Date().toISOString().split('T')[0]
+),
       getTopProducts(),
       getRevenueByDate(30),
       getRecentOrders(10),

@@ -96,31 +96,45 @@ public class UserService {
                 .soDienThoai(request.getSoDienThoai())
                 .tinhThanhPho(request.getTinhThanhPho())
                 .quanHuyen(request.getQuanHuyen())
+                .phuongXa(request.getPhuongXa())
+                .provinceId(request.getProvinceId())
+                .districtId(request.getDistrictId())
+                .wardCode(request.getWardCode())
                 .chiTietDiaChi(request.getChiTietDiaChi())
                 .laMacDinh(Boolean.TRUE.equals(request.getLaMacDinh()))
                 .build());
     }
 
     @Transactional
-    public DiaChiNguoiDung updateAddress(Integer addressId, DiaChiRequest request) {
+    public DiaChiNguoiDung updateAddress(Integer userId, Integer addressId, DiaChiRequest request) {
         DiaChiNguoiDung address = diaChiRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", addressId));
+        if (!address.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Address does not belong to user");
+        }
         address.setTenNguoiNhan(request.getTenNguoiNhan());
         address.setSoDienThoai(request.getSoDienThoai());
         address.setTinhThanhPho(request.getTinhThanhPho());
         address.setQuanHuyen(request.getQuanHuyen());
+        address.setPhuongXa(request.getPhuongXa());
+        address.setProvinceId(request.getProvinceId());
+        address.setDistrictId(request.getDistrictId());
+        address.setWardCode(request.getWardCode());
         address.setChiTietDiaChi(request.getChiTietDiaChi());
         if (Boolean.TRUE.equals(request.getLaMacDinh())) {
-            diaChiRepository.resetMacDinhByNguoiDungId(address.getNguoiDung().getMaNguoiDung());
+            diaChiRepository.resetMacDinhByNguoiDungId(userId);
             address.setLaMacDinh(true);
         }
         return diaChiRepository.save(address);
     }
 
     @Transactional
-    public Map<String, String> deleteAddress(Integer addressId) {
+    public Map<String, String> deleteAddress(Integer userId, Integer addressId) {
         DiaChiNguoiDung address = diaChiRepository.findById(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("Address", addressId));
+        if (!address.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Address does not belong to user");
+        }
         address.setNgayXoa(java.time.LocalDateTime.now());
         diaChiRepository.save(address);
         return Map.of("message", "Address deleted");

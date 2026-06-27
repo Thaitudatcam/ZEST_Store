@@ -23,7 +23,6 @@ public class POSService {
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
-    private final HoaDonService hoaDonService;
     private final PosCartRepository posCartRepository;
 
     @Transactional
@@ -172,10 +171,6 @@ public class POSService {
                 .nguoiCapNhat(admin)
                 .ghiChu("Bán tại quầy")
                 .build());
-
-        try {
-            hoaDonService.generateInvoice(order.getMaDonHang());
-        } catch (Exception ignored) {}
 
         posCartRepository.deleteByAdmin_MaNguoiDung(adminUserId);
 

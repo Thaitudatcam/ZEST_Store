@@ -11,7 +11,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ hoTen: '' })
   const [pwd, setPwd] = useState({ matKhauCu: '', matKhauMoi: '' })
-  const [addrForm, setAddrForm] = useState({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', chiTietDiaChi: '', laMacDinh: false })
+  const [addrForm, setAddrForm] = useState({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false })
   const [editAddr, setEditAddr] = useState(null)
   const [msg, setMsg] = useState('')
   const [provinces, setProvinces] = useState([])
@@ -62,20 +62,30 @@ export default function Profile() {
       } else {
         await addAddress(addrForm)
       }
-      setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', chiTietDiaChi: '', laMacDinh: false })
+      setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false })
       setProvinceId(0); setDistrictId(0); setWardCode('')
       load()
     } catch { setMsg('Lỗi xử lý địa chỉ') }
   }
 
-  const handleEditAddr = (a) => {
+  const handleEditAddr = async (a) => {
     setEditAddr(a.maDiaChi)
-    setAddrForm({ tenNguoiNhan: a.tenNguoiNhan, soDienThoai: a.soDienThoai, tinhThanhPho: a.tinhThanhPho || '', quanHuyen: a.quanHuyen || '', phuongXa: a.phuongXa || '', chiTietDiaChi: a.chiTietDiaChi, laMacDinh: a.laMacDinh })
-    setProvinceId(0); setDistrictId(0); setWardCode('')
+    setAddrForm({ tenNguoiNhan: a.tenNguoiNhan, soDienThoai: a.soDienThoai, tinhThanhPho: a.tinhThanhPho || '', quanHuyen: a.quanHuyen || '', phuongXa: a.phuongXa || '', provinceId: a.provinceId, districtId: a.districtId, wardCode: a.wardCode || '', chiTietDiaChi: a.chiTietDiaChi, laMacDinh: a.laMacDinh })
+    if (a.provinceId) {
+      try { const d = await getDistricts(a.provinceId); setDistricts(d || []) } catch {}
+      setProvinceId(a.provinceId)
+      if (a.districtId) {
+        setDistrictId(a.districtId)
+        try { const w = await getWards(a.districtId); setWards(w || []) } catch {}
+        if (a.wardCode) setWardCode(a.wardCode)
+      } else { setDistrictId(0); setWardCode('') }
+    } else { setProvinceId(0); setDistrictId(0); setWardCode('') }
     setTab('addresses')
   }
 
-  const handleDelAddr = async (id) => { await deleteAddress(id); load() }
+  const handleDelAddr = async (id) => {
+    try { await deleteAddress(id); load() } catch { setMsg('Xóa địa chỉ thất bại') }
+  }
   const handleSetDefault = async (id) => { await setDefaultAddress(id); load() }
 
   if (loading) return <LoadingSpinner className="py-20" />
@@ -130,18 +140,18 @@ export default function Profile() {
             <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })} placeholder="Tên người nhận" required className="w-full border rounded-lg px-3 py-2 text-sm" />
             <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })} placeholder="Số điện thoại" required className="w-full border rounded-lg px-3 py-2 text-sm" />
             <div className="grid grid-cols-2 gap-2">
-              <select value={provinceId} onChange={(e) => { const id = Number(e.target.value); setProvinceId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, tinhThanhPho: name }) }}
+              <select value={provinceId} onChange={(e) => { const id = Number(e.target.value); setProvinceId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, tinhThanhPho: name, provinceId: id || null }) }}
                 className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value={0}>-- Tỉnh/Thành phố --</option>
                 {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
               </select>
-              <select value={districtId} onChange={(e) => { const id = Number(e.target.value); setDistrictId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, quanHuyen: name }) }}
+              <select value={districtId} onChange={(e) => { const id = Number(e.target.value); setDistrictId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, quanHuyen: name, districtId: id || null }) }}
                 disabled={!provinceId} className="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value={0}>-- Quận/Huyện --</option>
                 {districts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
               </select>
             </div>
-            <select value={wardCode} onChange={(e) => { setWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, phuongXa: name }) }}
+            <select value={wardCode} onChange={(e) => { setWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, phuongXa: name, wardCode: e.target.value || '' }) }}
               disabled={!districtId} className="w-full border rounded-lg px-3 py-2 text-sm">
               <option value="">-- Phường/Xã --</option>
               {wards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
@@ -150,7 +160,7 @@ export default function Profile() {
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={addrForm.laMacDinh} onChange={(e) => setAddrForm({ ...addrForm, laMacDinh: e.target.checked })} /> Đặt làm mặc định</label>
             <div className="flex gap-2">
               <button type="submit" className="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800"><Plus className="h-4 w-4 inline" /> {editAddr ? 'Cập nhật' : 'Thêm'}</button>
-              {editAddr && <button type="button" onClick={() => { setEditAddr(null); setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', chiTietDiaChi: '', laMacDinh: false }); setProvinceId(0); setDistrictId(0); setWardCode('') }} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">Hủy</button>}
+              {editAddr && <button type="button" onClick={() => { setEditAddr(null); setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false }); setProvinceId(0); setDistrictId(0); setWardCode('') }} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">Hủy</button>}
             </div>
           </form>
         </div>

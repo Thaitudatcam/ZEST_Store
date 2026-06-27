@@ -48,14 +48,15 @@ public class UserController {
     }
 
     @PutMapping("/addresses/{id}")
-    public ResponseEntity<?> updateAddress(@PathVariable Integer id,
+    public ResponseEntity<?> updateAddress(Authentication auth,
+                                            @PathVariable Integer id,
                                             @Valid @RequestBody DiaChiRequest request) {
-        return ResponseEntity.ok(userService.updateAddress(id, request));
+        return ResponseEntity.ok(userService.updateAddress(userService.getUserIdFromAuth(auth), id, request));
     }
 
     @DeleteMapping("/addresses/{id}")
-    public ResponseEntity<?> deleteAddress(@PathVariable Integer id) {
-        return ResponseEntity.ok(userService.deleteAddress(id));
+    public ResponseEntity<?> deleteAddress(Authentication auth, @PathVariable Integer id) {
+        return ResponseEntity.ok(userService.deleteAddress(userService.getUserIdFromAuth(auth), id));
     }
 
     @PutMapping("/addresses/{id}/default")

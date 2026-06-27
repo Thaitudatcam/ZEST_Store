@@ -39,7 +39,7 @@ public class HoaDonService {
             m.put("tongTien", rawTotal.subtract(giam).add(ship).max(BigDecimal.ZERO));
             m.put("trangThaiHoaDon", inv.getTrangThaiHoaDon());
             m.put("ngayTao", inv.getNgayTao());
-            m.put("khachHang", inv.getDonHang().getNguoiDung().getHoTen());
+            m.put("khachHang", inv.getDonHang().getNguoiDung() != null ? inv.getDonHang().getNguoiDung().getHoTen() : inv.getDonHang().getTenNguoiNhan());
             m.put("loaiDonHang", inv.getDonHang().getLoaiDonHang());
             return m;
         });
@@ -69,7 +69,7 @@ public class HoaDonService {
         orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
         orderInfo.put("tongTien", order.getTongTien());
         orderInfo.put("loaiDonHang", order.getLoaiDonHang());
-        orderInfo.put("khachHang", order.getNguoiDung().getHoTen());
+        orderInfo.put("khachHang", order.getNguoiDung() != null ? order.getNguoiDung().getHoTen() : order.getTenNguoiNhan());
         result.put("donHang", orderInfo);
 
         result.put("chiTiet", items.stream().map(item -> {
@@ -102,7 +102,7 @@ public class HoaDonService {
         HoaDon invoice = HoaDon.builder()
                 .donHang(order)
                 .maHoaDonCode(code)
-                .emailKhachHang(order.getNguoiDung().getEmail() != null ? order.getNguoiDung().getEmail() : "")
+                .emailKhachHang(order.getNguoiDung() != null && order.getNguoiDung().getEmail() != null ? order.getNguoiDung().getEmail() : "")
                 .tongTien(order.getTongTien())
                 .build();
         invoice = hoaDonRepository.save(invoice);

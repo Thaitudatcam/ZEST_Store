@@ -36,11 +36,10 @@ public class PhieuGiamGia {
     @Column(name = "gia_tri_don_toi_thieu", precision = 18, scale = 2)
     private BigDecimal giaTriDonToiThieu;
 
-    @FutureOrPresent
+
     @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
 
-    @Future
     @Column(name = "ngay_ket_thuc")
     private LocalDateTime ngayKetThuc;
 

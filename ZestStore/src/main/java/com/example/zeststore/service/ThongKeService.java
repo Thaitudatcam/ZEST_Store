@@ -1,10 +1,8 @@
 package com.example.zeststore.service;
 
-import com.example.zeststore.repository.DonHangRepository;
-import com.example.zeststore.repository.SanPhamRepository;
-import com.example.zeststore.repository.NguoiDungRepository;
-import com.example.zeststore.repository.HanhViNguoiDungRepository;
+import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,12 +18,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ThongKeService {
 
+
     private final DonHangRepository donHangRepository;
     private final SanPhamRepository sanPhamRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final HanhViNguoiDungRepository hanhViRepository;
+    private final MucDonHangRepository mucDonHangRepository;
 
-    @Transactional(readOnly = true)
     public Map<String, Object> getDashboardStats() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
@@ -40,29 +39,111 @@ public class ThongKeService {
         stats.put("yearlyRevenue", donHangRepository.sumRevenueByDateRange(startOfYear, now));
         return stats;
     }
-
-    @Transactional(readOnly = true)
     public Map<String, Object> getRevenueByDateRange(LocalDateTime tuNgay, LocalDateTime denNgay) {
-        if (tuNgay == null) tuNgay = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-        if (denNgay == null) denNgay = LocalDateTime.now();
-
         BigDecimal revenue = donHangRepository.sumRevenueByDateRange(tuNgay, denNgay);
-        Long orderCount = donHangRepository.findByNgayDatBetween(tuNgay, denNgay)
-                .stream().filter(o -> Integer.valueOf(4).equals(o.getTrangThaiDon())).count();
+        Long orderCount = donHangRepository.countCompletedOrders(tuNgay, denNgay);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("tuNgay", tuNgay);
-        result.put("denNgay", denNgay);
         result.put("doanhThu", revenue);
         result.put("soDonHoanThanh", orderCount);
         return result;
     }
 
+    public List<Map<String, Object>> getRevenueByDay(LocalDateTime tuNgay, LocalDateTime denNgay) {
+        List<Object[]> rows = donHangRepository.sumRevenueByDay(tuNgay, denNgay);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("ngay", row[0]);
+            item.put("doanhThu", row[1]);
+            result.add(item);
+
+        }
+        return result;
+    }
+
+    // === DOANH THU THEO THÁNG ===
+    public List<Map<String, Object>> getRevenueByMonth(int thang, int nam) {
+        LocalDateTime tuNgay = LocalDateTime.of(nam, thang, 1, 0, 0, 0);
+        LocalDateTime denNgay = tuNgay.plusMonths(1).minusSeconds(1);
+
+        List<Object[]> rows = donHangRepository.sumRevenueByDay(tuNgay, denNgay);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("ngay", row[0]);
+            item.put("doanhThu", row[1]);
+            result.add(item);
+        }
+        return result;
+    }
+
+    // === DOANH THU THEO NĂM ===
+    public List<Map<String, Object>> getRevenueByYear() {
+        List<Object[]> rows = donHangRepository.sumRevenueByYear();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("nam", row[0]);
+            item.put("doanhThu", row[1]);
+            result.add(item);
+        }
+        return result;
+    }
+
+    // === SẢN PHẨM BÁN CHẠY ===
+    public List<Map<String, Object>> getBestSellingProducts(int limit) {
+        List<Object[]> rows = mucDonHangRepository.findBestSellingProducts(PageRequest.of(0, limit));
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("maSanPham", row[0]);
+            item.put("tenSanPham", row[1]);
+            item.put("urlAnh", row[2]);
+            item.put("soLuongDaBan", row[3]);
+            result.add(item);
+        }
+        return result;
+    }
+
+    // === THỐNG KÊ ĐƠN HÀNG ===
+    public Map<String, Object> getOrderStats() {
+        List<Object[]> rows = donHangRepository.countOrdersByStatus();
+        long total = 0, pending = 0, completed = 0, cancelled = 0, shipping = 0;
+        for (Object[] row : rows) {
+            Integer status = (Integer) row[0];
+            Long count = (Long) row[1];
+            total += count;
+            switch (status) {
+                case 1 -> pending = count;
+                case 2 -> shipping = count;
+                case 4 -> completed = count;
+                case 5 -> cancelled = count;
+            }
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalOrders", total);
+        result.put("pending", pending);
+        result.put("shipping", shipping);
+        result.put("completed", completed);
+        result.put("cancelled", cancelled);
+        return result;
+    }
+
     @Transactional(readOnly = true)
-    public List<Object[]> getTopProducts(String hanhDong, int limit) {
+    public List<Map<String, Object>> getTopProducts(String hanhDong, int limit) {
         LocalDateTime lastMonth = LocalDateTime.now().minusMonths(1);
-        return hanhViRepository.findTopSanPhamByHanhDongAndDateRange(
+        List<Object[]> raw = hanhViRepository.findTopSanPhamByHanhDongAndDateRange(
                 hanhDong, lastMonth, LocalDateTime.now(), limit);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object[] row : raw) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("maSanPham", row[0]);
+            item.put("tenSanPham", row[1]);
+            item.put("soLanXem", row[2]);
+            result.add(item);
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -70,12 +151,13 @@ public class ThongKeService {
         LocalDateTime denNgay = LocalDateTime.now();
         LocalDateTime tuNgay = denNgay.minusDays(days).withHour(0).withMinute(0).withSecond(0);
 
-        List<Object[]> raw = donHangRepository.sumRevenueGroupByDate(tuNgay, denNgay);
-        Map<LocalDate, BigDecimal> map = new LinkedHashMap<>();
+        List<Object[]> raw = donHangRepository.findRevenueData(tuNgay, denNgay);
+        Map<LocalDate, BigDecimal> map = new HashMap<>();
         for (Object[] row : raw) {
-            LocalDate date = ((java.sql.Date) row[0]).toLocalDate();
+            LocalDateTime dt = (LocalDateTime) row[0];
+            LocalDate date = dt.toLocalDate();
             BigDecimal amount = (BigDecimal) row[1];
-            map.put(date, amount);
+            map.merge(date, amount, BigDecimal::add);
         }
 
         List<Map<String, Object>> result = new ArrayList<>();
@@ -90,8 +172,16 @@ public class ThongKeService {
     }
 
     @Transactional(readOnly = true)
-    public List<DonHang> getRecentOrders(int limit) {
+    public List<Map<String, Object>> getRecentOrders(int limit) {
         return donHangRepository.findTop10ByOrderByNgayDatDesc()
-                .stream().limit(limit).collect(Collectors.toList());
+                .stream().limit(limit).map(o -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("maDonHang", o.getMaDonHang());
+                    m.put("tenNguoiNhan", o.getTenNguoiNhan());
+                    m.put("tongTien", o.getTongTien());
+                    m.put("trangThaiDon", o.getTrangThaiDon());
+                    m.put("ngayDat", o.getNgayDat());
+                    return m;
+                }).collect(Collectors.toList());
     }
 }

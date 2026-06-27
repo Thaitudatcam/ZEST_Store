@@ -35,5 +35,11 @@ public class OrderRequest {
     @PositiveOrZero
     private BigDecimal phiVanChuyen;
 
+    private Integer toDistrictId;
+
+    private String toWardCode;
+
+    private Integer weight;
+
     private List<Integer> maBienTheList;
 }
