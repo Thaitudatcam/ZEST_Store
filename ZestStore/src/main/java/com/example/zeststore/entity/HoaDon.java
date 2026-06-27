@@ -25,7 +25,7 @@ public class HoaDon {
     @JoinColumn(name = "ma_don_hang", nullable = false, unique = true)
     private DonHang donHang;
 
-    @Column(name = "ma_hoa_don_code", nullable = false, length = 50, unique = true)
+    @Column(name = "ma_hoa_don_code", nullable = false, unique = true, columnDefinition = "NVARCHAR(MAX)")
     private String maHoaDonCode;
 
     @Column(name = "email_khach_hang", nullable = false, length = 150)

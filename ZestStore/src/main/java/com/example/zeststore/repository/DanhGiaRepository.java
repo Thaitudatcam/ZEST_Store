@@ -24,4 +24,8 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
 
     @Query("SELECT COUNT(d) FROM DanhGia d WHERE d.sanPham.maSanPham = :maSanPham AND d.ngayXoa IS NULL")
     Long countBySanPhamId(@Param("maSanPham") Integer maSanPham);
+
+    @Query("SELECT d.sanPham.maSanPham, AVG(d.soSao), COUNT(d) FROM DanhGia d " +
+           "WHERE d.sanPham.maSanPham IN :ids AND d.ngayXoa IS NULL GROUP BY d.sanPham.maSanPham")
+    List<Object[]> avgRatingBySanPhamIds(@Param("ids") List<Integer> ids);
 }

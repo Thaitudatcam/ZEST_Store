@@ -226,7 +226,9 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        mucGioHangRepository.deleteAll(cartItems);
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
+            mucGioHangRepository.deleteAll(cartItems);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());

@@ -20,7 +20,7 @@ const STEPS = [
 const PAYMENT_CARDS = [
   { value: 1, label: 'COD', desc: 'Thanh toán khi nhận hàng', icon: Truck, badge: null },
   { value: 2, label: 'VNPay', desc: 'Cổng thanh toán VNPay', icon: CreditCard, badge: 'Phổ biến' },
-  { value: 3, label: 'MoMo', desc: 'Ví điện tử MoMo', icon: Smartphone, badge: null },
+  { value: 3, label: 'MoMo', desc: 'Thanh toán qua MoMo (ATM / Visa / Master)', icon: Smartphone, badge: null },
   { value: 4, label: 'ZaloPay', desc: 'Ví điện tử ZaloPay', icon: Smartphone, badge: null },
   { value: 6, label: 'VietQR', desc: 'Quét mã QR ngân hàng', icon: QrCode, badge: null },
 ]
