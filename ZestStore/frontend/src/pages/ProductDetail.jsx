@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProductBySlug } from '../api/products'
 import { addToCart } from '../api/cart'
@@ -106,7 +106,20 @@ export default function ProductDetail() {
 
   if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
 
-  const allImages = images.map(i => i.urlAnh).filter(Boolean)
+  const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
+  const filteredImages = images
+  const thumbnails = [
+    ...filteredImages.map(i => ({ url: i.urlAnh, maBienThe: i.maBienThe ?? i.bienThe?.maBienThe })),
+    ...variants
+      .filter(v => v.urlAnh)
+      .sort((a, b) => (a.kichCo?.maKichCo || 0) - (b.kichCo?.maKichCo || 0))
+      .filter((v, i, arr) => {
+        const colorId = v.mauSac?.maMauSac
+        return !colorId || arr.findIndex(x => x.mauSac?.maMauSac === colorId) === i
+      })
+      .map(v => ({ url: v.urlAnh, maBienThe: v.maBienThe })),
+  ].filter((t, i, arr) => t.url && arr.findIndex(x => x.url === t.url) === i)
+  const allImages = thumbnails.map(t => t.url)
   const selectedVariantImg = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.urlAnh : null
   const mainImg = imageUrl(selectedVariantImg) || imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaTrungBinh || 0) : (product.giaTrungBinh ?? variants[0]?.gia ?? 0)
@@ -136,7 +149,11 @@ export default function ProductDetail() {
           {allImages.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {allImages.map((url, idx) => (
-                <button key={idx} onClick={() => setPreviewIdx(idx)}
+                  <button key={idx} onClick={() => {
+                      setPreviewIdx(idx)
+                      const vId = thumbnails[idx]?.maBienThe
+                      if (vId) setSelectedVar(vId)
+                    }}
                   className={`w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 ${idx === previewIdx ? 'border-blue-700' : 'border-transparent'}`}>
                   <SafeImg src={url} alt="" className="w-full h-full object-cover object-center" />
                 </button>
@@ -148,7 +165,6 @@ export default function ProductDetail() {
         <div>
           <h1 className="text-2xl font-bold mb-2">{product.tenSanPham}</h1>
           <p className="text-3xl text-blue-700 font-bold mb-4">{VND(variantPrice)}</p>
-          {product.moTa && <p className="text-gray-600 mb-4">{product.moTa}</p>}
 
           {variants.length > 0 && (() => {
             const uniqueColors = []
@@ -165,12 +181,14 @@ export default function ProductDetail() {
               if (id && !seenSizes.has(id)) { seenSizes.add(id); uniqueSizes.push(v) }
             })
 
-            const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
             const selectedSizeId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.kichCo?.maKichCo : null
 
-            const sizesForColor = selectedColorId
+            const sizesForColor = (selectedColorId
               ? variants.filter(v => v.mauSac?.maMauSac === selectedColorId)
-              : variants
+              : variants).filter((v, i, arr) => {
+                const id = v.kichCo?.maKichCo
+                return id && arr.findIndex(x => x.kichCo?.maKichCo === id) === i
+              })
 
             return (
               <div className="mb-4">
@@ -184,7 +202,10 @@ export default function ProductDetail() {
                         <button key={v.mauSac?.maMauSac}
                           onClick={() => {
                             const firstAvail = hasStock ? variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0) || variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac) : variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac)
-                            setSelectedVar(firstAvail?.maBienThe || v.maBienThe)
+                            const vId = firstAvail?.maBienThe || v.maBienThe
+                            setSelectedVar(vId)
+                            const idx = thumbnails.findIndex(t => t.maBienThe === vId)
+                            setPreviewIdx(idx >= 0 ? idx : 0)
                           }}
                           className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition ${selectedColorId === v.mauSac?.maMauSac ? 'bg-blue-700 text-white border-blue-700' : 'hover:bg-gray-100'}`}>
                           {v.mauSac?.maMauHex && <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: v.mauSac.maMauHex }} />}
@@ -204,7 +225,12 @@ export default function ProductDetail() {
                       const disabled = (v.tonKho || 0) === 0
                       return (
                         <button key={v.maBienThe}
-                          onClick={() => !disabled && setSelectedVar(v.maBienThe)}
+                          onClick={() => {
+                            if (disabled) return
+                            setSelectedVar(v.maBienThe)
+                            const idx = thumbnails.findIndex(t => t.maBienThe === v.maBienThe)
+                            setPreviewIdx(idx >= 0 ? idx : 0)
+                          }}
                           disabled={disabled}
                           className={`px-4 py-2 border rounded-lg text-sm font-medium transition ${selectedVar === v.maBienThe ? 'bg-blue-700 text-white border-blue-700' : disabled ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'hover:bg-gray-100'}`}>
                           {v.kichCo?.kichCo || 'N/A'}
@@ -240,6 +266,17 @@ export default function ProductDetail() {
           {msg && <p className="mt-3 text-sm text-green-600 font-semibold">{msg}</p>}
         </div>
       </div>
+
+      {product.moTa && (
+        <div className="mt-10">
+          <div className="bg-white border rounded-xl p-6">
+            <h2 className="text-lg font-bold mb-4 pb-3 border-b">Mô tả sản phẩm</h2>
+            <div className="text-gray-700 leading-relaxed whitespace-pre-line text-sm">
+              {product.moTa}
+            </div>
+          </div>
+        </div>
+      )}
 
       {reviewCount > 0 && (
         <div className="mt-12 max-w-3xl">

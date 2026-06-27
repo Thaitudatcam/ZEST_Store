@@ -80,11 +80,6 @@ export default function AdminProductForm() {
         ;(detail.images || []).forEach(img => {
           images.push({ url: img.urlAnh, maMauSac: '', fileId: img.maAnh })
         })
-        ;(detail.variants || []).filter(v => v.urlAnh).forEach(v => {
-          if (!images.some(i => i.url === v.urlAnh)) {
-            images.push({ url: v.urlAnh, maMauSac: v.maMauSac || '', fileId: `var-${v.maBienThe || Date.now()}` })
-          }
-        })
         setUploadedImages(images)
       }
     }).catch(() => toast.error('Không thể tải dữ liệu'))
@@ -96,6 +91,8 @@ export default function AdminProductForm() {
     if (!product.tenSanPham.trim()) { toast.error('Vui lòng nhập tên sản phẩm'); return }
     if (!product.maDanhMuc) { toast.error('Vui lòng chọn danh mục'); return }
     if (!product.maThuongHieu) { toast.error('Vui lòng chọn thương hiệu'); return }
+    const zeroPriceVariant = variants.find(v => !v.gia || Number(v.gia) <= 0)
+    if (zeroPriceVariant) { toast.error('Giá biến thể phải lớn hơn 0'); return }
     setSaving(true)
     try {
       const slug = product.tenSanPham.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
@@ -164,7 +161,7 @@ export default function AdminProductForm() {
 
   const handleSaveVariant = async () => {
     if (!vform.maKichCo || !vform.maMauSac) { toast.error('Vui lòng chọn kích cỡ và màu sắc'); return }
-    if (!vform.gia || Number(vform.gia) < 0) { toast.error('Giá không hợp lệ'); return }
+    if (!vform.gia || Number(vform.gia) <= 0) { toast.error('Giá phải lớn hơn 0'); return }
 
     const sizeName = sizes.find(s => s.maKichCo === Number(vform.maKichCo))?.kichCo || ''
     const colorName = colors.find(c => c.maMauSac === Number(vform.maMauSac))?.mauSac || ''
@@ -284,6 +281,7 @@ export default function AdminProductForm() {
 
   const handleSaveVariantRow = async (index) => {
     const v = variants[index]
+    if (!v.gia || Number(v.gia) <= 0) { toast.error('Giá biến thể phải lớn hơn 0'); setSavingRow(null); return }
     setSavingRow(index)
     try {
       if (v.maBienThe) {
@@ -488,7 +486,7 @@ export default function AdminProductForm() {
           <div>
             <h2 className="font-semibold text-lg mb-4">Ảnh mô tả</h2>
             {uploadedImages.length > 0 ? (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {uploadedImages.map((img) => (
                   <div key={img.fileId} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border">
                     <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
@@ -504,8 +502,8 @@ export default function AdminProductForm() {
               </div>
             ) : (
               <div onClick={() => document.getElementById('imgUpload').click()}
-                className="border-2 border-dashed border-gray-300 rounded-xl aspect-square flex items-center justify-center hover:border-blue-400 transition cursor-pointer">
-                {uploadingImg ? <Loader className="h-6 w-6 animate-spin text-blue-600" /> : <Plus className="h-8 w-8 text-gray-300" />}
+                className="border-2 border-dashed border-gray-300 rounded-xl aspect-square flex items-center justify-center hover:border-blue-400 transition cursor-pointer max-w-[160px]">
+                {uploadingImg ? <Loader className="h-5 w-5 animate-spin text-blue-600" /> : <Plus className="h-6 w-6 text-gray-300" />}
               </div>
             )}
             <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />

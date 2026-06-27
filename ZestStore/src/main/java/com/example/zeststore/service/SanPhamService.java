@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -112,6 +113,11 @@ public class SanPhamService {
                 .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
                         row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
         page.getContent().forEach(sp -> sp.setTongGiaTri(giaTriMap.getOrDefault(sp.getMaSanPham(), BigDecimal.ZERO)));
+        List<Object[]> minGiaData = bienTheRepository.minGiaBySanPhamIds(ids);
+        Map<Integer, BigDecimal> minGiaMap = minGiaData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
+        page.getContent().forEach(sp -> sp.setGiaThapNhat(minGiaMap.get(sp.getMaSanPham())));
     }
 
     public SanPham getBySlug(String slug) {
@@ -139,6 +145,13 @@ public class SanPhamService {
 
         List<?> sizes = bienTheRepository.findDistinctKichCoBySanPhamId(id);
         List<?> colors = bienTheRepository.findDistinctMauSacBySanPhamId(id);
+
+        BigDecimal minGia = variants.stream()
+                .filter(v -> v.getGia() != null && v.getGia().compareTo(BigDecimal.ZERO) > 0)
+                .map(BienTheSanPham::getGia)
+                .min(BigDecimal::compareTo)
+                .orElse(null);
+        product.setGiaThapNhat(minGia);
 
         Map<String, Object> result = new HashMap<>();
         result.put("product", product);

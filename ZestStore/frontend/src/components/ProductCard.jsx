@@ -3,14 +3,14 @@ import { Heart, Star } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { addWishlist, removeWishlist } from '../api/wishlist'
 import { useState } from 'react'
+import SafeImg from './SafeImg'
 
 const VND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
 export default function ProductCard({ product }) {
   const { user } = useAuth()
   const [wished, setWished] = useState(false)
-  const price = product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
-  const img = product.urlAnhDaiDien || 'https://placehold.co/300x300/e2e8f0/475569?text=Polo'
+  const price = product.giaThapNhat ?? product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
   const slug = product.slug || product.maSanPham
   const avgRating = product.averageRating
   const reviewCount = product.reviewCount ?? 0
@@ -30,9 +30,9 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
+    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm  overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
       <div className="aspect-square bg-gray-100 overflow-hidden relative">
-        <img src={img} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} loading="lazy" />
+                    <SafeImg src={product.urlAnhDaiDien} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} />
         {user && (
           <button onClick={toggleWish} className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition z-10" disabled={isOutOfStock}>
             <Heart className={`h-4 w-4 ${wished ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />

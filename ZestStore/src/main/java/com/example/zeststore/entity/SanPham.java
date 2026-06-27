@@ -73,6 +73,10 @@ public class SanPham {
     @Builder.Default
     private BigDecimal tongGiaTri = BigDecimal.ZERO;
 
+    @Transient
+    @JsonProperty("giaThapNhat")
+    private BigDecimal giaThapNhat;
+
     @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore

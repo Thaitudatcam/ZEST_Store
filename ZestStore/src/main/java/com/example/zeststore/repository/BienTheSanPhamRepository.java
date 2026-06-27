@@ -36,4 +36,9 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
             + "WHERE b.sanPham.maSanPham IN :maSanPhamIds AND b.ngayXoa IS NULL "
             + "GROUP BY b.sanPham.maSanPham")
     List<Object[]> sumGiaTriBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
+
+    @Query("SELECT b.sanPham.maSanPham, MIN(b.gia) FROM BienTheSanPham b "
+            + "WHERE b.sanPham.maSanPham IN :maSanPhamIds AND b.ngayXoa IS NULL AND b.gia > 0 "
+            + "GROUP BY b.sanPham.maSanPham")
+    List<Object[]> minGiaBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
 }
