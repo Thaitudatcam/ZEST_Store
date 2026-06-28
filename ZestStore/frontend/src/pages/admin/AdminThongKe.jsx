@@ -22,6 +22,7 @@ export default function AdminThongKe() {
   const [denNgay, setDenNgay] = useState(today)
   const [thang, setThang] = useState(new Date().getMonth() + 1) 
 const [nam, setNam] = useState(new Date().getFullYear())
+const [revenueLoading, setRevenueLoading] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -63,11 +64,28 @@ const validateFilter = () => {
       return false;
     }
   }
+  if (tab === 'day') {
+  const diff = (new Date(denNgay) - new Date(tuNgay)) / (1000*60*60*24)
+  if (diff > 365) {
+    alert("Khoảng thời gian không được quá 365 ngày!")
+    setRevenueData([])
+    return false
+  }
+}
+if (tab === 'month') {
+  const now = new Date()
+  if (thang > now.getMonth() + 1 && nam === now.getFullYear()) {
+    alert("Tháng không được lớn hơn tháng hiện tại!")
+    setRevenueData([])
+    return false
+  }
+}
   return true;
 }
 
  const loadRevenue = async () => {
-  if (!validateFilter()) return; 
+  if (!validateFilter()) return;
+  setRevenueLoading(true)
     try {
       let data
       if (tab === 'day') {
@@ -80,6 +98,8 @@ const validateFilter = () => {
       setRevenueData(Array.isArray(data) ? data : [])
     } catch { 
       setRevenueData([]) 
+    } finally {
+      setRevenueLoading(false)
     }
   }
 
@@ -104,10 +124,9 @@ const validateFilter = () => {
     document.body.appendChild(a); a.click(); a.remove()
     window.URL.revokeObjectURL(url)
 
-    // 2. Gửi email (background, không chặn download)
+    // 2. Gửi email 
     exportAndSendEmail(tuNgay || undefined, denNgay || undefined)
-      .then(() => alert('Đã gửi email báo cáo thành công!'))
-      .catch(() => alert('Gửi email thất bại, kiểm tra lại cấu hình SMTP'))
+      .catch(() => console.warn('Gửi email thất bại, kiểm tra cấu hình SMTP'))
   } catch (e) {
     console.error('Export failed', e)
   }
@@ -208,7 +227,11 @@ const validateFilter = () => {
 </button>
   </div>
 )}
-        {revenueData.length > 0 ? (
+        {revenueLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader className="animate-spin h-8 w-8 text-blue-600" />
+          </div>
+        ) : revenueData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />

@@ -31,7 +31,7 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     Long countByTrangThaiDon(@Param("trangThai") Integer trangThai);
 
     @Query("SELECT COALESCE(SUM(d.tongTien), 0) FROM DonHang d "
-            + "WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
+            + "WHERE d.trangThaiDon IN (4, 6) AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
                                      @Param("denNgay") LocalDateTime denNgay);
 
@@ -40,27 +40,27 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     List<Object[]> countOrdersByStatus();
 
     @Query("SELECT FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd'), COALESCE(SUM(d.tongTien), 0) "
-            + "FROM DonHang d WHERE d.trangThaiDon = 4 AND d.ngayDat BETWEEN :tuNgay AND :denNgay "
+            + "FROM DonHang d WHERE d.trangThaiDon IN (4, 6) AND d.ngayDat BETWEEN :tuNgay AND :denNgay "
             + "GROUP BY FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd') ORDER BY 1")
     List<Object[]> sumRevenueByDay(@Param("tuNgay") LocalDateTime tuNgay,
                                    @Param("denNgay") LocalDateTime denNgay);
 
 
     @Query("SELECT FUNCTION('MONTH', d.ngayDat), COALESCE(SUM(d.tongTien), 0) "
-            + "FROM DonHang d WHERE d.trangThaiDon = 4 AND FUNCTION('YEAR', d.ngayDat) = :nam "
+            + "FROM DonHang d WHERE d.trangThaiDon IN (4, 6) AND FUNCTION('YEAR', d.ngayDat) = :nam "
             + "GROUP BY FUNCTION('MONTH', d.ngayDat) ORDER BY 1")
     List<Object[]> sumRevenueByMonth(@Param("nam") int nam);
 
 
     @Query("SELECT FUNCTION('YEAR', d.ngayDat), COALESCE(SUM(d.tongTien), 0) "
-            + "FROM DonHang d WHERE d.trangThaiDon = 4 "
+            + "FROM DonHang d WHERE d.trangThaiDon IN (4, 6) "
             + "GROUP BY FUNCTION('YEAR', d.ngayDat) ORDER BY 1")
     List<Object[]> sumRevenueByYear();
 
 
 
     @Query(value = "SELECT CONVERT(date, ngay_dat) as ngay, SUM(tong_tien) as doanh_thu "
-            + "FROM don_hang WHERE trang_thai_don = 4 AND ngay_dat BETWEEN :tuNgay AND :denNgay "
+            + "FROM don_hang WHERE trang_thai_don IN (4, 6) AND ngay_dat BETWEEN :tuNgay AND :denNgay "
             + "GROUP BY CONVERT(date, ngay_dat) ORDER BY ngay", nativeQuery = true)
     List<Object[]> sumRevenueGroupByDate(@Param("tuNgay") LocalDateTime tuNgay,
                                           @Param("denNgay") LocalDateTime denNgay);

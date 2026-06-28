@@ -25,7 +25,23 @@ public class PhieuGiamGiaService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
 
     public List<PhieuGiamGia> getAll() {
-        return phieuGiamGiaRepository.findByNgayXoaIsNull();
+        List<PhieuGiamGia> list = phieuGiamGiaRepository.findByNgayXoaIsNull();
+        LocalDateTime now = LocalDateTime.now();
+        boolean changed = false;
+        for (PhieuGiamGia c : list) {
+            if (c.getTrangThai() == 1) {
+                boolean hetHan = c.getNgayKetThuc() != null && now.isAfter(c.getNgayKetThuc());
+                boolean hetSoLuong = c.getSoLuong() != null && c.getSoLuong() <= 0;
+                if (hetHan || hetSoLuong) {
+                    c.setTrangThai(0);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            phieuGiamGiaRepository.saveAll(list);
+        }
+        return list;
     }
 
     public List<PhieuGiamGia> getAvailableCoupons(BigDecimal tongTien) {
@@ -77,7 +93,9 @@ public class PhieuGiamGiaService {
         if (giamGia.compareTo(giaTriDon) > 0) {
             giamGia = giaTriDon;
         }
-        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0){
+        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
+            coupon.setTrangThai(0);
+            phieuGiamGiaRepository.save(coupon);
             throw new BadRequestException("Phiếu giảm giá đã hết số lượng sử dụng");
         }
         if (coupon.getGiaTriGiamToiDa()!=null && giamGia.compareTo(coupon.getGiaTriGiamToiDa()) > 0){
@@ -106,6 +124,13 @@ public class PhieuGiamGiaService {
                 request.getNgayKetThuc().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Ngày kết thúc phải ở tương lai");
         }
+        if (phieuGiamGiaRepository.countByNgayXoaIsNull() >= 70) {
+            throw new BadRequestException("Đã đạt giới hạn 70 mã giảm giá");
+        }
+        if (request.getSoLuong() != null && request.getSoLuong() <= 0) {
+            throw new IllegalArgumentException("Số lượng mã phải lớn hơn 0");
+        }
+
         return phieuGiamGiaRepository.save(PhieuGiamGia.builder()
                 .maCode(request.getMaCode())
                 .kieuGiamGia(request.getKieuGiamGia())
@@ -143,5 +168,11 @@ public class PhieuGiamGiaService {
                 giaTriGiamToiDa(coupon.getGiaTriGiamToiDa()).
                 build();
 
+    }
+    @Transactional
+    public PhieuGiamGia toggleStatus(Integer id) {
+        PhieuGiamGia coupon = getById(id);
+        coupon.setTrangThai(coupon.getTrangThai() == 1 ? 0 : 1);
+        return phieuGiamGiaRepository.save(coupon);
     }
 }

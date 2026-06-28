@@ -160,6 +160,9 @@ public class DonHangService {
             }
             if (coupon.getSoLuong() != null) {
                 coupon.setSoLuong(coupon.getSoLuong() - 1);
+                if (coupon.getSoLuong() <= 0) {
+                    coupon.setTrangThai(0);
+                }
                 phieuGiamGiaRepository.save(coupon);
             }
         }

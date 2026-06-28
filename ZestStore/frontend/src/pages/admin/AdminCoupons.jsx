@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCoupons, createCoupon, deleteCoupon , filterCoupons} from "../../api/admin";
+import { getCoupons, createCoupon, deleteCoupon , filterCoupons, toggleCouponStatus} from "../../api/admin";
 import { Plus, Trash2 ,Filter, X } from "lucide-react";
 
 const PAGE_SIZE = 15
@@ -151,6 +151,14 @@ const validate = () => {
       console.error("Delete error:", err);
     }
   };
+  const handleToggleStatus = async (id) => {
+  try {
+    await toggleCouponStatus(id);
+    load(filter);
+  } catch (err) {
+    alert(err.response?.data?.message || "Lỗi thay đổi trạng thái");
+  }
+};
 
   useEffect(() => { setPage(0) }, [coupons.length])
   const totalPages = Math.ceil(coupons.length / PAGE_SIZE)
@@ -161,7 +169,13 @@ const validate = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Mã giảm giá</h1>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+  if (coupons.length >= 70) {
+    alert('Đã đạt giới hạn 70 mã giảm giá');
+    return;
+  }
+  setShowForm(true);
+}}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2"
         >
           <Plus className="h-4 w-4" /> Thêm mã
@@ -231,7 +245,6 @@ const validate = () => {
     )}
   </div>
 </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -285,18 +298,23 @@ const validate = () => {
                       {fmtDate(c.ngayKetThuc)}
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span
-                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                          c.trangThai === 1
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {c.trangThai === 1
-                          ? "Còn hoạt động"
-                          : "Ngừng hoạt động"}
-                      </span>
-                    </td>
+  <div className="flex items-center justify-center gap-2">
+    <button
+      type="button"
+      onClick={() => handleToggleStatus(c.maPhieuGiamGia)}
+      disabled={c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date()}
+      className={`relative inline-flex h-5 w-9 items-center rounded-full transition
+        ${c.trangThai === 1 ? 'bg-emerald-500' : 'bg-gray-300'}
+        ${c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition
+        ${c.trangThai === 1 ? 'translate-x-4' : 'translate-x-1'}`} />
+    </button>
+    <span className={`text-xs font-medium ${c.trangThai === 1 ? 'text-emerald-600' : 'text-red-600'}`}>
+      {c.trangThai === 1 ? 'Còn hoạt động' : 'Ngừng hoạt động'}
+    </span>
+  </div>
+</td>
                     <td className="px-3 py-3 text-center">
                       <button
                         onClick={() => setConfirmDelete(c.maPhieuGiamGia)}
@@ -327,113 +345,119 @@ const validate = () => {
         </div>
 
         {showForm && (
-          <div className="bg-white rounded-2xl shadow-sm border p-6 h-fit">
-            <h2 className="font-semibold mb-4">Thêm mã giảm giá</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                value={form.maCode}
-                onChange={(e) =>
-                  setForm({ ...form, maCode: e.target.value.toUpperCase() })
-                }
-                placeholder="Mã code"
-                required
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={form.kieuGiamGia}
-                onChange={(e) =>
-                  setForm({ ...form, kieuGiamGia: Number(e.target.value) })
-                }
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={1}>Giảm theo %</option>
-                <option value={2}>Giảm tiền mặt</option>
-              </select>
-              <input
-                type="number"
-                value={form.giaTriGiam}
-                onChange={(e) =>
-                  setForm({ ...form, giaTriGiam: e.target.value })
-                }
-                placeholder={
-                  form.kieuGiamGia === 1
-                    ? "Phần trăm giảm (vd: 10)"
-                    : "Số tiền giảm"
-                }
-                required
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="number"
-                value={form.giaTriDonToiThieu}
-                onChange={(e) =>
-                  setForm({ ...form, giaTriDonToiThieu: e.target.value })
-                }
-                placeholder="Giá trị đơn tối thiểu"
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="number"
-                value={form.soLuong}
-                onChange={(e) => setForm({ ...form, soLuong: e.target.value })}
-                placeholder="Số lượng mã (để trống = không giới hạn)"
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-
-              {form.kieuGiamGia === 1 && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowForm(false)}>
+            <div className="bg-white rounded-2xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold">Thêm mã giảm giá</h2>
+                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <input
-                  type="number"
-                  value={form.giaTriGiamToiDa}
+                  value={form.maCode}
                   onChange={(e) =>
-                    setForm({ ...form, giaTriGiamToiDa: e.target.value })
+                    setForm({ ...form, maCode: e.target.value.toUpperCase() })
                   }
-                  placeholder="Giá trị giảm tối đa (để trống = không giới hạn)"
+                  placeholder="Mã code"
+                  required
                   className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-gray-500">Ngày bắt đầu</label>
-                  <input
-                    type="date"
-                    value={form.ngayBatDau}
-                    onChange={(e) =>
-                      setForm({ ...form, ngayBatDau: e.target.value })
-                    }
-                    className="w-full border rounded-lg px-4 py-2 mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Ngày kết thúc</label>
-                  <input
-                    type="date"
-                    value={form.ngayKetThuc}
-                    onChange={(e) =>
-                      setForm({ ...form, ngayKetThuc: e.target.value })
-                    }
-                    className="w-full border rounded-lg px-4 py-2 mt-1"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+                <select
+                  value={form.kieuGiamGia}
+                  onChange={(e) =>
+                    setForm({ ...form, kieuGiamGia: Number(e.target.value) })
+                  }
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Tạo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
+                  <option value={1}>Giảm theo %</option>
+                  <option value={2}>Giảm tiền mặt</option>
+                </select>
+                <input
+                  type="number"
+                  value={form.giaTriGiam}
+                  onChange={(e) =>
+                    setForm({ ...form, giaTriGiam: e.target.value })
+                  }
+                  placeholder={
+                    form.kieuGiamGia === 1
+                      ? "Phần trăm giảm (vd: 10)"
+                      : "Số tiền giảm"
+                  }
+                  required
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="number"
+                  value={form.giaTriDonToiThieu}
+                  onChange={(e) =>
+                    setForm({ ...form, giaTriDonToiThieu: e.target.value })
+                  }
+                  placeholder="Giá trị đơn tối thiểu"
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="number"
+                  value={form.soLuong}
+                  onChange={(e) => setForm({ ...form, soLuong: e.target.value })}
+                  placeholder="Số lượng mã (để trống = không giới hạn)"
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+
+                {form.kieuGiamGia === 1 && (
+                  <input
+                    type="number"
+                    value={form.giaTriGiamToiDa}
+                    onChange={(e) =>
+                      setForm({ ...form, giaTriGiamToiDa: e.target.value })
+                    }
+                    placeholder="Giá trị giảm tối đa (để trống = không giới hạn)"
+                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500">Ngày bắt đầu</label>
+                    <input
+                      type="date"
+                      value={form.ngayBatDau}
+                      onChange={(e) =>
+                        setForm({ ...form, ngayBatDau: e.target.value })
+                      }
+                      className="w-full border rounded-lg px-4 py-2 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Ngày kết thúc</label>
+                    <input
+                      type="date"
+                      value={form.ngayKetThuc}
+                      onChange={(e) =>
+                        setForm({ ...form, ngayKetThuc: e.target.value })
+                      }
+                      className="w-full border rounded-lg px-4 py-2 mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700"
+                  >
+                    Tạo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
-      </div>
 
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
