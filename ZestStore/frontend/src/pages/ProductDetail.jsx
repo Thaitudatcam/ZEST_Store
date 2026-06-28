@@ -333,10 +333,19 @@ export default function ProductDetail() {
 
           <div className="flex items-center gap-4 mb-5">
             <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-3.5 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition font-medium text-lg leading-none">−</button>
-              <span className="px-5 py-2.5 border-x border-gray-200 min-w-[3.5rem] text-center font-semibold text-gray-800 select-none">{qty}</span>
-              <button onClick={() => setQty(qty + 1)} className="px-3.5 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition font-medium text-lg leading-none">+</button>
+              <button onClick={() => setQty(Math.max(1, qty - 1))} disabled={qty <= 1}
+                className="px-3.5 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">−</button>
+              <input type="number" value={qty} min={1} max={selectedStock || 1}
+                onChange={e => {
+                  const v = parseInt(e.target.value) || 1
+                  setQty(Math.max(1, Math.min(selectedStock || 1, v)))
+                }}
+                onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) setQty(1) }}
+                className="w-16 px-2 py-2.5 border-x border-gray-200 text-center font-semibold text-gray-800 text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+              <button onClick={() => setQty(Math.min(selectedStock, qty + 1))} disabled={qty >= selectedStock}
+                className="px-3.5 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">+</button>
             </div>
+            {selectedStock > 0 && <span className="text-xs text-gray-400">Còn lại: <strong>{selectedStock}</strong></span>}
           </div>
 
           <div className="flex gap-3">

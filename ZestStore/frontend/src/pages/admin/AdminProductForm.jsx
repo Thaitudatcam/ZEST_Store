@@ -508,6 +508,7 @@ export default function AdminProductForm() {
             )}
             <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />
           </div>
+
         </div>
 
         <hr className="border-t" />

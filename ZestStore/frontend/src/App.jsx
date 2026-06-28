@@ -18,6 +18,7 @@ import OrderDetail from './pages/OrderDetail'
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
 import ErrorBoundary from './components/ErrorBoundary'
+import ChatSupport from './components/ChatSupport'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import AdminOrders from './pages/admin/AdminOrders'
@@ -32,6 +33,7 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
+import AdminChat from './pages/admin/AdminChat'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -61,6 +63,7 @@ export default function App() {
         <Route path="customers" element={<AdminUsers />} />
         <Route path="employees" element={<AdminUsers />} />
         <Route path="pos" element={<AdminPOS />} />
+        <Route path="chat" element={<AdminChat />} />
       </Route>
 
       <Route path="*" element={
@@ -84,6 +87,7 @@ export default function App() {
             </Routes>
           </main>
           <Footer />
+          <ChatSupport />
         </div>
       } />
     </Routes>

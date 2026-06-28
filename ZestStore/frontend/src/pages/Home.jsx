@@ -148,6 +148,8 @@ export default function Home() {
         </section>
       )}
 
+
+
       {/* ──────── PRODUCT LISTING WITH FILTERS ──────── */}
       <section ref={productRef} id="all-products" className="bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4">
