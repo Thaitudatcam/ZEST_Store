@@ -227,7 +227,7 @@ export default function ProductDetail() {
           )}
           <h1 className="text-3xl font-bold text-gray-900 mb-1">{product.tenSanPham}</h1>
           <div className="flex items-center gap-2 mb-5">
-            {!selectedVar && <span className="text-sm font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Từ</span>}
+            {!selectedVar}
             <p className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">{VND(variantPrice)}</p>
           </div>
 
