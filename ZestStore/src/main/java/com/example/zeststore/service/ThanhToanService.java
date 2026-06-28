@@ -60,10 +60,14 @@ public class ThanhToanService {
     }
 
     private void clearCartForOrder(DonHang order) {
+        List<MucDonHang> orderItems = mucDonHangRepository.findByDonHang_MaDonHang(order.getMaDonHang());
         gioHangRepository.findByNguoiDung_MaNguoiDung(order.getNguoiDung().getMaNguoiDung())
                 .ifPresent(cart -> {
-                    List<MucGioHang> items = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
-                    mucGioHangRepository.deleteAll(items);
+                    for (MucDonHang orderItem : orderItems) {
+                        mucGioHangRepository.findByGioHang_MaGioHangAndBienThe_MaBienThe(
+                                cart.getMaGioHang(), orderItem.getBienThe().getMaBienThe())
+                            .ifPresent(mucGioHangRepository::delete);
+                    }
                 });
     }
 

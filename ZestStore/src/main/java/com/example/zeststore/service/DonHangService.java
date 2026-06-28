@@ -396,8 +396,9 @@ public class DonHangService {
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
-        if (!Integer.valueOf(1).equals(order.getTrangThaiDon())) {
-            throw new BadRequestException("Can only cancel pending orders");
+        Integer stt = order.getTrangThaiDon();
+        if (!Integer.valueOf(1).equals(stt) && !Integer.valueOf(2).equals(stt) && !Integer.valueOf(4).equals(stt)) {
+            throw new BadRequestException("Chỉ có thể hủy đơn ở trạng thái chờ xác nhận, đã xác nhận hoặc chờ giao hàng");
         }
 
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);

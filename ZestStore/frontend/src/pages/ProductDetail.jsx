@@ -97,6 +97,21 @@ export default function ProductDetail() {
     handleAddCart()
   }
 
+  const handleBuyNow = async () => {
+    if (!user) return navigate('/login')
+    if (isOutOfStock || isSelectedOutOfStock) return setToast({ message: 'Sản phẩm đã hết hàng', type: 'error' })
+    const vid = selectedVar || (variants[0]?.maBienThe)
+    if (variants.length > 1 && !selectedVar) return setModalOpen(true)
+    if (!vid) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
+    try {
+      await addToCart({ maBienThe: vid, soLuong: qty })
+      refreshCount()
+      navigate('/checkout', { state: { selectedItems: [{ maBienThe: vid, soLuong: qty }] } })
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Thêm thất bại', type: 'error' })
+    }
+  }
+
 
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -267,6 +282,9 @@ export default function ProductDetail() {
           <div className="flex gap-3">
             <button onClick={handleAddClick} disabled={isOutOfStock || isSelectedOutOfStock} className={`flex-1 font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2 ${isOutOfStock || isSelectedOutOfStock ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-700 text-white hover:bg-blue-800'}`}>
               <ShoppingCart className="h-5 w-5" /> {isOutOfStock || isSelectedOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ'}
+            </button>
+            <button onClick={handleBuyNow} disabled={isOutOfStock || isSelectedOutOfStock} className={`flex-1 font-semibold py-3 rounded-lg border-2 border-blue-700 transition flex items-center justify-center gap-2 ${isOutOfStock || isSelectedOutOfStock ? 'border-gray-300 text-gray-400 cursor-not-allowed bg-gray-100' : 'text-blue-700 hover:bg-blue-50'}`}>
+              Mua ngay
             </button>
             <button onClick={toggleWish} className={`p-3 border rounded-lg ${inWish ? 'text-red-500 border-red-300' : 'hover:bg-gray-100'}`}>
               <Heart className={`h-5 w-5 ${inWish ? 'fill-red-500' : ''}`} />
