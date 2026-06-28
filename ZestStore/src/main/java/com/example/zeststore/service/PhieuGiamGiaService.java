@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -28,9 +30,43 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.findByNgayXoaIsNull();
     }
 
-    public List<PhieuGiamGia> getAvailableCoupons(BigDecimal tongTien) {
+    public List<Map<String, Object>> getAvailableCoupons(BigDecimal tongTien) {
         if (tongTien == null) tongTien = BigDecimal.ZERO;
-        return phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
+        List<PhieuGiamGia> coupons = phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (PhieuGiamGia c : coupons) {
+            BigDecimal giamGia;
+            if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+                giamGia = tongTien.multiply(c.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
+            } else {
+                giamGia = c.getGiaTriGiam();
+            }
+            if (giamGia.compareTo(tongTien) > 0) giamGia = tongTien;
+            if (c.getGiaTriGiamToiDa() != null && giamGia.compareTo(c.getGiaTriGiamToiDa()) > 0) {
+                giamGia = c.getGiaTriGiamToiDa();
+            }
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("maCode", c.getMaCode());
+            m.put("kieuGiamGia", c.getKieuGiamGia());
+            m.put("giaTriGiam", c.getGiaTriGiam());
+            m.put("soTienGiam", giamGia);
+            m.put("giaTriDonToiThieu", c.getGiaTriDonToiThieu() != null ? c.getGiaTriDonToiThieu() : BigDecimal.ZERO);
+            m.put("ngayKetThuc", c.getNgayKetThuc() != null ? c.getNgayKetThuc().toString() : "");
+            StringBuilder sb = new StringBuilder();
+            if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+                sb.append("Giảm ").append(c.getGiaTriGiam()).append("%");
+            } else {
+                sb.append("Giảm ").append(c.getGiaTriGiam());
+            }
+            if (c.getGiaTriDonToiThieu() != null && c.getGiaTriDonToiThieu().compareTo(BigDecimal.ZERO) > 0) {
+                sb.append(" - Đơn tối thiểu ").append(c.getGiaTriDonToiThieu());
+            } else {
+                sb.append(" - Không yêu cầu tối thiểu");
+            }
+            m.put("moTa", sb.toString());
+            result.add(m);
+        }
+        return result;
     }
 
     public PhieuGiamGia getById(Integer id) {

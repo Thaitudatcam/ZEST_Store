@@ -5,6 +5,7 @@ import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
+import { getAvailableCoupons } from '../api/coupons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus } from 'lucide-react'
@@ -89,10 +90,11 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
-  const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
-  const [couponLoading, setCouponLoading] = useState(false)
+  const [voucherModal, setVoucherModal] = useState(false)
+  const [availableVouchers, setAvailableVouchers] = useState([])
+  const [vouchersLoading, setVouchersLoading] = useState(false)
   const [step, setStep] = useState('delivery')
   const [form, setForm] = useState({
     maDiaChi: '',
@@ -323,21 +325,25 @@ export default function Checkout() {
     } catch {} finally { setAddrLoading(false) }
   }
 
-  const handleValidateCoupon = async () => {
-    if (!couponCode.trim()) return
-    setCouponLoading(true)
-    setCouponMsg('')
+  useEffect(() => {
+    if (voucherModal && availableVouchers.length === 0) {
+      setVouchersLoading(true)
+      getAvailableCoupons(rawTotal).then(setAvailableVouchers).catch(() => {}).finally(() => setVouchersLoading(false))
+    }
+  }, [voucherModal])
+
+  const handleApplyVoucher = async (v) => {
     try {
-      const res = await api.post('/coupons/validate', { maCode: couponCode.trim(), tongTien: rawTotal })
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
       setCoupon(res.data)
       setCouponMsg('')
+      setVoucherModal(false)
     } catch (err) {
-      setCoupon(null)
       setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
-    } finally {
-      setCouponLoading(false)
     }
   }
+
+
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
@@ -363,7 +369,7 @@ export default function Checkout() {
         diaChiGiaoHang: form.diaChiGiaoHang,
         ghiChu: form.ghiChu,
         phuongThucThanhToan: form.phuongThucThanhToan,
-        maCode: couponCode.trim() || undefined,
+        maCode: coupon?.maCode || undefined,
         phiVanChuyen: shippingFee,
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
@@ -546,24 +552,17 @@ export default function Checkout() {
 
               <div className="border-t pt-4 mb-4">
                 <h2 className="font-semibold mb-4 flex items-center gap-2"><Tag className="h-5 w-5 text-blue-700" /> Mã giảm giá</h2>
-                <div className="flex gap-2">
-                  <input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!coupon}
-                    placeholder="Nhập mã giảm giá"
-                    className={`border rounded-lg px-3 py-2 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ${coupon ? 'border-green-400 bg-green-50' : ''}`} />
-                  {!coupon ? (
-                    <button onClick={handleValidateCoupon} disabled={couponLoading || !couponCode.trim()}
-                      className="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-800 disabled:opacity-50">
-                      {couponLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'Áp dụng'}
-                    </button>
-                  ) : null}
-                </div>
-                {coupon && (
-                  <div className="mt-2 inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm animate-bounce-in">
-                    <span className="text-green-700 font-medium">{couponCode.toUpperCase()} — Giảm {VND(discount)}</span>
-                    <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg('') }} className="text-green-600 hover:text-green-800">
+                {coupon ? (
+                  <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm mb-3">
+                    <span className="text-green-700 font-medium">{coupon.maCode} — Giảm {VND(discount)}</span>
+                    <button onClick={() => { setCoupon(null); setCouponMsg('') }} className="text-green-600 hover:text-green-800">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
+                ) : (
+                  <button onClick={() => setVoucherModal(true)} className="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-100 transition w-full justify-center">
+                    <Tag className="h-4 w-4" /> Áp dụng Voucher
+                  </button>
                 )}
                 {couponMsg && <p className="text-red-500 text-xs mt-1">{couponMsg}</p>}
               </div>
@@ -618,12 +617,6 @@ export default function Checkout() {
                 <span className="text-blue-700">{VND(finalTotal)}</span>
               </div>
             </div>
-            {step === 'review' && (
-              <button onClick={handlePlaceOrder} disabled={placing || ghnError}
-                className="mt-4 w-full bg-blue-700 text-white font-semibold py-4 rounded-xl hover:bg-blue-800 disabled:opacity-50 transition flex items-center justify-center gap-2 text-lg">
-                {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : ghnError ? 'Lỗi phí vận chuyển' : 'Đặt hàng ngay'}
-              </button>
-            )}
             <p className="text-xs text-gray-400 text-center mt-3">🔒 Thanh toán an toàn & bảo mật</p>
           </div>
         </div>
@@ -735,6 +728,42 @@ export default function Checkout() {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+      )}
+
+      {voucherModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+        onClick={() => setVoucherModal(false)}>
+        <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-6 animate-scale-in max-h-[80vh] flex flex-col"
+          onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">Chọn Voucher</h3>
+            <button onClick={() => setVoucherModal(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          {vouchersLoading ? (
+            <div className="flex items-center justify-center py-10"><Loader className="h-6 w-6 animate-spin text-blue-700" /></div>
+          ) : availableVouchers.length === 0 ? (
+            <p className="text-center text-gray-400 py-10">Không có voucher khả dụng</p>
+          ) : (
+            <div className="space-y-3 overflow-y-auto flex-1">
+              {availableVouchers.map((v) => (
+                <div key={v.maCode} onClick={() => handleApplyVoucher(v)}
+                  className="border rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition active:scale-[0.98]">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-blue-700">{v.maCode}</p>
+                      <p className="text-sm text-gray-600 mt-1">{v.moTa}</p>
+                      <p className="text-xs text-gray-400 mt-1">Giảm <span className="font-semibold text-green-600">{VND(v.soTienGiam)}</span></p>
+                    </div>
+                    <span className="shrink-0 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full">Áp dụng</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       )}
