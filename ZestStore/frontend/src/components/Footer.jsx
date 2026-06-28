@@ -1,4 +1,5 @@
 import { Mail, Phone, MapPin, ArrowUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const socials = [
   { label: 'Facebook', color: 'hover:text-blue-500', svg: <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /> },
@@ -39,10 +40,11 @@ export default function Footer() {
         </div>
         <div>
           <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Chính sách</h4>
-          <ul className="space-y-2 text-sm">
-            {['Chính sách đổi trả', 'Chính sách bảo mật', 'Chính sách vận chuyển', 'Hướng dẫn mua hàng'].map((s) => (
-              <li key={s} className="hover:text-white cursor-pointer transition">{s}</li>
-            ))}
+          <ul className="space-y-1.5 text-sm">
+            <li><Link to="/policies/doi-tra" className="hover:text-white transition">Chính sách đổi trả</Link></li>
+            <li><Link to="/policies/bao-mat" className="hover:text-white transition">Chính sách bảo mật</Link></li>
+            <li><Link to="/policies/van-chuyen" className="hover:text-white transition">Chính sách vận chuyển</Link></li>
+            <li><Link to="/policies/huong-dan-mua-hang" className="hover:text-white transition">Hướng dẫn mua hàng</Link></li>
           </ul>
         </div>
         <div>

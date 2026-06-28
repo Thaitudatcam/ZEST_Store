@@ -46,8 +46,9 @@ public class DanhGiaService {
         SanPham product = sanPhamRepository.findById(request.getMaSanPham())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", request.getMaSanPham()));
 
+        DonHang order = null;
         if (request.getMaDonHang() != null) {
-            DonHang order = donHangRepository.findById(request.getMaDonHang())
+            order = donHangRepository.findById(request.getMaDonHang())
                     .orElseThrow(() -> new ResourceNotFoundException("Order", request.getMaDonHang()));
             Optional<DanhGia> existing = danhGiaRepository
                     .findByNguoiDung_MaNguoiDungAndSanPham_MaSanPhamAndDonHang_MaDonHang(
@@ -65,7 +66,7 @@ public class DanhGiaService {
         return danhGiaRepository.save(DanhGia.builder()
                 .nguoiDung(user)
                 .sanPham(product)
-                .donHang(null)
+                .donHang(order)
                 .bienThe(bienThe)
                 .soSao(request.getSoSao())
                 .binhLuan(request.getBinhLuan())

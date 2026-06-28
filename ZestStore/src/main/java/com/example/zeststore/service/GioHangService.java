@@ -48,6 +48,7 @@ public class GioHangService {
             itemMap.put("mauSac", variant != null && variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
             itemMap.put("donGia", variant != null ? variant.getGia() : BigDecimal.ZERO);
             itemMap.put("soLuong", item.getSoLuong());
+            itemMap.put("tonKho", variant != null ? variant.getTonKho() : 0);
             itemMap.put("thanhTien", variant != null ? variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())) : BigDecimal.ZERO);
             itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
             result.add(itemMap);
