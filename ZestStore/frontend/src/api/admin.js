@@ -60,3 +60,5 @@ export const getShippingFees = () => api.get('/admin/shipping-fees').then((r) =>
 export const createShippingFee = (data) => api.post('/admin/shipping-fees', data).then((r) => r.data)
 export const updateShippingFee = (id, data) => api.put(`/admin/shipping-fees/${id}`, data).then((r) => r.data)
 export const deleteShippingFee = (id) => api.delete(`/admin/shipping-fees/${id}`).then((r) => r.data)
+
+export const lookupSku = (sku) => api.get(`/admin/pos/scan`, { params: { sku } }).then((r) => r.data)

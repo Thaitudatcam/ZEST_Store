@@ -7,6 +7,7 @@ const styles = {
   6: 'bg-teal-100 text-teal-800 border-teal-200',
   7: 'bg-orange-100 text-orange-800 border-orange-200',
   8: 'bg-gray-200 text-gray-700 border-gray-300',
+  9: 'bg-neutral-100 text-neutral-800 border-neutral-300',
 }
 
 const labels = {
@@ -18,13 +19,21 @@ const labels = {
   6: 'Đã giao hàng',
   7: 'Yêu cầu trả hàng',
   8: 'Đã trả hàng',
+  9: 'Không nhận hàng',
 }
 
-export default function StatusBadge({ status }) {
+const posLabels = {
+  1: 'Tạo đơn',
+  6: 'Hoàn thành',
+}
+
+export default function StatusBadge({ status, loaiDonHang }) {
   const s = Number(status)
+  const isPos = loaiDonHang === 2
+  const label = isPos && posLabels[s] ? posLabels[s] : labels[s]
   return (
     <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${styles[s] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-      {labels[s] || status}
+      {label || status}
     </span>
   )
 }

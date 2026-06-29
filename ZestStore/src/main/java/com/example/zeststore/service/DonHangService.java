@@ -240,7 +240,7 @@ public class DonHangService {
 
     @Transactional
     public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
-        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8);
+        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8, 9);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
         }
@@ -248,7 +248,7 @@ public class DonHangService {
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
 
-        if (Integer.valueOf(8).equals(status)) {
+        if (Integer.valueOf(8).equals(status) || Integer.valueOf(9).equals(status)) {
             restoreStock(orderId);
             thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
                     .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))

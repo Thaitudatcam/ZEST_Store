@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
-import { createCustomer, getCoupons, getInvoiceByOrderId, generateInvoice } from '../../api/admin'
+import { createCustomer, getCoupons, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag, ScanBarcode, Building2 } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
+import CameraScanner from '../../components/CameraScanner'
+import QRCode from 'qrcode'
 
 export default function AdminPOS() {
   const navigate = useNavigate()
@@ -52,8 +54,15 @@ export default function AdminPOS() {
   const [couponModal, setCouponModal] = useState(false)
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [couponListLoading, setCouponListLoading] = useState(false)
+  const [couponSearch, setCouponSearch] = useState('')
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState(5)
+  const [bankInfo, setBankInfo] = useState(null)
+  const [qrDataUrl, setQrDataUrl] = useState(null)
+
+  const getQtyInCart = (maBienThe) => cart.filter(c => c.maBienThe === maBienThe).reduce((s, c) => s + c.soLuong, 0)
 
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -81,6 +90,8 @@ export default function AdminPOS() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+
 
   const selectCustomer = (c) => {
     setSelectedCustomer(c)
@@ -142,16 +153,52 @@ export default function AdminPOS() {
     }
   }
 
+  const handleScannedSku = async (rawSku) => {
+    const sku = rawSku.trim().toUpperCase()
+    try {
+      const variant = await lookupSku(sku)
+      const qtyInCart = getQtyInCart(variant.maBienThe)
+      if (qtyInCart >= variant.tonKho) { setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' }); return }
+      setCart(prev => {
+        const existing = prev.findIndex(c => c.maBienThe === variant.maBienThe)
+        if (existing >= 0) {
+          const next = [...prev]
+          next[existing] = { ...next[existing], soLuong: next[existing].soLuong + 1 }
+          return next
+        }
+        return [...prev, {
+          maBienThe: variant.maBienThe,
+          tenSanPham: variant.tenSanPham,
+          kichCo: variant.kichCo || '',
+          mauSac: variant.mauSac || '',
+          gia: variant.gia,
+          soLuong: 1,
+          tonKho: variant.tonKho,
+          urlAnh: variant.urlAnh || '',
+        }]
+      })
+      setMsg({ type: 'success', text: `Đã thêm ${variant.tenSanPham}` })
+    } catch {
+      doSearch(sku)
+    }
+  }
+
   const addToCart = () => {
     const detail = variantModal
     const variant = detail.variants?.find(v => v.kichCo?.kichCo === selectedSize && v.mauSac?.mauSac === selectedColor)
     if (!variant) return
-    if (vQty > (variant.tonKho || 0)) {
-      setMsg({ type: 'error', text: 'Số lượng vượt quá tồn kho' })
+    const qtyInCart = getQtyInCart(variant.maBienThe)
+    const availStock = (variant.tonKho || 0) - qtyInCart
+    if (availStock <= 0) {
+      setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' })
+      return
+    }
+    if (vQty > availStock) {
+      setMsg({ type: 'error', text: `Chỉ còn ${availStock} sản phẩm trong kho` })
       return
     }
     setCart(prev => {
-      const existing = prev.findIndex(c => c.maBienThe === selectedVar)
+      const existing = prev.findIndex(c => c.maBienThe === variant.maBienThe)
       if (existing >= 0) {
         const next = [...prev]
         next[existing] = { ...next[existing], soLuong: next[existing].soLuong + vQty }
@@ -175,8 +222,9 @@ export default function AdminPOS() {
     setCart(prev => prev.map((c, i) => {
       if (i !== idx) return c
       const newQty = Math.max(1, c.soLuong + delta)
-      if (newQty > c.tonKho) {
-        setMsg({ type: 'error', text: 'Vượt quá tồn kho' })
+      const availStock = c.tonKho - (getQtyInCart(c.maBienThe) - c.soLuong)
+      if (delta > 0 && newQty > availStock) {
+        setMsg({ type: 'error', text: `Chỉ còn ${availStock} sản phẩm trong kho` })
         return c
       }
       return { ...c, soLuong: newQty }
@@ -187,30 +235,13 @@ export default function AdminPOS() {
 
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
 
-  const handleValidateCoupon = async () => {
-    if (!couponCode.trim()) return
-    setCouponLoading(true)
-    setCouponMsg('')
-    setCoupon(null)
-    try {
-      const res = await api.post('/coupons/validate', {
-        maCode: couponCode.trim(),
-        giaTriDon: total,
-      }).then(r => r.data)
-      setCoupon(res)
-    } catch (err) {
-      setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
-    } finally {
-      setCouponLoading(false)
-    }
-  }
-
   const handleOpenCouponModal = async () => {
     setCouponModal(true)
+    setCouponSearch('')
     setCouponListLoading(true)
     try {
       const list = await getCoupons()
-      setAvailableCoupons(list.filter(c => c.trangThai === 1))
+      setAvailableCoupons(list.filter(c => c.trangThai === 1 && !c.maCode.toLowerCase().includes('freeship')))
     } catch {
       setMsg({ type: 'error', text: 'Không thể tải danh sách mã giảm giá' })
     } finally {
@@ -264,12 +295,52 @@ export default function AdminPOS() {
     if (cart.length === 0) return
     setPlacing(true)
     try {
-      const res = await api.post('/admin/pos/orders', {
+      if (paymentMethod === 4) {
+        const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
+        const zpRes = await api.post('/admin/pos/zalopay/preview', { amount: totalAmount }).then(r => r.data)
+        let url = null
+        if (zpRes.qrCode) {
+          url = await QRCode.toDataURL(zpRes.qrCode, { width: 240, margin: 2 })
+          setQrDataUrl(url)
+        }
+        setBankInfo({ ...zpRes, amount: totalAmount })
+        setPayResult({ thanhToan: totalAmount })
+      } else {
+        const res = await api.post('/admin/pos/orders', {
+          items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
+          maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
+          maCode: coupon?.maCode || undefined,
+          tenKhachHang: tenKhach.trim() || undefined,
+          sdtKhachHang: sdtKhach.trim() || undefined,
+          phuongThucThanhToan: 5,
+        }).then(r => r.data)
+        if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
+        setCart([])
+        setSelectedCustomer(null)
+        setTenKhach('')
+        setSdtKhach('')
+        setCoupon(null)
+        setCouponCode('')
+        setPayResult(res)
+      }
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
+    } finally {
+      setPlacing(false)
+    }
+  }
+
+  const handleConfirmReceived = async () => {
+    if (cart.length === 0) return
+    setPlacing(true)
+    try {
+      const res = await api.post('/admin/pos/zalopay/confirm', {
         items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
         tenKhachHang: tenKhach.trim() || undefined,
         sdtKhachHang: sdtKhach.trim() || undefined,
+        phuongThucThanhToan: 4,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       setCart([])
@@ -278,18 +349,26 @@ export default function AdminPOS() {
       setSdtKhach('')
       setCoupon(null)
       setCouponCode('')
+      setBankInfo(null)
+      setQrDataUrl(null)
       setPayResult(res)
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
+      setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Xác nhận thất bại' })
     } finally {
       setPlacing(false)
     }
   }
 
+  const closeResult = () => {
+    setPayResult(null)
+    setBankInfo(null)
+    setQrDataUrl(null)
+  }
+
   const goToOrders = useCallback(() => {
     setPayResult(null)
     setPrintInvoice(null)
-    navigate('/admin/orders', { replace: true })
+    navigate('/admin/orders/pos', { replace: true })
   }, [navigate])
 
   const handlePrintInvoice = async () => {
@@ -332,9 +411,14 @@ export default function AdminPOS() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input value={search} onChange={e => doSearch(e.target.value)}
-              placeholder="Tìm sản phẩm..."
+              onKeyDown={e => { if (e.key === 'Enter' && search.trim()) { handleScannedSku(search); setSearch('') } }}
+              placeholder="Tìm sản phẩm hoặc nhập mã SKU..."
               className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
+          <button onClick={() => setCameraOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-green-400 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 transition">
+            <ScanBarcode className="h-5 w-5" /> Quét mã bằng camera
+          </button>
           <div className="flex gap-2">
             <select value={categoryId} onChange={e => { setCategoryId(e.target.value); setSearch('') }}
               className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -355,17 +439,26 @@ export default function AdminPOS() {
             <div className="text-center py-12 text-gray-400">Không tìm thấy sản phẩm</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {products.map(p => (
-                <button key={p.maSanPham} onClick={() => openVariant(p)}
-                  className="text-left border rounded-xl p-3 hover:border-blue-400 hover:shadow-sm transition">
-                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-2">
-                    <SafeImg src={p.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center"
-                      fallback="https://placehold.co/200x200/e2e8f0/475569?text=Polo" />
-                  </div>
-                  <p className="text-sm font-medium truncate">{p.tenSanPham}</p>
-                  <p className="text-blue-700 font-bold text-sm">{VND(p.giaTrungBinh || 0)}</p>
-                </button>
-              ))}
+              {products.map(p => {
+                const isOutOfStock = (p.tongTonKho ?? 0) === 0
+                const price = p.giaThapNhat ?? p.giaTrungBinh ?? 0
+                return (
+                  <button key={p.maSanPham} onClick={() => openVariant(p)}
+                    className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative text-left">
+                    <div className="aspect-square bg-gray-100 overflow-hidden relative">
+                      <SafeImg src={p.urlAnhDaiDien} alt={p.tenSanPham}
+                        className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
+                        fallback="https://placehold.co/200x200/e2e8f0/475569?text=Polo" />
+                      {isOutOfStock &&
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-sm z-10">Hết hàng</span>}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm text-gray-800 truncate">{p.tenSanPham}</h3>
+                      <p className="text-blue-700 font-bold text-sm mt-1.5">{VND(price)}</p>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -467,22 +560,10 @@ export default function AdminPOS() {
             placeholder="SĐT (không bắt buộc)"
             className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <div className="border-t pt-2 space-y-2">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input value={couponCode} onChange={e => { setCouponCode(e.target.value); setCoupon(null); setCouponMsg('') }}
-                  placeholder="Mã giảm giá"
-                  className="w-full pl-8 pr-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <button onClick={handleValidateCoupon} disabled={couponLoading || !couponCode.trim()}
-                className="shrink-0 px-3 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
-                {couponLoading ? '...' : 'Áp dụng'}
-              </button>
-              <button onClick={handleOpenCouponModal} type="button"
-                className="shrink-0 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border transition flex items-center gap-1">
-                <Search className="h-4 w-4" /> Chọn
-              </button>
-            </div>
+            <button onClick={handleOpenCouponModal} type="button"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border transition">
+              <Tag className="h-4 w-4" /> Chọn mã giảm giá
+            </button>
             {couponMsg && <p className="text-xs text-red-500">{couponMsg}</p>}
             {coupon && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
@@ -511,10 +592,17 @@ export default function AdminPOS() {
               <span className="text-lg font-bold text-blue-700">{VND(Math.max(0, total - (coupon?.soTienGiam || 0)))}</span>
             </div>
           </div>
-          <button onClick={handlePlace} disabled={cart.length === 0 || placing}
-            className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
-            {placing ? 'Đang xử lý...' : 'Thanh toán tiền mặt'}
-          </button>
+          <div className="flex gap-2">
+            <select value={paymentMethod} onChange={e => setPaymentMethod(Number(e.target.value))}
+              className="border rounded-xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value={5}>💵 Tiền mặt</option>
+              <option value={4}>💳 ZaloPay</option>
+            </select>
+            <button onClick={handlePlace} disabled={cart.length === 0 || placing}
+              className="flex-1 bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+              {placing ? 'Đang xử lý...' : 'Thanh toán'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -564,38 +652,53 @@ export default function AdminPOS() {
                 <X className="h-5 w-5" />
               </button>
             </div>
+            <div className="p-4 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input value={couponSearch} onChange={e => setCouponSearch(e.target.value)}
+                  placeholder="Tìm mã giảm giá..."
+                  className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
             <div className="overflow-y-auto p-4 space-y-2">
               {couponListLoading ? (
                 <div className="flex justify-center py-8">
                   <div className="h-6 w-6 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
                 </div>
-              ) : availableCoupons.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">Không có mã giảm giá nào khả dụng</p>
               ) : (
-                availableCoupons.map(c => (
-                  <button key={c.maPhieuGiamGia} onClick={() => selectCoupon(c)}
-                    className="w-full text-left border rounded-xl p-3 hover:border-blue-400 hover:bg-blue-50 transition flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                      <Tag className="h-5 w-5 text-red-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{c.maCode}</p>
-                      <p className="text-xs text-gray-500">
-                        {c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam}%` : `Giảm ${VND(c.giaTriGiam)}`}
-                        {c.giaTriDonToiThieu ? ` - Đơn tối thiểu ${VND(c.giaTriDonToiThieu)}` : ''}
-                        {c.soLuong != null ? ` - Còn ${c.soLuong} lượt` : ''}
-                      </p>
-                    </div>
-                    <ChevronDown className="h-5 w-5 text-gray-400 -rotate-90 shrink-0" />
-                  </button>
-                ))
+                (() => {
+                  const filtered = couponSearch.trim()
+                    ? availableCoupons.filter(c => c.maCode.toLowerCase().includes(couponSearch.toLowerCase()))
+                    : availableCoupons
+                  return filtered.length === 0 ? (
+                    <p className="text-center text-gray-400 py-8">Không có mã giảm giá nào khả dụng</p>
+                  ) : (
+                    filtered.map(c => (
+                      <button key={c.maPhieuGiamGia} onClick={() => selectCoupon(c)}
+                        className="w-full text-left border rounded-xl p-3 hover:border-blue-400 hover:bg-blue-50 transition flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                          <Tag className="h-5 w-5 text-red-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm">{c.maCode}</p>
+                          <p className="text-xs text-gray-500">
+                            {c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam}%` : `Giảm ${VND(c.giaTriGiam)}`}
+                            {c.giaTriDonToiThieu ? ` - Đơn tối thiểu ${VND(c.giaTriDonToiThieu)}` : ''}
+                            {c.soLuong != null ? ` - Còn ${c.soLuong} lượt` : ''}
+                          </p>
+                        </div>
+                        <ChevronDown className="h-5 w-5 text-gray-400 -rotate-90 shrink-0" />
+                      </button>
+                    ))
+                  )
+                })()
               )}
             </div>
           </div>
         </div>
       )}
 
-      {payResult && !printInvoice && (
+      {payResult && !printInvoice && !bankInfo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
             <div className="text-center p-6">
@@ -609,7 +712,7 @@ export default function AdminPOS() {
             <div className="border-t p-4">
               <p className="text-sm text-center text-gray-600 mb-4">Bạn có muốn in hóa đơn không?</p>
               <div className="flex gap-3">
-                <button onClick={goToOrders}
+                <button onClick={closeResult}
                   className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50 transition">
                   Không
                 </button>
@@ -618,6 +721,38 @@ export default function AdminPOS() {
                   Có
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {payResult && !printInvoice && bankInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="font-bold text-lg">Quét mã ZaloPay</h3>
+              <p className="text-sm text-gray-500 mt-1">Đơn hàng #{payResult.maDonHang}</p>
+              {qrDataUrl && <img src={qrDataUrl} alt="ZaloPay QR" className="mx-auto my-3 w-48 h-48" />}
+              <div className="bg-gray-50 rounded-xl p-3 text-left space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Số tiền:</span>
+                  <span className="font-bold text-blue-700">{VND(payResult.thanhToan)}</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-3">Khách quét mã bằng ZaloPay để thanh toán</p>
+            </div>
+            <div className="border-t p-4 flex gap-3">
+              <button onClick={closeResult}
+                className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                Hủy
+              </button>
+              <button onClick={handleConfirmReceived}
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition flex items-center justify-center gap-1.5">
+                Đã nhận được tiền
+              </button>
             </div>
           </div>
         </div>
@@ -702,6 +837,19 @@ export default function AdminPOS() {
         </div>
       )}
 
+      {cameraOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 animate-fade-in" onClick={() => setCameraOpen(false)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-bold text-lg">Quét mã vạch</h3>
+              <button onClick={() => setCameraOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <CameraScanner onScan={(sku) => { setCameraOpen(false); handleScannedSku(sku) }} onClose={() => setCameraOpen(false)} />
+          </div>
+        </div>
+      )}
       {variantModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
           onClick={() => setVariantModal(null)}>
@@ -730,14 +878,14 @@ export default function AdminPOS() {
                   <p className="text-sm font-semibold mb-2">Kích cỡ</p>
                   <div className="flex gap-2 flex-wrap">
                     {sizes.map(s => {
-                      const hasStock = (variantModal.variants || []).some(v => v.kichCo?.kichCo === s && (v.tonKho || 0) > 0)
+                      const availVariants = (variantModal.variants || []).filter(v => v.kichCo?.kichCo === s && (v.tonKho || 0) > getQtyInCart(v.maBienThe))
                       return (
                         <button key={s} onClick={() => {
-                          const avail = (variantModal.variants || []).find(v => v.kichCo?.kichCo === s && (v.tonKho || 0) > 0)
+                          const avail = availVariants.length > 0 ? availVariants[0] : (variantModal.variants || []).find(v => v.kichCo?.kichCo === s)
                           setSelectedSize(s); setSelectedColor(avail ? avail.mauSac?.mauSac : (colors[0] || null)); setVQty(1)
                         }}
-                          disabled={!hasStock}
-                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedSize === s ? 'border-blue-700 bg-blue-50 text-blue-700' : hasStock ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
+                          disabled={availVariants.length === 0}
+                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedSize === s ? 'border-blue-700 bg-blue-50 text-blue-700' : availVariants.length > 0 ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
                           {s}
                         </button>
                       )
@@ -750,11 +898,11 @@ export default function AdminPOS() {
                   <p className="text-sm font-semibold mb-2">Màu sắc</p>
                   <div className="flex gap-2 flex-wrap">
                     {colors.map(c => {
-                      const hasStock = (variantModal.variants || []).some(v => v.mauSac?.mauSac === c && v.kichCo?.kichCo === selectedSize && (v.tonKho || 0) > 0)
+                      const availVariants = (variantModal.variants || []).filter(v => v.mauSac?.mauSac === c && v.kichCo?.kichCo === selectedSize && (v.tonKho || 0) > getQtyInCart(v.maBienThe))
                       return (
                         <button key={c} onClick={() => { setSelectedColor(c); setVQty(1) }}
-                          disabled={!hasStock}
-                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedColor === c ? 'border-blue-700 bg-blue-50 text-blue-700' : hasStock ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
+                          disabled={availVariants.length === 0}
+                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedColor === c ? 'border-blue-700 bg-blue-50 text-blue-700' : availVariants.length > 0 ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
                           {c}
                         </button>
                       )
@@ -768,12 +916,14 @@ export default function AdminPOS() {
                   <button onClick={() => setVQty(Math.max(1, vQty - 1))}
                     className="px-3 py-1.5 hover:bg-gray-100">-</button>
                   <span className="px-4 py-1.5 border-x min-w-[2.5rem] text-center text-sm">{vQty}</span>
-                  <button onClick={() => setVQty(vQty + 1)}
+                  <button onClick={() => setVQty(prev => { const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor); const max = (v?.tonKho || 0) - getQtyInCart(v?.maBienThe); return prev < max ? prev + 1 : prev })}
                     className="px-3 py-1.5 hover:bg-gray-100">+</button>
                 </div>
                 {(() => {
                   const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)
-                  return v ? <span className="text-xs text-gray-400">Kho: {v.tonKho ?? 0}</span> : null
+                  if (!v) return null
+                  const avail = (v.tonKho || 0) - getQtyInCart(v.maBienThe)
+                  return <span className="text-xs text-gray-400">Kho: {v.tonKho ?? 0} (còn {Math.max(0, avail)})</span>
                 })()}
               </div>
             </div>

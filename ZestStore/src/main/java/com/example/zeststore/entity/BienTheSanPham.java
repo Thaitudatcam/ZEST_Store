@@ -54,6 +54,11 @@ public class BienTheSanPham {
     @Column(name = "url_anh", length = 500)
     private String urlAnh;
 
+    @Version
+    @Column(name = "version")
+    @Builder.Default
+    private Integer version = 0;
+
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 

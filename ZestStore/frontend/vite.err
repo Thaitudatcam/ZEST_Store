@@ -1,0 +1,89 @@
+[33m[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3162|    }
+3163|  }
+3164|  @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3165|  html {
+3166|    scroll-behavior: smooth;[39m
+[33m[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3162|    }
+3163|  }
+3164|  @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3165|  html {
+3166|    scroll-behavior: smooth;[39m
+[33m[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3162|    }
+3163|  }
+3164|  @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3165|  html {
+3166|    scroll-behavior: smooth;[39m
+[2m1:41:09 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/wishlist[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:09 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/cart[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:09 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/categories[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:09 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/products?size=100[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[33m[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3162|    }
+3163|  }
+3164|  @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3165|  html {
+3166|    scroll-behavior: smooth;[39m
+[2m1:41:09 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/wishlist[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[33m[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+3162|    }
+3163|  }
+3164|  @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+   |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3165|  html {
+3166|    scroll-behavior: smooth;[39m
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/cart[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/wishlist[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/categories[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/products?size=100[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/products?size=100[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/cart[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/wishlist[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/categories[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:12 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/products?size=100[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:14 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/cart[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:14 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/wishlist[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:14 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/categories[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+[2m1:41:14 PM[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/products?size=100[39m
+Error: connect ECONNREFUSED 192.168.100.129:8080
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)

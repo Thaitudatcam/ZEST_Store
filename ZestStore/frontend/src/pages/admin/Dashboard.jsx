@@ -147,7 +147,7 @@ export default function Dashboard() {
             {recentOrders.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Chưa có đơn hàng</p>}
           </div>
           {recentOrders.length > 0 && (
-            <Link to="/admin/orders" className="block text-center text-sm text-blue-600 font-medium mt-3 hover:underline">Xem tất cả</Link>
+            <Link to="/admin/orders/online" className="block text-center text-sm text-blue-600 font-medium mt-3 hover:underline">Xem tất cả</Link>
           )}
         </div>
       </div>
