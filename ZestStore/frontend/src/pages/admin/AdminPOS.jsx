@@ -99,28 +99,31 @@ export default function AdminPOS() {
   }
 
   useEffect(() => {
+    const myReq = ++reqCounter.current
     setLoading(true)
     const params = { size: 100 }
     if (categoryId) params.categoryId = categoryId
     api.get('/products', { params })
-      .then(r => setProducts(r.data.content || []))
-      .catch(() => setMsg({ type: 'error', text: 'Không thể tải sản phẩm' }))
-      .finally(() => setLoading(false))
+      .then(r => { if (reqCounter.current === myReq) setProducts(r.data.content || []) })
+      .catch(() => { if (reqCounter.current === myReq) setMsg({ type: 'error', text: 'Không thể tải sản phẩm' }) })
+      .finally(() => { if (reqCounter.current === myReq) setLoading(false) })
   }, [categoryId])
 
   const searchRef = useRef(null)
+  const reqCounter = useRef(0)
   const doSearch = (val) => {
     setSearch(val)
     if (searchRef.current) clearTimeout(searchRef.current)
     searchRef.current = setTimeout(() => {
+      const myReq = ++reqCounter.current
       setLoading(true)
       const params = { size: 100 }
       if (val.trim()) params.keyword = val.trim()
       else if (categoryId) params.categoryId = categoryId
       api.get('/products', { params })
-        .then(r => setProducts(r.data.content || []))
+        .then(r => { if (reqCounter.current === myReq) setProducts(r.data.content || []) })
         .catch(() => {})
-        .finally(() => setLoading(false))
+        .finally(() => { if (reqCounter.current === myReq) setLoading(false) })
     }, 300)
   }
 
@@ -210,7 +213,7 @@ export default function AdminPOS() {
     setCouponListLoading(true)
     try {
       const list = await getCoupons()
-      setAvailableCoupons(list.filter(c => c.trangThai === 1))
+      setAvailableCoupons(list.filter(c => c.trangThai === 1 && c.kieuGiamGia !== 3))
     } catch {
       setMsg({ type: 'error', text: 'Không thể tải danh sách mã giảm giá' })
     } finally {
@@ -581,7 +584,7 @@ export default function AdminPOS() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm">{c.maCode}</p>
                       <p className="text-xs text-gray-500">
-                        {c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam}%` : `Giảm ${VND(c.giaTriGiam)}`}
+                        {c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam}%` : c.kieuGiamGia === 3 ? (c.giaTriGiam && Number(c.giaTriGiam) > 0 ? `Giảm ship ${VND(c.giaTriGiam)}` : 'Miễn ship') : `Giảm ${VND(c.giaTriGiam)}`}
                         {c.giaTriDonToiThieu ? ` - Đơn tối thiểu ${VND(c.giaTriDonToiThieu)}` : ''}
                         {c.soLuong != null ? ` - Còn ${c.soLuong} lượt` : ''}
                       </p>

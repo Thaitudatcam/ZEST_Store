@@ -61,4 +61,9 @@ public class PhieuGiamGiaController {
         List<CouponResponse> result = phieuGiamGiaService.filterPhieuGiamGia(ngayBatDau, ngayKetThuc, kieuGiamGia, giaTriGiam);
         return ResponseEntity.ok(result);
     }
+    @PutMapping("/{id}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
+        return ResponseEntity.ok(phieuGiamGiaService.toggleStatus(id));
+    }
 }

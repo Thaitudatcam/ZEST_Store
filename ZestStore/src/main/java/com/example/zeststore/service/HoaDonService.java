@@ -25,6 +25,12 @@ public class HoaDonService {
     private final MucDonHangRepository mucDonHangRepository;
     private final ChiTietHoaDonRepository chiTietHoaDonRepository;
 
+    public Map<String, Object> getInvoiceByOrderId(Integer orderId) {
+        HoaDon invoice = hoaDonRepository.findByDonHang_MaDonHang(orderId)
+                .orElseThrow(() -> new RuntimeException("Invoice not found for order: " + orderId));
+        return getInvoiceDetail(invoice.getMaHoaDon());
+    }
+
     public Page<Map<String, Object>> getAllInvoices(int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
         return hoaDonRepository.findAll(pageable).map(inv -> {

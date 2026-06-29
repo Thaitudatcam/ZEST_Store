@@ -22,31 +22,33 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError('')
 
     Promise.all([
-      getStats(),
+      getStats().catch(err => ({ _error: err })),
       getRevenue(
-  new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-  new Date().toISOString().split('T')[0]
-),
-      getTopProducts(),
-      getRevenueByDate(30),
-      getRecentOrders(10),
-    ].map(p => p.catch(err => ({ _error: err }))))
-      .then(([s, r, t, revDate, recent]) => {
-        if (cancelled) return
-        setStats(s?._error ? null : s)
-        setRevenueData(r?._error ? null : r)
-        setTopProducts(Array.isArray(t) ? t : (t?._error ? [] : []))
-        setRevenueByDate(Array.isArray(revDate) ? revDate : [])
-        setRecentOrders(Array.isArray(recent) ? recent : [])
-      })
-      .catch(() => { if (!cancelled) setError('Không thể tải dữ liệu') })
-      .finally(() => { if (!cancelled) setLoading(false) })
+        new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        new Date().toISOString().split('T')[0]
+      ).catch(err => ({ _error: err })),
+      getTopProducts().catch(err => ({ _error: err })),
+      getRevenueByDate(30).catch(err => ({ _error: err })),
+      getRecentOrders(10).catch(err => ({ _error: err })),
+    ]).then(([s, r, t, revDate, recent]) => {
+      if (cancelled) return
+      setStats(s?._error ? null : s)
+      setRevenueData(r?._error ? null : r)
+      setTopProducts(Array.isArray(t) ? t : [])
+      setRevenueByDate(Array.isArray(revDate) ? revDate : [])
+      setRecentOrders(Array.isArray(recent) ? recent : [])
+    }).catch(() => {
+      if (!cancelled) setError('Không thể tải dữ liệu')
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
 
     return () => { cancelled = true }
   }, [])

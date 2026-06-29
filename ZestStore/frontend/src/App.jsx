@@ -34,6 +34,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
 import AdminChat from './pages/admin/AdminChat'
+import AdminChangePassword from './pages/admin/AdminChangePassword'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="employees" element={<AdminUsers />} />
         <Route path="pos" element={<AdminPOS />} />
         <Route path="chat" element={<AdminChat />} />
+        <Route path="change-password" element={<AdminChangePassword />} />
       </Route>
 
       <Route path="*" element={

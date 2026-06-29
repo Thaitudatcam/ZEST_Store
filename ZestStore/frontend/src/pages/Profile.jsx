@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress } from '../api/users'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { User, MapPin, Plus, Trash2, Star, Pencil } from 'lucide-react'
+import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff } from 'lucide-react'
 import { getProvinces, getDistricts, getWards } from '../api/ghn'
 
 export default function Profile() {
@@ -10,7 +10,9 @@ export default function Profile() {
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ hoTen: '' })
-  const [pwd, setPwd] = useState({ matKhauCu: '', matKhauMoi: '' })
+  const [pwd, setPwd] = useState({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhauMoi: '' })
+  const [showPwd, setShowPwd] = useState({ cu: false, moi: false, xacNhan: false })
+  const [pwdMsg, setPwdMsg] = useState('')
   const [addrForm, setAddrForm] = useState({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false })
   const [editAddr, setEditAddr] = useState(null)
   const [msg, setMsg] = useState('')
@@ -49,8 +51,14 @@ export default function Profile() {
   }
 
   const handlePwd = async (e) => {
-    e.preventDefault(); setMsg('')
-    try { await changePwd(pwd); setMsg('Đổi mật khẩu thành công'); setPwd({ matKhauCu: '', matKhauMoi: '' }) } catch { setMsg('Mật khẩu cũ không đúng') }
+    e.preventDefault(); setPwdMsg('')
+    if (pwd.matKhauMoi.length < 6) { setPwdMsg('Mật khẩu mới phải có ít nhất 6 ký tự'); return }
+    if (pwd.matKhauMoi !== pwd.xacNhanMatKhauMoi) { setPwdMsg('Mật khẩu mới không khớp'); return }
+    try {
+      await changePwd({ matKhauCu: pwd.matKhauCu, matKhauMoi: pwd.matKhauMoi })
+      setPwdMsg('Đổi mật khẩu thành công')
+      setPwd({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhauMoi: '' })
+    } catch { setPwdMsg('Mật khẩu cũ không đúng') }
   }
 
   const handleAddr = async (e) => {
@@ -113,8 +121,34 @@ export default function Profile() {
 
       {tab === 'password' && (
         <form onSubmit={handlePwd} className="bg-white rounded-xl border p-6 space-y-4">
-          <input type="password" value={pwd.matKhauCu} onChange={(e) => setPwd({ ...pwd, matKhauCu: e.target.value })} placeholder="Mật khẩu cũ" required className="w-full border rounded-lg px-4 py-2" />
-          <input type="password" value={pwd.matKhauMoi} onChange={(e) => setPwd({ ...pwd, matKhauMoi: e.target.value })} placeholder="Mật khẩu mới" required className="w-full border rounded-lg px-4 py-2" />
+          {pwdMsg && <p className={`text-sm ${pwdMsg === 'Đổi mật khẩu thành công' ? 'text-green-600' : 'text-red-600'}`}>{pwdMsg}</p>}
+          <div className="relative">
+            <input type={showPwd.cu ? 'text' : 'password'} value={pwd.matKhauCu}
+              onChange={(e) => setPwd({ ...pwd, matKhauCu: e.target.value })} placeholder="Mật khẩu cũ"
+              required className="w-full border rounded-lg px-4 py-2 pr-10" />
+            <button type="button" onClick={() => setShowPwd({ ...showPwd, cu: !showPwd.cu })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showPwd.cu ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <div className="relative">
+            <input type={showPwd.moi ? 'text' : 'password'} value={pwd.matKhauMoi}
+              onChange={(e) => setPwd({ ...pwd, matKhauMoi: e.target.value })} placeholder="Mật khẩu mới"
+              required minLength={6} className="w-full border rounded-lg px-4 py-2 pr-10" />
+            <button type="button" onClick={() => setShowPwd({ ...showPwd, moi: !showPwd.moi })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showPwd.moi ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <div className="relative">
+            <input type={showPwd.xacNhan ? 'text' : 'password'} value={pwd.xacNhanMatKhauMoi}
+              onChange={(e) => setPwd({ ...pwd, xacNhanMatKhauMoi: e.target.value })} placeholder="Xác nhận mật khẩu mới"
+              required className="w-full border rounded-lg px-4 py-2 pr-10" />
+            <button type="button" onClick={() => setShowPwd({ ...showPwd, xacNhan: !showPwd.xacNhan })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showPwd.xacNhan ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
           <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800">Đổi mật khẩu</button>
         </form>
       )}

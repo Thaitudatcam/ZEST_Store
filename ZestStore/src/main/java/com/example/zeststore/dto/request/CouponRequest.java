@@ -22,15 +22,15 @@ public class CouponRequest {
     @NotNull
     private Integer kieuGiamGia;
 
-    @NotNull @Positive
+    @NotNull @PositiveOrZero
     private BigDecimal giaTriGiam;
 
     private BigDecimal giaTriDonToiThieu;
 
-    @NotNull @FutureOrPresent
+    @NotNull
     private LocalDateTime ngayBatDau;
 
-    @NotNull @Future
+    @NotNull
     private LocalDateTime ngayKetThuc;
 
     private Integer trangThai;

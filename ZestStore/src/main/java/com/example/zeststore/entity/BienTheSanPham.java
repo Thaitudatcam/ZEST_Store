@@ -6,6 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @Getter
@@ -24,6 +25,7 @@ public class BienTheSanPham {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_san_pham", nullable = false)
+    @JsonIgnoreProperties({"bienThes", "danhGias", "mucYeuThichs", "hanhVis"})
     private SanPham sanPham;
 
     @ManyToOne(fetch = FetchType.LAZY)

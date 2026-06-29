@@ -94,8 +94,8 @@ public class POSService {
             if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
                 throw new BadRequestException("Đơn hàng tối thiểu " + coupon.getGiaTriDonToiThieu() + " để áp dụng mã này");
             }
-            if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-                throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
+            if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+                throw new BadRequestException("Mã freeship không áp dụng tại quầy");
             }
 
             if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
@@ -111,6 +111,9 @@ public class POSService {
             }
             if (coupon.getSoLuong() != null) {
                 coupon.setSoLuong(coupon.getSoLuong() - 1);
+                if (coupon.getSoLuong() <= 0) {
+                    coupon.setTrangThai(0);
+                }
                 phieuGiamGiaRepository.save(coupon);
             }
         }

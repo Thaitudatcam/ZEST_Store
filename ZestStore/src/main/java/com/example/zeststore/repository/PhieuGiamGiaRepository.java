@@ -41,4 +41,5 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             @Param("kieuGiamGia") Integer kieuGiamGia,  // 1 = phần trăm, 2 = tiền mặt
             @Param("giaTriGiam") BigDecimal giaTriGiam
     );
+    long countByNgayXoaIsNull();
 }
