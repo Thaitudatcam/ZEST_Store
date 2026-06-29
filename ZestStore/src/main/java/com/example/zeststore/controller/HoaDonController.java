@@ -23,11 +23,6 @@ public class HoaDonController {
         return ResponseEntity.ok(hoaDonService.getAllInvoices(page, size));
     }
 
-    @GetMapping("/by-order/{orderId}")
-    public ResponseEntity<?> getInvoiceByOrderId(@PathVariable Integer orderId) {
-        return ResponseEntity.ok(hoaDonService.getInvoiceByOrderId(orderId));
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<?> getInvoiceDetail(@PathVariable Integer id) {
         return ResponseEntity.ok(hoaDonService.getInvoiceDetail(id));
