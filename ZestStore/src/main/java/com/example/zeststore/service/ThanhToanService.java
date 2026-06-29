@@ -61,6 +61,7 @@ public class ThanhToanService {
 
     private void clearCartForOrder(DonHang order) {
         List<MucDonHang> orderItems = mucDonHangRepository.findByDonHang_MaDonHang(order.getMaDonHang());
+        if (order.getNguoiDung() == null) return;
         gioHangRepository.findByNguoiDung_MaNguoiDung(order.getNguoiDung().getMaNguoiDung())
                 .ifPresent(cart -> {
                     for (MucDonHang orderItem : orderItems) {

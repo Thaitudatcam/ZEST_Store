@@ -8,7 +8,7 @@ import { SkeletonPage, SkeletonCard } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
-import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader } from 'lucide-react'
+import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader, X } from 'lucide-react'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -20,16 +20,33 @@ const STATUS_STEPS = [
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Đã giao hàng', 7: 'Yêu cầu trả hàng', 8: 'Đã trả hàng',
+  5: 'Đã hủy', 6: 'Đã giao hàng', 7: 'Yêu cầu trả hàng', 8: 'Đã trả hàng', 9: 'Không nhận hàng',
 }
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 6: 'VietQR' }
 const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
 
-function OrderStatusStepper({ currentStatus, history }) {
-  const steps = [1, 2, 3, 4, 6];
-  const currentIdx = steps.indexOf(currentStatus);
-  const isSpecial = [5, 7, 8].includes(currentStatus);
+function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
+  const isPos = loaiDonHang === 2;
+
+  const POS_STEPS = [
+    { status: 1, label: 'Tạo đơn', icon: ShoppingBag },
+    { status: 6, label: 'Hoàn thành', icon: CheckCircle },
+  ];
+
+  const steps = isPos ? [1, 6] : [1, 2, 3, 4, 6];
+  const stepDefs = isPos ? POS_STEPS : STATUS_STEPS;
+  const isSpecial = [5, 7, 8, 9].includes(currentStatus);
+
+  let maxNormalStatus = currentStatus;
+  if (isSpecial) {
+    const normalHistory = (history || [])
+      .filter(h => ![5, 7, 8, 9].includes(h.trangThaiMoi))
+      .map(h => h.trangThaiMoi);
+    maxNormalStatus = normalHistory.length > 0 ? Math.max(...normalHistory) : -1;
+  }
+  const maxIdx = steps.indexOf(maxNormalStatus);
+  const visibleSteps = maxIdx >= 0 ? steps.slice(0, maxIdx + 1) : [];
 
   const getTimeForStatus = (status) => {
     const h = history?.find(item => item.trangThaiMoi === status);
@@ -39,24 +56,23 @@ function OrderStatusStepper({ currentStatus, history }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 overflow-x-auto">
       <div className="flex items-center min-w-fit">
-        {steps.map((s, i) => {
-          const stepDef = STATUS_STEPS.find(st => st.status === s);
+        {visibleSteps.map((s, i) => {
+          const stepDef = stepDefs.find(st => st.status === s);
           const Icon = stepDef.icon;
-          const filled = currentStatus === 5 ? false : (isSpecial || i <= currentIdx);
-          const isCurrent = !isSpecial && i === currentIdx;
+          const isCurrent = !isSpecial && s === currentStatus;
           const time = getTimeForStatus(s);
 
           return (
             <div key={s} className="flex items-center">
               {i > 0 && (
-                <div className={`w-8 sm:w-12 h-0.5 mx-1 sm:mx-2 ${filled ? 'bg-blue-500' : 'bg-gray-200'}`} />
+                <div className="w-8 sm:w-12 h-0.5 bg-blue-500 mx-1 sm:mx-2" />
               )}
               <div className="flex flex-col items-center">
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-300
-                  ${isCurrent ? 'bg-blue-600 text-white ring-4 ring-blue-200 animate-pulse' : filled ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-300'}`}>
+                  ${isCurrent ? 'bg-blue-600 text-white ring-4 ring-blue-200 animate-pulse' : 'bg-blue-600 text-white'}`}>
                   <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
-                <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 text-center whitespace-nowrap ${filled ? 'text-gray-800' : 'text-gray-300'}`}>
+                <p className="text-[10px] sm:text-xs font-semibold mt-1.5 text-center whitespace-nowrap text-gray-800">
                   {stepDef.label}
                 </p>
                 {time && (
@@ -74,7 +90,7 @@ function OrderStatusStepper({ currentStatus, history }) {
             <div className="w-8 sm:w-12 h-0.5 bg-red-300 mx-1 sm:mx-2" />
             <div className="flex flex-col items-center">
               <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${currentStatus === 8 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                {currentStatus === 5 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStatus === 8 ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
+                {currentStatus === 5 || currentStatus === 9 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStatus === 8 ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
               </div>
               <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap ${currentStatus === 8 ? 'text-green-600' : 'text-red-600'}`}>{STATUS_LABELS[currentStatus]}</p>
               <p className="text-[9px] sm:text-[10px] text-gray-400 mt-0.5">{getTimeForStatus(currentStatus)}</p>
@@ -97,6 +113,7 @@ export default function OrderDetail() {
   const [returnLyDo, setReturnLyDo] = useState('')
   const [returning, setReturning] = useState(false)
   const [confirmingReceived, setConfirmingReceived] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -223,11 +240,11 @@ export default function OrderDetail() {
             <p className="text-sm text-gray-500">{order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}</p>
             {order.maDonHangCode && <p className="text-xs text-gray-400 mt-0.5">Mã: {order.maDonHangCode}</p>}
           </div>
-          <StatusBadge status={order.trangThaiDon || order.trangThai} />
+          <StatusBadge status={order.trangThaiDon || order.trangThai} loaiDonHang={order.loaiDonHang} />
         </div>
       </div>
 
-      <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} />
+      <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
         <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2 mb-4">
@@ -239,7 +256,7 @@ export default function OrderDetail() {
             const product = variant.sanPham || {}
             const anh = variant.urlAnh || product.urlAnhDaiDien || ''
             return (
-              <div key={item.maMucDonHang} className="flex items-center gap-4">
+              <div key={item.maMucDonHang} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition" onClick={() => setSelectedItem(item)}>
                 <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                   <SafeImg src={anh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
@@ -408,6 +425,59 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
+
+      {selectedItem && (() => {
+        const v = selectedItem.bienThe || {}
+        const p = v.sanPham || {}
+        const anh = v.urlAnh || p.urlAnhDaiDien || ''
+        return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setSelectedItem(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full animate-scale-in shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="relative">
+              <img src={anh} alt={p.tenSanPham} className="w-full h-72 object-cover object-center bg-gray-100"
+                onError={(e) => { e.target.src = 'https://placehold.co/600x400/e2e8f0/475569?text=Polo' }} />
+              <button onClick={() => setSelectedItem(null)} className="absolute top-3 right-3 bg-white/90 rounded-full p-1.5 hover:bg-white transition shadow-sm">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <h3 className="font-bold text-lg">{p.tenSanPham || 'Sản phẩm'}</h3>
+                <p className="text-xs text-gray-400">SKU: {v.sku || '—'}</p>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-blue-700 font-bold text-xl">{VND(selectedItem.donGia || 0)}</span>
+                <span className="text-gray-400">x{selectedItem.soLuong}</span>
+                <span className="text-gray-600 font-semibold">= {VND(selectedItem.thanhTien || 0)}</span>
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {v.mauSac?.mauSac && (
+                  <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                    Màu: <span className="font-medium">{v.mauSac.mauSac}</span>
+                  </span>
+                )}
+                {v.kichCo?.kichCo && (
+                  <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                    Size: <span className="font-medium">{v.kichCo.kichCo}</span>
+                  </span>
+                )}
+              </div>
+              {p.moTa && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Mô tả</p>
+                  <p className="text-sm text-gray-600 line-clamp-4">{p.moTa}</p>
+                </div>
+              )}
+              {(p.slug || p.maSanPham) && (
+                <a href={`/products/${p.slug || p.maSanPham}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-700 font-medium hover:underline mt-1">
+                  Xem chi tiết sản phẩm →
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )})()}
     </div>
   )
 }

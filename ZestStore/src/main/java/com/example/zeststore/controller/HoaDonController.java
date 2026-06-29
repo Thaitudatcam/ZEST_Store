@@ -33,6 +33,15 @@ public class HoaDonController {
         return ResponseEntity.ok(hoaDonService.getInvoiceDetail(id));
     }
 
+    @GetMapping("/by-order/{orderId}")
+    public ResponseEntity<?> getInvoiceByOrderId(@PathVariable Integer orderId) {
+        try {
+            return ResponseEntity.ok(hoaDonService.getInvoiceByOrderId(orderId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/generate/{orderId}")
     public ResponseEntity<?> generateInvoice(@PathVariable Integer orderId) {
         try {

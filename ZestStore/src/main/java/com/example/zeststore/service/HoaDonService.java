@@ -91,6 +91,12 @@ public class HoaDonService {
         return result;
     }
 
+    public Map<String, Object> getInvoiceByOrderId(Integer orderId) {
+        HoaDon invoice = hoaDonRepository.findByDonHang_MaDonHang(orderId)
+                .orElseThrow(() -> new RuntimeException("Invoice not found for order: " + orderId));
+        return getInvoiceDetail(invoice.getMaHoaDon());
+    }
+
     @Transactional
     public Map<String, Object> generateInvoice(Integer orderId) {
         Optional<HoaDon> existing = hoaDonRepository.findByDonHang_MaDonHang(orderId);

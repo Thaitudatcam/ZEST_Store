@@ -128,7 +128,7 @@ public class POSService {
         BigDecimal thanhToanTong = tongTien.subtract(soTienGiam).max(BigDecimal.ZERO);
 
         DonHang order = DonHang.builder()
-                .nguoiDung(customer != null ? customer : admin)
+                .nguoiDung(customer)
                 .loaiDonHang(2)
                 .maDonHangCode(code)
                 .tongTien(thanhToanTong)
@@ -153,9 +153,16 @@ public class POSService {
                     .build());
         }
 
-        Integer phuongThuc = request    .getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
-        String nhaCungCap = Integer.valueOf(6).equals(phuongThuc) ? "VietQR" : "Tiền mặt";
-        Integer trangThaiThanhToan = Integer.valueOf(6).equals(phuongThuc) ? 1 : 2;
+        Integer phuongThuc = request.getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
+        String nhaCungCap;
+        Integer trangThaiThanhToan;
+        if (Integer.valueOf(4).equals(phuongThuc)) {
+            nhaCungCap = "ZaloPay";
+            trangThaiThanhToan = 1;
+        } else {
+            nhaCungCap = "Tiền mặt";
+            trangThaiThanhToan = 2;
+        }
 
         String paymentRef = "POS-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         thanhToanRepository.save(ThanhToan.builder()

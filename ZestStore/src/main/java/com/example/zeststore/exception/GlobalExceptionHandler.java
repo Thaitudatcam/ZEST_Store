@@ -2,6 +2,7 @@ package com.example.zeststore.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -58,6 +59,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<?> handleDisabled(DisabledException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, "Tài khoản đã bị vô hiệu hóa");
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<?> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        return buildResponse(HttpStatus.CONFLICT, "Sản phẩm vừa được người khác mua, vui lòng tải lại giỏ hàng");
     }
 
     @ExceptionHandler(Exception.class)

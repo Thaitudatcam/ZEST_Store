@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap } from 'lucide-react'
+import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap, ChevronDown, ThumbsUp, BadgeCheck, Filter, ArrowUpDown } from 'lucide-react'
 import { VND } from '../components/ProductCard'
 import Toast from '../components/Toast'
 import VariantModal from '../components/VariantModal'
@@ -34,6 +34,8 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([])
   const [avgRating, setAvgRating] = useState(0)
   const [reviewCount, setReviewCount] = useState(0)
+  const [reviewSort, setReviewSort] = useState('newest')
+  const [reviewPage, setReviewPage] = useState(0)
   const [previewIdx, setPreviewIdx] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [buyNowMode, setBuyNowMode] = useState(false)
@@ -172,6 +174,16 @@ export default function ProductDetail() {
   const totalStock = variants.reduce((sum, v) => sum + (v.tonKho || 0), 0)
   const isOutOfStock = totalStock === 0
   const isSelectedOutOfStock = selectedStock === 0
+
+  const REVIEWS_PER_PAGE = 5
+  const sortedReviews = [...reviews].sort((a, b) => {
+    if (reviewSort === 'newest') return new Date(b.ngayTao) - new Date(a.ngayTao)
+    if (reviewSort === 'highest') return b.soSao - a.soSao
+    if (reviewSort === 'lowest') return a.soSao - b.soSao
+    return 0
+  })
+  const totalReviewPages = Math.ceil(sortedReviews.length / REVIEWS_PER_PAGE)
+  const pagedReviews = sortedReviews.slice(reviewPage * REVIEWS_PER_PAGE, (reviewPage + 1) * REVIEWS_PER_PAGE)
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -397,74 +409,129 @@ export default function ProductDetail() {
 
       <div className="mt-10">
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-50 to-transparent px-6 py-4 border-b border-gray-100">
+          <div className="bg-gradient-to-r from-amber-50 to-transparent px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <span className="w-1 h-5 bg-amber-500 rounded-full inline-block" />
               Đánh giá sản phẩm
             </h2>
+            {user && (
+              <Link to="/orders" className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                Viết đánh giá →
+              </Link>
+            )}
           </div>
           <div className="p-6">
-            <div className="flex items-start gap-8">
+            <div className="flex items-start gap-8 flex-wrap">
               <div className="text-center min-w-[100px]">
                 <span className="text-5xl font-bold text-gray-900">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</span>
-                <span className="text-gray-400 text-xs block mt-1">trên 5</span>
-                <div className="flex gap-0.5 justify-center mt-2">
+                <div className="flex gap-0.5 justify-center mt-1.5">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={`h-4 w-4 ${avgRating > 0 && i < Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
                   ))}
                 </div>
                 <p className="text-sm text-gray-500 mt-1 font-medium">{reviewCount} đánh giá</p>
               </div>
-              <div className="flex-1 space-y-1.5 pt-1">
+              <div className="flex-1 min-w-[200px] space-y-1.5 pt-1">
                 {[5, 4, 3, 2, 1].map((star) => {
                   const count = reviews.filter(r => r.soSao === star).length
                   const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0
                   return (
                     <div key={star} className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500 w-6 text-right">{star}</span>
-                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-amber-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                      <span className="text-gray-500 w-5 text-right text-xs font-medium">{star}</span>
+                      <Star className="h-3 w-3 text-amber-400 fill-amber-400 shrink-0" />
+                      <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
                       </div>
-                      <span className="text-gray-400 w-8 text-xs text-right">{count}</span>
+                      <span className="text-gray-400 w-6 text-xs text-right">{count}</span>
                     </div>
                   )
                 })}
               </div>
             </div>
+
+            {reviewCount > 1 && (
+              <div className="flex items-center gap-2 border-t border-gray-100 pt-4 mt-4">
+                <Filter className="h-3.5 w-3.5 text-gray-400" />
+                <span className="text-xs text-gray-500 mr-1">Sắp xếp:</span>
+                {[
+                  { value: 'newest', label: 'Mới nhất' },
+                  { value: 'highest', label: 'Đánh giá cao' },
+                  { value: 'lowest', label: 'Đánh giá thấp' },
+                ].map((opt) => (
+                  <button key={opt.value} onClick={() => { setReviewSort(opt.value); setReviewPage(0) }}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition ${
+                      reviewSort === opt.value
+                        ? 'bg-amber-400 text-white border-amber-400 font-semibold'
+                        : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600'
+                    }`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {reviewCount > 0 && (
-        <div className="mt-8 max-w-3xl">
-          <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-blue-600" />
-            Tất cả đánh giá ({reviewCount})
-          </h3>
+        <div className="mt-6">
           <div className="space-y-3">
-            {reviews.map((r) => (
-              <div key={r.maDanhGia} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between mb-2.5">
+            {pagedReviews.map((r) => (
+              <div key={r.maDanhGia} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                      {r.nguoiDung?.hoTen?.charAt(0) || '?'}
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
+                      {r.nguoiDung?.hoTen?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{r.nguoiDung?.hoTen || 'Khách hàng'}</p>
-                      <p className="text-[11px] text-gray-400">{r.ngayTao ? new Date(r.ngayTao).toLocaleDateString('vi-VN') : ''}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold text-gray-800">{r.nguoiDung?.hoTen || 'Khách hàng'}</p>
+                        {r.donHang && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                            <BadgeCheck className="h-3 w-3" /> Đã mua hàng
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{r.ngayTao ? new Date(r.ngayTao).toLocaleDateString('vi-VN') : ''}</p>
                     </div>
                   </div>
-                  <div className="flex gap-0.5">
+                  <div className="flex gap-0.5 shrink-0">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star key={i} className={`h-4 w-4 ${i < r.soSao ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
                     ))}
                   </div>
                 </div>
-                {r.binhLuan && <p className="text-sm text-gray-600 leading-relaxed">{r.binhLuan}</p>}
+                {r.binhLuan && (
+                  <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-3.5 border border-gray-50">
+                    {r.binhLuan}
+                  </p>
+                )}
               </div>
             ))}
           </div>
+
+          {totalReviewPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-5">
+              <button disabled={reviewPage === 0} onClick={() => setReviewPage(reviewPage - 1)}
+                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                ← Trước
+              </button>
+              {Array.from({ length: totalReviewPages }, (_, i) => (
+                <button key={i} onClick={() => setReviewPage(i)}
+                  className={`w-8 h-8 text-xs rounded-lg border transition ${
+                    i === reviewPage
+                      ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-sm'
+                      : 'text-gray-500 border-gray-200 hover:bg-gray-50'
+                  }`}>
+                  {i + 1}
+                </button>
+              ))}
+              <button disabled={reviewPage >= totalReviewPages - 1} onClick={() => setReviewPage(reviewPage + 1)}
+                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                Sau →
+              </button>
+            </div>
+          )}
         </div>
       )}
 
