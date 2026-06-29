@@ -104,7 +104,7 @@ export default function AdminProducts() {
                     <SafeImg src={p.urlAnhDaiDien} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" fallback="https://placehold.co/40x40/e2e8f0/475569?text=P" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{p.tenSanPham}</p>
-                      <p className="text-xs text-blue-700 font-semibold">{VND(p.giaTrungBinh || 0)}</p>
+                      <p className="text-xs text-blue-700 font-semibold">Tồn: {p.tongTonKho ?? 0}</p>
                     </div>
                     {p.tongTonKho === 0 && <span className="text-[10px] text-red-500 font-semibold shrink-0">Hết hàng</span>}
                   </button>
@@ -125,7 +125,7 @@ export default function AdminProducts() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Sản phẩm</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Danh mục</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Giá TB</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600">Tồn kho</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
               </tr>
@@ -140,7 +140,7 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{p.danhMuc?.tenDanhMuc || '-'}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{VND(p.giaTrungBinh ?? 0)}</td>
+                  <td className="px-4 py-3 text-right font-semibold">{p.tongTonKho ?? 0}</td>
                   <td className="px-4 py-3 text-center">
                     <button onClick={() => handleToggle(p.maSanPham)}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition ${

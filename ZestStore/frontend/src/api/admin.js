@@ -20,6 +20,7 @@ export const deleteCategory = (id) => api.delete(`/categories/${id}`).then((r) =
 
 export const getInvoices = (page = 0, size = 20) => api.get('/invoices', { params: { page, size } }).then((r) => r.data)
 export const getInvoiceDetail = (id) => api.get(`/invoices/${id}`).then((r) => r.data)
+export const getInvoiceByOrderId = (orderId) => api.get(`/invoices/by-order/${orderId}`).then((r) => r.data)
 export const generateInvoice = (orderId) => api.post(`/invoices/generate/${orderId}`).then((r) => r.data)
 
 export const getAllReviews = () => api.get('/admin/reviews').then((r) => r.data)

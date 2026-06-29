@@ -1,5 +1,6 @@
 package com.example.zeststore.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -68,9 +69,26 @@ public class SanPham {
     @Builder.Default
     private Integer tongTonKho = 0;
 
+    @Transient
+    @JsonProperty("tongGiaTri")
+    @Builder.Default
+    private BigDecimal tongGiaTri = BigDecimal.ZERO;
+
+    @Transient
+    @JsonProperty("giaThapNhat")
+    private BigDecimal giaThapNhat;
+
+    @Transient
+    @JsonProperty("averageRating")
+    private Double averageRating;
+
+    @Transient
+    @JsonProperty("reviewCount")
+    private Long reviewCount;
+
     @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    @JsonIgnore
+    @JsonIgnoreProperties({"sanPham", "mucGioHangs", "mucDonHangs", "anhs"})
     private List<BienTheSanPham> bienThes;
 
     @OneToMany(mappedBy = "sanPham")

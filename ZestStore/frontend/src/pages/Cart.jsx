@@ -21,10 +21,24 @@ export default function Cart() {
 
   const handleQty = async (vid, delta) => {
     const item = items.find((i) => i.maBienThe === vid)
-    const newQty = Math.max(1, (item.soLuong || 1) + delta)
+    const stock = item.tonKho || 999
+    const newQty = Math.max(1, Math.min(stock, (item.soLuong || 1) + delta))
     try {
       await updateCartItem(vid, { soLuong: newQty })
       setItems(prev => prev.map(i => i.maBienThe === vid ? { ...i, soLuong: newQty } : i))
+      refreshCount()
+    } catch (err) {
+      setToast({ message: err.response?.data?.message || 'Không thể cập nhật số lượng', type: 'error' })
+    }
+  }
+
+  const handleQtyInput = async (vid, val) => {
+    const item = items.find(i => i.maBienThe === vid)
+    const stock = item?.tonKho || 999
+    const soLuong = Math.max(1, Math.min(stock, val))
+    try {
+      await updateCartItem(vid, { soLuong })
+      setItems(prev => prev.map(i => i.maBienThe === vid ? { ...i, soLuong, thanhTien: i.donGia * soLuong } : i))
       refreshCount()
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Không thể cập nhật số lượng', type: 'error' })
@@ -121,10 +135,26 @@ export default function Cart() {
                   <p className="text-blue-700 font-bold">{VND(i.donGia || 0)}</p>
                 </div>
                 <div className="flex items-center border rounded-lg">
-                  <button onClick={() => handleQty(i.maBienThe, -1)} className="px-2 py-1 hover:bg-gray-100 transition active:scale-90"><Minus className="h-4 w-4" /></button>
-                  <span className="px-3 py-1 border-x min-w-[2rem] text-center text-sm">{i.soLuong || 1}</span>
-                  <button onClick={() => handleQty(i.maBienThe, 1)} className="px-2 py-1 hover:bg-gray-100 transition active:scale-90"><Plus className="h-4 w-4" /></button>
+                  <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1}
+                    className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Minus className="h-4 w-4" /></button>
+                  <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999}
+                    onChange={e => {
+                      const v = parseInt(e.target.value)
+                      if (!v || v < 1) return
+                      setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x))
+                    }}
+                    onBlur={e => {
+                      const v = parseInt(e.target.value)
+                      if (!v || v < 1) handleQtyInput(i.maBienThe, 1)
+                      else handleQtyInput(i.maBienThe, v)
+                    }}
+                    className="w-12 px-1 py-1 border-x text-center text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                  <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999)}
+                    className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="h-4 w-4" /></button>
                 </div>
+                {i.tonKho !== undefined && (
+                  <span className="text-[11px] text-gray-400 -mt-1 text-right">Kho: {i.tonKho}</span>
+                )}
                 <button onClick={() => handleRemove(i.maBienThe)} className="text-red-400 hover:text-red-600 transition active:scale-90"><Trash2 className="h-5 w-5" /></button>
               </div>
             ))}

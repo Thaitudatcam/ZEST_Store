@@ -6,6 +6,7 @@ import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.ThanhToanRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class VnPayService {
 
     private final PaymentConfig paymentConfig;
@@ -47,22 +49,15 @@ public class VnPayService {
         params.put("vnp_OrderType", "other");
         params.put("vnp_ReturnUrl", config.getReturnUrl());
         params.put("vnp_TxnRef", payment.getMaGiaoDich());
+        params.put("vnp_ExpireDate", LocalDateTime.now().plusMinutes(15)
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
 
-        StringBuilder hashData = new StringBuilder();
-        StringBuilder query = new StringBuilder();
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            if (hashData.length() > 0) {
-                hashData.append('&');
-                query.append('&');
-            }
-            hashData.append(key).append('=').append(value);
-            query.append(key).append('=').append(URLEncoder.encode(value, StandardCharsets.UTF_8));
-        }
-
-        String secureHash = hmacSHA512(config.getHashSecret(), hashData.toString());
-        return config.getUrl() + "?" + query + "&vnp_SecureHash=" + secureHash;
+        String hashData = buildCreateHashData(params);
+        String queryUrl = buildQueryUrl(params);
+        String secureHash = hmacSHA512(config.getHashSecret(), hashData);
+        log.debug("VNPay create URL hashData: {}", hashData);
+        log.debug("VNPay secureHash: {}", secureHash);
+        return config.getUrl() + "?" + queryUrl + "&vnp_SecureHash=" + secureHash;
     }
 
     public boolean verifyReturn(Map<String, String> rawParams) {
@@ -71,14 +66,18 @@ public class VnPayService {
         params.remove("vnp_SecureHashType");
 
         Map<String, String> sorted = new TreeMap<>(params);
-        StringBuilder hashData = new StringBuilder();
-        for (Map.Entry<String, String> entry : sorted.entrySet()) {
-            if (hashData.length() > 0) hashData.append('&');
-            hashData.append(entry.getKey()).append('=').append(entry.getValue());
+        String hashData = buildHashData(sorted);
+        String calculated = hmacSHA512(paymentConfig.getVnpay().getHashSecret(), hashData);
+        boolean match = calculated.equalsIgnoreCase(secureHash);
+        if (!match) {
+            log.warn("VNPay hash MISMATCH:");
+            log.warn("  hashData  = {}", hashData);
+            log.warn("  secureHash= {}", secureHash);
+            log.warn("  calculated= {}", calculated);
+        } else {
+            log.info("VNPay hash MATCH OK");
         }
-
-        String calculated = hmacSHA512(paymentConfig.getVnpay().getHashSecret(), hashData.toString());
-        return calculated.equals(secureHash);
+        return match;
     }
 
     @Transactional
@@ -101,6 +100,9 @@ public class VnPayService {
         String txnRef = params.get("vnp_TxnRef");
         Integer orderId = extractOrderId(txnRef);
 
+        log.info("VNPay return: verified={}, responseCode={}, orderId={}, txnRef={}",
+                verified, responseCode, orderId, txnRef);
+
         Map<String, String> result = new LinkedHashMap<>();
         result.put("verified", String.valueOf(verified));
         result.put("responseCode", responseCode);
@@ -120,6 +122,39 @@ public class VnPayService {
         }
     }
 
+    private String buildCreateHashData(Map<String, String> params) {
+        Map<String, String> sorted = new TreeMap<>(params);
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> e : sorted.entrySet()) {
+            if (sb.length() > 0) sb.append('&');
+            sb.append(e.getKey()).append('=')
+              .append(URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
+        }
+        return sb.toString();
+    }
+
+    private String buildHashData(Map<String, String> params) {
+        Map<String, String> sorted = new TreeMap<>(params);
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> e : sorted.entrySet()) {
+            if (sb.length() > 0) sb.append('&');
+            sb.append(e.getKey()).append('=')
+              .append(URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
+        }
+        return sb.toString();
+    }
+
+    private String buildQueryUrl(Map<String, String> params) {
+        Map<String, String> sorted = new TreeMap<>(params);
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> e : sorted.entrySet()) {
+            if (sb.length() > 0) sb.append('&');
+            sb.append(e.getKey()).append('=')
+              .append(URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8));
+        }
+        return sb.toString();
+    }
+
     private String hmacSHA512(String key, String data) {
         try {
             Mac hmac = Mac.getInstance("HmacSHA512");
@@ -130,7 +165,7 @@ public class VnPayService {
             for (byte b : bytes) {
                 sb.append(String.format("%02x", b));
             }
-            return sb.toString().toUpperCase();
+            return sb.toString();
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate HMAC-SHA512", e);
         }

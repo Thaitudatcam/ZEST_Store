@@ -11,13 +11,10 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class DanhGiaRequest {
-    @NotNull
     private Integer maSanPham;
 
-    @NotNull
     private Integer maDonHang;
 
-    @NotNull
     private Integer maBienThe;
 
     @NotNull @Min(1) @Max(5)

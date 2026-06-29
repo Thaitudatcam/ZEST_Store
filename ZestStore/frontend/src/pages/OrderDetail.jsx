@@ -8,7 +8,7 @@ import { SkeletonPage, SkeletonCard } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
-import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle } from 'lucide-react'
+import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader } from 'lucide-react'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -42,7 +42,7 @@ function OrderStatusStepper({ currentStatus, history }) {
         {steps.map((s, i) => {
           const stepDef = STATUS_STEPS.find(st => st.status === s);
           const Icon = stepDef.icon;
-          const filled = isSpecial || i <= currentIdx;
+          const filled = currentStatus === 5 ? false : (isSpecial || i <= currentIdx);
           const isCurrent = !isSpecial && i === currentIdx;
           const time = getTimeForStatus(s);
 
@@ -73,10 +73,10 @@ function OrderStatusStepper({ currentStatus, history }) {
           <div className="flex items-center ml-2">
             <div className="w-8 sm:w-12 h-0.5 bg-red-300 mx-1 sm:mx-2" />
             <div className="flex flex-col items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-red-100 text-red-600">
-                {currentStatus === 5 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${currentStatus === 8 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {currentStatus === 5 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStatus === 8 ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
               </div>
-              <p className="text-[10px] sm:text-xs font-semibold mt-1.5 text-red-600 whitespace-nowrap">{STATUS_LABELS[currentStatus]}</p>
+              <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap ${currentStatus === 8 ? 'text-green-600' : 'text-red-600'}`}>{STATUS_LABELS[currentStatus]}</p>
               <p className="text-[9px] sm:text-[10px] text-gray-400 mt-0.5">{getTimeForStatus(currentStatus)}</p>
             </div>
           </div>
@@ -124,9 +124,9 @@ export default function OrderDetail() {
     setCancelling(true)
     try {
       await cancelOrder(id)
-      load()
+      await load()
       toast.success('Đã hủy đơn hàng')
-    } catch { toast.error('Hủy đơn hàng thất bại') }
+    } catch (err) { toast.error(err?.response?.data?.message || 'Hủy đơn hàng thất bại') }
     finally { setCancelling(false) }
   }
 
@@ -134,9 +134,9 @@ export default function OrderDetail() {
     setConfirmingReceived(true)
     try {
       await confirmReceived(id)
-      load()
+      await load()
       toast.success('Xác nhận đã nhận hàng thành công')
-    } catch { toast.error('Xác nhận thất bại') }
+    } catch (err) { toast.error(err?.response?.data?.message || 'Xác nhận thất bại') }
     finally { setConfirmingReceived(false) }
   }
 
@@ -147,9 +147,9 @@ export default function OrderDetail() {
       await requestReturn(id, returnLyDo.trim())
       setReturnOpen(false)
       setReturnLyDo('')
-      load()
+      await load()
       toast.success('Yêu cầu trả hàng đã gửi')
-    } catch { toast.error('Yêu cầu trả hàng thất bại') }
+    } catch (err) { toast.error(err?.response?.data?.message || 'Yêu cầu trả hàng thất bại') }
     finally { setReturning(false) }
   }
 
@@ -204,9 +204,10 @@ export default function OrderDetail() {
   const payments = data.payments || []
   const history = data.history || []
 
-  const canCancel = order.trangThaiDon === 1
+  const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 4
   const canConfirmReceived = order.trangThaiDon === 4
-  const canRequestReturn = order.trangThaiDon === 4 || order.trangThaiDon === 6
+  const hasRequestedReturn = history?.some(h => h.trangThaiMoi === 7)
+  const canRequestReturn = (order.trangThaiDon === 4 || order.trangThaiDon === 6) && !hasRequestedReturn
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)
 
   return (

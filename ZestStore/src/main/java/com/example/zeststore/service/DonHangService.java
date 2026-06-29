@@ -146,7 +146,10 @@ public class DonHangService {
                 throw new BadRequestException("Chưa đạt giá trị đơn tối thiểu để áp dụng mã này");
             }
 
-            if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
+            if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+                // FREESHIP: giảm trên phí ship, không giảm tiền SP
+                soTienGiam = BigDecimal.ZERO;
+            } else if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
                 soTienGiam = tongTien.multiply(coupon.getGiaTriGiam())
                         .divide(BigDecimal.valueOf(100));
             } else {
@@ -158,16 +161,15 @@ public class DonHangService {
             if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
                 soTienGiam = coupon.getGiaTriGiamToiDa();
             }
-            if (coupon.getSoLuong() != null) {
-                coupon.setSoLuong(coupon.getSoLuong() - 1);
-                if (coupon.getSoLuong() <= 0) {
-                    coupon.setTrangThai(0);
-                }
-                phieuGiamGiaRepository.save(coupon);
-            }
         }
 
         BigDecimal phiVanChuyen = recalculateShippingFee(request, orderItems);
+        if (coupon != null && Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+            BigDecimal giamShip = (coupon.getGiaTriGiam() == null || coupon.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0)
+                ? phiVanChuyen
+                : coupon.getGiaTriGiam().min(phiVanChuyen);
+            phiVanChuyen = phiVanChuyen.subtract(giamShip).max(BigDecimal.ZERO);
+        }
         BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             finalTotal = BigDecimal.ZERO;
@@ -226,7 +228,9 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        mucGioHangRepository.deleteAll(cartItems);
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
+            mucGioHangRepository.deleteAll(cartItems);
+        }
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());
@@ -397,8 +401,9 @@ public class DonHangService {
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
-        if (!Integer.valueOf(1).equals(order.getTrangThaiDon())) {
-            throw new BadRequestException("Can only cancel pending orders");
+        Integer stt = order.getTrangThaiDon();
+        if (!Integer.valueOf(1).equals(stt) && !Integer.valueOf(2).equals(stt) && !Integer.valueOf(4).equals(stt)) {
+            throw new BadRequestException("Chỉ có thể hủy đơn ở trạng thái chờ xác nhận, đã xác nhận hoặc chờ giao hàng");
         }
 
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);

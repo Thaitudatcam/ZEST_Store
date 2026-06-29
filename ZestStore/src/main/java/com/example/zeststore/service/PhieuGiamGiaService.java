@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -44,9 +46,45 @@ public class PhieuGiamGiaService {
         return list;
     }
 
-    public List<PhieuGiamGia> getAvailableCoupons(BigDecimal tongTien) {
+    public List<Map<String, Object>> getAvailableCoupons(BigDecimal tongTien) {
         if (tongTien == null) tongTien = BigDecimal.ZERO;
-        return phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
+        List<PhieuGiamGia> coupons = phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (PhieuGiamGia c : coupons) {
+            BigDecimal giamGia;
+            if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+                giamGia = tongTien.multiply(c.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
+            } else {
+                giamGia = c.getGiaTriGiam();
+            }
+            if (giamGia.compareTo(tongTien) > 0) giamGia = tongTien;
+            if (c.getGiaTriGiamToiDa() != null && giamGia.compareTo(c.getGiaTriGiamToiDa()) > 0) {
+                giamGia = c.getGiaTriGiamToiDa();
+            }
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("maCode", c.getMaCode());
+            m.put("kieuGiamGia", c.getKieuGiamGia());
+            m.put("giaTriGiam", c.getGiaTriGiam());
+            m.put("soTienGiam", giamGia);
+            m.put("giaTriDonToiThieu", c.getGiaTriDonToiThieu() != null ? c.getGiaTriDonToiThieu() : BigDecimal.ZERO);
+            m.put("ngayKetThuc", c.getNgayKetThuc() != null ? c.getNgayKetThuc().toString() : "");
+            // Trong getAvailableCoupons(), sửa đoạn tạo moTa dòng 72-82:
+            StringBuilder sb = new StringBuilder();
+            if (Integer.valueOf(3).equals(c.getKieuGiamGia())) {
+                if (c.getGiaTriGiam() == null || c.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0) {
+                    sb.append("Miễn phí vận chuyển");
+                } else {
+                    sb.append("Giảm ").append(c.getGiaTriGiam()).append("đ tiền ship");
+                }
+            } else if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+                sb.append("Giảm ").append(c.getGiaTriGiam()).append("%");
+            } else {
+                sb.append("Giảm ").append(c.getGiaTriGiam());
+            }
+            m.put("moTa", sb.toString());
+            result.add(m);
+        }
+        return result;
     }
 
     public PhieuGiamGia getById(Integer id) {
@@ -87,11 +125,11 @@ public class PhieuGiamGiaService {
         BigDecimal giamGia;
         if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
             giamGia = giaTriDon.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
-        } else {
+        } else if (Integer.valueOf(2).equals(coupon.getKieuGiamGia())) {
             giamGia = coupon.getGiaTriGiam();
-        }
-        if (giamGia.compareTo(giaTriDon) > 0) {
-            giamGia = giaTriDon;
+        } else {
+            // Type 3 = freeship: soTienGiam = 0 (tính sau ở DonHangService với phiVanChuyen)
+            giamGia = BigDecimal.ZERO;
         }
         if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
             coupon.setTrangThai(0);
@@ -117,11 +155,11 @@ public class PhieuGiamGiaService {
             throw new DuplicateResourceException("Coupon code already exists: " + request.getMaCode());
         }
         if (request.getNgayBatDau() != null &&
-                request.getNgayBatDau().isBefore(LocalDateTime.now())) {
+                request.getNgayBatDau().toLocalDate().isBefore(LocalDateTime.now().toLocalDate())) {
             throw new IllegalArgumentException("Ngày bắt đầu phải từ hôm nay trở đi");
         }
         if (request.getNgayKetThuc() != null &&
-                request.getNgayKetThuc().isBefore(LocalDateTime.now())) {
+                request.getNgayKetThuc().toLocalDate().isBefore(LocalDateTime.now().toLocalDate())) {
             throw new IllegalArgumentException("Ngày kết thúc phải ở tương lai");
         }
         if (phieuGiamGiaRepository.countByNgayXoaIsNull() >= 70) {

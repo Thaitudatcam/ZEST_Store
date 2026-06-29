@@ -233,16 +233,16 @@ if (tab === 'month') {
           </div>
         ) : revenueData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
+            <BarChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey={tab === 'day' ? 'ngay' : tab === 'month' ? 'thang' : 'nam'} 
+              <XAxis dataKey={tab === 'year' ? 'nam' : 'ngay'} 
   tick={{ fontSize: 12 }} 
   stroke="#94a3b8"
-  tickFormatter={(value) => tab === 'month' ? `Tháng ${value}` : value} />
+  tickFormatter={(value) => tab === 'month' ? String(value).split('-')[2] : value} />
               <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => (v / 1000).toFixed(0) + 'k'} />
               <Tooltip formatter={(v) => VND(v)} />
-              <Line type="monotone" dataKey="doanhThu" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
-            </LineChart>
+              <Bar dataKey="doanhThu" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            </BarChart>
           </ResponsiveContainer>
         ) : <p className="text-center text-gray-400 py-10">Chưa có dữ liệu</p>}
       </div>

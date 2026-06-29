@@ -79,6 +79,9 @@ public class FileUploadService {
             case "png" -> "image/png";
             case "gif" -> "image/gif";
             case "webp" -> "image/webp";
+            case "mp4" -> "video/mp4";
+            case "webm" -> "video/webm";
+            case "ogg" -> "video/ogg";
             default -> "image/jpeg";
         };
     }

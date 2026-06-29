@@ -77,7 +77,7 @@ const validate = () => {
   if (!form.maCode.trim()) {
     alert("Vui lòng nhập mã code!"); return false;
   }
-  if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) {
+  if (form.kieuGiamGia !== 3 && (!form.giaTriGiam || Number(form.giaTriGiam) <= 0)) {
     alert("Giá trị giảm phải lớn hơn 0!"); return false;
   }
   if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) {
@@ -118,10 +118,10 @@ const validate = () => {
         giaTriDonToiThieu: form.giaTriDonToiThieu
           ? Number(form.giaTriDonToiThieu)
           : null,
-        ngayBatDau: form.ngayBatDau ? form.ngayBatDau + "T00:00:00" : null,
-        ngayKetThuc: form.ngayKetThuc ? form.ngayKetThuc + "T00:00:00" : null,
+        ngayBatDau: form.ngayBatDau ? form.ngayBatDau + "T" + new Date().toTimeString().slice(0,8) : null,
+        ngayKetThuc: form.ngayKetThuc ? form.ngayKetThuc + "T23:59:59" : null,
         soLuong: form.soLuong ? Number(form.soLuong) : null,
-        giaTriGiamToiDa: form.kieuGiamGia === 2 ? null : (form.giaTriGiamToiDa ? Number(form.giaTriGiamToiDa) : null)
+        giaTriGiamToiDa: form.kieuGiamGia === 2 || form.kieuGiamGia === 3 ? null : (form.giaTriGiamToiDa ? Number(form.giaTriGiamToiDa) : null)
       });
       setShowForm(false);
       setForm({
@@ -215,6 +215,7 @@ const validate = () => {
         <option value="">Tất cả</option>
         <option value="1">Giảm theo %</option>
         <option value="2">Giảm tiền mặt</option>
+        <option value="3">Freeship</option>
       </select>
     </div>
     <div>
@@ -276,20 +277,22 @@ const validate = () => {
               </thead>
               <tbody className="divide-y">
                 {paged.map((c) => (
-                  <tr key={c.maPhieuGiamGia} className="hover:bg-gray-50">
-                    <td className="px-3 py-3 font-mono font-semibold text-blue-700">
+                  <tr key={c.maPhieuGiamGia} className={`hover:bg-gray-50 ${c.kieuGiamGia === 3 ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-green-700' : 'text-red-600'}`}>
                       {c.maCode}
                     </td>
                     <td className="px-3 py-3 text-center">
                       {c.kieuGiamGia === 1
                         ? `${c.giaTriGiam}%`
+                        : c.kieuGiamGia === 3
+                        ? (c.giaTriGiam && Number(c.giaTriGiam) > 0 ? `Giảm ship ${VND(c.giaTriGiam)}` : 'Miễn ship')
                         : VND(c.giaTriGiam)}
                     </td>
                     <td className="px-3 py-3 text-center">
                       {c.soLuong ?? "∞"}
                     </td>
                     <td className="px-3 py-3 text-center">
-                      {c.kieuGiamGia === 2 ? '—' : c.giaTriGiamToiDa ? VND(c.giaTriGiamToiDa) : '∞'}
+                      {c.kieuGiamGia === 2 || c.kieuGiamGia === 3 ? '—' : c.giaTriGiamToiDa ? VND(c.giaTriGiamToiDa) : '∞'}
                     </td>
                     <td className="px-3 py-3 text-center text-gray-500 text-xs">
                       {fmtDate(c.ngayBatDau)}
@@ -372,21 +375,47 @@ const validate = () => {
                 >
                   <option value={1}>Giảm theo %</option>
                   <option value={2}>Giảm tiền mặt</option>
+                  <option value={3}>Freeship</option>
                 </select>
-                <input
-                  type="number"
-                  value={form.giaTriGiam}
-                  onChange={(e) =>
-                    setForm({ ...form, giaTriGiam: e.target.value })
-                  }
-                  placeholder={
-                    form.kieuGiamGia === 1
-                      ? "Phần trăm giảm (vd: 10)"
-                      : "Số tiền giảm"
-                  }
-                  required
-                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                {form.kieuGiamGia === 3 ? (
+                  <>
+                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={!form.giaTriGiam || Number(form.giaTriGiam) === 0}
+                        onChange={(e) =>
+                          setForm({ ...form, giaTriGiam: e.target.checked ? "0" : "" })
+                        }
+                        className="h-4 w-4"
+                      />
+                      Miễn phí vận chuyển
+                    </label>
+                    {form.giaTriGiam && Number(form.giaTriGiam) > 0 && (
+                      <input
+                        type="number"
+                        value={form.giaTriGiam}
+                        onChange={(e) => setForm({ ...form, giaTriGiam: e.target.value })}
+                        placeholder="Số tiền giảm ship"
+                        className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    )}
+                  </>
+                ) : (
+                  <input
+                    type="number"
+                    value={form.giaTriGiam}
+                    onChange={(e) =>
+                      setForm({ ...form, giaTriGiam: e.target.value })
+                    }
+                    placeholder={
+                      form.kieuGiamGia === 1
+                        ? "Phần trăm giảm (vd: 10)"
+                        : "Số tiền giảm"
+                    }
+                    required
+                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
                 <input
                   type="number"
                   value={form.giaTriDonToiThieu}

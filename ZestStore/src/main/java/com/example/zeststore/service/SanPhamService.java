@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,7 +66,12 @@ public class SanPhamService {
     public Page<SanPham> filterProducts(Integer categoryId, BigDecimal minPrice, BigDecimal maxPrice,
                                          int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<SanPham> result = sanPhamRepository.filterProducts(categoryId, minPrice, maxPrice, pageable);
+        Page<SanPham> result;
+        if (minPrice != null || maxPrice != null) {
+            result = sanPhamRepository.filterProducts(categoryId, minPrice, maxPrice, pageable);
+        } else {
+            result = sanPhamRepository.filterProductsByCategory(categoryId, pageable);
+        }
         populateStock(result);
         return result;
     }
@@ -107,6 +113,27 @@ public class SanPhamService {
         Map<Integer, Integer> stockMap = stockData.stream()
                 .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(), row -> ((Number) row[1]).intValue()));
         page.getContent().forEach(sp -> sp.setTongTonKho(stockMap.getOrDefault(sp.getMaSanPham(), 0)));
+        List<Object[]> giaTriData = bienTheRepository.sumGiaTriBySanPhamIds(ids);
+        Map<Integer, BigDecimal> giaTriMap = giaTriData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
+        page.getContent().forEach(sp -> sp.setTongGiaTri(giaTriMap.getOrDefault(sp.getMaSanPham(), BigDecimal.ZERO)));
+        List<Object[]> minGiaData = bienTheRepository.minGiaBySanPhamIds(ids);
+        Map<Integer, BigDecimal> minGiaMap = minGiaData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
+        page.getContent().forEach(sp -> sp.setGiaThapNhat(minGiaMap.get(sp.getMaSanPham())));
+        List<Object[]> ratingData = danhGiaRepository.avgRatingBySanPhamIds(ids);
+        Map<Integer, Double> avgRatingMap = ratingData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] != null ? ((Number) row[1]).doubleValue() : 0.0));
+        Map<Integer, Long> countMap = ratingData.stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[2] != null ? ((Number) row[2]).longValue() : 0L));
+        page.getContent().forEach(sp -> {
+            sp.setAverageRating(avgRatingMap.get(sp.getMaSanPham()));
+            sp.setReviewCount(countMap.get(sp.getMaSanPham()));
+        });
     }
 
     public SanPham getBySlug(String slug) {
@@ -126,13 +153,21 @@ public class SanPhamService {
     public Map<String, Object> getProductDetail(Integer id) {
         SanPham product = getById(id);
         List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(id);
-        List<AnhSanPham> images = anhSanPhamRepository.findByBienThe_MaBienTheOrderByThuTuHienThiAsc(
-                variants.isEmpty() ? 0 : variants.get(0).getMaBienThe());
+        List<Integer> variantIds = variants.stream().map(BienTheSanPham::getMaBienThe).collect(Collectors.toList());
+        List<AnhSanPham> images = variantIds.isEmpty() ? List.of()
+                : anhSanPhamRepository.findByBienThe_MaBienTheIn(variantIds);
         Double avgRating = danhGiaRepository.averageRatingBySanPhamId(id);
         Long reviewCount = danhGiaRepository.countBySanPhamId(id);
 
         List<?> sizes = bienTheRepository.findDistinctKichCoBySanPhamId(id);
         List<?> colors = bienTheRepository.findDistinctMauSacBySanPhamId(id);
+
+        BigDecimal minGia = variants.stream()
+                .filter(v -> v.getGia() != null && v.getGia().compareTo(BigDecimal.ZERO) > 0)
+                .map(BienTheSanPham::getGia)
+                .min(BigDecimal::compareTo)
+                .orElse(null);
+        product.setGiaThapNhat(minGia);
 
         Map<String, Object> result = new HashMap<>();
         result.put("product", product);

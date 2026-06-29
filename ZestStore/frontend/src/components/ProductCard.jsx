@@ -1,19 +1,17 @@
 import { Link } from 'react-router-dom'
-import { Heart, Star } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { addWishlist, removeWishlist } from '../api/wishlist'
 import { useState } from 'react'
+import SafeImg from './SafeImg'
 
 const VND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
 export default function ProductCard({ product }) {
   const { user } = useAuth()
   const [wished, setWished] = useState(false)
-  const price = product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
-  const img = product.urlAnhDaiDien || 'https://placehold.co/300x300/e2e8f0/475569?text=Polo'
+  const price = product.giaThapNhat ?? product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
   const slug = product.slug || product.maSanPham
-  const avgRating = product.averageRating
-  const reviewCount = product.reviewCount ?? 0
   const discount = product.phanTramGiamGia
   const colors = product.mauSacs ?? []
   const isNew = product.ngayTao && Date.now() - new Date(product.ngayTao).getTime() < 7 * 86400000
@@ -30,9 +28,9 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
+    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm  overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
       <div className="aspect-square bg-gray-100 overflow-hidden relative">
-        <img src={img} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} loading="lazy" />
+                    <SafeImg src={product.urlAnhDaiDien} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} />
         {user && (
           <button onClick={toggleWish} className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition z-10" disabled={isOutOfStock}>
             <Heart className={`h-4 w-4 ${wished ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
@@ -46,15 +44,8 @@ export default function ProductCard({ product }) {
           </span>
         )}
       </div>
+
       <div className="p-3">
-        {avgRating && (
-          <div className="flex items-center gap-1 mb-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} className={`h-3 w-3 ${i < Math.round(avgRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-            ))}
-            <span className="text-[10px] text-gray-400 ml-1">({reviewCount})</span>
-          </div>
-        )}
         <h3 className="font-semibold text-sm text-gray-800 truncate">{product.tenSanPham}</h3>
         {colors.length > 0 && (
           <div className="flex gap-1 mt-1.5">

@@ -21,6 +21,10 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
 
     Page<SanPham> findByTrangThaiAndNgayXoaIsNull(Integer trangThai, Pageable pageable);
 
+    @Query("SELECT s FROM SanPham s WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
+            + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc)")
+    Page<SanPham> filterProductsByCategory(@Param("maDanhMuc") Integer maDanhMuc, Pageable pageable);
+
     @Query(value = "SELECT DISTINCT s FROM SanPham s JOIN s.bienThes b WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
             + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc) AND "
             + "(:giaMin IS NULL OR b.gia >= :giaMin) AND "
