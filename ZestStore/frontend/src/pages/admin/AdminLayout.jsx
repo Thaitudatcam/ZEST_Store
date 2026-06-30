@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
 
@@ -27,7 +27,6 @@ const nav = [
     { to: '/admin/employees', label: 'Nhân viên' },
   ]},
   { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
-  { to: '/admin/chat', label: 'Hỗ trợ', icon: MessageCircle },
 ]
 
 export default function AdminLayout() {

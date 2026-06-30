@@ -15,5 +15,5 @@ public class CouponValidateRequest {
     private String maCode;
 
     @PositiveOrZero
-    private BigDecimal giaTriDon;
+    private BigDecimal tongTien;
 }

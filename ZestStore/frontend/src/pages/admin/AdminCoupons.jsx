@@ -274,15 +274,15 @@ const validate = () => {
               </thead>
               <tbody className="divide-y">
                 {paged.map((c) => (
-                  <tr key={c.maPhieuGiamGia} className={`hover:bg-gray-50 ${c.kieuGiamGia === 3 ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-green-700' : 'text-red-600'}`}>
+                  <tr key={c.maPhieuGiamGia} className={`hover:bg-gray-50 ${c.kieuGiamGia === 3 ? 'bg-green-50/40' : c.trangThai === 1 ? '' : 'bg-red-50'}`}>
+                    <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-green-700' : c.trangThai === 1 ? 'text-blue-700' : 'text-red-600'}`}>
                       {c.maCode}
                     </td>
                     <td className="px-3 py-3 text-center">
                       {c.kieuGiamGia === 1
                         ? `${c.giaTriGiam}%`
                         : c.kieuGiamGia === 3
-                        ? (c.giaTriGiam && Number(c.giaTriGiam) > 0 ? `Giảm ship ${VND(c.giaTriGiam)}` : 'Miễn ship')
+                        ? (c.giaTriGiam && Number(c.giaTriGiam) > 0 ? `Giảm tối đa ${VND(c.giaTriGiam)} tiền ship` : 'Miễn phí vận chuyển')
                         : VND(c.giaTriGiam)}
                     </td>
                     <td className="px-3 py-3 text-center">
@@ -363,55 +363,73 @@ const validate = () => {
                   required
                   className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <select
-                  value={form.kieuGiamGia}
-                  onChange={(e) =>
-                    setForm({ ...form, kieuGiamGia: Number(e.target.value) })
-                  }
-                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={1}>Giảm theo %</option>
-                  <option value={2}>Giảm tiền mặt</option>
-                  <option value={3}>Freeship</option>
-                </select>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 1, giaTriGiam: '' })}
+                    className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${form.kieuGiamGia !== 3 ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300'}`}>
+                    <span className="block text-base">🎯 Giảm sản phẩm</span>
+                    <span className="block text-[10px] font-normal mt-0.5 opacity-70">Trừ vào tiền sản phẩm</span>
+                  </button>
+                  <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 3, giaTriGiam: '0' })}
+                    className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${form.kieuGiamGia === 3 ? 'border-green-700 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:border-green-300'}`}>
+                    <span className="block text-base">🚚 Freeship</span>
+                    <span className="block text-[10px] font-normal mt-0.5 opacity-70">Trừ vào phí vận chuyển</span>
+                  </button>
+                </div>
+
                 {form.kieuGiamGia === 3 ? (
                   <>
-                    <label className="flex items-center gap-2 text-sm text-gray-600">
+                    <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
+                      Mã freeship sẽ giảm trực tiếp vào <strong>phí vận chuyển</strong> của đơn hàng, không ảnh hưởng đến tiền sản phẩm.
+                    </p>
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Giảm tối đa cho phí vận chuyển
+                      </label>
+                      <input
+                        type="number"
+                        value={form.giaTriGiam === "0" ? "" : form.giaTriGiam}
+                        onChange={(e) => setForm({ ...form, giaTriGiam: e.target.value })}
+                        placeholder="Nhập số tiền giảm tối đa (₫)"
+                        className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        disabled={form.giaTriGiam === "0"}
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
                       <input
                         type="checkbox"
-                        checked={!form.giaTriGiam || Number(form.giaTriGiam) === 0}
+                        checked={form.giaTriGiam === "0"}
                         onChange={(e) =>
                           setForm({ ...form, giaTriGiam: e.target.checked ? "0" : "" })
                         }
                         className="h-4 w-4"
                       />
-                      Miễn phí vận chuyển
+                      Miễn phí vận chuyển hoàn toàn (không giới hạn)
                     </label>
-                    {form.giaTriGiam && Number(form.giaTriGiam) > 0 && (
-                      <input
-                        type="number"
-                        value={form.giaTriGiam}
-                        onChange={(e) => setForm({ ...form, giaTriGiam: e.target.value })}
-                        placeholder="Số tiền giảm ship"
-                        className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    )}
                   </>
                 ) : (
-                  <input
-                    type="number"
-                    value={form.giaTriGiam}
-                    onChange={(e) =>
-                      setForm({ ...form, giaTriGiam: e.target.value })
-                    }
-                    placeholder={
-                      form.kieuGiamGia === 1
-                        ? "Phần trăm giảm (vd: 10)"
-                        : "Số tiền giảm"
-                    }
-                    required
-                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <>
+                    <p className="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2">
+                      Mã này sẽ giảm trực tiếp vào <strong>tiền sản phẩm</strong> trong đơn hàng.
+                    </p>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 1, giaTriGiam: '' })}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition ${form.kieuGiamGia === 1 ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                        % Theo phần trăm
+                      </button>
+                      <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 2, giaTriGiam: '' })}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition ${form.kieuGiamGia === 2 ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                        ₫ Giảm tiền mặt
+                      </button>
+                    </div>
+                    <input
+                      type="number"
+                      value={form.giaTriGiam}
+                      onChange={(e) => setForm({ ...form, giaTriGiam: e.target.value })}
+                      placeholder={form.kieuGiamGia === 1 ? "Phần trăm giảm (vd: 10)" : "Số tiền giảm"}
+                      required
+                      className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </>
                 )}
                 <input
                   type="number"

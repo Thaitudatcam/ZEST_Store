@@ -27,7 +27,7 @@ public class PhieuGiamGiaController {
 
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request) {
-        return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(request.getMaCode(), request.getGiaTriDon()));
+        return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(request.getMaCode(), request.getTongTien()));
     }
 
     @GetMapping("/available")

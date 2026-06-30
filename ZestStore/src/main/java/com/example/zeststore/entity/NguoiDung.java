@@ -104,11 +104,6 @@ public class NguoiDung {
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
     @JsonIgnore
-    private List<HoiThoaiChatbot> hoiThoais;
-
-    @OneToMany(mappedBy = "nguoiDung")
-    @ToString.Exclude
-    @JsonIgnore
     private List<HanhViNguoiDung> hanhVis;
 
     @OneToMany(mappedBy = "nguoiDung")
