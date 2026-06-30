@@ -7,7 +7,7 @@ import SafeImg from './SafeImg'
 
 const VND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, showRating = true }) {
   const { user } = useAuth()
   const [wished, setWished] = useState(false)
   const price = product.giaThapNhat ?? product.giaTrungBinh ?? (product.bienThes?.[0]?.gia ?? 0)
@@ -54,7 +54,7 @@ export default function ProductCard({ product }) {
             ))}
           </div>
         )}
-        {rating > 0 && (
+        {showRating && rating > 0 && (
           <div className="flex items-center gap-1.5 mt-1.5">
             <div className="flex">
               {[1, 2, 3, 4, 5].map(i => (

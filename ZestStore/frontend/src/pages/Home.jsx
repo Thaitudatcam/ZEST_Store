@@ -203,7 +203,7 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {allProducts.map((p, i) => (
                 <div key={p.maSanPham} className="animate-fade-in">
-                  <ProductCard product={p} />
+                  <ProductCard product={p} showRating={false} />
                 </div>
               ))}
             </div>
@@ -233,7 +233,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {latestProducts.map((p, i) => (
               <div key={p.maSanPham} style={{ animationDelay: `${i * 0.05}s` }} className="animate-fade-in">
-                <ProductCard product={p} />
+                <ProductCard product={p} showRating={false} />
               </div>
             ))}
           </div>

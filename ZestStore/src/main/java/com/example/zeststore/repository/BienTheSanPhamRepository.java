@@ -22,6 +22,9 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
     Optional<BienTheSanPham> findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
             Integer maSanPham, Integer maKichCo, Integer maMauSac);
 
+    Optional<BienTheSanPham> findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSacAndNgayXoaIsNull(
+            Integer maSanPham, Integer maKichCo, Integer maMauSac);
+
     @Query("SELECT DISTINCT b.kichCo FROM BienTheSanPham b WHERE b.sanPham.maSanPham = :maSanPham AND b.ngayXoa IS NULL")
     List<Object> findDistinctKichCoBySanPhamId(@Param("maSanPham") Integer maSanPham);
 
@@ -29,6 +32,8 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
     List<Object> findDistinctMauSacBySanPhamId(@Param("maSanPham") Integer maSanPham);
 
     List<BienTheSanPham> findBySanPham_MaSanPhamAndNgayXoaIsNull(Integer maSanPham);
+
+    List<BienTheSanPham> findBySanPham_MaSanPhamAndMauSac_MaMauSacAndNgayXoaIsNull(Integer maSanPham, Integer maMauSac);
 
     @Query("SELECT b.sanPham.maSanPham, COALESCE(SUM(b.tonKho), 0) FROM BienTheSanPham b "
             + "WHERE b.sanPham.maSanPham IN :maSanPhamIds AND b.ngayXoa IS NULL "

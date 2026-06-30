@@ -28,6 +28,7 @@ export default function AdminProductForm() {
   const [loading, setLoading] = useState(true)
   const [uploadingImg, setUploadingImg] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmDeleteColor, setConfirmDeleteColor] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
   const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
@@ -46,6 +47,7 @@ export default function AdminProductForm() {
   const [quickSizeName, setQuickSizeName] = useState('')
   const [selectedColorIds, setSelectedColorIds] = useState([])
   const [selectedSizeIds, setSelectedSizeIds] = useState([])
+  const [deletedColorIds, setDeletedColorIds] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -248,7 +250,7 @@ export default function AdminProductForm() {
       maKichCo: v.maKichCo || v.kichCo?.maKichCo || '',
       maMauSac: v.maMauSac || v.mauSac?.maMauSac || '',
     }))))
-    .catch(() => toast.error('Xóa thất bại'))
+    .catch(err => toast.error(err.response?.data?.message || 'Xóa thất bại'))
   }
 
   const handleUploadVariantImage = async (files) => {
@@ -326,6 +328,15 @@ export default function AdminProductForm() {
 
   const handleRemoveImage = (fileId) => {
     setUploadedImages(prev => prev.filter(img => img.fileId !== fileId))
+  }
+
+  const handleDeleteVariantsByColor = (maMauSac) => {
+    const colorId = Number(maMauSac)
+    const name = colors.find(c => c.maMauSac === colorId)?.mauSac || ''
+    setSelectedColorIds(prev => prev.filter(id => Number(id) !== colorId))
+    setDeletedColorIds(prev => [...prev, colorId])
+    setConfirmDeleteColor(null)
+    toast.success('Đã bỏ màu ' + name)
   }
 
   const getColorName = (id) => colors.find(c => c.maMauSac === Number(id))?.mauSac || '-'
@@ -530,14 +541,21 @@ export default function AdminProductForm() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {colors.map(c => {
+                  {colors.filter(c => !deletedColorIds.includes(c.maMauSac)).map(c => {
                     const selected = selectedColorIds.includes(c.maMauSac)
                     return (
-                      <button key={c.maMauSac} type="button" onClick={() => toggleColorId(c.maMauSac)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
-                        {c.maMauHex && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.maMauHex }} />}
-                        {c.mauSac}
-                      </button>
+                      <div key={c.maMauSac} className="relative group">
+                        <button type="button" onClick={() => toggleColorId(c.maMauSac)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                          {c.maMauHex && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.maMauHex }} />}
+                          {c.mauSac}
+                        </button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDeleteColor({ maMauSac: c.maMauSac, mauSac: c.mauSac }) }}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] leading-none flex items-center justify-center hover:bg-red-600 shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Xóa tất cả biến thể màu này">
+                          ×
+                        </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -676,10 +694,10 @@ export default function AdminProductForm() {
                       </td>
                     </tr>
                   ))}
-                  <input id="vimgRowInput" type="file" accept="image/*" hidden
-                    onChange={(e) => { if (rowUploadIdx !== null) { handleUploadVariantImageRow(rowUploadIdx, e.target.files); setRowUploadIdx(null); e.target.value = '' } }} />
                 </tbody>
               </table>
+              <input id="vimgRowInput" type="file" accept="image/*" hidden
+                onChange={(e) => { if (rowUploadIdx !== null) { handleUploadVariantImageRow(rowUploadIdx, e.target.files); setRowUploadIdx(null); e.target.value = '' } }} />
             </div>
           )}
 
@@ -826,6 +844,19 @@ export default function AdminProductForm() {
             <div className="flex gap-3">
               <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
               <button onClick={() => handleDeleteVariant(confirmDelete)} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDeleteColor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDeleteColor(null)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
+            <p className="text-sm text-gray-600 mb-4">Xóa tất cả biến thể màu <strong>{confirmDeleteColor.mauSac}</strong>?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteColor(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
+              <button onClick={() => handleDeleteVariantsByColor(confirmDeleteColor.maMauSac)} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
             </div>
           </div>
         </div>

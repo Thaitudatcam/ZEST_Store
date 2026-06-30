@@ -125,6 +125,12 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.deleteVariant(variantId));
     }
 
+    @DeleteMapping("/{id}/variants/by-color/{colorId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteVariantsByColor(@PathVariable Integer id, @PathVariable Integer colorId) {
+        return ResponseEntity.ok(sanPhamService.deleteVariantsByColor(id, colorId));
+    }
+
     @GetMapping("/admin/variant-list")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllVariantsFlat() {

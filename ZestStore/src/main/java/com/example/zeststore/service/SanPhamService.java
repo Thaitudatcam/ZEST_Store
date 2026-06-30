@@ -152,7 +152,7 @@ public class SanPhamService {
 
     public Map<String, Object> getProductDetail(Integer id) {
         SanPham product = getById(id);
-        List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(id);
+        List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(id);
         List<Integer> variantIds = variants.stream().map(BienTheSanPham::getMaBienThe).collect(Collectors.toList());
         List<AnhSanPham> images = variantIds.isEmpty() ? List.of()
                 : anhSanPhamRepository.findByBienThe_MaBienTheIn(variantIds);
@@ -194,7 +194,7 @@ public class SanPhamService {
                     .orElseThrow(() -> new ResourceNotFoundException("Size", req.getMaKichCo()));
             MauSac mauSac = mauSacRepository.findById(req.getMaMauSac())
                     .orElseThrow(() -> new ResourceNotFoundException("Color", req.getMaMauSac()));
-            if (bienTheRepository.findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
+            if (bienTheRepository.findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSacAndNgayXoaIsNull(
                     productId, req.getMaKichCo(), req.getMaMauSac()).isPresent()) {
                 throw new DuplicateResourceException("Variant already exists for size " + kichCo.getKichCo() + " and color " + mauSac.getMauSac());
             }
@@ -282,7 +282,7 @@ public class SanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Size", request.getMaKichCo()));
         MauSac mauSac = mauSacRepository.findById(request.getMaMauSac())
                 .orElseThrow(() -> new ResourceNotFoundException("Color", request.getMaMauSac()));
-        if (bienTheRepository.findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
+        if (bienTheRepository.findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSacAndNgayXoaIsNull(
                 productId, request.getMaKichCo(), request.getMaMauSac()).isPresent()) {
             throw new DuplicateResourceException("Biến thể đã tồn tại cho size " + kichCo.getKichCo() + " và màu " + mauSac.getMauSac());
         }
@@ -334,6 +334,19 @@ public class SanPhamService {
         variant.setNgayXoa(LocalDateTime.now());
         bienTheRepository.save(variant);
         return Map.of("message", "Variant deleted");
+    }
+
+    @Transactional
+    public Map<String, Object> deleteVariantsByColor(Integer productId, Integer colorId) {
+        List<BienTheSanPham> variants = bienTheRepository
+                .findBySanPham_MaSanPhamAndMauSac_MaMauSacAndNgayXoaIsNull(productId, colorId);
+        if (variants.isEmpty()) {
+            throw new ResourceNotFoundException("No variants found for color " + colorId);
+        }
+        variants.forEach(v -> v.setNgayXoa(LocalDateTime.now()));
+        bienTheRepository.saveAll(variants);
+        recalculateGiaTrungBinh(getById(productId));
+        return Map.of("message", "Deleted " + variants.size() + " variants", "deletedCount", variants.size());
     }
 
     public List<AnhSanPham> getImages(Integer variantId) {
