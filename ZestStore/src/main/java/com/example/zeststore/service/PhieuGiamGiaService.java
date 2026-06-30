@@ -3,10 +3,12 @@ package com.example.zeststore.service;
 import com.example.zeststore.dto.request.CouponRequest;
 import com.example.zeststore.dto.response.CouponResponse;
 import com.example.zeststore.entity.PhieuGiamGia;
+import com.example.zeststore.entity.VoucherNguoiDung;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.DuplicateResourceException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.PhieuGiamGiaRepository;
+import com.example.zeststore.repository.VoucherNguoiDungRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class PhieuGiamGiaService {
 
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
+    private final VoucherNguoiDungRepository voucherNguoiDungRepository;
 
     public List<PhieuGiamGia> getAll() {
         List<PhieuGiamGia> list = phieuGiamGiaRepository.findByNgayXoaIsNull();
@@ -47,46 +50,71 @@ public class PhieuGiamGiaService {
     }
 
     public List<Map<String, Object>> getAvailableCoupons(BigDecimal tongTien) {
+        return getAvailableCoupons(tongTien, null);
+    }
+
+    public List<Map<String, Object>> getAvailableCoupons(BigDecimal tongTien, Integer userId) {
         if (tongTien == null) tongTien = BigDecimal.ZERO;
         List<PhieuGiamGia> coupons = phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
         List<Map<String, Object>> result = new ArrayList<>();
         for (PhieuGiamGia c : coupons) {
-            BigDecimal giamGia;
-            if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
-                giamGia = tongTien.multiply(c.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
-            } else {
-                giamGia = c.getGiaTriGiam();
-            }
-            if (giamGia.compareTo(tongTien) > 0) giamGia = tongTien;
-            if (c.getGiaTriGiamToiDa() != null && giamGia.compareTo(c.getGiaTriGiamToiDa()) > 0) {
-                giamGia = c.getGiaTriGiamToiDa();
-            }
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("maCode", c.getMaCode());
-            m.put("kieuGiamGia", c.getKieuGiamGia());
-            m.put("giaTriGiam", c.getGiaTriGiam());
-            m.put("soTienGiam", giamGia);
-            m.put("giaTriDonToiThieu", c.getGiaTriDonToiThieu() != null ? c.getGiaTriDonToiThieu() : BigDecimal.ZERO);
-            m.put("ngayKetThuc", c.getNgayKetThuc() != null ? c.getNgayKetThuc().toString() : "");
-            StringBuilder sb = new StringBuilder();
-            if (Integer.valueOf(3).equals(c.getKieuGiamGia())) {
-                if (c.getGiaTriGiam() == null || c.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0) {
-                    sb.append("Miễn phí vận chuyển");
-                } else {
-                    sb.append("Giảm ").append(c.getGiaTriGiam()).append("đ tiền ship");
+            result.add(buildCouponMap(c, tongTien, false));
+        }
+        if (userId != null) {
+            List<VoucherNguoiDung> userVouchers = voucherNguoiDungRepository
+                    .findByNguoiDung_MaNguoiDungAndTrangThai(userId, 1);
+            for (VoucherNguoiDung v : userVouchers) {
+                PhieuGiamGia p = v.getPhieuGiamGia();
+                boolean alreadyInResult = result.stream()
+                        .anyMatch(r -> p.getMaCode().equals(r.get("maCode")));
+                if (!alreadyInResult && Integer.valueOf(1).equals(p.getTrangThai())
+                        && p.getNgayXoa() == null) {
+                    result.add(buildCouponMap(p, tongTien, true));
                 }
-            } else if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
-                sb.append("Giảm ").append(c.getGiaTriGiam()).append("%");
-            } else {
-                sb.append("Giảm ").append(c.getGiaTriGiam());
             }
-            if (c.getGiaTriDonToiThieu() != null && c.getGiaTriDonToiThieu().compareTo(BigDecimal.ZERO) > 0) {
-                sb.append(" - Đơn tối thiểu ").append(c.getGiaTriDonToiThieu());
-            }
-            m.put("moTa", sb.toString());
-            result.add(m);
         }
         return result;
+    }
+
+    private Map<String, Object> buildCouponMap(PhieuGiamGia c, BigDecimal tongTien, boolean isPersonal) {
+        BigDecimal giamGia;
+        if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+            giamGia = tongTien.multiply(c.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
+        } else if (Integer.valueOf(2).equals(c.getKieuGiamGia())) {
+            giamGia = c.getGiaTriGiam();
+        } else {
+            giamGia = BigDecimal.ZERO;
+        }
+        if (giamGia.compareTo(tongTien) > 0) giamGia = tongTien;
+        if (c.getGiaTriGiamToiDa() != null && giamGia.compareTo(c.getGiaTriGiamToiDa()) > 0) {
+            giamGia = c.getGiaTriGiamToiDa();
+        }
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("maCode", c.getMaCode());
+        m.put("kieuGiamGia", c.getKieuGiamGia());
+        m.put("giaTriGiam", c.getGiaTriGiam());
+        m.put("soTienGiam", giamGia);
+        m.put("giaTriDonToiThieu", c.getGiaTriDonToiThieu() != null ? c.getGiaTriDonToiThieu() : BigDecimal.ZERO);
+        m.put("ngayKetThuc", c.getNgayKetThuc() != null ? c.getNgayKetThuc().toString() : "");
+        m.put("isPersonal", isPersonal);
+        StringBuilder sb = new StringBuilder();
+        if (isPersonal) sb.append("[Của bạn] ");
+        if (Integer.valueOf(3).equals(c.getKieuGiamGia())) {
+            if (c.getGiaTriGiam() == null || c.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0) {
+                sb.append("Miễn phí vận chuyển");
+            } else {
+                sb.append("Giảm ").append(c.getGiaTriGiam()).append("đ tiền ship");
+            }
+        } else if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+            sb.append("Giảm ").append(c.getGiaTriGiam()).append("%");
+        } else {
+            sb.append("Giảm ").append(c.getGiaTriGiam());
+        }
+        if (c.getGiaTriDonToiThieu() != null && c.getGiaTriDonToiThieu().compareTo(BigDecimal.ZERO) > 0) {
+            sb.append(" - Đơn tối thiểu ").append(c.getGiaTriDonToiThieu());
+        }
+        m.put("moTa", sb.toString());
+        return m;
     }
 
     public PhieuGiamGia getById(Integer id) {

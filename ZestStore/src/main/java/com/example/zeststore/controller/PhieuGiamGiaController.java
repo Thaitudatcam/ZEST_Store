@@ -4,11 +4,13 @@ import com.example.zeststore.dto.request.CouponRequest;
 import com.example.zeststore.dto.request.CouponValidateRequest;
 import com.example.zeststore.dto.response.CouponResponse;
 import com.example.zeststore.service.PhieuGiamGiaService;
+import com.example.zeststore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,6 +23,7 @@ import java.util.List;
 public class PhieuGiamGiaController {
 
     private final PhieuGiamGiaService phieuGiamGiaService;
+    private final UserService userService;
 
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request) {
@@ -28,8 +31,11 @@ public class PhieuGiamGiaController {
     }
 
     @GetMapping("/available")
-    public ResponseEntity<?> getAvailable(@RequestParam(defaultValue = "0") BigDecimal tongTien) {
-        return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien));
+    public ResponseEntity<?> getAvailable(
+            @RequestParam(defaultValue = "0") BigDecimal tongTien,
+            Authentication auth) {
+        Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
+        return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien, userId));
     }
 
     @GetMapping

@@ -348,7 +348,11 @@ export default function Checkout() {
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const discount = coupon?.soTienGiam || 0
   const shippingFee = ghnFee !== null ? Number(ghnFee) : 0
-  const finalTotal = Math.max(0, rawTotal - discount + shippingFee)
+  const freeshipDiscount = coupon?.kieuGiamGia === 3
+    ? (coupon.giaTriGiam === 0 ? shippingFee : Math.min(coupon.giaTriGiam, shippingFee))
+    : 0
+  const effectiveShippingFee = shippingFee - freeshipDiscount
+  const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee)
 
   const goToStep = (s) => {
     if (s === 'payment' || s === 'review') {
@@ -602,7 +606,12 @@ export default function Checkout() {
                 <span>Tạm tính</span>
                 <span>{VND(rawTotal)}</span>
               </div>
-              {discount > 0 && (
+              {freeshipDiscount > 0 ? (
+                <div className="flex justify-between text-green-600">
+                  <span>Miễn phí vận chuyển</span>
+                  <span>-{VND(freeshipDiscount)}</span>
+                </div>
+              ) : discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Giảm giá</span>
                   <span>-{VND(discount)}</span>
@@ -610,7 +619,7 @@ export default function Checkout() {
               )}
               <div className="flex justify-between text-gray-600">
                 <span>Phí vận chuyển</span>
-                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-red-500 text-xs">Lỗi</span> : ghnFee !== null ? VND(shippingFee) : '---'}</span>
+                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-red-500 text-xs">Lỗi</span> : ghnFee !== null ? VND(effectiveShippingFee) : '---'}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Tổng cộng</span>
@@ -750,17 +759,25 @@ export default function Checkout() {
           ) : (
             <div className="space-y-3 overflow-y-auto flex-1">
               {availableVouchers.map((v) => (
-                <div key={v.maCode} onClick={() => handleApplyVoucher(v)}
-                  className="border rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition active:scale-[0.98]">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-semibold text-blue-700">{v.maCode}</p>
-                      <p className="text-sm text-gray-600 mt-1">{v.moTa}</p>
-                      <p className="text-xs text-gray-400 mt-1">Giảm <span className="font-semibold text-green-600">{VND(v.soTienGiam)}</span></p>
+                  <div key={v.maCode} onClick={() => handleApplyVoucher(v)}
+                    className="border rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition active:scale-[0.98]">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-blue-700">{v.maCode}</p>
+                          {v.isPersonal && <span className="text-[10px] bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">Của bạn</span>}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{v.moTa}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {v.kieuGiamGia === 3
+                            ? <span className="text-green-600 font-semibold">Miễn phí vận chuyển</span>
+                            : <>Giảm <span className="font-semibold text-green-600">{VND(v.soTienGiam)}</span></>
+                          }
+                        </p>
+                      </div>
+                      <span className="shrink-0 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full">Áp dụng</span>
                     </div>
-                    <span className="shrink-0 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full">Áp dụng</span>
                   </div>
-                </div>
               ))}
             </div>
           )}

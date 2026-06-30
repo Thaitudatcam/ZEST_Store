@@ -1,5 +1,6 @@
 package com.example.zeststore.controller;
 
+import com.example.zeststore.config.PaymentConfig;
 import com.example.zeststore.dto.request.PosCartRequest;
 import com.example.zeststore.dto.request.PosOrderRequest;
 import com.example.zeststore.dto.response.PaymentResponse;
@@ -20,6 +21,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -35,6 +38,7 @@ public class POSController {
     private final ThanhToanRepository thanhToanRepository;
     private final ThanhToanService thanhToanService;
     private final PaymentService paymentService;
+    private final PaymentConfig paymentConfig;
 
     @PostMapping("/orders")
     public ResponseEntity<?> createOrder(Authentication auth, @Valid @RequestBody PosOrderRequest request) {
@@ -79,29 +83,26 @@ public class POSController {
         return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/zalopay/create/{orderId}")
-    public ResponseEntity<?> createZaloPayOrder(@PathVariable Integer orderId) {
-        Map<String, String> response = paymentService.createZaloPayPayment(orderId);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/zalopay/preview")
-    public ResponseEntity<?> previewZaloPay(@RequestBody Map<String, Object> body) {
+    @PostMapping("/vietqr/preview")
+    public ResponseEntity<?> previewVietQr(@RequestBody Map<String, Object> body) {
         BigDecimal amount = BigDecimal.valueOf(((Number) body.get("amount")).doubleValue());
-        Map<String, String> response = paymentService.createZaloPayPreview(amount);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/zalopay/confirm")
-    public ResponseEntity<?> confirmZaloPay(Authentication auth, @Valid @RequestBody PosOrderRequest request) {
-        request.setPhuongThucThanhToan(4);
-        Map<String, Object> orderResult = posService.createPosOrder(request, userService.getUserIdFromAuth(auth));
-        Integer orderId = (Integer) orderResult.get("maDonHang");
-        ThanhToan payment = thanhToanRepository.findByDonHang_MaDonHang(orderId)
-                .stream().findFirst()
-                .orElseThrow(() -> new BadRequestException("Payment not found"));
-        thanhToanService.completePayment(payment.getMaThanhToan(), "POS-" + System.currentTimeMillis());
-        return ResponseEntity.ok(orderResult);
+        PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();
+        String addInfo = "Thanh+toan+tai+quay+ZestStore";
+        String qrUrl = String.format(
+                "https://img.vietqr.io/image/%s-%s-%s.jpg?amount=%s&addInfo=%s&accountName=%s",
+                config.getBankBin(),
+                config.getBankNumber(),
+                config.getTemplate(),
+                amount.longValue(),
+                addInfo,
+                URLEncoder.encode(config.getBankName(), StandardCharsets.UTF_8));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("qrUrl", qrUrl);
+        result.put("bankName", "MB Bank");
+        result.put("accountNumber", config.getBankNumber());
+        result.put("accountName", config.getBankName());
+        result.put("amount", amount);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/payment-status/{orderId}")

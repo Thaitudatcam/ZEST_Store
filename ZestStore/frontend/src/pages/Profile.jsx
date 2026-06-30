@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress } from '../api/users'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff } from 'lucide-react'
 import { getProvinces, getDistricts, getWards } from '../api/ghn'
 
 export default function Profile() {
-  const [tab, setTab] = useState('profile')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(searchParams.get('tab') === 'password' ? 'password' : 'profile')
   const [profile, setProfile] = useState(null)
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)

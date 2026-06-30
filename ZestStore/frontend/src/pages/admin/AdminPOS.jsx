@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { createCustomer, getCoupons, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag, ScanBarcode, Building2 } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag, ScanBarcode, QrCode } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
-import QRCode from 'qrcode'
 
 export default function AdminPOS() {
   const navigate = useNavigate()
@@ -298,15 +297,11 @@ export default function AdminPOS() {
     if (cart.length === 0) return
     setPlacing(true)
     try {
-      if (paymentMethod === 4) {
+      if (paymentMethod === 6) {
         const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
-        const zpRes = await api.post('/admin/pos/zalopay/preview', { amount: totalAmount }).then(r => r.data)
-        let url = null
-        if (zpRes.qrCode) {
-          url = await QRCode.toDataURL(zpRes.qrCode, { width: 240, margin: 2 })
-          setQrDataUrl(url)
-        }
-        setBankInfo({ ...zpRes, amount: totalAmount })
+        const vqRes = await api.post('/admin/pos/vietqr/preview', { amount: totalAmount }).then(r => r.data)
+        setQrDataUrl(vqRes.qrUrl)
+        setBankInfo(vqRes)
         setPayResult({ thanhToan: totalAmount })
       } else {
         const res = await api.post('/admin/pos/orders', {
@@ -337,13 +332,13 @@ export default function AdminPOS() {
     if (cart.length === 0) return
     setPlacing(true)
     try {
-      const res = await api.post('/admin/pos/zalopay/confirm', {
+      const res = await api.post('/admin/pos/orders', {
         items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
         tenKhachHang: tenKhach.trim() || undefined,
         sdtKhachHang: sdtKhach.trim() || undefined,
-        phuongThucThanhToan: 4,
+        phuongThucThanhToan: 6,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       setCart([])
@@ -599,7 +594,7 @@ export default function AdminPOS() {
             <select value={paymentMethod} onChange={e => setPaymentMethod(Number(e.target.value))}
               className="border rounded-xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value={5}>💵 Tiền mặt</option>
-              <option value={4}>💳 ZaloPay</option>
+              <option value={6}>🏦 VietQR</option>
             </select>
             <button onClick={handlePlace} disabled={cart.length === 0 || placing}
               className="flex-1 bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
@@ -734,18 +729,29 @@ export default function AdminPOS() {
           <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
             <div className="text-center p-6">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Building2 className="h-8 w-8 text-blue-600" />
+                <QrCode className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="font-bold text-lg">Quét mã ZaloPay</h3>
-              <p className="text-sm text-gray-500 mt-1">Đơn hàng #{payResult.maDonHang}</p>
-              {qrDataUrl && <img src={qrDataUrl} alt="ZaloPay QR" className="mx-auto my-3 w-48 h-48" />}
+              <h3 className="font-bold text-lg">Quét mã VietQR</h3>
+              {qrDataUrl && <img src={qrDataUrl} alt="VietQR" className="mx-auto my-3 w-64 h-64" />}
               <div className="bg-gray-50 rounded-xl p-3 text-left space-y-1 text-sm">
                 <div className="flex justify-between">
+                  <span className="text-gray-500">Ngân hàng:</span>
+                  <span className="font-medium">{bankInfo.bankName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Số tài khoản:</span>
+                  <span className="font-medium">{bankInfo.accountNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Chủ tài khoản:</span>
+                  <span className="font-medium">{bankInfo.accountName}</span>
+                </div>
+                <div className="flex justify-between border-t pt-1 mt-1">
                   <span className="text-gray-500">Số tiền:</span>
                   <span className="font-bold text-blue-700">{VND(payResult.thanhToan)}</span>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-3">Khách quét mã bằng ZaloPay để thanh toán</p>
+              <p className="text-xs text-gray-400 mt-3">Khách quét mã bằng ứng dụng ngân hàng để thanh toán</p>
             </div>
             <div className="border-t p-4 flex gap-3">
               <button onClick={closeResult}

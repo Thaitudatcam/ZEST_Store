@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Heart, User, Menu, X, Store, ChevronDown, Search, Loader } from 'lucide-react'
+import { ShoppingCart, Heart, User, Menu, X, Store, ChevronDown, Search, Loader, Ticket } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
+import { useVoucher } from '../context/VoucherContext'
 import { useState, useRef, useEffect } from 'react'
 import { searchSuggestions } from '../api/products'
 import { useToast } from '../context/ToastContext'
@@ -14,6 +15,7 @@ export default function Navbar() {
   const { user, logout } = useAuth()
   const { count } = useCart()
   const { wishlistCount } = useWishlist()
+  const { voucherCount } = useVoucher()
   const navigate = useNavigate()
   const toast = useToast()
   const [open, setOpen] = useState(false)
@@ -118,14 +120,22 @@ export default function Navbar() {
             <Link to="/products" className="text-gray-600 hover:text-blue-700 transition text-sm font-medium">Sản phẩm</Link>
             {user ? (
               <>
-                <Link to="/wishlist" className="relative text-gray-600 hover:text-blue-700">
-                  <Heart className="h-5 w-5" />
-                  {wishlistCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none animate-scale-in">
-                      {wishlistCount > 99 ? '99+' : wishlistCount}
-                    </span>
-                  )}
-                </Link>
+              <Link to="/wishlist" className="relative text-gray-600 hover:text-blue-700">
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none animate-scale-in">
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </span>
+                )}
+              </Link>
+              <Link to="/vouchers" className="relative text-gray-600 hover:text-blue-700">
+                <Ticket className="h-5 w-5" />
+                {voucherCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none animate-scale-in">
+                    {voucherCount > 99 ? '99+' : voucherCount}
+                  </span>
+                )}
+              </Link>
                 <Link to="/cart" className="relative text-gray-600 hover:text-blue-700">
                   <ShoppingCart className="h-5 w-5" />
                   {count > 0 && (
@@ -147,7 +157,7 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border py-2 z-50">
                       <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Tài khoản</Link>
                       <Link to="/orders" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đơn hàng</Link>
-                      <Link to="/change-password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đổi mật khẩu</Link>
+                      <Link to="/profile?tab=password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đổi mật khẩu</Link>
                       <hr className="my-1" />
                       {user?.vaiTro === 'ADMIN' && (
                         <Link to="/admin" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Quản trị</Link>
@@ -211,10 +221,11 @@ export default function Navbar() {
           {user ? (
             <>
               <Link to="/wishlist" onClick={() => setOpen(false)} className="block text-gray-600">Yêu thích</Link>
+              <Link to="/vouchers" onClick={() => setOpen(false)} className="block text-gray-600">Voucher</Link>
               <Link to="/cart" onClick={() => setOpen(false)} className="block text-gray-600">Giỏ hàng</Link>
               <Link to="/orders" onClick={() => setOpen(false)} className="block text-gray-600">Đơn hàng</Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block text-gray-600">Tài khoản</Link>
-              <Link to="/change-password" onClick={() => setOpen(false)} className="block text-gray-600">Đổi mật khẩu</Link>
+              <Link to="/profile?tab=password" onClick={() => setOpen(false)} className="block text-gray-600">Đổi mật khẩu</Link>
               {user?.vaiTro === 'ADMIN' && <Link to="/admin" onClick={() => setOpen(false)} className="block text-gray-600">Quản trị</Link>}
               <button onClick={() => { handleLogout(); setOpen(false) }} className="block text-red-500">Đăng xuất</button>
             </>
