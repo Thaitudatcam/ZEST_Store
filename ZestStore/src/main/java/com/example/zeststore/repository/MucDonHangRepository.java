@@ -15,7 +15,7 @@ public interface MucDonHangRepository extends JpaRepository<MucDonHang, Integer>
     @Query("SELECT m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, "
             + "m.bienThe.sanPham.urlAnhDaiDien, SUM(m.soLuong) as totalSold "
             + "FROM MucDonHang m "
-            + "WHERE m.donHang.trangThaiDon = 4 "
+            + "WHERE m.donHang.trangThaiDon IN (4, 6) "
             + "GROUP BY m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, m.bienThe.sanPham.urlAnhDaiDien "
             + "ORDER BY totalSold DESC")
     List<Object[]> findBestSellingProducts(Pageable pageable);

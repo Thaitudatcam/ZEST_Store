@@ -3,7 +3,7 @@ import { getCart, removeCartItem, updateCartItem, clearCart } from '../api/cart'
 import { useCart } from '../context/CartContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Toast from '../components/Toast'
-import { Trash2, ShoppingBag, Plus, Minus } from 'lucide-react'
+import { Trash2, ShoppingBag, Plus, Minus, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
@@ -14,6 +14,7 @@ export default function Cart() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
+  const [selectedItem, setSelectedItem] = useState(null)
   const { refreshCount } = useCart()
 
   const load = () => getCart().then(setItems).finally(() => setLoading(false))
@@ -126,10 +127,10 @@ export default function Cart() {
                 style={{ animationDelay: `${idx * 50}ms` }}>
                 <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0" />
-                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => setSelectedItem(i)}>
                   <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedItem(i)}>
                   <p className="font-semibold truncate">{i.tenSanPham || `Sản phẩm #${i.maSanPham}`}</p>
                   <p className="text-sm text-gray-500">{[i.kichCo, i.mauSac].filter(Boolean).join(' - ')}</p>
                   <p className="text-blue-700 font-bold">{VND(i.donGia || 0)}</p>
@@ -177,6 +178,53 @@ export default function Cart() {
           </div>
         </>
       )}
+
+      {selectedItem && (() => {
+        const i = selectedItem
+        return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setSelectedItem(null)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full animate-scale-in shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="relative">
+              <img src={i.urlAnh} alt={i.tenSanPham} className="w-full h-72 object-cover object-center bg-gray-100"
+                onError={(e) => { e.target.src = 'https://placehold.co/600x400/e2e8f0/475569?text=Polo' }} />
+              <button onClick={() => setSelectedItem(null)} className="absolute top-3 right-3 bg-white/90 rounded-full p-1.5 hover:bg-white transition shadow-sm">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <h3 className="font-bold text-lg">{i.tenSanPham || 'Sản phẩm'}</h3>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-blue-700 font-bold text-xl">{VND(i.donGia || 0)}</span>
+                <span className="text-gray-400">x{i.soLuong}</span>
+                <span className="text-gray-600 font-semibold">= {VND((i.donGia || 0) * (i.soLuong || 1))}</span>
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {i.mauSac && (
+                  <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                    Màu: <span className="font-medium">{i.mauSac}</span>
+                  </span>
+                )}
+                {i.kichCo && (
+                  <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                    Size: <span className="font-medium">{i.kichCo}</span>
+                  </span>
+                )}
+                <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                  Kho: <span className="font-medium">{i.tonKho ?? '—'}</span>
+                </span>
+              </div>
+              {(i.slug || i.maSanPham) && (
+                <a href={`/products/${i.slug || i.maSanPham}`} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-700 font-medium hover:underline mt-1">
+                  Xem chi tiết sản phẩm →
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )})()}
     </div>
   )
 }

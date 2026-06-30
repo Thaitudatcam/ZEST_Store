@@ -146,7 +146,10 @@ public class DonHangService {
                 throw new BadRequestException("Chưa đạt giá trị đơn tối thiểu để áp dụng mã này");
             }
 
-            if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
+            if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+                // FREESHIP: giảm trên phí ship, không giảm tiền SP
+                soTienGiam = BigDecimal.ZERO;
+            } else if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
                 soTienGiam = tongTien.multiply(coupon.getGiaTriGiam())
                         .divide(BigDecimal.valueOf(100));
             } else {
@@ -158,13 +161,15 @@ public class DonHangService {
             if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
                 soTienGiam = coupon.getGiaTriGiamToiDa();
             }
-            if (coupon.getSoLuong() != null) {
-                coupon.setSoLuong(coupon.getSoLuong() - 1);
-                phieuGiamGiaRepository.save(coupon);
-            }
         }
 
         BigDecimal phiVanChuyen = recalculateShippingFee(request, orderItems);
+        if (coupon != null && Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+            BigDecimal giamShip = (coupon.getGiaTriGiam() == null || coupon.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0)
+                ? phiVanChuyen
+                : coupon.getGiaTriGiam().min(phiVanChuyen);
+            phiVanChuyen = phiVanChuyen.subtract(giamShip).max(BigDecimal.ZERO);
+        }
         BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             finalTotal = BigDecimal.ZERO;
@@ -240,7 +245,7 @@ public class DonHangService {
 
     @Transactional
     public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
-        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8);
+        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8, 9);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
         }
@@ -248,7 +253,7 @@ public class DonHangService {
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
 
-        if (Integer.valueOf(8).equals(status)) {
+        if (Integer.valueOf(8).equals(status) || Integer.valueOf(9).equals(status)) {
             restoreStock(orderId);
             thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
                     .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))

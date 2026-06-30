@@ -27,7 +27,23 @@ public class PhieuGiamGiaService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
 
     public List<PhieuGiamGia> getAll() {
-        return phieuGiamGiaRepository.findByNgayXoaIsNull();
+        List<PhieuGiamGia> list = phieuGiamGiaRepository.findByNgayXoaIsNull();
+        LocalDateTime now = LocalDateTime.now();
+        boolean changed = false;
+        for (PhieuGiamGia c : list) {
+            if (c.getTrangThai() == 1) {
+                boolean hetHan = c.getNgayKetThuc() != null && now.isAfter(c.getNgayKetThuc());
+                boolean hetSoLuong = c.getSoLuong() != null && c.getSoLuong() <= 0;
+                if (hetHan || hetSoLuong) {
+                    c.setTrangThai(0);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            phieuGiamGiaRepository.saveAll(list);
+        }
+        return list;
     }
 
     public List<Map<String, Object>> getAvailableCoupons(BigDecimal tongTien) {
@@ -53,15 +69,19 @@ public class PhieuGiamGiaService {
             m.put("giaTriDonToiThieu", c.getGiaTriDonToiThieu() != null ? c.getGiaTriDonToiThieu() : BigDecimal.ZERO);
             m.put("ngayKetThuc", c.getNgayKetThuc() != null ? c.getNgayKetThuc().toString() : "");
             StringBuilder sb = new StringBuilder();
-            if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
+            if (Integer.valueOf(3).equals(c.getKieuGiamGia())) {
+                if (c.getGiaTriGiam() == null || c.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0) {
+                    sb.append("Miễn phí vận chuyển");
+                } else {
+                    sb.append("Giảm ").append(c.getGiaTriGiam()).append("đ tiền ship");
+                }
+            } else if (Integer.valueOf(1).equals(c.getKieuGiamGia())) {
                 sb.append("Giảm ").append(c.getGiaTriGiam()).append("%");
             } else {
                 sb.append("Giảm ").append(c.getGiaTriGiam());
             }
             if (c.getGiaTriDonToiThieu() != null && c.getGiaTriDonToiThieu().compareTo(BigDecimal.ZERO) > 0) {
                 sb.append(" - Đơn tối thiểu ").append(c.getGiaTriDonToiThieu());
-            } else {
-                sb.append(" - Không yêu cầu tối thiểu");
             }
             m.put("moTa", sb.toString());
             result.add(m);
@@ -107,13 +127,15 @@ public class PhieuGiamGiaService {
         BigDecimal giamGia;
         if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
             giamGia = giaTriDon.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
-        } else {
+        } else if (Integer.valueOf(2).equals(coupon.getKieuGiamGia())) {
             giamGia = coupon.getGiaTriGiam();
+        } else {
+            // Type 3 = freeship: soTienGiam = 0 (tính sau ở DonHangService với phiVanChuyen)
+            giamGia = BigDecimal.ZERO;
         }
-        if (giamGia.compareTo(giaTriDon) > 0) {
-            giamGia = giaTriDon;
-        }
-        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0){
+        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
+            coupon.setTrangThai(0);
+            phieuGiamGiaRepository.save(coupon);
             throw new BadRequestException("Phiếu giảm giá đã hết số lượng sử dụng");
         }
         if (coupon.getGiaTriGiamToiDa()!=null && giamGia.compareTo(coupon.getGiaTriGiamToiDa()) > 0){
@@ -135,13 +157,20 @@ public class PhieuGiamGiaService {
             throw new DuplicateResourceException("Coupon code already exists: " + request.getMaCode());
         }
         if (request.getNgayBatDau() != null &&
-                request.getNgayBatDau().isBefore(LocalDateTime.now())) {
+                request.getNgayBatDau().toLocalDate().isBefore(LocalDateTime.now().toLocalDate())) {
             throw new IllegalArgumentException("Ngày bắt đầu phải từ hôm nay trở đi");
         }
         if (request.getNgayKetThuc() != null &&
-                request.getNgayKetThuc().isBefore(LocalDateTime.now())) {
+                request.getNgayKetThuc().toLocalDate().isBefore(LocalDateTime.now().toLocalDate())) {
             throw new IllegalArgumentException("Ngày kết thúc phải ở tương lai");
         }
+        if (phieuGiamGiaRepository.countByNgayXoaIsNull() >= 70) {
+            throw new BadRequestException("Đã đạt giới hạn 70 mã giảm giá");
+        }
+        if (request.getSoLuong() != null && request.getSoLuong() <= 0) {
+            throw new IllegalArgumentException("Số lượng mã phải lớn hơn 0");
+        }
+
         return phieuGiamGiaRepository.save(PhieuGiamGia.builder()
                 .maCode(request.getMaCode())
                 .kieuGiamGia(request.getKieuGiamGia())
@@ -179,5 +208,11 @@ public class PhieuGiamGiaService {
                 giaTriGiamToiDa(coupon.getGiaTriGiamToiDa()).
                 build();
 
+    }
+    @Transactional
+    public PhieuGiamGia toggleStatus(Integer id) {
+        PhieuGiamGia coupon = getById(id);
+        coupon.setTrangThai(coupon.getTrangThai() == 1 ? 0 : 1);
+        return phieuGiamGiaRepository.save(coupon);
     }
 }

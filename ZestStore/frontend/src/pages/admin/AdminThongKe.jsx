@@ -5,7 +5,7 @@ import { getRevenueByDay, getRevenueByMonth, getRevenueByYear,
          exportAndSendEmail
 } from '../../api/admin'
 import { DollarSign, ShoppingCart, Package, Users, TrendingUp, XCircle, CheckCircle, Clock, Loader } from 'lucide-react'
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
 
 const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6']
 
@@ -22,6 +22,7 @@ export default function AdminThongKe() {
   const [denNgay, setDenNgay] = useState(today)
   const [thang, setThang] = useState(new Date().getMonth() + 1) 
 const [nam, setNam] = useState(new Date().getFullYear())
+const [revenueLoading, setRevenueLoading] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -63,11 +64,28 @@ const validateFilter = () => {
       return false;
     }
   }
+  if (tab === 'day') {
+  const diff = (new Date(denNgay) - new Date(tuNgay)) / (1000*60*60*24)
+  if (diff > 365) {
+    alert("Khoảng thời gian không được quá 365 ngày!")
+    setRevenueData([])
+    return false
+  }
+}
+if (tab === 'month') {
+  const now = new Date()
+  if (thang > now.getMonth() + 1 && nam === now.getFullYear()) {
+    alert("Tháng không được lớn hơn tháng hiện tại!")
+    setRevenueData([])
+    return false
+  }
+}
   return true;
 }
 
  const loadRevenue = async () => {
-  if (!validateFilter()) return; 
+  if (!validateFilter()) return;
+  setRevenueLoading(true)
     try {
       let data
       if (tab === 'day') {
@@ -80,6 +98,8 @@ const validateFilter = () => {
       setRevenueData(Array.isArray(data) ? data : [])
     } catch { 
       setRevenueData([]) 
+    } finally {
+      setRevenueLoading(false)
     }
   }
 
@@ -104,10 +124,9 @@ const validateFilter = () => {
     document.body.appendChild(a); a.click(); a.remove()
     window.URL.revokeObjectURL(url)
 
-    // 2. Gửi email (background, không chặn download)
+    // 2. Gửi email 
     exportAndSendEmail(tuNgay || undefined, denNgay || undefined)
-      .then(() => alert('Đã gửi email báo cáo thành công!'))
-      .catch(() => alert('Gửi email thất bại, kiểm tra lại cấu hình SMTP'))
+      .catch(() => console.warn('Gửi email thất bại, kiểm tra cấu hình SMTP'))
   } catch (e) {
     console.error('Export failed', e)
   }
@@ -208,24 +227,22 @@ const validateFilter = () => {
 </button>
   </div>
 )}
-        {revenueData.length > 0 ? (
+        {revenueLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader className="animate-spin h-8 w-8 text-blue-600" />
+          </div>
+        ) : revenueData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={revenueData}>
-              <defs>
-                <linearGradient id="revGrad2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <BarChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey={tab === 'day' ? 'ngay' : tab === 'month' ? 'thang' : 'nam'} 
+              <XAxis dataKey={tab === 'year' ? 'nam' : 'ngay'} 
   tick={{ fontSize: 12 }} 
   stroke="#94a3b8"
-  tickFormatter={(value) => tab === 'month' ? `Tháng ${value}` : value} />
+  tickFormatter={(value) => tab === 'month' ? String(value).split('-')[2] : value} />
               <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v) => (v / 1000).toFixed(0) + 'k'} />
               <Tooltip formatter={(v) => VND(v)} />
-              <Area type="monotone" dataKey="doanhThu" stroke="#3b82f6" fill="url(#revGrad2)" strokeWidth={2} />
-            </AreaChart>
+              <Bar dataKey="doanhThu" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            </BarChart>
           </ResponsiveContainer>
         ) : <p className="text-center text-gray-400 py-10">Chưa có dữ liệu</p>}
       </div>

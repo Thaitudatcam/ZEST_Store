@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/debug/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/files/**").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/return").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/vnpay/ipn").permitAll()

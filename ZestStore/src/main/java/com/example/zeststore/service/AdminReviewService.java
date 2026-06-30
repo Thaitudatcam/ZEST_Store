@@ -29,6 +29,8 @@ public class AdminReviewService {
             m.put("email", r.getNguoiDung().getEmail());
             m.put("sanPham", r.getSanPham().getTenSanPham());
             m.put("maSanPham", r.getSanPham().getMaSanPham());
+            m.put("slug", r.getSanPham().getSlug());
+            m.put("hinhAnh", r.getSanPham().getUrlAnhDaiDien());
             m.put("ngayXoa", r.getNgayXoa());
             return m;
         }).collect(Collectors.toList());

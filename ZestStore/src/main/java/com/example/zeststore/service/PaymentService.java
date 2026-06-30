@@ -5,6 +5,7 @@ import com.example.zeststore.dto.response.PaymentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -103,13 +104,13 @@ public class PaymentService {
 
     // ─── ZaloPay ───
 
-    public PaymentResponse createZaloPayPayment(Integer orderId) {
+    public Map<String, String> createZaloPayPayment(Integer orderId) {
         Map<String, String> result = zaloPayService.createOrder(orderId);
-        return PaymentResponse.builder()
-                .paymentUrl(result.get("orderUrl"))
-                .orderId(orderId)
-                .message("Redirect to ZaloPay")
-                .build();
+        return result;
+    }
+
+    public Map<String, String> createZaloPayPreview(BigDecimal amount) {
+        return zaloPayService.createPreviewOrder(amount);
     }
 
     public Map<String, Object> handleZaloPayCallback(Map<String, String> body) {

@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -73,6 +74,7 @@ public class ZaloPayService {
             Map<String, String> result = new LinkedHashMap<>();
             result.put("orderUrl", (String) zalopayResponse.get("order_url"));
             result.put("zpTransToken", (String) zalopayResponse.get("zp_trans_token"));
+            result.put("qrCode", (String) zalopayResponse.get("qr_code"));
             return result;
         } catch (BadRequestException e) {
             throw e;
@@ -170,6 +172,55 @@ public class ZaloPayService {
             return base + "?success=true&orderId=" + (orderId != null ? orderId : "");
         }
         return base + "?success=false&orderId=" + (orderId != null ? orderId : "");
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, String> createPreviewOrder(BigDecimal amount) {
+        PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
+        String previewRef = "PREVIEW_" + System.currentTimeMillis();
+        String appTransId = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
+                + "_" + previewRef;
+        long appTime = System.currentTimeMillis();
+        String embedData = "{\"redirecturl\":\"\",\"orderId\":0}";
+        String items = "[]";
+        String description = "Thanh toan tai quay";
+
+        String macData = config.getAppId() + "|" + appTransId + "|" + "user_0"
+                + "|" + amount.longValue() + "|" + appTime + "|" + embedData + "|" + items;
+        String mac = hmacSHA256(config.getKey1(), macData);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("app_id", config.getAppId());
+        body.put("app_user", "user_0");
+        body.put("app_trans_id", appTransId);
+        body.put("app_time", appTime);
+        body.put("amount", amount.longValue());
+        body.put("item", items);
+        body.put("embed_data", embedData);
+        body.put("description", description);
+        body.put("mac", mac);
+        body.put("callback_url", config.getCallbackUrl());
+
+        try {
+            Map<String, Object> zalopayResponse = restTemplate.postForObject(
+                    config.getEndpoint(), body, Map.class);
+            if (zalopayResponse == null) {
+                throw new BadRequestException("ZaloPay returned empty response");
+            }
+            int returnCode = ((Number) zalopayResponse.get("return_code")).intValue();
+            if (returnCode != 1) {
+                throw new BadRequestException("ZaloPay error: " + zalopayResponse.get("return_message"));
+            }
+            Map<String, String> result = new LinkedHashMap<>();
+            result.put("orderUrl", (String) zalopayResponse.get("order_url"));
+            result.put("zpTransToken", (String) zalopayResponse.get("zp_trans_token"));
+            result.put("qrCode", (String) zalopayResponse.get("qr_code"));
+            return result;
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to create ZaloPay preview: " + e.getMessage());
+        }
     }
 
     private String hmacSHA256(String key, String data) {

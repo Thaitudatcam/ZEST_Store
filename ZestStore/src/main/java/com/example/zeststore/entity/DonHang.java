@@ -26,7 +26,7 @@ public class DonHang {
     private String maDonHangCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_nguoi_dung", nullable = false)
+    @JoinColumn(name = "ma_nguoi_dung")
     private NguoiDung nguoiDung;
 
     @ManyToOne(fetch = FetchType.LAZY)

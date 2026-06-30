@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, MessageCircle, Lock } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
 
@@ -13,19 +13,22 @@ const productItem = { label: 'Quản lý sản phẩm', icon: Package, children:
 ]}
 
 const nav = [
-  { to: '/admin', label: 'Bảng điều khiển', icon: LayoutDashboard, end: true },
   posItem,
-  { to: '/admin/orders', label: 'Đơn hàng', icon: ShoppingBag },
+  { label: 'Đơn hàng', icon: ShoppingBag, children: [
+    { to: '/admin/orders/online', label: 'Đơn hàng online' },
+    { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
+  ]},
   { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
   productItem,
-  { to: '/admin/categories', label: 'Danh mục', icon: Tags },
   { to: '/admin/coupons', label: 'Mã giảm giá', icon: Ticket },
   { to: '/admin/reviews', label: 'Đánh giá', icon: Star },
-  { to: '/admin/customers', label: 'Khách hàng', icon: Users },
-  { to: '/admin/users', label: 'Người dùng', icon: Users },
-  { to: '/admin/employees', label: 'Nhân viên', icon: UserCog },
+  { label: 'Quản lý người dùng', icon: Users, children: [
+    { to: '/admin/customers', label: 'Khách hàng' },
+    { to: '/admin/employees', label: 'Nhân viên' },
+  ]},
   { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
   { to: '/admin/chat', label: 'Hỗ trợ', icon: MessageCircle },
+  { to: '/admin/change-password', label: 'Đổi mật khẩu', icon: Lock },
 ]
 
 export default function AdminLayout() {
@@ -61,7 +64,7 @@ export default function AdminLayout() {
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 sidebar-scroll">
           {nav.map((item) => {
             if (item.children) {
-              const childActive = item.children.some(c => pathname.startsWith(c.to))
+              const childActive = item.children.some(c => pathname.startsWith(c.to)) || (item.label === 'Đơn hàng' && pathname.startsWith('/admin/orders/'))
               const open = navOpen[item.label]
               return (
                 <div key={item.label}>

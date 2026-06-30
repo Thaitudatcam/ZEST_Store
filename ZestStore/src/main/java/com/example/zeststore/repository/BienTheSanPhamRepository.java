@@ -16,6 +16,9 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
 
     Optional<BienTheSanPham> findBySku(String sku);
 
+    @Query("SELECT b FROM BienTheSanPham b WHERE UPPER(b.sku) = UPPER(:sku)")
+    Optional<BienTheSanPham> findBySkuIgnoreCase(@Param("sku") String sku);
+
     Optional<BienTheSanPham> findBySanPham_MaSanPhamAndKichCo_MaKichCoAndMauSac_MaMauSac(
             Integer maSanPham, Integer maKichCo, Integer maMauSac);
 

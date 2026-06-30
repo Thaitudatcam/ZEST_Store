@@ -94,8 +94,8 @@ public class POSService {
             if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
                 throw new BadRequestException("Đơn hàng tối thiểu " + coupon.getGiaTriDonToiThieu() + " để áp dụng mã này");
             }
-            if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-                throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
+            if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+                throw new BadRequestException("Mã freeship không áp dụng tại quầy");
             }
 
             if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
@@ -111,6 +111,9 @@ public class POSService {
             }
             if (coupon.getSoLuong() != null) {
                 coupon.setSoLuong(coupon.getSoLuong() - 1);
+                if (coupon.getSoLuong() <= 0) {
+                    coupon.setTrangThai(0);
+                }
                 phieuGiamGiaRepository.save(coupon);
             }
         }
@@ -125,7 +128,7 @@ public class POSService {
         BigDecimal thanhToanTong = tongTien.subtract(soTienGiam).max(BigDecimal.ZERO);
 
         DonHang order = DonHang.builder()
-                .nguoiDung(customer != null ? customer : admin)
+                .nguoiDung(customer)
                 .loaiDonHang(2)
                 .maDonHangCode(code)
                 .tongTien(thanhToanTong)
@@ -150,9 +153,16 @@ public class POSService {
                     .build());
         }
 
-        Integer phuongThuc = request    .getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
-        String nhaCungCap = Integer.valueOf(6).equals(phuongThuc) ? "VietQR" : "Tiền mặt";
-        Integer trangThaiThanhToan = Integer.valueOf(6).equals(phuongThuc) ? 1 : 2;
+        Integer phuongThuc = request.getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
+        String nhaCungCap;
+        Integer trangThaiThanhToan;
+        if (Integer.valueOf(4).equals(phuongThuc)) {
+            nhaCungCap = "ZaloPay";
+            trangThaiThanhToan = 1;
+        } else {
+            nhaCungCap = "Tiền mặt";
+            trangThaiThanhToan = 2;
+        }
 
         String paymentRef = "POS-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         thanhToanRepository.save(ThanhToan.builder()

@@ -117,8 +117,9 @@ public class ThongKeService {
             switch (status) {
                 case 1 -> pending = count;
                 case 2 -> shipping = count;
-                case 4 -> completed = count;
+                case 4 -> shipping = count;   // "Chờ giao hàng" → shipping (đang giao)
                 case 5 -> cancelled = count;
+                case 6 -> completed = count;  // "Đã giao hàng" → completed (đã giao)
             }
         }
         Map<String, Object> result = new LinkedHashMap<>();

@@ -66,7 +66,12 @@ public class SanPhamService {
     public Page<SanPham> filterProducts(Integer categoryId, BigDecimal minPrice, BigDecimal maxPrice,
                                          int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<SanPham> result = sanPhamRepository.filterProducts(categoryId, minPrice, maxPrice, pageable);
+        Page<SanPham> result;
+        if (minPrice != null || maxPrice != null) {
+            result = sanPhamRepository.filterProducts(categoryId, minPrice, maxPrice, pageable);
+        } else {
+            result = sanPhamRepository.filterProductsByCategory(categoryId, pageable);
+        }
         populateStock(result);
         return result;
     }

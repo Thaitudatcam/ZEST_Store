@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Heart } from 'lucide-react'
+import { Heart, Star } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { addWishlist, removeWishlist } from '../api/wishlist'
 import { useState } from 'react'
@@ -14,9 +14,10 @@ export default function ProductCard({ product }) {
   const slug = product.slug || product.maSanPham
   const discount = product.phanTramGiamGia
   const colors = product.mauSacs ?? []
-  const isNew = product.ngayTao && Date.now() - new Date(product.ngayTao).getTime() < 7 * 86400000
   const totalStock = product.tongTonKho ?? 0
   const isOutOfStock = totalStock === 0
+  const rating = product.averageRating || 0
+  const reviewCount = product.reviewCount || 0
 
   const toggleWish = async (e) => {
     e.preventDefault()
@@ -28,7 +29,7 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm  overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
+    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
       <div className="aspect-square bg-gray-100 overflow-hidden relative">
                     <SafeImg src={product.urlAnhDaiDien} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} />
         {user && (
@@ -36,7 +37,6 @@ export default function ProductCard({ product }) {
             <Heart className={`h-4 w-4 ${wished ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
           </button>
         )}
-        {isNew && !isOutOfStock && <span className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">MỚI</span>}
         {discount && !isOutOfStock && <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">-{discount}%</span>}
         {isOutOfStock && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-lg z-10">
@@ -52,6 +52,16 @@ export default function ProductCard({ product }) {
             {colors.map((c, i) => (
               <span key={i} className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: c.maMauHex || '#ccc' }} title={c.mauSac} />
             ))}
+          </div>
+        )}
+        {rating > 0 && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map(i => (
+                <Star key={i} className={`h-3 w-3 ${i <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
+              ))}
+            </div>
+            <span className="text-[11px] text-gray-400">({reviewCount})</span>
           </div>
         )}
         <div className="flex items-center gap-2 mt-1.5">
