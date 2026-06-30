@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/payments/zalopay/callback").permitAll()
                 .requestMatchers("/api/shipping/ghn/**").permitAll()
                 .requestMatchers("/api/shipping/calculate").permitAll()
+                .requestMatchers("/api/user-vouchers/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

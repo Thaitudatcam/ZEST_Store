@@ -34,6 +34,7 @@ public class DonHangService {
     private final HoaDonService hoaDonService;
     private final OrderSseService orderSseService;
     private final GhnService ghnService;
+    private final VoucherNguoiDungRepository voucherNguoiDungRepository;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -230,6 +231,17 @@ public class DonHangService {
 
         if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
             mucGioHangRepository.deleteAll(cartItems);
+        }
+
+        if (coupon != null) {
+            voucherNguoiDungRepository
+                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(
+                            user.getMaNguoiDung(), coupon.getMaPhieuGiamGia())
+                    .ifPresent(v -> {
+                        v.setTrangThai(2);
+                        v.setNgaySuDung(LocalDateTime.now());
+                        voucherNguoiDungRepository.save(v);
+                    });
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
