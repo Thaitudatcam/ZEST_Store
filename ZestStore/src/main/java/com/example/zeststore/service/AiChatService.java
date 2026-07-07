@@ -51,7 +51,8 @@ public class AiChatService {
                 "Hãy trả lời bằng tiếng Việt, thân thiện, giúp khách hàng tư vấn sản phẩm, " +
                 "gợi ý size, màu sắc, và giải đáp thắc mắc về đơn hàng."));
         for (TinNhanAi msg : history) {
-            messages.add(Map.of("role", msg.getNguoiGui(), "content", msg.getNoiDung()));
+            String role = "ai".equals(msg.getNguoiGui()) ? "assistant" : msg.getNguoiGui();
+            messages.add(Map.of("role", role, "content", msg.getNoiDung()));
         }
 
         String reply = openAiService.chat(messages);

@@ -28,7 +28,7 @@ public class MucDonHang {
     private BienTheSanPham bienThe;
 
     @NotNull @PositiveOrZero
-    @Column(name = "don_gia", nullable = false, precision = 18, scale = 0)
+    @Column(name = "don_gia", nullable = false, precision = 18, scale = 2)
     private BigDecimal donGia;
 
     @NotNull @Positive
@@ -36,6 +36,6 @@ public class MucDonHang {
     private Integer soLuong;
 
     @NotNull @PositiveOrZero
-    @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 0)
+    @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
 }

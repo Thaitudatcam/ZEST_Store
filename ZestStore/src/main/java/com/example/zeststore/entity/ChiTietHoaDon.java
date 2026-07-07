@@ -28,12 +28,12 @@ public class ChiTietHoaDon {
     @Column(name = "thong_tin_bien_the", nullable = false, length = 200)
     private String thongTinBienThe;
 
-    @Column(name = "don_gia", nullable = false, precision = 18, scale = 0)
+    @Column(name = "don_gia", nullable = false, precision = 18, scale = 2)
     private BigDecimal donGia;
 
     @Column(name = "so_luong", nullable = false)
     private Integer soLuong;
 
-    @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 0)
+    @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
 }

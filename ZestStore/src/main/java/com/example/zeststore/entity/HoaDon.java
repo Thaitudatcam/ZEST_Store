@@ -25,13 +25,13 @@ public class HoaDon {
     @JoinColumn(name = "ma_don_hang", nullable = false, unique = true)
     private DonHang donHang;
 
-    @Column(name = "ma_hoa_don_code", nullable = false, unique = true, columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "ma_hoa_don_code", unique = true, length = 50)
     private String maHoaDonCode;
 
     @Column(name = "email_khach_hang", nullable = false, length = 150)
     private String emailKhachHang;
 
-    @Column(name = "tong_tien", nullable = false, precision = 18, scale = 0)
+    @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
 
     @Column(name = "trang_thai_hoa_don", nullable = false, length = 20)

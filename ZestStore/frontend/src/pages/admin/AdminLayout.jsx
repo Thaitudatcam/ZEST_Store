@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
+import AiChat from '../../components/AiChat'
 
 const posItem = { label: 'Bán hàng', icon: ShoppingCart, children: [
   { to: '/admin/pos', label: 'Bán tại quầy' },
@@ -149,6 +150,7 @@ export default function AdminLayout() {
       </div>
 
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      <AiChat />
     </div>
   )
 }
