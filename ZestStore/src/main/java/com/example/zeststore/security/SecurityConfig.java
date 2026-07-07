@@ -55,6 +55,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/shipping/ghn/**").permitAll()
                 .requestMatchers("/api/shipping/calculate").permitAll()
                 .requestMatchers("/api/user-vouchers/**").authenticated()
+                .requestMatchers("/api/recommendations/best-selling").permitAll()
+                .requestMatchers("/api/recommendations/product/**").permitAll()
+                .requestMatchers("/api/recommendations/popular").permitAll()
+                .requestMatchers("/api/recommendations/personalized").authenticated()
+                .requestMatchers("/api/ai/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

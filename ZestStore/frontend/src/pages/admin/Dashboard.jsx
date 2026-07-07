@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getStats, getRevenue, getTopProducts, getRevenueByDate, getRecentOrders } from '../../api/admin'
-import { Users, ShoppingCart, DollarSign, Package, TrendingUp, AlertCircle, Loader2, Clock, Eye } from 'lucide-react'
+import { getAiInsights } from '../../api/ai'
+import { Users, ShoppingCart, DollarSign, Package, TrendingUp, AlertCircle, Loader2, Clock, Eye, Sparkles, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import StatusBadge from '../../components/StatusBadge'
@@ -21,6 +22,8 @@ export default function Dashboard() {
   const [topProducts, setTopProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [insight, setInsight] = useState(null)
+  const [insightLoading, setInsightLoading] = useState(false)
 
 
   useEffect(() => {
@@ -106,6 +109,37 @@ export default function Dashboard() {
             </div>
           )
         })}
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold flex items-center gap-2 text-blue-800">
+            <Sparkles className="h-5 w-5 text-yellow-500" /> AI Insights
+          </h2>
+          <button onClick={async () => {
+            setInsightLoading(true)
+            try { setInsight(await getAiInsights()) } catch {}
+            setInsightLoading(false)
+          }} disabled={insightLoading}
+            className="text-xs bg-white border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 flex items-center gap-1">
+            <RefreshCw className={`h-3.5 w-3.5 ${insightLoading ? 'animate-spin' : ''}`} />
+            Phân tích
+          </button>
+        </div>
+        {insight && (
+          <div className="bg-white rounded-xl border border-blue-100 px-4 py-3">
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{insight.insight}</p>
+            <p className="text-[10px] text-gray-400 mt-2">Cập nhật: {insight.ngayTao?.slice(0, 19).replace('T', ' ')}</p>
+          </div>
+        )}
+        {!insight && !insightLoading && (
+          <p className="text-sm text-gray-400">Nhấn "Phân tích" để AI tạo nhận xét về tình hình kinh doanh.</p>
+        )}
+        {insightLoading && (
+          <div className="flex items-center gap-2 text-sm text-blue-600">
+            <Loader2 className="h-4 w-4 animate-spin" /> Đang phân tích dữ liệu...
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

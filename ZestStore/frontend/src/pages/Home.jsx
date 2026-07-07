@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { getProducts } from '../api/products'
 import { getCategories } from '../api/categories'
+import { getBestSelling, getPopular, getPersonalized } from '../api/recommendations'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
-import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag } from 'lucide-react'
+import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles } from 'lucide-react'
 import ZS from '../pictures/ZS.png'
 
 const rawStrip = Object.entries(import.meta.glob('../pictures/strip/*.{png,jpg,jpeg,webp}', { eager: true, query: '?url', import: 'default' }))
@@ -22,6 +23,9 @@ export default function Home() {
   const [sizes, setSizes] = useState([])
   const [loading, setLoading] = useState(true)
   const [newsletterEmail, setNewsletterEmail] = useState('')
+  const [bestSelling, setBestSelling] = useState([])
+  const [forYou, setForYou] = useState([])
+  const [forYouTitle, setForYouTitle] = useState('')
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
@@ -32,16 +36,24 @@ export default function Home() {
   const [allLoading, setAllLoading] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      getProducts({ page: 0, size: 8, sortBy: 'ngayTao', sortDir: 'desc' }),
-      getCategories(),
-      api.get('/sizes').then(r => r.data),
-    ]).then(([prodData, catData, sz]) => {
-      setLatestProducts(prodData.content ?? prodData ?? [])
-      const roots = Array.isArray(catData) ? catData.filter((c) => !c.maDanhMucCha) : []
-      setCategories(roots)
-      setSizes(Array.isArray(sz) ? sz : [])
-    }).finally(() => setLoading(false))
+    (async () => {
+      try {
+        const [prodData, catData, sz, best] = await Promise.all([
+          getProducts({ page: 0, size: 8, sortBy: 'ngayTao', sortDir: 'desc' }),
+          getCategories(),
+          api.get('/sizes').then(r => r.data),
+          getBestSelling(8).catch(() => []),
+        ]);
+        setLatestProducts(prodData.content ?? prodData ?? []);
+        setBestSelling(Array.isArray(best) ? best : []);
+        const roots = Array.isArray(catData) ? catData.filter((c) => !c.maDanhMucCha) : [];
+        setCategories(roots);
+        setSizes(Array.isArray(sz) ? sz : []);
+      } catch {} finally { setLoading(false); }
+    })();
+    getPersonalized(8).then(d => { setForYou(d); setForYouTitle('Gợi ý cho bạn'); }).catch(() =>
+      getPopular(8).then(d => { setForYou(d); setForYouTitle('Phổ biến nhất'); }).catch(() => {})
+    );
   }, [])
 
   useEffect(() => {
@@ -150,8 +162,37 @@ export default function Home() {
 
 
 
+      {/* ──────── RECOMMENDATIONS ──────── */}
+      {forYou.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-yellow-500" /> {forYouTitle}
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {forYou.map((p) => (
+              <ProductCard key={p.maSanPham} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {bestSelling.length > 0 && (
+        <section className="bg-gray-50 py-10">
+          <div className="max-w-7xl mx-auto px-4">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <TrendingUp className="h-6 w-6 text-red-500" /> Bán chạy nhất
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {bestSelling.map((p) => (
+                <ProductCard key={p.maSanPham} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ──────── PRODUCT LISTING WITH FILTERS ──────── */}
-      <section ref={productRef} id="all-products" className="bg-gray-50 py-12">
+      <section ref={productRef} id="all-products" className="py-12">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-2xl font-bold mb-6">Tất cả sản phẩm</h2>
 

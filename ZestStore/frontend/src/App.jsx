@@ -34,6 +34,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
 import AdminChangePassword from './pages/admin/AdminChangePassword'
+import AiChat from './components/AiChat'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -90,6 +91,7 @@ export default function App() {
             </Routes>
           </main>
           <Footer />
+          <AiChat />
         </div>
       } />
     </Routes>
