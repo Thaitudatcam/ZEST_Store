@@ -333,10 +333,14 @@ export default function AdminProductForm() {
   const handleDeleteVariantsByColor = (maMauSac) => {
     const colorId = Number(maMauSac)
     const name = colors.find(c => c.maMauSac === colorId)?.mauSac || ''
+    setVariants(prev => prev.filter(v => Number(v.maMauSac) !== colorId))
     setSelectedColorIds(prev => prev.filter(id => Number(id) !== colorId))
     setDeletedColorIds(prev => [...prev, colorId])
     setConfirmDeleteColor(null)
-    toast.success('Đã bỏ màu ' + name)
+    toast.success('Đã xóa màu ' + name)
+    if (isEdit && variants.some(v => v.maBienThe && Number(v.maMauSac) === colorId)) {
+      api.delete(`/products/${id}/variants/by-color/${maMauSac}`).catch(() => {})
+    }
   }
 
   const getColorName = (id) => colors.find(c => c.maMauSac === Number(id))?.mauSac || '-'
