@@ -13,7 +13,7 @@ function QRCodeImg({ sku }) {
       QRCode.toDataURL(sku, { width: 160, margin: 1, color: { dark: '#000', light: '#fff' } }).then(setDataUrl).catch(() => {})
     }
   }, [sku])
-  return dataUrl ? <img src={dataUrl} alt={sku} className="inline-block" /> : <span className="text-xs text-gray-400">—</span>
+  return dataUrl ? <img src={dataUrl} alt={sku} className="w-10 h-10" /> : <span className="text-xs text-gray-400">—</span>
 }
 
 export default function AdminProductVariantDetail() {

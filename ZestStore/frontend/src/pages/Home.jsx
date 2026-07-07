@@ -93,9 +93,7 @@ export default function Home() {
               <a href="#products" onClick={scrollToProducts} className="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition shadow-lg cursor-pointer">
                 <ShoppingBag className="h-5 w-5" /> Mua ngay <ArrowRight className="h-4 w-4" />
               </a>
-              <a href="#products" onClick={scrollToProducts} className="inline-flex items-center gap-2 border border-white/40 text-white font-semibold px-6 py-3 rounded-lg hover:bg-white/40 transition cursor-pointer">
-                Xem bộ sưu tập
-              </a>
+
             </div>
             <div className="flex flex-wrap gap-6 mt-8 text-sm justify-center md:justify-start">
               {[
@@ -246,7 +244,7 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {allProducts.map((p, i) => (
                 <div key={p.maSanPham} className="animate-fade-in">
-                  <ProductCard product={p} />
+                  <ProductCard product={p} showRating={false} />
                 </div>
               ))}
             </div>
@@ -276,7 +274,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {latestProducts.map((p, i) => (
               <div key={p.maSanPham} style={{ animationDelay: `${i * 0.05}s` }} className="animate-fade-in">
-                <ProductCard product={p} />
+                <ProductCard product={p} showRating={false} />
               </div>
             ))}
           </div>
