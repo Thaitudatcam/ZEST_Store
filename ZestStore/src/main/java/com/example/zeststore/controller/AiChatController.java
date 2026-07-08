@@ -33,7 +33,8 @@ public class AiChatController {
         Integer userId = userService.getUserIdFromAuth(auth);
         String noiDung = (String) body.get("noiDung");
         Integer maHoiThoai = body.get("maHoiThoai") != null ? (Integer) body.get("maHoiThoai") : null;
-        return ResponseEntity.ok(aiChatService.sendMessage(userId, noiDung, maHoiThoai));
+        String hinhAnh = (String) body.get("hinhAnh");
+        return ResponseEntity.ok(aiChatService.sendMessage(userId, noiDung, maHoiThoai, hinhAnh));
     }
 
     @DeleteMapping("/conversations/{id}")

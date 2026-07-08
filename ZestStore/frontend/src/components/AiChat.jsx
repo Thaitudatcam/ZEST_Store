@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, X, Send, Trash2, ChevronLeft } from 'lucide-react'
+import { MessageCircle, X, Send, Trash2, ChevronLeft, Image, Smile, Paperclip, Camera } from 'lucide-react'
+import EmojiPicker from 'emoji-picker-react'
 import { getConversations, getMessages, sendMessage, deleteConversation } from '../api/ai'
+import { useNavigate } from 'react-router-dom'
 
 export default function AiChat() {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [conversations, setConversations] = useState([])
   const [activeConv, setActiveConv] = useState(null)
@@ -10,7 +13,14 @@ export default function AiChat() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState('list')
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [showEmoji, setShowEmoji] = useState(false)
+  const [showAttach, setShowAttach] = useState(false)
   const bottomRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
+  const attachRef = useRef(null)
 
   const loadConvs = useCallback(async () => {
     try { setConversations(await getConversations()) } catch {}
@@ -29,21 +39,90 @@ export default function AiChat() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (attachRef.current && !attachRef.current.contains(e.target)) setShowAttach(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const readFileAsBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { alert('Ảnh không được quá 5MB'); return }
+    const base64 = await readFileAsBase64(file)
+    setSelectedImage(base64)
+    setPreviewUrl(base64)
+    setShowAttach(false)
+    e.target.value = ''
+  }
+
+  const handleCameraCapture = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { alert('Ảnh không được quá 5MB'); return }
+    const base64 = await readFileAsBase64(file)
+    setSelectedImage(base64)
+    setPreviewUrl(base64)
+    setShowAttach(false)
+    e.target.value = ''
+  }
+
+  const handlePaste = useCallback(async (e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (!file) continue
+        if (file.size > 5 * 1024 * 1024) { alert('Ảnh không được quá 5MB'); return }
+        const base64 = await readFileAsBase64(file)
+        setSelectedImage(base64)
+        setPreviewUrl(base64)
+        break
+      }
+    }
+  }, [])
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setPreviewUrl(null)
+  }
+
   const handleSend = async () => {
-    if (!input.trim()) return
+    if (!input.trim() && !selectedImage) return
     const userText = input
+    const imgData = selectedImage
     setInput('')
+    setSelectedImage(null)
+    setPreviewUrl(null)
+    setShowEmoji(false)
+    setShowAttach(false)
     setLoading(true)
-    setMessages((prev) => [...prev, { nguoiGui: 'user', noiDung: userText, maTinNhan: Date.now() }])
+    const tempId = Date.now()
+    setMessages((prev) => [...prev, { nguoiGui: 'user', noiDung: userText, hinhAnh: imgData, maTinNhan: tempId }])
     try {
-      const result = await sendMessage(userText, activeConv)
-      setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: result.reply, maTinNhan: Date.now() + 1 }])
+      const result = await sendMessage(userText, activeConv, imgData)
+      setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: result.reply, products: result.products || [], maTinNhan: tempId + 1 }])
       if (!activeConv) setActiveConv(result.maHoiThoai)
       loadConvs()
     } catch {} finally { setLoading(false) }
   }
 
-  const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+  }
 
   const handleDelete = async (id) => {
     try {
@@ -54,6 +133,8 @@ export default function AiChat() {
   }
 
   const handleNew = () => { setActiveConv(null); setMessages([]); setView('chat') }
+
+  const isSendDisabled = loading || (!input.trim() && !selectedImage)
 
   return (
     <>
@@ -80,7 +161,7 @@ export default function AiChat() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="flex-1 overflow-y-auto bg-gray-50" onPaste={handlePaste}>
             {view === 'list' ? (
               <div className="p-3 space-y-2">
                 <button onClick={handleNew}
@@ -115,14 +196,36 @@ export default function AiChat() {
                   </div>
                 )}
                 {messages.map((m) => (
-                  <div key={m.maTinNhan} className={`flex ${m.nguoiGui === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                      m.nguoiGui === 'user'
-                        ? 'bg-blue-700 text-white rounded-br-md'
-                        : 'bg-white border text-gray-700 rounded-bl-md'
-                    }`}>
-                      {m.noiDung}
+                  <div key={m.maTinNhan}>
+                    <div className={`flex ${m.nguoiGui === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                        m.nguoiGui === 'user'
+                          ? 'bg-blue-700 text-white rounded-br-md'
+                          : 'bg-white border text-gray-700 rounded-bl-md'
+                      }`}>
+                        {m.hinhAnh && (
+                          <img src={m.hinhAnh} alt="upload"
+                            className={`max-w-full rounded-lg ${m.noiDung ? 'mb-2' : ''}`}
+                            style={{ maxHeight: '180px', objectFit: 'contain' }} />
+                        )}
+                        {m.noiDung && <p>{m.noiDung}</p>}
+                      </div>
                     </div>
+                    {m.products && m.products.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2 ml-1">
+                        {m.products.map((p) => (
+                          <div key={p.maSanPham} onClick={() => { navigate(`/products/${p.slug}`); setOpen(false) }}
+                            className="flex items-center gap-2 bg-white border rounded-xl px-3 py-2 cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all w-full">
+                            <img src={p.urlAnhDaiDien ? (p.urlAnhDaiDien.startsWith('http') || p.urlAnhDaiDien.startsWith('/api/') ? p.urlAnhDaiDien : `/api/files/${p.urlAnhDaiDien}`) : ''}
+                              alt={p.tenSanPham} className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium truncate">{p.tenSanPham}</p>
+                              <p className="text-xs text-blue-700 font-semibold">{Number(p.gia || 0).toLocaleString('vi-VN')}đ</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {loading && (
@@ -138,14 +241,61 @@ export default function AiChat() {
           </div>
 
           {view === 'chat' && (
-            <div className="border-t bg-white px-4 py-3 flex gap-2">
-              <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
-                placeholder="Nhập tin nhắn..." disabled={loading}
-                className="flex-1 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
-              <button onClick={handleSend} disabled={loading || !input.trim()}
-                className="bg-blue-700 text-white p-2.5 rounded-xl hover:bg-blue-800 transition disabled:opacity-50">
-                <Send className="h-5 w-5" />
-              </button>
+            <div className="border-t bg-white px-3 py-2.5">
+              {showEmoji && (
+                <div className="mb-2">
+                  <EmojiPicker
+                    onEmojiClick={(emojiData) => { setInput(prev => prev + emojiData.emoji); setShowEmoji(false) }}
+                    skinTonesDisabled
+                    searchPlaceholder="Tìm emoji..."
+                    width="100%"
+                    height="250px" />
+                </div>
+              )}
+              {previewUrl && (
+                <div className="relative mb-2 inline-block">
+                  <img src={previewUrl} alt="preview"
+                    className="h-16 w-16 rounded-lg object-cover border" />
+                  <button onClick={removeImage}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-1.5 items-center">
+                <div className="relative" ref={attachRef}>
+                  <button onClick={() => { setShowAttach(!showAttach); setShowEmoji(false) }} disabled={loading}
+                    className="bg-gray-100 text-gray-500 p-2 rounded-xl hover:bg-gray-200 transition disabled:opacity-50">
+                    <Paperclip className="h-5 w-5" />
+                  </button>
+                  {showAttach && (
+                    <div className="absolute bottom-full left-0 mb-1 bg-white border rounded-xl shadow-lg p-1.5 flex gap-1">
+                      <button onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                        <Image className="h-4 w-4" /> Ảnh
+                      </button>
+                      <button onClick={() => cameraInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                        <Camera className="h-4 w-4" /> Camera
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
+                  onFocus={() => setShowEmoji(false)}
+                  placeholder="Nhập tin nhắn..." disabled={loading}
+                  className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50" />
+                <button onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false) }} disabled={loading}
+                  className={`p-2 rounded-xl transition disabled:opacity-50 ${showEmoji ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                  <Smile className="h-5 w-5" />
+                </button>
+                <button onClick={handleSend} disabled={isSendDisabled}
+                  className="bg-blue-700 text-white p-2 rounded-xl hover:bg-blue-800 transition disabled:opacity-50">
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
+              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+              <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleCameraCapture} className="hidden" />
             </div>
           )}
         </div>

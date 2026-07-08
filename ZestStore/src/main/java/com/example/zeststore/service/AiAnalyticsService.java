@@ -5,6 +5,9 @@ import com.example.zeststore.entity.NguoiDung;
 import com.example.zeststore.repository.BaoCaoThongKeRepository;
 import com.example.zeststore.repository.DonHangRepository;
 import com.example.zeststore.repository.NguoiDungRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +25,7 @@ public class AiAnalyticsService {
     private final BaoCaoThongKeRepository baoCaoRepo;
     private final NguoiDungRepository nguoiDungRepo;
     private final OpenAiService openAiService;
+    private final ObjectMapper objectMapper;
 
     public Map<String, Object> generateInsights(Integer adminUserId) {
         Map<String, Object> stats = thongKeService.getDashboardStats();
@@ -49,11 +53,14 @@ public class AiAnalyticsService {
             data.append("- ").append(d.get("ngay")).append(": ").append(d.get("doanhThu")).append(" VND\n");
         }
 
-        List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content",
-                "Bạn là chuyên gia phân tích dữ liệu bán hàng. Hãy phân tích dữ liệu dưới đây và đưa ra nhận xét bằng tiếng Việt, " +
-                "ngắn gọn trong 3-5 câu. Nêu bật xu hướng doanh thu, sản phẩm nổi bật, và gợi ý cải thiện."));
-        messages.add(Map.of("role", "user", "content", data.toString()));
+        ArrayNode messages = objectMapper.createArrayNode();
+        ObjectNode sysNode = messages.addObject();
+        sysNode.put("role", "system");
+        sysNode.put("content", "Bạn là chuyên gia phân tích dữ liệu bán hàng. Hãy phân tích dữ liệu dưới đây và đưa ra nhận xét bằng tiếng Việt, " +
+                "ngắn gọn trong 3-5 câu. Nêu bật xu hướng doanh thu, sản phẩm nổi bật, và gợi ý cải thiện.");
+        ObjectNode userNode = messages.addObject();
+        userNode.put("role", "user");
+        userNode.put("content", data.toString());
 
         String insight = openAiService.chat(messages);
 

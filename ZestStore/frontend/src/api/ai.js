@@ -6,8 +6,8 @@ export const getConversations = () =>
 export const getMessages = (id) =>
   api.get(`/ai/conversations/${id}/messages`).then((r) => r.data)
 
-export const sendMessage = (noiDung, maHoiThoai) =>
-  api.post('/ai/chat', { noiDung, maHoiThoai }).then((r) => r.data)
+export const sendMessage = (noiDung, maHoiThoai, hinhAnh) =>
+  api.post('/ai/chat', { noiDung, maHoiThoai, hinhAnh }).then((r) => r.data)
 
 export const deleteConversation = (id) =>
   api.delete(`/ai/conversations/${id}`).then((r) => r.data)

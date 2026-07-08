@@ -4,6 +4,7 @@ import com.example.zeststore.dto.request.BienTheRequest;
 import com.example.zeststore.dto.request.ImageRequest;
 import com.example.zeststore.dto.request.SanPhamRequest;
 import com.example.zeststore.dto.request.SanPhamWithVariantsRequest;
+import com.example.zeststore.service.ProductAiService;
 import com.example.zeststore.service.SanPhamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -20,6 +22,7 @@ import java.util.List;
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;
+    private final ProductAiService productAiService;
 
     @GetMapping
     public ResponseEntity<?> getAll(
@@ -50,6 +53,16 @@ public class SanPhamController {
     @GetMapping("/detail/{id}")
     public ResponseEntity<?> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(sanPhamService.getProductDetail(id));
+    }
+
+    @PostMapping("/generate-description")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> generateDescription(@RequestBody Map<String, Object> body) {
+        String tenSanPham = (String) body.get("tenSanPham");
+        Integer maDanhMuc = body.get("maDanhMuc") != null ? (Integer) body.get("maDanhMuc") : null;
+        Integer maThuongHieu = body.get("maThuongHieu") != null ? (Integer) body.get("maThuongHieu") : null;
+        String description = productAiService.generateDescription(tenSanPham, maDanhMuc, maThuongHieu);
+        return ResponseEntity.ok(Map.of("description", description));
     }
 
     @PostMapping

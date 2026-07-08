@@ -5,6 +5,9 @@ export const getProductImages = (id) => api.get(`/products/${id}/images`).then((
 export const getProductVariants = (id) => api.get(`/products/${id}/variants`).then((r) => r.data)
 export const searchSuggestions = (q, limit = 5) => api.get('/products/search/suggestions', { params: { q, limit } }).then((r) => r.data)
 
+export const generateDescription = (data) =>
+  api.post('/products/generate-description', data).then((r) => r.data)
+
 const uploadFile = async (url, file) => {
   const formData = new FormData()
   formData.append('file', file)

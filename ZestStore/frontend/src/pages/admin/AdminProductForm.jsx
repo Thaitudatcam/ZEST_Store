@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getCategories } from '../../api/categories'
-import { uploadProductImage, uploadVariantImage } from '../../api/products'
+import { uploadProductImage, uploadVariantImage, generateDescription } from '../../api/products'
 import { createCategory, createBrand, createColor, createSize } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
-import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette } from 'lucide-react'
+import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
@@ -27,6 +27,7 @@ export default function AdminProductForm() {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploadingImg, setUploadingImg] = useState(false)
+  const [generatingDesc, setGeneratingDesc] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -483,7 +484,27 @@ export default function AdminProductForm() {
               </div>
             </div>
             <div>
-              <label className="text-sm text-gray-500 font-medium">Mô tả</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-gray-500 font-medium">Mô tả</label>
+                <button type="button" onClick={async () => {
+                  if (!product.tenSanPham) { toast.warn('Vui lòng nhập tên sản phẩm trước'); return }
+                  setGeneratingDesc(true)
+                  try {
+                    const res = await generateDescription({
+                      tenSanPham: product.tenSanPham,
+                      maDanhMuc: product.maDanhMuc || null,
+                      maThuongHieu: product.maThuongHieu || null,
+                    })
+                    setProduct(p => ({ ...p, moTa: res.description }))
+                    toast.success('Đã tạo mô tả bằng AI')
+                  } catch { toast.error('Tạo mô tả thất bại') }
+                  finally { setGeneratingDesc(false) }
+                }} disabled={generatingDesc}
+                  className="flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800 font-medium disabled:opacity-50">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {generatingDesc ? 'Đang tạo...' : 'Tạo bằng AI'}
+                </button>
+              </div>
               <textarea value={product.moTa} onChange={(e) => setProduct(p => ({ ...p, moTa: e.target.value }))}
                 placeholder="Mô tả sản phẩm" rows={4}
                 className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />

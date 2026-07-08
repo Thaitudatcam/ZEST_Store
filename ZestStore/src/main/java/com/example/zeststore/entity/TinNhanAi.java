@@ -24,6 +24,9 @@ public class TinNhanAi {
     @Column(name = "noi_dung", columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String noiDung;
 
+    @Column(name = "hinh_anh", columnDefinition = "NVARCHAR(MAX)")
+    private String hinhAnh;
+
     @Column(name = "nguoi_gui", length = 10, nullable = false)
     private String nguoiGui;
 

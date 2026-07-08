@@ -11,8 +11,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Map;
+
 
 @Slf4j
 @Service
@@ -23,7 +22,7 @@ public class OpenAiService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public String chat(List<Map<String, String>> messages) {
+    public String chat(ArrayNode messagesNode) {
         try {
             String key = aiConfig.getApiKey();
             if (key == null || key.isBlank()) {
@@ -39,13 +38,7 @@ public class OpenAiService {
             ObjectNode body = objectMapper.createObjectNode();
             body.put("model", aiConfig.getModel() != null ? aiConfig.getModel() : "gpt-4o-mini");
             body.put("max_tokens", 500);
-
-            ArrayNode messagesNode = body.putArray("messages");
-            for (Map<String, String> msg : messages) {
-                ObjectNode msgNode = messagesNode.addObject();
-                msgNode.put("role", msg.get("role"));
-                msgNode.put("content", msg.get("content"));
-            }
+            body.set("messages", messagesNode);
 
             String jsonBody = objectMapper.writeValueAsString(body);
             log.debug("OpenAI request body: {}", jsonBody);
