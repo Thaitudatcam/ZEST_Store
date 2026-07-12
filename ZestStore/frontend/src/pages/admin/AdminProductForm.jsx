@@ -487,7 +487,7 @@ export default function AdminProductForm() {
               <div className="flex items-center justify-between">
                 <label className="text-sm text-gray-500 font-medium">Mô tả</label>
                 <button type="button" onClick={async () => {
-                  if (!product.tenSanPham) { toast.warn('Vui lòng nhập tên sản phẩm trước'); return }
+                  if (!product.tenSanPham) { toast.warning('Vui lòng nhập tên sản phẩm trước'); return }
                   setGeneratingDesc(true)
                   try {
                     const res = await generateDescription({

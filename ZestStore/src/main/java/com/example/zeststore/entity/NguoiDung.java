@@ -52,6 +52,10 @@ public class NguoiDung {
     @Column(name = "anh_dai_dien", length = 500)
     private String anhDaiDien;
 
+    @Column(name = "cho_phep_ban_hang")
+    @Builder.Default
+    private Boolean choPhepBanHang = false;
+
     @Column(name = "gioi_tinh")
     private Boolean gioiTinh;
 

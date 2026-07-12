@@ -22,7 +22,7 @@ public class AdminEmployeeController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createEmployee(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> createEmployee(@RequestBody Map<String, Object> body) {
         try {
             return ResponseEntity.ok(adminEmployeeService.createEmployee(body));
         } catch (RuntimeException e) {
@@ -31,7 +31,7 @@ public class AdminEmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEmployee(@PathVariable Integer id, @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> updateEmployee(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
         adminEmployeeService.updateEmployee(id, body);
         return ResponseEntity.ok(Map.of("message", "Employee updated successfully"));
     }
@@ -39,5 +39,14 @@ public class AdminEmployeeController {
     @PutMapping("/{id}/status")
     public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
         return ResponseEntity.ok(adminEmployeeService.toggleStatus(id));
+    }
+
+    @PostMapping("/convert")
+    public ResponseEntity<?> convertToEmployee(@RequestBody Map<String, Object> body) {
+        try {
+            return ResponseEntity.ok(adminEmployeeService.convertToEmployee(body));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }

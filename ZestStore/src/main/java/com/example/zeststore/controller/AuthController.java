@@ -49,7 +49,7 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtTokenProvider.generateToken(
-                nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro());
+                nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro(), nguoiDung.getChoPhepBanHang());
 
         Cookie jwtCookie = new Cookie("jwtToken", token);
         jwtCookie.setHttpOnly(true);
@@ -68,6 +68,7 @@ public class AuthController {
                         .email(nguoiDung.getEmail())
                         .hoTen(nguoiDung.getHoTen())
                         .vaiTro(nguoiDung.getVaiTro().getTenVaiTro())
+                        .choPhepBanHang(nguoiDung.getChoPhepBanHang())
                         .build());
     }
 
@@ -101,7 +102,7 @@ public class AuthController {
         danhSachYeuThichRepository.save(DanhSachYeuThich.builder().nguoiDung(nguoiDung).build());
 
         String token = jwtTokenProvider.generateToken(
-                nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro());
+                nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro(), nguoiDung.getChoPhepBanHang());
 
         Cookie jwtCookie = new Cookie("jwtToken", token);
         jwtCookie.setHttpOnly(true);
@@ -120,6 +121,7 @@ public class AuthController {
                         .email(nguoiDung.getEmail())
                         .hoTen(nguoiDung.getHoTen())
                         .vaiTro(nguoiDung.getVaiTro().getTenVaiTro())
+                        .choPhepBanHang(nguoiDung.getChoPhepBanHang())
                         .build());
     }
 
@@ -136,7 +138,7 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String newToken = jwtTokenProvider.generateToken(
-                nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro());
+                nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro(), nguoiDung.getChoPhepBanHang());
 
         return ResponseEntity.ok(AuthResponse.builder()
                 .token(newToken)
@@ -145,6 +147,7 @@ public class AuthController {
                 .email(nguoiDung.getEmail())
                 .hoTen(nguoiDung.getHoTen())
                 .vaiTro(nguoiDung.getVaiTro().getTenVaiTro())
+                .choPhepBanHang(nguoiDung.getChoPhepBanHang())
                 .build());
     }
 }

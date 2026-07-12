@@ -59,8 +59,8 @@ public class SanPhamController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> generateDescription(@RequestBody Map<String, Object> body) {
         String tenSanPham = (String) body.get("tenSanPham");
-        Integer maDanhMuc = body.get("maDanhMuc") != null ? (Integer) body.get("maDanhMuc") : null;
-        Integer maThuongHieu = body.get("maThuongHieu") != null ? (Integer) body.get("maThuongHieu") : null;
+        Integer maDanhMuc = toInteger(body.get("maDanhMuc"));
+        Integer maThuongHieu = toInteger(body.get("maThuongHieu"));
         String description = productAiService.generateDescription(tenSanPham, maDanhMuc, maThuongHieu);
         return ResponseEntity.ok(Map.of("description", description));
     }
@@ -168,5 +168,11 @@ public class SanPhamController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteImage(@PathVariable Integer imageId) {
         return ResponseEntity.ok(sanPhamService.deleteImage(imageId));
+    }
+
+    private Integer toInteger(Object value) {
+        if (value instanceof Number) return ((Number) value).intValue();
+        if (value instanceof String) return Integer.parseInt((String) value);
+        return null;
     }
 }

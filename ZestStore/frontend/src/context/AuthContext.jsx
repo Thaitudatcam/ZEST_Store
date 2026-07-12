@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { loginApi, registerApi } from '../api/auth'
+import { loginApi, registerApi, refreshTokenApi } from '../api/auth'
 
 const AuthContext = createContext(null)
 
@@ -28,6 +28,16 @@ export function AuthProvider({ children }) {
     return data
   }, [])
 
+  const refreshToken = useCallback(async () => {
+    const oldToken = localStorage.getItem('token')
+    if (!oldToken) throw new Error('No token')
+    const data = await refreshTokenApi(oldToken)
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data))
+    setUser(data)
+    return data.token
+  }, [])
+
   const logout = useCallback(() => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -35,7 +45,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, refreshToken, logout }}>
       {children}
     </AuthContext.Provider>
   )

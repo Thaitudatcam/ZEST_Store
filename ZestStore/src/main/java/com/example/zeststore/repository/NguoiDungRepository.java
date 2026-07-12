@@ -19,6 +19,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
 
     boolean existsBySoDienThoai(String soDienThoai);
 
-    @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro.tenVaiTro = 'CUSTOMER' AND u.trangThai = 1 AND (LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :q, '%')) OR u.soDienThoai LIKE CONCAT('%', :q, '%'))")
+    @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro.tenVaiTro = 'CUSTOMER' AND u.trangThai = 1 AND (LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :q, '%')) OR u.soDienThoai LIKE CONCAT('%', :q, '%') OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%')))")
     List<NguoiDung> searchCustomers(@Param("q") String query);
 }

@@ -15,4 +15,5 @@ public class AuthResponse {
     private String email;
     private String hoTen;
     private String vaiTro;
+    private Boolean choPhepBanHang;
 }

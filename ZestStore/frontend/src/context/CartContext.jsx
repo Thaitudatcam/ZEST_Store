@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { getCart } from '../api/cart'
+import { useAuth } from './AuthContext'
 
 const CartContext = createContext(null)
 
 export function CartProvider({ children }) {
+  const { user } = useAuth()
   const [count, setCount] = useState(0)
 
   const refreshCount = useCallback(async () => {
@@ -14,7 +16,7 @@ export function CartProvider({ children }) {
     } catch { setCount(0) }
   }, [])
 
-  useEffect(() => { refreshCount() }, [refreshCount])
+  useEffect(() => { refreshCount() }, [user, refreshCount])
 
   return (
     <CartContext.Provider value={{ count, refreshCount }}>

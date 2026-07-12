@@ -22,17 +22,22 @@ public class JwtTokenProvider {
         this.expiration = expiration;
     }
 
-    public String generateToken(String email, String vaiTro) {
+    public String generateToken(String email, String vaiTro, Boolean choPhepBanHang) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .subject(email)
                 .claim("vaiTro", vaiTro)
+                .claim("choPhepBanHang", choPhepBanHang != null && choPhepBanHang)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public boolean getChoPhepBanHang(String token) {
+        return parseClaims(token).get("choPhepBanHang", Boolean.class);
     }
 
     public String getEmailFromToken(String token) {

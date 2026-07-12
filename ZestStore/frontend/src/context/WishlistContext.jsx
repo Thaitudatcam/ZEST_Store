@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { getWishlist } from '../api/wishlist'
+import { useAuth } from './AuthContext'
 
 const WishlistContext = createContext(null)
 
 export function WishlistProvider({ children }) {
+  const { user } = useAuth()
   const [wishlistCount, setWishlistCount] = useState(0)
 
   const refreshWishlistCount = useCallback(async () => {
@@ -13,7 +15,7 @@ export function WishlistProvider({ children }) {
     } catch { setWishlistCount(0) }
   }, [])
 
-  useEffect(() => { refreshWishlistCount() }, [refreshWishlistCount])
+  useEffect(() => { refreshWishlistCount() }, [user, refreshWishlistCount])
 
   return (
     <WishlistContext.Provider value={{ wishlistCount, refreshWishlistCount }}>

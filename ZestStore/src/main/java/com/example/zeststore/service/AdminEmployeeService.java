@@ -34,27 +34,35 @@ public class AdminEmployeeService {
                     m.put("soDienThoai", u.getSoDienThoai());
                     m.put("trangThai", u.getTrangThai());
                     m.put("vaiTro", u.getVaiTro().getTenVaiTro());
+                    m.put("choPhepBanHang", u.getChoPhepBanHang());
                     m.put("ngayTao", u.getNgayTao());
                     return m;
                 }).collect(Collectors.toList());
     }
 
     @Transactional
-    public Map<String, Object> createEmployee(Map<String, String> body) {
-        if (nguoiDungRepository.existsByEmail(body.get("email"))) {
+    public Map<String, Object> createEmployee(Map<String, Object> body) {
+        String email = (String) body.get("email");
+        String vaiTro = (String) body.get("vaiTro");
+
+        if (nguoiDungRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already exists");
         }
 
-        VaiTro role = vaiTroRepository.findByTenVaiTro(body.get("vaiTro"))
-                .orElseThrow(() -> new RuntimeException("Role not found: " + body.get("vaiTro")));
+        VaiTro role = vaiTroRepository.findByTenVaiTro(vaiTro)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + vaiTro));
+
+        Boolean choPhepBanHang = body.get("choPhepBanHang") != null
+                ? Boolean.parseBoolean(body.get("choPhepBanHang").toString()) : false;
 
         NguoiDung emp = NguoiDung.builder()
-                .hoTen(body.get("hoTen"))
-                .email(body.get("email"))
-                .soDienThoai(body.get("soDienThoai"))
-                .matKhauMaHoa(passwordEncoder.encode(body.get("matKhau")))
+                .hoTen((String) body.get("hoTen"))
+                .email((String) body.get("email"))
+                .soDienThoai((String) body.get("soDienThoai"))
+                .matKhauMaHoa(passwordEncoder.encode((String) body.get("matKhau")))
                 .vaiTro(role)
                 .trangThai(1)
+                .choPhepBanHang(choPhepBanHang)
                 .build();
         emp = nguoiDungRepository.save(emp);
 
@@ -67,19 +75,22 @@ public class AdminEmployeeService {
     }
 
     @Transactional
-    public void updateEmployee(Integer id, Map<String, String> body) {
+    public void updateEmployee(Integer id, Map<String, Object> body) {
         NguoiDung emp = nguoiDungRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found: " + id));
 
-        if (body.containsKey("hoTen")) emp.setHoTen(body.get("hoTen"));
-        if (body.containsKey("soDienThoai")) emp.setSoDienThoai(body.get("soDienThoai"));
+        if (body.containsKey("hoTen")) emp.setHoTen((String) body.get("hoTen"));
+        if (body.containsKey("soDienThoai")) emp.setSoDienThoai((String) body.get("soDienThoai"));
         if (body.containsKey("vaiTro")) {
-            VaiTro role = vaiTroRepository.findByTenVaiTro(body.get("vaiTro"))
+            VaiTro role = vaiTroRepository.findByTenVaiTro((String) body.get("vaiTro"))
                     .orElseThrow(() -> new RuntimeException("Role not found: " + body.get("vaiTro")));
             emp.setVaiTro(role);
         }
-        if (body.containsKey("matKhau") && !body.get("matKhau").isEmpty()) {
-            emp.setMatKhauMaHoa(passwordEncoder.encode(body.get("matKhau")));
+        if (body.containsKey("matKhau") && body.get("matKhau") != null && !((String) body.get("matKhau")).isEmpty()) {
+            emp.setMatKhauMaHoa(passwordEncoder.encode((String) body.get("matKhau")));
+        }
+        if (body.containsKey("choPhepBanHang")) {
+            emp.setChoPhepBanHang(Boolean.parseBoolean(body.get("choPhepBanHang").toString()));
         }
         nguoiDungRepository.save(emp);
     }
@@ -91,5 +102,34 @@ public class AdminEmployeeService {
         emp.setTrangThai(emp.getTrangThai() == 1 ? 0 : 1);
         nguoiDungRepository.save(emp);
         return Map.of("message", "Status updated", "trangThai", emp.getTrangThai());
+    }
+
+    @Transactional
+    public Map<String, Object> convertToEmployee(Map<String, Object> body) {
+        Integer maNguoiDung = Integer.valueOf(body.get("maNguoiDung").toString());
+        String vaiTroStr = (String) body.get("vaiTro");
+        Boolean choPhepBanHang = body.get("choPhepBanHang") != null
+                ? Boolean.parseBoolean(body.get("choPhepBanHang").toString()) : false;
+
+        NguoiDung user = nguoiDungRepository.findById(maNguoiDung)
+                .orElseThrow(() -> new RuntimeException("User not found: " + maNguoiDung));
+
+        if (user.getVaiTro() != null && !"CUSTOMER".equals(user.getVaiTro().getTenVaiTro())) {
+            throw new RuntimeException("User is already an employee");
+        }
+
+        VaiTro role = vaiTroRepository.findByTenVaiTro(vaiTroStr)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + vaiTroStr));
+
+        user.setVaiTro(role);
+        user.setChoPhepBanHang(choPhepBanHang);
+        nguoiDungRepository.save(user);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("maNguoiDung", user.getMaNguoiDung());
+        result.put("hoTen", user.getHoTen());
+        result.put("email", user.getEmail());
+        result.put("message", "Converted to employee successfully");
+        return result;
     }
 }

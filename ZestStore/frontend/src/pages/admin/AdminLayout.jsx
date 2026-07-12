@@ -4,38 +4,45 @@ import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
 import AiChat from '../../components/AiChat'
 
-const posItem = { label: 'Bán hàng', icon: ShoppingCart, children: [
-  { to: '/admin/pos', label: 'Bán tại quầy' },
-]}
-
-const productItem = { label: 'Quản lý sản phẩm', icon: Package, children: [
-  { to: '/admin/products', label: 'Sản phẩm' },
-  { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },
-]}
-
-const nav = [
-  posItem,
-  { label: 'Đơn hàng', icon: ShoppingBag, children: [
-    { to: '/admin/orders/online', label: 'Đơn hàng online' },
-    { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
-  ]},
-  { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
-  productItem,
-  { to: '/admin/coupons', label: 'Mã giảm giá', icon: Ticket },
-  { to: '/admin/reviews', label: 'Đánh giá', icon: Star },
-  { label: 'Quản lý người dùng', icon: Users, children: [
-    { to: '/admin/customers', label: 'Khách hàng' },
-    { to: '/admin/employees', label: 'Nhân viên' },
-  ]},
-  { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
-]
-
 export default function AdminLayout() {
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navOpen, setNavOpen] = useState({})
+
+  const role = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro : user?.vaiTro
+  const isStaff = role === 'STAFF'
+
+  const posItem = { label: 'Bán hàng', icon: ShoppingCart, children: [
+    { to: '/admin/pos', label: 'Bán tại quầy' },
+  ]}
+
+  const nav = isStaff ? [
+    posItem,
+    { label: 'Đơn hàng', icon: ShoppingBag, children: [
+      { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
+    ]},
+    { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
+  ] : [
+    posItem,
+    { label: 'Đơn hàng', icon: ShoppingBag, children: [
+      { to: '/admin/orders/online', label: 'Đơn hàng online' },
+      { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
+    ]},
+    { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
+    { label: 'Quản lý sản phẩm', icon: Package, children: [
+      { to: '/admin/products', label: 'Sản phẩm' },
+      { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },
+    ]},
+    { to: '/admin/coupons', label: 'Mã giảm giá', icon: Ticket },
+    { to: '/admin/reviews', label: 'Đánh giá', icon: Star },
+    { label: 'Quản lý người dùng', icon: Users, children: [
+      { to: '/admin/customers', label: 'Khách hàng' },
+      { to: '/admin/employees', label: 'Nhân viên' },
+    ]},
+    { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
+  ]
 
   const toggleNav = (label) => setNavOpen(prev => ({ ...prev, [label]: !prev[label] }))
 
@@ -139,7 +146,7 @@ export default function AdminLayout() {
             </div>
             <div className="hidden sm:block">
               <p className="text-sm font-medium">{user?.hoTen}</p>
-              <p className="text-xs text-gray-500">Admin</p>
+              <p className="text-xs text-gray-500">{isStaff ? 'Nhân viên' : 'Admin'}</p>
             </div>
             <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500"><LogOut className="h-5 w-5" /></button>
           </div>

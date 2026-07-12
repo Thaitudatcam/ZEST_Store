@@ -11,7 +11,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/invoices")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','STAFF')")
 public class HoaDonController {
 
     private final HoaDonService hoaDonService;

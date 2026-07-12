@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { getVoucherCount } from '../api/userVoucher'
+import { useAuth } from './AuthContext'
 
 const VoucherContext = createContext(null)
 
 export function VoucherProvider({ children }) {
+  const { user } = useAuth()
   const [voucherCount, setVoucherCount] = useState(0)
 
   const refreshVoucherCount = useCallback(async () => {
@@ -13,7 +15,7 @@ export function VoucherProvider({ children }) {
     } catch { setVoucherCount(0) }
   }, [])
 
-  useEffect(() => { refreshVoucherCount() }, [refreshVoucherCount])
+  useEffect(() => { refreshVoucherCount() }, [user, refreshVoucherCount])
 
   return (
     <VoucherContext.Provider value={{ voucherCount, refreshVoucherCount }}>

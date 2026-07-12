@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus } from '../../api/admin'
-import { Search, Plus, Pencil, Lock, Unlock, X, Filter } from 'lucide-react'
+import {
+  getEmployees, getCustomers, updateEmployee, toggleEmployeeStatus, convertToEmployee
+} from '../../api/admin'
+import { Search, Plus, Pencil, Lock, Unlock, X, Filter, UserPlus, Loader } from 'lucide-react'
 
 export default function AdminEmployees() {
   const [employees, setEmployees] = useState([])
@@ -8,12 +10,38 @@ export default function AdminEmployees() {
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [error, setError] = useState('')
-  const [showForm, setShowForm] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
+  const [allCustomers, setAllCustomers] = useState([])
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [selected, setSelected] = useState(null)
+  const [convertPos, setConvertPos] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '', vaiTro: 'STAFF' })
+  const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '', vaiTro: 'STAFF', choPhepBanHang: false })
+  const [showForm, setShowForm] = useState(false)
 
   const load = () => getEmployees().then(setEmployees).catch(() => setError('Không thể tải nhân viên'))
   useEffect(() => { load() }, [])
+
+  const openStaffSearch = () => {
+    setSelected(null)
+    setSearchQ('')
+    setConvertPos(false)
+    setShowSearch(true)
+    setLoadingCustomers(true)
+    getCustomers()
+      .then(res => setAllCustomers(res.filter(c => !employees.some(e => e.maNguoiDung === c.maNguoiDung))))
+      .catch(() => setAllCustomers([]))
+      .finally(() => setLoadingCustomers(false))
+  }
+
+  const candidates = allCustomers.filter(c => {
+    if (!searchQ.trim()) return true
+    const q = searchQ.toLowerCase()
+    return (c.hoTen || '').toLowerCase().includes(q)
+        || (c.email || '').toLowerCase().includes(q)
+        || (c.soDienThoai || '').includes(q)
+  })
 
   const filtered = employees.filter((e) => {
     const matchSearch = !search || (e.hoTen || '').toLowerCase().includes(search.toLowerCase()) || (e.email || '').toLowerCase().includes(search.toLowerCase()) || (e.soDienThoai || '').includes(search)
@@ -22,27 +50,28 @@ export default function AdminEmployees() {
     return matchSearch && matchRole && matchStatus
   })
 
-  const openCreate = () => { setEditing(null); setForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '', vaiTro: 'STAFF' }); setShowForm(true) }
-
   const openEdit = (emp) => {
     setEditing(emp)
-    setForm({ hoTen: emp.hoTen, email: emp.email, soDienThoai: emp.soDienThoai || '', matKhau: '', vaiTro: emp.vaiTro })
+    setForm({ hoTen: emp.hoTen, email: emp.email, soDienThoai: emp.soDienThoai || '', matKhau: '', vaiTro: emp.vaiTro, choPhepBanHang: emp.choPhepBanHang })
     setShowForm(true)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      if (editing) {
-        const payload = { ...form }
-        if (!payload.matKhau) delete payload.matKhau
-        await updateEmployee(editing.maNguoiDung, payload)
-      } else {
-        if (!form.matKhau) { alert('Vui lòng nhập mật khẩu'); return }
-        await createEmployee(form)
-      }
+      const payload = { ...form }
+      if (!payload.matKhau) delete payload.matKhau
+      await updateEmployee(editing.maNguoiDung, payload)
       setShowForm(false); setEditing(null); setError(''); load()
     } catch (err) { setError(err.response?.data?.message || 'Thao tác thất bại') }
+  }
+
+  const handleConvert = async () => {
+    if (!selected) return
+    try {
+      await convertToEmployee({ maNguoiDung: selected.maNguoiDung, vaiTro: 'STAFF', choPhepBanHang: convertPos })
+      setShowSearch(false); setSelected(null); setError(''); load()
+    } catch (err) { setError(err.response?.data?.message || 'Chuyển đổi thất bại') }
   }
 
   const handleToggle = async (id) => {
@@ -59,8 +88,9 @@ export default function AdminEmployees() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm nhân viên..." className="pl-9 pr-4 py-2 border rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-          <button onClick={openCreate} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Thêm nhân viên
+          <button onClick={openStaffSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+            <UserPlus className="h-4 w-4" /> Thêm nhân viên
           </button>
         </div>
       </div>
@@ -105,6 +135,7 @@ export default function AdminEmployees() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">SĐT</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Vai trò</th>
+                <th className="text-center px-4 py-3 font-semibold text-gray-600">Bán tại quầy</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
                 <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
               </tr>
@@ -119,6 +150,15 @@ export default function AdminEmployees() {
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.vaiTro === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
                       {e.vaiTro === 'ADMIN' ? 'Quản trị' : 'Nhân viên'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {e.vaiTro === 'ADMIN' ? (
+                      <span className="text-xs text-gray-400">—</span>
+                    ) : (
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.choPhepBanHang ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
+                        {e.choPhepBanHang ? 'Có' : 'Không'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.trangThai === 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
@@ -141,11 +181,78 @@ export default function AdminEmployees() {
         {filtered.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có nhân viên</p>}
       </div>
 
-      {showForm && (
+      {/* Search customer modal */}
+      {showSearch && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowSearch(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">Chọn khách hàng làm nhân viên</h2>
+              <button onClick={() => setShowSearch(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+
+            {!selected ? (
+              <>
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Lọc theo tên, email, số điện thoại..."
+                    className="pl-9 pr-4 py-2.5 border rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" autoFocus />
+                </div>
+                {loadingCustomers ? (
+                  <div className="flex justify-center py-8"><Loader className="h-6 w-6 animate-spin text-blue-600" /></div>
+                ) : candidates.length > 0 ? (
+                  <div className="max-h-80 overflow-y-auto border rounded-lg divide-y">
+                    {candidates.map(c => (
+                      <div key={c.maNguoiDung} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                        <div>
+                          <p className="font-medium text-sm">{c.hoTen}</p>
+                          <p className="text-xs text-gray-500">{c.email}{c.soDienThoai ? ` · ${c.soDienThoai}` : ''}</p>
+                        </div>
+                        <button onClick={() => setSelected(c)}
+                          className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700">
+                          Chọn
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-8 text-sm">Không có khách hàng nào</p>
+                )}
+              </>
+            ) : (
+              <div>
+                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                  <p className="font-medium">{selected.hoTen}</p>
+                  <p className="text-sm text-gray-500 mt-1">{selected.email}{selected.soDienThoai ? ` · ${selected.soDienThoai}` : ''}</p>
+                </div>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 text-sm cursor-pointer">
+                    <input type="checkbox" checked={convertPos} onChange={(e) => setConvertPos(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <span>Cho phép bán tại quầy</span>
+                  </label>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button onClick={handleConvert}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">
+                    Xác nhận
+                  </button>
+                  <button onClick={() => { setSelected(null); setSearchQ('') }}
+                    className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">
+                    Quay lại
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit employee form */}
+      {showForm && editing && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-lg">{editing ? 'Sửa nhân viên' : 'Thêm nhân viên'}</h2>
+              <h2 className="font-bold text-lg">Chỉnh sửa nhân viên</h2>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -162,8 +269,8 @@ export default function AdminEmployees() {
                 <input value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">{editing ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu'}</label>
-                <input type="password" value={form.matKhau} onChange={(e) => setForm({ ...form, matKhau: e.target.value })} required={!editing} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-sm font-medium text-gray-700">Mật khẩu mới (để trống nếu không đổi)</label>
+                <input type="password" value={form.matKhau} onChange={(e) => setForm({ ...form, matKhau: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">Vai trò</label>
@@ -172,8 +279,15 @@ export default function AdminEmployees() {
                   <option value="ADMIN">Quản trị viên</option>
                 </select>
               </div>
+              {form.vaiTro === 'STAFF' && (
+                <label className="flex items-center gap-3 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.choPhepBanHang} onChange={(e) => setForm({ ...form, choPhepBanHang: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  <span>Cho phép bán tại quầy</span>
+                </label>
+              )}
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">{editing ? 'Cập nhật' : 'Tạo'}</button>
+                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">Cập nhật</button>
                 <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
               </div>
             </form>

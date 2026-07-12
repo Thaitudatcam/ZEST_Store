@@ -39,6 +39,7 @@ export const getEmployees = () => api.get('/admin/employees').then((r) => r.data
 export const createEmployee = (data) => api.post('/admin/employees', data).then((r) => r.data)
 export const updateEmployee = (id, data) => api.put(`/admin/employees/${id}`, data).then((r) => r.data)
 export const toggleEmployeeStatus = (id) => api.put(`/admin/employees/${id}/status`).then((r) => r.data)
+export const convertToEmployee = (data) => api.post('/admin/employees/convert', data).then((r) => r.data)
 
 export const getRevenueByDay = (tuNgay, denNgay) => api.get('/dashboard/revenue/day', { params: { tuNgay, denNgay } }).then(r => r.data)
 export const getRevenueByMonth = (thang, nam) => 
