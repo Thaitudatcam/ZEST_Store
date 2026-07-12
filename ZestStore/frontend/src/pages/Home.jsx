@@ -7,6 +7,7 @@ import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
 import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles } from 'lucide-react'
 import ZS from '../pictures/ZS.png'
+import PromoBanner from '../components/PromoBanner'
 
 const rawStrip = Object.entries(import.meta.glob('../pictures/strip/*.{png,jpg,jpeg,webp}', { eager: true, query: '?url', import: 'default' }))
 const stripData = rawStrip
@@ -82,18 +83,44 @@ export default function Home() {
     <div className="animate-fade-in">
 
       {/* ──────── HERO ──────── */}
-      <section className="relative bg-gradient-to-br via-blue-500 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 25% 50%, #fff 0%, transparent 50%), radial-gradient(circle at 75% 50%, #fff 0%, transparent 50%)' }} />
-        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24 flex flex-col md:flex-row items-center gap-10">
+      <section className="relative bg-gradient-to-br from-slate-800 via-blue-900 to-slate-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_#ffffff20_0%,_transparent_50%),radial-gradient(ellipse_at_bottom_right,_#ffffff08_0%,_transparent_50%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 py-10 md:py-16 flex flex-col md:flex-row items-center gap-8">
           <div className="flex-1 text-center md:text-left">
-            <span className="inline-block bg-white/80 text-black text-xs font-bold px-3 py-1 rounded-full mb-4">Bộ sưu tập mới 2026</span>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">Phong cách <br/>Polo đẳng cấp</h2>
-            <p className="text-base md:text-lg text-white mb-8 max-w-lg">Chất liệu cotton cao cấp, form chuẩn, đa dạng màu sắc, mang đến sự thoải mái và tự tin cho mọi người.</p>
-            <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-              <a href="#products" onClick={scrollToProducts} className="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold px-6 py-3 rounded-lg hover:bg-blue-50 transition shadow-lg cursor-pointer">
-                <ShoppingBag className="h-5 w-5" /> Mua ngay <ArrowRight className="h-4 w-4" />
-              </a>
+            <span className="inline-block bg-white/15 text-white text-xs font-medium tracking-widest px-4 py-1.5 rounded-full mb-5 border border-white/25 backdrop-blur-sm">BỘ SƯU TẬP MỚI 2026</span>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+                  Khẳng Định <br />
+                  <span >Phong Cách Của Bạn</span>
+              </h2>
+              <p className="text-base md:text-lg text-blue-100 mb-8 max-w-lg leading-relaxed">
+                  Mỗi chiếc áo polo tại ZestStore được thiết kế để mang đến sự thoải mái,
+                  lịch lãm và tự tin, đồng hành cùng bạn trong mọi phong cách sống.
+              </p><div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <a
+                    href="#products"
+                    onClick={scrollToProducts}
+                    className="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold px-7 py-3.5 rounded-full shadow-xl transition-all duration-300 hover:bg-yellow-300 hover:text-slate-900 hover:-translate-y-1 hover:shadow-2xl active:scale-95 cursor-pointer"
+                >
+                    <ShoppingBag className="h-5 w-5" />
+                    Mua ngay
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </a>
+                {/*<div className="flex gap-8 mt-10 text-center md:text-left">*/}
+                {/*    <div>*/}
+                {/*        <h3 className="text-3xl font-bold text-yellow-300">500+</h3>*/}
+                {/*        <p className="text-blue-100 text-sm">Sản phẩm</p>*/}
+                {/*    </div>*/}
 
+                {/*    <div>*/}
+                {/*        <h3 className="text-3xl font-bold text-yellow-300">10K+</h3>*/}
+                {/*        <p className="text-blue-100 text-sm">Khách hàng</p>*/}
+                {/*    </div>*/}
+
+                {/*    <div>*/}
+                {/*        <h3 className="text-3xl font-bold text-yellow-300">4.9★</h3>*/}
+                {/*        <p className="text-blue-100 text-sm">Đánh giá</p>*/}
+                {/*    </div>*/}
+                {/*</div>*/}
             </div>
             <div className="flex flex-wrap gap-6 mt-8 text-sm justify-center md:justify-start">
               {[
@@ -101,8 +128,8 @@ export default function Home() {
                 { icon: RefreshCw, label: 'Đổi trả 30 ngày' },
                 { icon: Shield, label: 'Chính hãng 100%' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-yellow-300" />
+                <div key={label} className="flex items-center gap-2 text-blue-200">
+                  <Icon className="h-4 w-4" />
                   <span>{label}</span>
                 </div>
               ))}
@@ -110,42 +137,28 @@ export default function Home() {
           </div>
           <div className="flex-1 flex justify-center">
             <div className="relative w-72 h-72 md:w-96 md:h-96">
-              <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/30 to-transparent rounded-full animate-pulse" />
-              <img src={ZS} alt="Polo Nam" className="relative w-full h-full object-cover rounded-2xl shadow-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-full animate-pulse" />
+              <div className="relative w-full h-full rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/20">
+                <img src={ZS} alt="Polo Nam" className="w-full h-full object-cover" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
+        {/* ──────── PROMO BANNER ──────── */}
+        <PromoBanner />--sửa lại cho gọn nhất có theer ể ưu đãi và nagayf ảnh minh hoạ nhỏ--
+
       {/* ──────── BRAND VALUES ──────── */}
-      <section className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 justify-items-center">
-          {[
-            { icon: Truck, title: 'Free Ship', desc: 'Đơn hàng từ 299K' },
-            { icon: Shield, title: 'Chính hãng', desc: 'Cam kết 100%' },
-            { icon: RefreshCw, title: 'Đổi trả', desc: 'Trong 30 ngày' },
-            { icon: Headphones, title: 'Hỗ trợ', desc: 'Hotline 24/7' },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex flex-col items-center gap-2 text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                <Icon className="h-6 w-6 text-blue-700" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-gray-800">{title}</p>
-                <p className="text-xs text-gray-500">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {stripData.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold mb-6">Bộ sưu tập</h2>
-          <div className="flex gap-2 h-[500px] overflow-hidden rounded-xl">
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <h2 className="text-2xl font-bold mb-6 text-neutral-900">Bộ sưu tập</h2>
+          <div className="flex gap-2 h-[500px] overflow-hidden rounded-2xl">
             {stripData.map((item, i) => (
               <div key={i}
-                className="group relative flex-1 overflow-hidden rounded-lg transition-all duration-500 hover:flex-[2] cursor-default">
+                className="group relative flex-1 overflow-hidden rounded-xl transition-all duration-700 hover:flex-[2.5] cursor-default">
                 <img src={item.front}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -162,9 +175,9 @@ export default function Home() {
 
       {/* ──────── RECOMMENDATIONS ──────── */}
       {forYou.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-yellow-500" /> {forYouTitle}
+        <section className="max-w-7xl mx-auto px-4 py-12">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-neutral-900">
+            <Sparkles className="h-5 w-5 text-blue-500" /> {forYouTitle}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {forYou.map((p) => (
@@ -174,49 +187,29 @@ export default function Home() {
         </section>
       )}
 
-      {bestSelling.length > 0 && (
-        <section className="bg-gray-50 py-10">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-red-500" /> Bán chạy nhất
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {bestSelling.map((p) => (
-                <ProductCard key={p.maSanPham} product={p} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+
 
       {/* ──────── PRODUCT LISTING WITH FILTERS ──────── */}
-      <section ref={productRef} id="all-products" className="py-12">
+      <section ref={productRef} id="all-products" className="py-14">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-6">Tất cả sản phẩm</h2>
+          <h2 className="text-2xl font-bold mb-7 text-neutral-900">Tất cả sản phẩm</h2>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl border p-4 mb-6">
+          <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-6">
             <div className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="text-xs text-gray-500 font-medium">Danh mục</label>
+                <label className="text-xs text-neutral-500 font-medium tracking-wide">Danh mục</label>
                 <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
                   <option value="">Tất cả danh mục</option>
                   {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
                 </select>
               </div>
+
               <div>
-                <label className="text-xs text-gray-500 font-medium">Kích thước</label>
-                <select value={filterSize} onChange={(e) => setFilterSize(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Tất cả size</option>
-                  {sizes.map(s => <option key={s.maKichCo} value={s.maKichCo}>{s.kichCo}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 font-medium">Sắp xếp</label>
+                <label className="text-xs text-neutral-500 font-medium tracking-wide">Sắp xếp</label>
                 <select onChange={(e) => handleSortChange(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
                   <option value="">Mới nhất</option>
                   <option value="gia-asc">Giá tăng dần</option>
                   <option value="gia-desc">Giá giảm dần</option>
@@ -229,7 +222,7 @@ export default function Home() {
           {allLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-xl overflow-hidden border bg-white">
+                <div key={i} className="rounded-xl overflow-hidden border border-neutral-200 bg-white">
                   <div className="aspect-square skeleton" />
                   <div className="p-3 space-y-2">
                     <div className="h-3 w-3/4 skeleton" />
@@ -239,7 +232,7 @@ export default function Home() {
               ))}
             </div>
           ) : allProducts.length === 0 ? (
-            <p className="text-center py-12 text-gray-400">Không tìm thấy sản phẩm</p>
+            <p className="text-center py-12 text-neutral-400">Không tìm thấy sản phẩm</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {allProducts.map((p, i) => (
@@ -252,46 +245,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ──────── LATEST PRODUCTS ──────── */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Sản phẩm mới nhất</h2>
-          <a href="#all-products" onClick={(e) => { e.preventDefault(); productRef.current?.scrollIntoView({ behavior: 'smooth' }) }} className="text-sm text-blue-700 font-medium hover:underline flex items-center gap-1">Xem tất cả <ArrowRight className="h-3.5 w-3.5" /></a>
-        </div>
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl overflow-hidden border">
-                <div className="aspect-square skeleton" />
-                <div className="p-3 space-y-2">
-                  <div className="h-3 w-3/4 skeleton" />
-                  <div className="h-4 w-1/3 skeleton" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {latestProducts.map((p, i) => (
-              <div key={p.maSanPham} style={{ animationDelay: `${i * 0.05}s` }} className="animate-fade-in">
-                <ProductCard product={p} showRating={false} />
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
-      {/* ──────── NEWSLETTER ──────── */}
-      <section className="bg-gradient-to-r via-blue-600 text-white py-16">
-        <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">Đăng ký nhận thông tin</h2>
-          <p className="text-white mb-6">Nhận ưu đãi độc quyền và cập nhật sản phẩm mới qua email.</p>
-          <form onSubmit={(e) => { e.preventDefault(); setNewsletterEmail('') }} className="flex gap-3 max-w-md mx-auto">
-            <input type="email" value={newsletterEmail} onChange={(e) => setNewsletterEmail(e.target.value)} placeholder="Email của bạn" required className="flex-1 px-4 py-3 rounded-lg text-black border border-gray-400 focus:outline-none focus:border-gray-400 focus:ring-2 focus:ring-blue-300" />
-            <button type="submit" className="bg-red-500 text-white font-semibold px-6 py-3 rounded-lg transition shrink-0">Đăng ký</button>
-          </form>
-        </div>
-      </section>
+
 
     </div>
   )
