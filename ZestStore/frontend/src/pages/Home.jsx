@@ -85,7 +85,7 @@ export default function Home() {
       {/* ──────── HERO ──────── */}
       <section className="relative bg-gradient-to-br from-slate-800 via-blue-900 to-slate-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_#ffffff20_0%,_transparent_50%),radial-gradient(ellipse_at_bottom_right,_#ffffff08_0%,_transparent_50%)]" />
-        <div className="relative max-w-7xl mx-auto px-4 py-10 md:py-16 flex flex-col md:flex-row items-center gap-8">
+        <div className="relative max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col md:flex-row items-center gap-6">
           <div className="flex-1 text-center md:text-left">
             <span className="inline-block bg-white/15 text-white text-xs font-medium tracking-widest px-4 py-1.5 rounded-full mb-5 border border-white/25 backdrop-blur-sm">BỘ SƯU TẬP MỚI 2026</span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
@@ -136,7 +136,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex-1 flex justify-center">
-            <div className="relative w-72 h-72 md:w-96 md:h-96">
+            <div className="relative w-52 h-52 md:w-72 md:h-72">
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-full animate-pulse" />
               <div className="relative w-full h-full rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/20">
                 <img src={ZS} alt="Polo Nam" className="w-full h-full object-cover" />
