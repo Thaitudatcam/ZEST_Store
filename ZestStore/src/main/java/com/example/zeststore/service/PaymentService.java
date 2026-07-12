@@ -104,9 +104,14 @@ public class PaymentService {
 
     // ─── ZaloPay ───
 
-    public Map<String, String> createZaloPayPayment(Integer orderId) {
+    public PaymentResponse createZaloPayPayment(Integer orderId) {
         Map<String, String> result = zaloPayService.createOrder(orderId);
-        return result;
+        String paymentUrl = result.get("orderUrl");
+        return PaymentResponse.builder()
+                .paymentUrl(paymentUrl)
+                .orderId(orderId)
+                .message("Redirect to ZaloPay")
+                .build();
     }
 
     public Map<String, String> createZaloPayPreview(BigDecimal amount) {
