@@ -12,4 +12,6 @@ public interface MucGioHangRepository extends JpaRepository<MucGioHang, Integer>
     List<MucGioHang> findByGioHang_MaGioHang(Integer maGioHang);
 
     Optional<MucGioHang> findByGioHang_MaGioHangAndBienThe_MaBienThe(Integer maGioHang, Integer maBienThe);
+
+    List<MucGioHang> findByBienThe_MaBienThe(Integer maBienThe);
 }

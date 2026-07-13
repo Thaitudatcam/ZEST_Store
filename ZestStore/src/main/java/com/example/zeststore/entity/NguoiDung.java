@@ -22,7 +22,7 @@ public class NguoiDung {
     @Column(name = "ma_nguoi_dung")
     private Integer maNguoiDung;
 
-    @Column(name = "ma_nguoi_dung_code", length = 20, unique = true)
+    @Column(name = "ma_nguoi_dung_code", length = 20)
     private String maNguoiDungCode;
 
     @ManyToOne(fetch = FetchType.LAZY)

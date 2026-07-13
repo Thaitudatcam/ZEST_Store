@@ -49,6 +49,11 @@ public class ThanhToanService {
             order.setTrangThaiDon(2);
             donHangRepository.save(order);
             orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
+
+            boolean isCOD = Integer.valueOf(1).equals(payment.getPhuongThuc());
+            if (!isCOD) {
+                deductStock(order.getMaDonHang());
+            }
         }
 
         thanhToanRepository.save(payment);
@@ -103,13 +108,6 @@ public class ThanhToanService {
                 continue;
             }
             if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
-                List<MucDonHang> items = mucDonHangRepository
-                        .findByDonHang_MaDonHang(order.getMaDonHang());
-                for (MucDonHang item : items) {
-                    BienTheSanPham variant = item.getBienThe();
-                    variant.setTonKho(variant.getTonKho() + item.getSoLuong());
-                    bienTheRepository.save(variant);
-                }
                 order.setTrangThaiDon(5);
                 donHangRepository.save(order);
                 log.info("Auto-cancelled expired order #{}", order.getMaDonHang());

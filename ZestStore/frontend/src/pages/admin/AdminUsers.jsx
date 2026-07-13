@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, convertToEmployee } from '../../api/admin'
-import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, UserPlus, Loader } from 'lucide-react'
+import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus } from '../../api/admin'
+import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 
 export default function AdminUsers() {
   const { pathname } = useLocation()
@@ -16,20 +16,13 @@ export default function AdminUsers() {
   const [confirmToggle, setConfirmToggle] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '', vaiTro: 'STAFF' })
+  const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '', choPhepBanHang: true })
   const [page, setPage] = useState(0)
   const [empPage, setEmpPage] = useState(0)
   const [sortField, setSortField] = useState('')
   const [sortDir, setSortDir] = useState('asc')
   const [selectedIds, setSelectedIds] = useState([])
   const [confirmBulk, setConfirmBulk] = useState(null)
-  const [showSearch, setShowSearch] = useState(false)
-  const [searchQ, setSearchQ] = useState('')
-  const [allCustomers, setAllCustomers] = useState([])
-  const [loadingCustomers, setLoadingCustomers] = useState(false)
-  const [selected, setSelected] = useState(null)
-  const [convertRole, setConvertRole] = useState('STAFF')
-  const [convertPos, setConvertPos] = useState(false)
   const PAGE_SIZE = 20
 
   const loadCustomers = () => getCustomers().then(setCustomers).catch(() => setError('Không thể tải khách hàng'))
@@ -90,14 +83,6 @@ export default function AdminUsers() {
     return matchSearch && matchRole && matchStatus
   })
 
-  const candidates = allCustomers.filter(c => {
-    if (!searchQ.trim()) return true
-    const q = searchQ.toLowerCase()
-    return (c.hoTen || '').toLowerCase().includes(q)
-        || (c.email || '').toLowerCase().includes(q)
-        || (c.soDienThoai || '').includes(q)
-  })
-
   const handleToggleCustomer = async () => {
     if (!confirmToggle) return
     try { await toggleCustomerStatus(confirmToggle); setError(''); setConfirmToggle(null); loadCustomers() }
@@ -109,32 +94,11 @@ export default function AdminUsers() {
     catch { setError('Cập nhật thất bại') }
   }
 
-  const openStaffSearch = () => {
-    setSelected(null)
-    setSearchQ('')
-    setConvertRole('STAFF')
-    setConvertPos(false)
-    setShowSearch(true)
-    setLoadingCustomers(true)
-    getCustomers()
-      .then(res => setAllCustomers(res.filter(c => !employees.some(e => e.maNguoiDung === c.maNguoiDung))))
-      .catch(() => setAllCustomers([]))
-      .finally(() => setLoadingCustomers(false))
-  }
-
-  const handleConvert = async () => {
-    if (!selected) return
-    try {
-      await convertToEmployee({ maNguoiDung: selected.maNguoiDung, vaiTro: convertRole, choPhepBanHang: convertPos })
-      setShowSearch(false); setSelected(null); setError(''); loadEmployees()
-    } catch (err) { setError(err.response?.data?.message || 'Chuyển đổi thất bại') }
-  }
-
-  const openCreate = () => { setEditing(null); setForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '', vaiTro: 'STAFF' }); setShowForm(true) }
+  const openCreate = () => { setEditing(null); setForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '', choPhepBanHang: true }); setShowForm(true) }
 
   const openEdit = (emp) => {
     setEditing(emp)
-    setForm({ hoTen: emp.hoTen, email: emp.email, soDienThoai: emp.soDienThoai || '', matKhau: '', vaiTro: emp.vaiTro })
+    setForm({ hoTen: emp.hoTen, email: emp.email, soDienThoai: emp.soDienThoai || '', matKhau: '', vaiTro: emp.vaiTro || 'STAFF', choPhepBanHang: emp.choPhepBanHang ?? true })
     setShowForm(true)
   }
 
@@ -146,8 +110,7 @@ export default function AdminUsers() {
         if (!payload.matKhau) delete payload.matKhau
         await updateEmployee(editing.maNguoiDung, payload)
       } else {
-        if (!form.matKhau) { alert('Vui lòng nhập mật khẩu'); return }
-        await createEmployee(form)
+        await createEmployee({ ...form, vaiTro: 'STAFF' })
       }
       setShowForm(false); setEditing(null); setError(''); loadEmployees()
     } catch (err) { setError(err.response?.data?.message || 'Thao tác thất bại') }
@@ -173,8 +136,8 @@ export default function AdminUsers() {
               className="pl-9 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           {tab === 'employees' && (
-            <button onClick={openStaffSearch} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
-              <UserPlus className="h-4 w-4" /> Thêm nhân viên
+            <button onClick={openCreate} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+              <Plus className="h-4 w-4" /> Thêm nhân viên
             </button>
           )}
         </div>
@@ -347,6 +310,7 @@ export default function AdminUsers() {
                     </th>
                   ))}
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Vai trò</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Bán tại quầy</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
                 </tr>
@@ -363,6 +327,11 @@ export default function AdminUsers() {
                     <td className="px-4 py-3 text-center">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.vaiTro === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
                         {e.vaiTro === 'ADMIN' ? 'Quản trị' : 'Nhân viên'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.choPhepBanHang ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
+                        {e.choPhepBanHang ? 'Có' : 'Không'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -431,59 +400,6 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {showSearch && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowSearch(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-lg">Chọn khách hàng làm nhân viên</h2>
-              <button onClick={() => setShowSearch(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
-            </div>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Tìm khách hàng..." className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div className="max-h-80 overflow-y-auto space-y-1 mb-4">
-              {loadingCustomers ? (
-                <div className="flex items-center justify-center py-8"><Loader className="h-5 w-5 animate-spin text-gray-400" /></div>
-              ) : candidates.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">Không tìm thấy khách hàng</p>
-              ) : (
-                candidates.map(c => (
-                  <div key={c.maNguoiDung}
-                    className={`p-3 rounded-lg border cursor-pointer transition ${selected?.maNguoiDung === c.maNguoiDung ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}
-                    onClick={() => setSelected(c)}>
-                    <p className="font-medium text-sm">{c.hoTen}</p>
-                    <p className="text-xs text-gray-500">{c.email} {c.soDienThoai ? `- ${c.soDienThoai}` : ''}</p>
-                  </div>
-                ))
-              )}
-            </div>
-            {selected && (
-              <div className="border-t pt-4 space-y-4">
-                <p className="text-sm font-medium">Chuyển đổi <span className="font-bold">{selected.hoTen}</span> thành:</p>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Vai trò</label>
-                  <select value={convertRole} onChange={(e) => setConvertRole(e.target.value)} className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="STAFF">Nhân viên</option>
-                    <option value="ADMIN">Quản trị viên</option>
-                  </select>
-                </div>
-                {convertRole === 'STAFF' && (
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={convertPos} onChange={(e) => setConvertPos(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
-                    Cho phép bán tại quầy
-                  </label>
-                )}
-                <div className="flex gap-3 pt-2">
-                  <button onClick={handleConvert} className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700">Xác nhận chuyển đổi</button>
-                  <button onClick={() => setSelected(null)} className="flex-1 border py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50">Quay lại</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
@@ -505,16 +421,25 @@ export default function AdminUsers() {
                 <input value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">{editing ? 'Mật khẩu mới (để trống nếu không đổi)' : 'Mật khẩu'}</label>
-                <input type="password" value={form.matKhau} onChange={(e) => setForm({ ...form, matKhau: e.target.value })} required={!editing} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
+                <input type="password" value={form.matKhau} onChange={(e) => setForm({ ...form, matKhau: e.target.value })} required={!editing} placeholder={editing ? 'Để trống nếu không đổi' : ''} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Vai trò</label>
-                <select value={form.vaiTro} onChange={(e) => setForm({ ...form, vaiTro: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="STAFF">Nhân viên</option>
-                  <option value="ADMIN">Quản trị viên</option>
-                </select>
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={form.choPhepBanHang} onChange={(e) => setForm({ ...form, choPhepBanHang: e.target.checked })} />
+                  <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+                <span className="text-sm font-medium text-gray-700">Cho phép bán tại quầy</span>
               </div>
+              {editing && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Vai trò</label>
+                  <select value={form.vaiTro} onChange={(e) => setForm({ ...form, vaiTro: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="STAFF">Nhân viên</option>
+                    <option value="ADMIN">Quản trị viên</option>
+                  </select>
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">{editing ? 'Cập nhật' : 'Tạo'}</button>
                 <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>

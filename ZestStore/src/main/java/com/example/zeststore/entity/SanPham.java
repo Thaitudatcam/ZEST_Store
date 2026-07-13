@@ -48,8 +48,18 @@ public class SanPham {
     @Column(name = "gia_trung_binh", precision = 18, scale = 2)
     private BigDecimal giaTrungBinh;
 
+    @JsonIgnore
     @Column(name = "url_anh_dai_dien", length = 500)
     private String urlAnhDaiDien;
+
+    @JsonProperty("urlAnhDaiDien")
+    public String getUrlAnhDaiDien() {
+        if (urlAnhDaiDien != null) return urlAnhDaiDien;
+        if (bienThes != null && !bienThes.isEmpty()) {
+            return bienThes.get(0).getUrlAnh();
+        }
+        return null;
+    }
 
     @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default

@@ -259,7 +259,7 @@ export default function AdminPOS() {
     if (total > 0) {
       try {
         setCouponLoading(true)
-        const res = await api.post('/coupons/validate', { maCode: c.maCode, giaTriDon: total }).then(r => r.data)
+        const res = await api.post('/coupons/validate', { maCode: c.maCode, tongTien: total }).then(r => r.data)
         setCoupon(res)
       } catch (err) {
         setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')

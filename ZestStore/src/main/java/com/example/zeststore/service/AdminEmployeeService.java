@@ -50,15 +50,19 @@ public class AdminEmployeeService {
         }
 
         VaiTro role = vaiTroRepository.findByTenVaiTro(vaiTro)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + vaiTro));
+                .orElseGet(() -> vaiTroRepository.save(VaiTro.builder().tenVaiTro(vaiTro).build()));
 
         Boolean choPhepBanHang = body.get("choPhepBanHang") != null
                 ? Boolean.parseBoolean(body.get("choPhepBanHang").toString()) : false;
 
+        String sdt = (String) body.get("soDienThoai");
+        if (sdt != null && sdt.trim().isEmpty()) sdt = null;
+
         NguoiDung emp = NguoiDung.builder()
+                .maNguoiDungCode("EMP" + System.currentTimeMillis())
                 .hoTen((String) body.get("hoTen"))
                 .email((String) body.get("email"))
-                .soDienThoai((String) body.get("soDienThoai"))
+                .soDienThoai(sdt)
                 .matKhauMaHoa(passwordEncoder.encode((String) body.get("matKhau")))
                 .vaiTro(role)
                 .trangThai(1)
@@ -80,10 +84,10 @@ public class AdminEmployeeService {
                 .orElseThrow(() -> new RuntimeException("Employee not found: " + id));
 
         if (body.containsKey("hoTen")) emp.setHoTen((String) body.get("hoTen"));
-        if (body.containsKey("soDienThoai")) emp.setSoDienThoai((String) body.get("soDienThoai"));
+        if (body.containsKey("soDienThoai")) { String s = (String) body.get("soDienThoai"); emp.setSoDienThoai(s != null && s.trim().isEmpty() ? null : s); }
         if (body.containsKey("vaiTro")) {
             VaiTro role = vaiTroRepository.findByTenVaiTro((String) body.get("vaiTro"))
-                    .orElseThrow(() -> new RuntimeException("Role not found: " + body.get("vaiTro")));
+                    .orElseGet(() -> vaiTroRepository.save(VaiTro.builder().tenVaiTro((String) body.get("vaiTro")).build()));
             emp.setVaiTro(role);
         }
         if (body.containsKey("matKhau") && body.get("matKhau") != null && !((String) body.get("matKhau")).isEmpty()) {
@@ -119,7 +123,7 @@ public class AdminEmployeeService {
         }
 
         VaiTro role = vaiTroRepository.findByTenVaiTro(vaiTroStr)
-                .orElseThrow(() -> new RuntimeException("Role not found: " + vaiTroStr));
+                .orElseGet(() -> vaiTroRepository.save(VaiTro.builder().tenVaiTro(vaiTroStr).build()));
 
         user.setVaiTro(role);
         user.setChoPhepBanHang(choPhepBanHang);

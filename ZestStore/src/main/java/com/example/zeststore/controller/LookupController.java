@@ -49,4 +49,11 @@ public class LookupController {
     public ResponseEntity<?> createSize(@Valid @RequestBody SizeRequest request) {
         return ResponseEntity.ok(lookupService.createSize(request.getTenKichCo()));
     }
+
+    @DeleteMapping("/colors/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteColor(@PathVariable Integer id) {
+        lookupService.deleteColor(id);
+        return ResponseEntity.ok(java.util.Map.of("message", "Color deleted successfully"));
+    }
 }

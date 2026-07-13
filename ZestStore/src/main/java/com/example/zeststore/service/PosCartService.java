@@ -36,6 +36,9 @@ public class PosCartService {
         BienTheSanPham variant = bienTheRepository.findById(request.getMaBienThe())
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", request.getMaBienThe()));
 
+        if (variant.getNgayXoa() != null) {
+            throw new BadRequestException("Variant no longer exists");
+        }
         if (variant.getTonKho() < request.getSoLuong()) {
             throw new BadRequestException("Insufficient stock for " + variant.getSku()
                     + " (available: " + variant.getTonKho() + ")");

@@ -3,6 +3,9 @@ package com.example.zeststore.service;
 import com.example.zeststore.entity.KichCo;
 import com.example.zeststore.entity.MauSac;
 import com.example.zeststore.entity.ThuongHieu;
+import com.example.zeststore.exception.BadRequestException;
+import com.example.zeststore.exception.ResourceNotFoundException;
+import com.example.zeststore.repository.BienTheSanPhamRepository;
 import com.example.zeststore.repository.KichCoRepository;
 import com.example.zeststore.repository.MauSacRepository;
 import com.example.zeststore.repository.ThuongHieuRepository;
@@ -16,6 +19,7 @@ public class LookupService {
     private final ThuongHieuRepository thuongHieuRepository;
     private final KichCoRepository kichCoRepository;
     private final MauSacRepository mauSacRepository;
+    private final BienTheSanPhamRepository bienTheRepository;
 
     public Object getBrands() {
         return thuongHieuRepository.findAll();
@@ -46,5 +50,14 @@ public class LookupService {
         KichCo size = new KichCo();
         size.setKichCo(tenKichCo);
         return kichCoRepository.save(size);
+    }
+
+    public void deleteColor(Integer id) {
+        MauSac color = mauSacRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Color", id));
+        if (bienTheRepository.existsByMauSac_MaMauSacAndNgayXoaIsNull(id)) {
+            throw new BadRequestException("Cannot delete color because it is in use by existing variants");
+        }
+        mauSacRepository.delete(color);
     }
 }

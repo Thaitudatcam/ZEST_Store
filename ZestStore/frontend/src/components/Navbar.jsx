@@ -159,8 +159,8 @@ export default function Navbar() {
                       <Link to="/orders" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đơn hàng</Link>
                       <Link to="/profile?tab=password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đổi mật khẩu</Link>
                       <hr className="my-1" />
-                      {user?.vaiTro === 'ADMIN' && (
-                        <Link to="/admin" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Quản trị</Link>
+                      {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
+                        <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
                       )}
                       <button onClick={() => { handleLogout(); setDropdownOpen(false) }} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Đăng xuất</button>
                     </div>
@@ -226,7 +226,9 @@ export default function Navbar() {
               <Link to="/orders" onClick={() => setOpen(false)} className="block text-gray-600">Đơn hàng</Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block text-gray-600">Tài khoản</Link>
               <Link to="/profile?tab=password" onClick={() => setOpen(false)} className="block text-gray-600">Đổi mật khẩu</Link>
-              {user?.vaiTro === 'ADMIN' && <Link to="/admin" onClick={() => setOpen(false)} className="block text-gray-600">Quản trị</Link>}
+              {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
+                <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setOpen(false)} className="block text-gray-600">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
+              )}
               <button onClick={() => { handleLogout(); setOpen(false) }} className="block text-red-500">Đăng xuất</button>
             </>
           ) : (

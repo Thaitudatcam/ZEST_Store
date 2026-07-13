@@ -114,9 +114,6 @@ public class DonHangService {
             BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
             tongTien = tongTien.add(thanhTien);
 
-            variant.setTonKho(variant.getTonKho() - cartItem.getSoLuong());
-            bienTheRepository.save(variant);
-
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("bienThe", variant);
             itemMap.put("donGia", variant.getGia());
@@ -265,8 +262,19 @@ public class DonHangService {
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(status);
 
+        if (Integer.valueOf(2).equals(status)) {
+            boolean isCOD = thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                    .anyMatch(t -> Integer.valueOf(1).equals(t.getPhuongThuc()));
+            if (isCOD) {
+                deductStockNow(orderId);
+            }
+        }
+
         if (Integer.valueOf(8).equals(status) || Integer.valueOf(9).equals(status)) {
-            restoreStock(orderId);
+            boolean wasStockDeducted = wasStockDeductedForOrder(order);
+            if (wasStockDeducted) {
+                restoreStock(orderId);
+            }
             thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
                     .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
                     .findFirst()
@@ -398,6 +406,27 @@ public class DonHangService {
         throw new BadRequestException("GHN trả về dữ liệu phí vận chuyển không hợp lệ");
     }
 
+    private void deductStockNow(Integer orderId) {
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+        for (MucDonHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            if (variant.getTonKho() < item.getSoLuong()) {
+                throw new BadRequestException("Insufficient stock for " + variant.getSku()
+                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+            }
+            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
+            bienTheRepository.save(variant);
+        }
+    }
+
+    private boolean wasStockDeductedForOrder(DonHang order) {
+        if (order.getTrangThaiDon() < 2) return false;
+        return thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang()).stream()
+                .anyMatch(t -> Integer.valueOf(1).equals(t.getPhuongThuc())
+                        ? order.getTrangThaiDon() >= 2
+                        : Integer.valueOf(2).equals(t.getTrangThaiThanhToan()));
+    }
+
     private void restoreStock(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
@@ -418,11 +447,13 @@ public class DonHangService {
             throw new BadRequestException("Chỉ có thể hủy đơn ở trạng thái chờ xác nhận, đã xác nhận hoặc chờ giao hàng");
         }
 
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
-            variant.setTonKho(variant.getTonKho() + item.getSoLuong());
-            bienTheRepository.save(variant);
+        if (wasStockDeductedForOrder(order)) {
+            List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
+            for (MucDonHang item : items) {
+                BienTheSanPham variant = item.getBienThe();
+                variant.setTonKho(variant.getTonKho() + item.getSoLuong());
+                bienTheRepository.save(variant);
+            }
         }
 
         if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {

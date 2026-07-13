@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getCategories } from '../../api/categories'
@@ -36,19 +36,19 @@ export default function AdminProductForm() {
   const [uploadingVimg, setUploadingVimg] = useState(false)
   const [savingVar, setSavingVar] = useState(false)
   const [savingRow, setSavingRow] = useState(null)
-  const [uploadingRowImg, setUploadingRowImg] = useState(null)
-  const [rowUploadIdx, setRowUploadIdx] = useState(null)
+  const [uploadingColorId, setUploadingColorId] = useState(null)
   const [showCatModal, setShowCatModal] = useState(false)
   const [showBrandModal, setShowBrandModal] = useState(false)
   const [quickAddName, setQuickAddName] = useState('')
   const [showColorModal, setShowColorModal] = useState(false)
   const [showSizeModal, setShowSizeModal] = useState(false)
   const [quickColorName, setQuickColorName] = useState('')
-  const [quickColorHex, setQuickColorHex] = useState('rgba(20,105,139,0.42)')
+  const [quickColorHex, setQuickColorHex] = useState('#000000')
   const [quickSizeName, setQuickSizeName] = useState('')
   const [selectedColorIds, setSelectedColorIds] = useState([])
   const [selectedSizeIds, setSelectedSizeIds] = useState([])
   const [deletedColorIds, setDeletedColorIds] = useState([])
+  const [sessionCreatedColorIds, setSessionCreatedColorIds] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +62,8 @@ export default function AdminProductForm() {
       setSizes(Array.isArray(sz) ? sz : [])
       setColors(Array.isArray(cl) ? cl : [])
       setBrands(Array.isArray(br) ? br : [])
+      const stored = localStorage.getItem(`productDeletedColors_${id || 'new'}`)
+      if (stored) setDeletedColorIds(JSON.parse(stored))
       if (detail) {
         const firstBrand = detail.variants?.find(v => v.thuongHieu)?.thuongHieu
         setProduct({
@@ -270,16 +272,18 @@ export default function AdminProductForm() {
     setVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: value } : v))
   }
 
-  const handleUploadVariantImageRow = async (index, files) => {
+  const handleUploadColorImage = async (colorId, files) => {
     if (!files || files.length === 0) return
-    setUploadingRowImg(index)
+    setUploadingColorId(colorId)
     try {
       const data = await uploadVariantImage(files[0])
-      setVariants(prev => prev.map((v, i) => i === index ? { ...v, urlAnh: data.url } : v))
-      toast.success('Upload ảnh biến thể thành công')
+      setVariants(prev => prev.map(v =>
+        Number(v.maMauSac) === Number(colorId) ? { ...v, urlAnh: data.url } : v
+      ))
+      toast.success('Upload ảnh thành công')
     } catch (err) {
       toast.error(err.message || 'Upload ảnh thất bại')
-    } finally { setUploadingRowImg(null) }
+    } finally { setUploadingColorId(null) }
   }
 
   const handleSaveVariantRow = async (index) => {
@@ -328,6 +332,9 @@ export default function AdminProductForm() {
   }
 
   const handleRemoveImage = (fileId) => {
+    if (fileId !== 'main') {
+      api.delete(`/products/images/${fileId}`).catch(() => {})
+    }
     setUploadedImages(prev => prev.filter(img => img.fileId !== fileId))
   }
 
@@ -336,11 +343,18 @@ export default function AdminProductForm() {
     const name = colors.find(c => c.maMauSac === colorId)?.mauSac || ''
     setVariants(prev => prev.filter(v => Number(v.maMauSac) !== colorId))
     setSelectedColorIds(prev => prev.filter(id => Number(id) !== colorId))
-    setDeletedColorIds(prev => [...prev, colorId])
+    setDeletedColorIds(prev => {
+      const next = [...prev, colorId]
+      localStorage.setItem(`productDeletedColors_${id || 'new'}`, JSON.stringify(next))
+      return next
+    })
     setConfirmDeleteColor(null)
     toast.success('Đã xóa màu ' + name)
     if (isEdit && variants.some(v => v.maBienThe && Number(v.maMauSac) === colorId)) {
-      api.delete(`/products/${id}/variants/by-color/${maMauSac}`).catch(() => {})
+      api.delete(`/products/${id}/variants/by-color/${maMauSac}`).catch(() => toast.error('Xóa biến thể thất bại'))
+    } else if (sessionCreatedColorIds.includes(colorId)) {
+      api.delete(`/colors/${colorId}`).catch(() => {})
+        .then(() => setSessionCreatedColorIds(prev => prev.filter(id => id !== colorId)))
     }
   }
 
@@ -375,14 +389,18 @@ export default function AdminProductForm() {
 
   const handleQuickAddColor = async () => {
     if (!quickColorName.trim()) return
+    const dup = colors.find(c => c.mauSac.toLowerCase() === quickColorName.trim().toLowerCase() && c.maMauHex === quickColorHex)
+    if (dup) { toast.error(`Màu "${quickColorName.trim()} (${quickColorHex})" đã tồn tại`); return }
     try {
       const newColor = await createColor({ tenMauSac: quickColorName.trim(), maMauHex: quickColorHex })
       setColors(prev => [...prev, newColor])
+      setSelectedColorIds(prev => [...prev, newColor.maMauSac])
+      setSessionCreatedColorIds(prev => [...prev, newColor.maMauSac])
       setShowColorModal(false)
       setQuickColorName('')
       setQuickColorHex('#000000')
       toast.success('Thêm màu sắc thành công')
-    } catch { toast.error('Lỗi thêm màu sắc') }
+    } catch (err) { toast.error(err.response?.data?.message || err.response?.data?.errors?.maMauHex || err.response?.data?.errors?.tenMauSac || 'Lỗi thêm màu sắc') }
   }
 
   const handleQuickAddSize = async () => {
@@ -620,109 +638,118 @@ export default function AdminProductForm() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b bg-gray-50">
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Màu</th>
+                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Màu & Ảnh</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Size</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Giá</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Tồn</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Ảnh</th>
                   <th className="text-center px-3 py-2 font-semibold text-gray-600">Hành động</th>
                 </tr></thead>
-                <tbody className="divide-y">
-                  {showForm && (
-                    <tr className="bg-blue-50/50">
-                      <td className="px-3 py-2">
-                        <select value={vform.maMauSac} onChange={(e) => setVform(p => ({ ...p, maMauSac: e.target.value }))}
-                          className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                          <option value="">-- Màu --</option>
-                          {colors.map(c => (
-                            <option key={c.maMauSac} value={c.maMauSac}>
-                              {c.mauSac} {c.maMauHex ? `(${c.maMauHex})` : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <select value={vform.maKichCo} onChange={(e) => setVform(p => ({ ...p, maKichCo: e.target.value }))}
-                          className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                          <option value="">-- Size --</option>
-                          {sizes.map(s => <option key={s.maKichCo} value={s.maKichCo}>{s.kichCo}</option>)}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="number" min="0" step="1000" value={vform.gia} onChange={(e) => setVform(p => ({ ...p, gia: e.target.value }))}
-                          placeholder="Giá" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="number" min="0" value={vform.tonKho} onChange={(e) => setVform(p => ({ ...p, tonKho: e.target.value }))}
-                          className="w-full border rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button type="button" onClick={() => document.getElementById('vimgInput').click()}
-                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg" title="Upload ảnh biến thể">
-                            {uploadingVimg ? <Loader className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          </button>
-                          <input id="vimgInput" type="file" accept="image/*" hidden
-                            onChange={(e) => { handleUploadVariantImage(e.target.files); e.target.value = '' }} />
-                          {vform.urlAnh && (
-                            <SafeImg src={vform.urlAnh} className="w-8 h-8 rounded object-cover bg-gray-100 border shrink-0"
-                              fallback="https://placehold.co/32x32/e2e8f0/475569?text=?" />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex justify-center gap-1">
-                          <button type="button" onClick={handleSaveVariant} disabled={savingVar}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check className="h-4 w-4" /></button>
-                          <button type="button" onClick={() => setConfirmDelete(editIdx)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {variants.map((v, i) => (
-                    <tr key={v.maBienThe || v._tempId || i} className="hover:bg-gray-50 transition">
-                      <td className="px-3 py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {getColorHex(v.maMauSac) && <span className="w-4 h-4 rounded-full border shrink-0" style={{ backgroundColor: getColorHex(v.maMauSac) }} />}
-                          <span>{v.mauSac?.mauSac || getColorName(v.maMauSac)}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-center font-medium">{v.kichCo?.kichCo || getSizeName(v.maKichCo)}</td>
-                      <td className="px-3 py-2">
-                        <input type="number" min="0" step="1000" value={v.gia}
-                          onChange={e => handleVariantFieldChange(i, 'gia', e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input type="number" min="0" value={v.tonKho}
-                          onChange={e => handleVariantFieldChange(i, 'tonKho', e.target.value)}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button type="button" onClick={() => { setRowUploadIdx(i); document.getElementById('vimgRowInput').click() }}
-                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg" title="Upload ảnh biến thể">
-                            {uploadingRowImg === i ? <Loader className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          </button>
-                          {v.urlAnh ? (
-                            <SafeImg src={v.urlAnh} className="w-8 h-8 rounded object-cover bg-gray-100 border shrink-0"
-                              fallback="https://placehold.co/32x32/e2e8f0/475569?text=?" />
-                          ) : (
-                            <span className="text-xs text-gray-300">—</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <button type="button" onClick={() => setConfirmDelete(i)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                {(() => {
+                  const colorGroups = variants.reduce((acc, v) => {
+                    const cid = Number(v.maMauSac)
+                    if (!acc[cid]) acc[cid] = []
+                    acc[cid].push(v)
+                    return acc
+                  }, {})
+                  const colorGroupEntries = Object.entries(colorGroups)
+                  return (
+                    <tbody className="divide-y">
+                      {showForm && (
+                        <tr className="bg-blue-50/50">
+                          <td className="px-3 py-2">
+                            <select value={vform.maMauSac} onChange={(e) => setVform(p => ({ ...p, maMauSac: e.target.value }))}
+                              className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              <option value="">-- Màu --</option>
+                              {colors.map(c => (
+                                <option key={c.maMauSac} value={c.maMauSac}>
+                                  {c.mauSac} {c.maMauHex ? `(${c.maMauHex})` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <select value={vform.maKichCo} onChange={(e) => setVform(p => ({ ...p, maKichCo: e.target.value }))}
+                              className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              <option value="">-- Size --</option>
+                              {sizes.map(s => <option key={s.maKichCo} value={s.maKichCo}>{s.kichCo}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="text" inputMode="numeric" value={vform.gia ? Number(vform.gia).toLocaleString('vi-VN') : ''} onChange={(e) => setVform(p => ({ ...p, gia: e.target.value.replace(/[^0-9]/g, '') }))}
+                              placeholder="Giá" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="number" min="0" value={vform.tonKho} onChange={(e) => setVform(p => ({ ...p, tonKho: e.target.value }))}
+                              className="w-full border rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex justify-center gap-1">
+                              <button type="button" onClick={handleSaveVariant} disabled={savingVar}
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check className="h-4 w-4" /></button>
+                              <button type="button" onClick={() => setConfirmDelete(editIdx)}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {colorGroupEntries.map(([colorId, colorVariants], gi) => {
+                        const colorIdx = variants.findIndex(v => Number(v.maMauSac) === Number(colorId))
+                        const colorObj = colors.find(c => c.maMauSac === Number(colorId))
+                        const sharedImage = colorVariants[0]?.urlAnh || ''
+                        return (
+                          <Fragment key={colorId}>
+                            {colorVariants.map((v, vi) => {
+                              const idx = variants.indexOf(v)
+                              return (
+                                <tr key={v.maBienThe || v._tempId || `${colorId}_${vi}`} className={vi === 0 ? 'border-t-2 border-gray-200' : ''}>
+                                  {vi === 0 && (
+                                    <td className="px-3 py-2 align-middle" rowSpan={colorVariants.length}>
+                                      <div className="flex flex-col items-start gap-2">
+                                        <div className="flex items-center gap-1.5">
+                                          {getColorHex(colorId) && <span className="w-4 h-4 rounded-full border shrink-0" style={{ backgroundColor: getColorHex(colorId) }} />}
+                                          <span className="font-medium text-sm">{colorObj?.mauSac || getColorName(colorId)}</span>
+                                        </div>
+                                        <button type="button" onClick={() => document.getElementById(`colorImgInput_${colorId}`).click()}
+                                          className="flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                                          {uploadingColorId === Number(colorId) ? <Loader className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                                          Upload ảnh
+                                        </button>
+                                        <input id={`colorImgInput_${colorId}`} type="file" accept="image/*" hidden
+                                          onChange={(e) => { handleUploadColorImage(colorId, e.target.files); e.target.value = '' }} />
+                                        {sharedImage ? (
+                                          <SafeImg src={sharedImage} className="w-14 h-14 rounded-lg object-cover bg-gray-100 border shrink-0"
+                                            fallback="https://placehold.co/56x56/e2e8f0/475569?text=?" />
+                                        ) : (
+                                          <span className="text-xs text-gray-300">—</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  )}
+                                  <td className="px-3 py-2 text-center font-medium">{v.kichCo?.kichCo || getSizeName(v.maKichCo)}</td>
+                                  <td className="px-3 py-2">
+                                    <input type="text" inputMode="numeric" value={v.gia ? Number(v.gia).toLocaleString('vi-VN') : ''}
+                                      onChange={e => handleVariantFieldChange(idx, 'gia', e.target.value.replace(/[^0-9]/g, ''))}
+                                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input type="number" min="0" value={v.tonKho}
+                                      onChange={e => handleVariantFieldChange(idx, 'tonKho', e.target.value)}
+                                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    <button type="button" onClick={() => setConfirmDelete(idx)}
+                                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </Fragment>
+                        )
+                      })}
+                    </tbody>
+                  )
+                })()}
               </table>
-              <input id="vimgRowInput" type="file" accept="image/*" hidden
-                onChange={(e) => { if (rowUploadIdx !== null) { handleUploadVariantImageRow(rowUploadIdx, e.target.files); setRowUploadIdx(null); e.target.value = '' } }} />
             </div>
           )}
 

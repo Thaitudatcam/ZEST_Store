@@ -18,7 +18,7 @@ public class MauSac {
     @Column(name = "ma_mau_sac")
     private Integer maMauSac;
 
-    @Column(name = "mau_sac", nullable = false, length = 50, unique = true)
+    @Column(name = "mau_sac", nullable = false, length = 50)
     private String mauSac;
 
     @Column(name = "ma_mau_hex", length = 7)

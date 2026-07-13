@@ -39,7 +39,7 @@ public class PhieuGiamGiaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> getAll() {
         return ResponseEntity.ok(phieuGiamGiaService.getAll());
     }

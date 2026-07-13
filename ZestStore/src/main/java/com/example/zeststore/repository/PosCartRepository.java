@@ -18,4 +18,6 @@ public interface PosCartRepository extends JpaRepository<PosCartItem, Integer> {
     void deleteByAdmin_MaNguoiDung(Integer adminId);
 
     List<PosCartItem> findByNgayTaoBefore(LocalDateTime threshold);
+
+    List<PosCartItem> findByBienThe_MaBienThe(Integer maBienThe);
 }

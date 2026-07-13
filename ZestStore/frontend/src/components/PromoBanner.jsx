@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Clock, ChevronLeft, ChevronRight } from 'lucide-react'
-
+import ao from '../pictures/aopolo.jpg'
+import ao1 from '../pictures/Áo polo nam Trắng.jpg'
+import ao2 from '../pictures/Áo polo thể thao Trắng.jpg'
+import ao3 from '../pictures/Áo Thun Nam Cao Cấp Polo Màu Xanh Navy.webp'
 const banners = [
   {
     id: 1,
@@ -10,20 +13,10 @@ const banners = [
     highlight: 'GIẢM ĐẾN 45%',
     highlightColor: 'text-red-500',
     desc: 'Cơ hội sở hữu áo polo, áo thun nam cao cấp với giá cực sốc. Chỉ trong thời gian giới hạn!',
-    img: 'https://images.unsplash.com/photo-1564584217132-2271feaeb3c5?w=700&q=85',
-    link: '#all-products',
+    img: ao1,
+    link: '/products/o-polo-nam-1783922287918',
   },
-  {
-    id: 2,
-    badge: 'New',
-    badgeColor: 'bg-blue-600',
-    title: 'BỘ SƯU TẬP MỚI',
-    highlight: 'THU ĐÔNG 2026',
-    highlightColor: 'text-white',
-    desc: 'Thiết kế hiện đại, chất liệu cao cấp — dẫn đầu xu hướng thời trang nam mùa mới.',
-    img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=700&q=85',
-    link: '#all-products',
-  },
+
   {
     id: 3,
     badge: 'Limited',
@@ -31,9 +24,9 @@ const banners = [
     title: 'ƯU ĐÃI ĐẶC BIỆT',
     highlight: 'MUA 2 TẶNG 1',
     highlightColor: 'text-orange-400',
-    desc: 'Áp dụng cho tất cả sản phẩm áo polo form chuẩn. Nhanh tay kẻo hết!',
-    img: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=700&q=85',
-    link: '#all-products',
+    desc: 'Deal cực hời. Lên đồ đẹp – giá lại ngon. Chốt nhanh trước khi hết!',
+    img: ao2,
+    link: '/products/o-polo-th-thao-1783925305046',
   },
 ]
 
@@ -41,19 +34,18 @@ const sideBanners = [
   {
     id: 4,
     badge: 'New',
-    title: 'BỘ SƯU TẬP MỚI',
-    subtitle: 'THU ĐÔNG 2026',
-    desc: 'Phong cách đỉnh cao',
-    img: 'https://images.unsplash.com/photo-1582418702059-97ebafb35d09?w=400&q=80',
-    link: '#all-products',
+    title: 'NEW ARRIVAL',
+    desc: 'Thiết kế hiện đại – dễ phối, mặc là đẹp',
+    img: ao,
+    link: '/products/o-polo-xanh-en-ph-i-c-th-u-1783920144078',
   },
   {
     id: 5,
     badge: 'Limited',
     title: 'MIỄN PHÍ VẬN CHUYỂN',
-    subtitle: 'ĐƠN TỪ 299K',
+
     desc: 'Giao hàng toàn quốc',
-    img: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80',
+    img: ao3,
     link: '#all-products',
   },
 ]
@@ -73,7 +65,7 @@ const pad = (n) => String(n).padStart(2, '0')
 
 export default function PromoBanner() {
   const [current, setCurrent] = useState(0)
-  const [targetDate] = useState(() => Date.now() + 30 * 24 * 60 * 60 * 1000)
+  const [targetDate] = useState(() => Date.now() + 15 * 24 * 60 * 60 * 1000)
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate))
   const [hovered, setHovered] = useState(null)
 
@@ -99,8 +91,7 @@ export default function PromoBanner() {
 
           {/* ─── MAIN BANNER (CAROUSEL) ─── */}
           <div className="lg:col-span-2 relative group rounded-xl overflow-hidden shadow-2xl bg-neutral-900">
-            {/* Image */}
-            <div className="relative h-[250px] md:h-[310px] lg:h-[350px]">
+            <a href={b.link} className="block relative h-[280px] md:h-[340px] lg:h-[380px]">
               <img
                 src={b.img}
                 alt={b.title}
@@ -132,45 +123,37 @@ export default function PromoBanner() {
                   </h2>
                 </div>
 
-                <p className="text-white/60 text-sm md:text-base max-w-md leading-relaxed mb-6">
+                <p className="text-white/60 text-sm md:text-base max-w-md leading-relaxed">
                   {b.desc}
                 </p>
-
-                <a
-                  href={b.link}
-                  className="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 w-fit text-sm shadow-lg hover:shadow-red-500/25"
-                >
-                  Mua ngay
-                  <ChevronRight className="h-4 w-4" />
-                </a>
               </div>
+            </a>
 
-              {/* Carousel arrows */}
-              <button
-                onClick={prev}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={next}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            {/* Carousel arrows */}
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); prev(); }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); next(); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
 
-              {/* Dots */}
-              <div className="absolute bottom-4 left-6 md:left-10 flex gap-1.5">
-                {banners.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrent(i)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === current ? 'w-6 bg-red-500' : 'w-1.5 bg-white/40 hover:bg-white/70'
-                    }`}
-                  />
-                ))}
-              </div>
+            {/* Dots */}
+            <div className="absolute bottom-4 left-6 md:left-10 flex gap-1.5 z-10">
+              {banners.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrent(i); }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === current ? 'w-6 bg-red-500' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                  }`}
+                />
+              ))}
             </div>
           </div>
 
@@ -182,7 +165,7 @@ export default function PromoBanner() {
                 href={sb.link}
                 onMouseEnter={() => setHovered(sb.id)}
                 onMouseLeave={() => setHovered(null)}
-                className="group relative flex-1 rounded-xl overflow-hidden shadow-lg bg-neutral-900 min-h-[80px] md:min-h-[110px] lg:min-h-[130px]"
+                className="group relative flex-1 rounded-xl overflow-hidden shadow-lg bg-neutral-900 min-h-[130px] md:min-h-[160px] lg:min-h-[180px]"
               >
                 <img
                   src={sb.img}
@@ -191,14 +174,13 @@ export default function PromoBanner() {
                     hovered === sb.id ? 'scale-105' : 'scale-100'
                   }`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
-                <div className="absolute inset-0 flex flex-col justify-center p-4 md:p-5">
+                <div className="absolute inset-0 flex flex-col justify-center p-5 md:p-6">
                   <span className="inline-block bg-blue-600 text-white text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-sm w-fit mb-2">
                     {sb.badge}
                   </span>
-                  <h3 className="text-white/50 text-[10px] font-medium tracking-[0.2em] mb-1">{sb.title}</h3>
-                  <h2 className="text-white text-lg md:text-xl font-bold leading-tight mb-1">{sb.subtitle}</h2>
+                  <h3 className="text-white text-[10px] font-medium tracking-[0.2em] mb-1">{sb.title}</h3>
                   <p className="text-white/50 text-xs">{sb.desc}</p>
                 </div>
 

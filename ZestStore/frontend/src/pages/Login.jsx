@@ -16,8 +16,10 @@ export default function Login() {
     e.preventDefault()
     setErr(''); setSub(true)
     try {
-      await login(email, matKhau)
-      navigate('/')
+      const data = await login(email, matKhau)
+      if (data.vaiTro === 'ADMIN') navigate('/admin')
+      else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
+      else navigate('/')
     } catch (err) {
       setErr(err.response?.data?.message || 'Đăng nhập thất bại')
     } finally { setSub(false) }

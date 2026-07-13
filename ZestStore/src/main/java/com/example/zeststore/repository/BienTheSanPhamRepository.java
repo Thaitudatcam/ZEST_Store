@@ -49,4 +49,6 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
             + "WHERE b.sanPham.maSanPham IN :maSanPhamIds AND b.ngayXoa IS NULL AND b.gia > 0 "
             + "GROUP BY b.sanPham.maSanPham")
     List<Object[]> minGiaBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
+
+    boolean existsByMauSac_MaMauSacAndNgayXoaIsNull(Integer maMauSac);
 }

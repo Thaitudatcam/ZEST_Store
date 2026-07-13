@@ -22,6 +22,7 @@ public class AdminCustomerController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> searchCustomers(@RequestParam String q) {
         return ResponseEntity.ok(adminCustomerService.searchCustomers(q));
     }

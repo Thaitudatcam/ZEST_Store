@@ -39,6 +39,8 @@ public class SanPhamService {
     private final ThuongHieuRepository thuongHieuRepository;
     private final KichCoRepository kichCoRepository;
     private final MauSacRepository mauSacRepository;
+    private final MucGioHangRepository mucGioHangRepository;
+    private final PosCartRepository posCartRepository;
 
     public Page<SanPham> getProducts(String keyword, Integer categoryId, BigDecimal minPrice,
                                       BigDecimal maxPrice, int page, int size, String sortBy, String sortDir) {
@@ -333,6 +335,8 @@ public class SanPhamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", variantId));
         variant.setNgayXoa(LocalDateTime.now());
         bienTheRepository.save(variant);
+        mucGioHangRepository.findByBienThe_MaBienThe(variantId).forEach(mucGioHangRepository::delete);
+        posCartRepository.findByBienThe_MaBienThe(variantId).forEach(posCartRepository::delete);
         return Map.of("message", "Variant deleted");
     }
 
@@ -345,6 +349,10 @@ public class SanPhamService {
         }
         variants.forEach(v -> v.setNgayXoa(LocalDateTime.now()));
         bienTheRepository.saveAll(variants);
+        for (BienTheSanPham v : variants) {
+            mucGioHangRepository.findByBienThe_MaBienThe(v.getMaBienThe()).forEach(mucGioHangRepository::delete);
+            posCartRepository.findByBienThe_MaBienThe(v.getMaBienThe()).forEach(posCartRepository::delete);
+        }
         recalculateGiaTrungBinh(getById(productId));
         return Map.of("message", "Deleted " + variants.size() + " variants", "deletedCount", variants.size());
     }
@@ -424,7 +432,7 @@ public class SanPhamService {
     }
 
     private void recalculateGiaTrungBinh(SanPham product) {
-        List<BienTheSanPham> allVariants = bienTheRepository.findBySanPham_MaSanPham(product.getMaSanPham());
+        List<BienTheSanPham> allVariants = bienTheRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(product.getMaSanPham());
         List<BienTheSanPham> withPrice = allVariants.stream().filter(v -> v.getGia() != null).toList();
         if (withPrice.isEmpty()) {
             product.setGiaTrungBinh(null);

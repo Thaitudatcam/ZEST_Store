@@ -58,13 +58,7 @@ public class BienTheSanPham {
 
     @Version
     @Column(name = "version", nullable = false)
-    @Builder.Default
-    private Integer version = 0;
-
-    @PostLoad
-    public void ensureVersion() {
-        if (version == null) version = 0;
-    }
+    private int version;
 
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;

@@ -1,229 +1,252 @@
-import { useState, useEffect } from 'react'
-import { getStats, getRevenue, getTopProducts, getRevenueByDate, getRecentOrders } from '../../api/admin'
-import { getAiInsights } from '../../api/ai'
-import { Users, ShoppingCart, DollarSign, Package, TrendingUp, AlertCircle, Loader2, Clock, Eye, Sparkles, RefreshCw } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import StatusBadge from '../../components/StatusBadge'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { getStats, getOrderStats, getRevenueByDay } from '../../api/admin'
+import { Package, DollarSign, Users, Star } from 'lucide-react'
 
-const colors = ['from-blue-500 to-blue-600', 'from-emerald-500 to-emerald-600', 'from-violet-500 to-violet-600', 'from-amber-500 to-amber-600']
-const icons = [Users, ShoppingCart, DollarSign, Package]
+const robotGreetings = [
+  ['Chào buổi sáng! ☕', 'Ngày mới tốt lành! 🌻', 'Sáng nay có đơn mới không? ✨', 'Cà phê sáng chưa admin? ☕'],
+  ['Buổi chiều năng động! ⚡', 'Ăn trưa chưa admin? 🍜', 'Chiều nay bán gì hot? 🔥', 'Tiếp tục chiến thôi! 💪'],
+  ['Buổi tối vui vẻ! 🌆', 'Tối nay đơn nhiều không? 📦', 'Về nhà chưa admin? 🏠', 'Tối rồi, nghỉ ngơi thôi! 😌'],
+  ['Khuya rồi đó! 🌙', 'Còn thức làm gì vậy? 🦉', 'Đừng thức khuya nha! 😴', 'Ngủ sớm để mai bán đắt! 💤'],
+]
+
+function getGreetingSlot() {
+  const h = new Date().getHours()
+  if (h < 5) return 3
+  if (h < 12) return 0
+  if (h < 18) return 1
+  if (h < 22) return 2
+  return 3
+}
+
+function formatTime(now) {
+  return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
+}
+
+function fmt(n) {
+  if (n == null) return '0'
+  if (n >= 1000000000) return (n / 1000000000).toFixed(1) + 'B'
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+  return n.toLocaleString('vi-VN')
+}
 
 function VND(n) {
   try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n }
 }
-export { VND }
+
+const cards = [
+  { key: 'orders',   label: 'Đơn hàng',   icon: Package,  grad: 'from-blue-500 to-blue-600',       shadow: 'shadow-blue-200/50',      hoverBg: 'hover:border-blue-200 hover:shadow-blue-200/30' },
+  { key: 'revenue',  label: 'Doanh thu',  icon: DollarSign, grad: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-200/50',    hoverBg: 'hover:border-emerald-200 hover:shadow-emerald-200/30' },
+  { key: 'users',    label: 'Người dùng', icon: Users,     grad: 'from-violet-500 to-violet-600',   shadow: 'shadow-violet-200/50',     hoverBg: 'hover:border-violet-200 hover:shadow-violet-200/30' },
+  { key: 'products', label: 'Sản phẩm',   icon: Star,     grad: 'from-amber-500 to-amber-600',     shadow: 'shadow-amber-200/50',      hoverBg: 'hover:border-amber-200 hover:shadow-amber-200/30' },
+]
+
+const positions = [
+  { grid: 'row-start-1 col-start-1', extra: 'rounded-b-[40px]' },
+  { grid: 'row-start-1 col-start-3', extra: 'rounded-b-[40px]' },
+  { grid: 'row-start-3 col-start-1', extra: 'rounded-t-[40px]' },
+  { grid: 'row-start-3 col-start-3', extra: 'rounded-t-[40px]' },
+]
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null)
-  const [revenueData, setRevenueData] = useState(null)
-  const [revenueByDate, setRevenueByDate] = useState([])
-  const [recentOrders, setRecentOrders] = useState([])
-  const [topProducts, setTopProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [insight, setInsight] = useState(null)
-  const [insightLoading, setInsightLoading] = useState(false)
+  const { user } = useAuth()
+  const slot = getGreetingSlot()
 
+  const [now, setNow] = useState(new Date())
+  const [greetIdx, setGreetIdx] = useState(0)
+  const [stats, setStats] = useState(null)
+  const [orderStats, setOrderStats] = useState(null)
+  const [todayRevenue, setTodayRevenue] = useState(null)
+  const [robotReply, setRobotReply] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const replyTimer = useRef(null)
 
   useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError('')
-
-    Promise.all([
-      getStats().catch(err => ({ _error: err })),
-      getRevenue(
-        new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-        new Date().toISOString().split('T')[0]
-      ).catch(err => ({ _error: err })),
-      getTopProducts().catch(err => ({ _error: err })),
-      getRevenueByDate(30).catch(err => ({ _error: err })),
-      getRecentOrders(10).catch(err => ({ _error: err })),
-    ]).then(([s, r, t, revDate, recent]) => {
-      if (cancelled) return
-      setStats(s?._error ? null : s)
-      setRevenueData(r?._error ? null : r)
-      setTopProducts(Array.isArray(t) ? t : [])
-      setRevenueByDate(Array.isArray(revDate) ? revDate : [])
-      setRecentOrders(Array.isArray(recent) ? recent : [])
-    }).catch(() => {
-      if (!cancelled) setError('Không thể tải dữ liệu')
-    }).finally(() => {
-      if (!cancelled) setLoading(false)
-    })
-
-    return () => { cancelled = true }
+    const id = setInterval(() => {
+      setNow(new Date())
+      setGreetIdx(i => (i + 1) % 4)
+    }, 30000)
+    return () => clearInterval(id)
   }, [])
 
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-48 bg-gray-200 rounded-lg" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-28 bg-gray-200 rounded-2xl" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-72 bg-gray-200 rounded-2xl" />
-          <div className="h-72 bg-gray-200 rounded-2xl" />
-        </div>
-      </div>
-    )
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    Promise.all([
+      getStats().catch(() => null),
+      getOrderStats().catch(() => null),
+      getRevenueByDay(today, today).then(r => {
+        if (Array.isArray(r)) return r.reduce((s, d) => s + Number(d.doanhThu || 0), 0)
+        return null
+      }).catch(() => null),
+    ]).then(([s, os, rev]) => {
+      setStats(s)
+      setOrderStats(os)
+      setTodayRevenue(rev)
+    }).finally(() => setLoading(false))
+  }, [])
+
+  const mergedOrders = orderStats ? {
+    totalOrders: orderStats.totalOrders ?? 0,
+    completed: orderStats.completed ?? 0,
+    pending: (orderStats.pending ?? 0) + (orderStats.shipping ?? 0),
+    cancelled: orderStats.cancelled ?? 0,
+    todayOrders: orderStats.todayOrders ?? undefined,
+  } : null
+
+  const handleStatClick = useCallback((key) => {
+    if (!stats && !mergedOrders) return
+    let reply = ''
+    switch (key) {
+      case 'orders':
+        if (mergedOrders) {
+          reply = `📊 Có tổng cộng <b>${fmt(mergedOrders.totalOrders)}</b> đơn hàng.` +
+            ` ✅ Đã giao <b>${fmt(mergedOrders.completed)}</b>,` +
+            ` ⏳ đang xử lý <b>${fmt(mergedOrders.pending)}</b>,` +
+            ` ❌ đã hủy <b>${fmt(mergedOrders.cancelled)}</b>.`
+          if (mergedOrders.todayOrders != null) reply += ` 📅 Hôm nay có <b>${fmt(mergedOrders.todayOrders)}</b> đơn mới.`
+        }
+        break
+      case 'revenue':
+        reply = `💰 Doanh thu tháng này <b>${VND(stats?.monthlyRevenue || 0)}</b>.`
+        if (todayRevenue != null) reply += ` Hôm nay đạt <b>${VND(todayRevenue)}</b>.`
+        if (orderStats?.completed != null) reply += ` ✅ <b>${fmt(orderStats.completed)}</b> đơn đã hoàn thành.`
+        break
+      case 'users':
+        reply = `👥 Hệ thống có <b>${fmt(stats?.totalUsers || 0)}</b> người dùng.`
+        if (stats?.totalCustomers != null) reply += ` Gồm <b>${fmt(stats.totalCustomers)}</b> khách hàng`
+        if (stats?.totalEmployees != null) reply += ` và <b>${fmt(stats.totalEmployees)}</b> nhân viên.`
+        break
+      case 'products':
+        reply = `⭐ Tổng cộng <b>${fmt(stats?.totalProducts || 0)}</b> sản phẩm.`
+        if (stats?.activeProducts != null) reply += ` Hiện có <b>${fmt(stats.activeProducts)}</b> sản phẩm đang bán.`
+        break
+    }
+    setRobotReply(reply)
+    if (replyTimer.current) clearTimeout(replyTimer.current)
+    replyTimer.current = setTimeout(() => { setRobotReply(null); replyTimer.current = null }, 12000)
+  }, [stats, mergedOrders, todayRevenue, orderStats])
+
+  const getValue = (key) => {
+    if (loading) return '...'
+    switch (key) {
+      case 'orders':   return fmt(stats?.totalOrders ?? 0)
+      case 'revenue':  return fmt(stats?.monthlyRevenue ?? 0)
+      case 'users':    return fmt(stats?.totalUsers ?? 0)
+      case 'products': return fmt(stats?.totalProducts ?? 0)
+      default:         return '0'
+    }
   }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Bảng điều khiển</h1>
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 shrink-0" />
-          {error}
-        </div>
-      </div>
-    )
-  }
-
-  const cards = stats ? [
-    { label: 'Người dùng', value: stats.totalUsers ?? 0, icon: Users },
-    { label: 'Đơn hàng', value: stats.totalOrders ?? 0, icon: ShoppingCart },
-    { label: 'Doanh thu (tháng)', value: VND(stats.monthlyRevenue ?? 0), icon: DollarSign },
-    { label: 'Sản phẩm', value: stats.totalProducts ?? 0, icon: Package },
-  ] : []
-
-  const totalRevenue = revenueByDate.reduce((s, d) => s + Number(d.doanhThu || 0), 0)
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Bảng điều khiển</h1>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((c, i) => {
-          const Icon = c.icon
-          return (
-            <div key={c.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${colors[i]} text-white p-5 shadow-lg`}>
-              <div className="relative z-10">
-                <p className="text-sm opacity-80">{c.label}</p>
-                <p className="text-2xl font-bold mt-1">{c.value}</p>
-              </div>
-              <Icon className="absolute right-3 bottom-3 h-12 w-12 opacity-20" />
-            </div>
-          )
-        })}
+    <div className="relative min-h-[calc(100vh-7rem)] flex items-center justify-center">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold flex items-center gap-2 text-blue-800">
-            <Sparkles className="h-5 w-5 text-yellow-500" /> AI Insights
-          </h2>
-          <button onClick={async () => {
-            setInsightLoading(true)
-            try { setInsight(await getAiInsights()) } catch {}
-            setInsightLoading(false)
-          }} disabled={insightLoading}
-            className="text-xs bg-white border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition disabled:opacity-50 flex items-center gap-1">
-            <RefreshCw className={`h-3.5 w-3.5 ${insightLoading ? 'animate-spin' : ''}`} />
-            Phân tích
-          </button>
-        </div>
-        {insight && (
-          <div className="bg-white rounded-xl border border-blue-100 px-4 py-3">
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{insight.insight}</p>
-            <p className="text-[10px] text-gray-400 mt-2">Cập nhật: {insight.ngayTao?.slice(0, 19).replace('T', ' ')}</p>
-          </div>
-        )}
-        {!insight && !insightLoading && (
-          <p className="text-sm text-gray-400">Nhấn "Phân tích" để AI tạo nhận xét về tình hình kinh doanh.</p>
-        )}
-        {insightLoading && (
-          <div className="flex items-center gap-2 text-sm text-blue-600">
-            <Loader2 className="h-4 w-4 animate-spin" /> Đang phân tích dữ liệu...
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border p-6">
-          <h2 className="font-semibold text-lg mb-2 flex items-center gap-2"><TrendingUp className="h-5 w-5 text-blue-600" /> Doanh thu 30 ngày</h2>
-          <p className="text-3xl font-bold text-blue-700 mb-4">{VND(totalRevenue)}</p>
-          {revenueByDate.length > 0 && (
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={revenueByDate} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="ngay" tick={{ fontSize: 10 }} tickFormatter={(v) => v?.slice(5) || ''} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => (v / 1000000).toFixed(0) + 'tr'} stroke="#94a3b8" />
-                <Tooltip formatter={(v) => VND(v)} labelFormatter={(l) => `Ngày ${l}`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                <Area type="monotone" dataKey="doanhThu" stroke="#3b82f6" strokeWidth={2} fill="url(#revGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
+      <div className="relative w-full max-w-xl mx-auto">
+        {/* Greeting */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Chào {user?.hoTen || 'Admin'}!
+          </h1>
+          <p className="text-sm text-gray-400 mt-1">{formatTime(now)}</p>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-6">
-          <h2 className="font-semibold text-lg mb-4 flex items-center gap-2"><Clock className="h-5 w-5 text-blue-600" /> Đơn hàng gần đây</h2>
-          <div className="space-y-3">
-            {recentOrders.slice(0, 8).map((o) => (
-              <Link key={o.maDonHang} to={`/admin/orders/${o.maDonHang}`} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition -mx-1">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{o.tenNguoiNhan}</p>
-                  <p className="text-xs text-gray-400">{o.ngayDat?.slice(0, 10)}</p>
+        {/* Grid */}
+        <div className="relative grid grid-cols-3 gap-8 items-center">
+
+          {cards.map((s, i) => {
+            const Icon = s.icon
+            const pos = positions[i]
+            return (
+              <button key={s.key}
+                onClick={() => handleStatClick(s.key)}
+                className={`${pos.grid} relative group backdrop-blur-xl bg-white/80 border border-white/40 ${s.shadow} ${s.hoverBg} ${pos.extra} transition-all duration-300 p-5 h-[120px] flex flex-col items-center justify-center`}
+              >
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.grad} flex items-center justify-center shadow-lg ${s.shadow} group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300`}>
+                  <Icon className="h-5 w-5 text-white" />
                 </div>
-                <div className="text-right shrink-0 ml-3">
-                  <p className="text-sm font-semibold">{VND(o.tongTien)}</p>
-                  <StatusBadge status={o.trangThaiDon} />
+                <span className="text-xl font-bold text-gray-800 leading-tight mt-1.5">{getValue(s.key)}</span>
+                <span className="text-[10px] text-gray-400 font-medium">{s.label}</span>
+              </button>
+            )
+          })}
+
+          {/* Robot */}
+          <div className="col-start-2 row-start-1 row-span-3 flex flex-col items-center justify-center">
+            <div className="relative flex flex-col items-center">
+              {/* Speech bubble */}
+              <div className="absolute -top-[140px] left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 px-6 py-4 min-w-[280px] text-center animate-fade-in z-10">
+                {robotReply ? (
+                  <>
+                    <p className="text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: robotReply }} />
+                    <p className="text-[10px] text-gray-400 mt-1.5">{formatTime(now)}</p>
+                  </>
+                ) : (
+                    <>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-wider tabular-nums leading-tight">{formatTime(now)}</p>
+                      <p className="text-sm text-gray-500">{robotGreetings[slot][greetIdx]}</p>
+                    </>
+                )}
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 border-r border-b border-white/60 rotate-45" />
+              </div>
+
+              {/* Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-cyan-400/20 rounded-full blur-3xl animate-glow-pulse" />
+
+              <div className="relative flex flex-col items-center animate-float">
+                <div className="flex flex-col items-center -mb-px">
+                  <div className="w-1.5 h-6 bg-gradient-to-b from-sky-300 to-blue-500 rounded-full" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-sky-200 to-blue-400 shadow-lg shadow-sky-300/60 animate-glow-pulse" />
                 </div>
-              </Link>
-            ))}
-            {recentOrders.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Chưa có đơn hàng</p>}
-          </div>
-          {recentOrders.length > 0 && (
-            <Link to="/admin/orders/online" className="block text-center text-sm text-blue-600 font-medium mt-3 hover:underline">Xem tất cả</Link>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {revenueData && (
-          <div className="bg-white rounded-2xl shadow-sm border p-6">
-            <h2 className="font-semibold text-lg mb-4 flex items-center gap-2"><TrendingUp className="h-5 w-5 text-blue-600" /> Tổng quan doanh thu</h2>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-blue-50 rounded-xl p-4">
-                <p className="text-sm text-gray-500">Doanh thu tháng</p>
-                <p className="text-2xl font-bold text-blue-700">{VND(revenueData.doanhThu ?? 0)}</p>
-              </div>
-              <div className="bg-green-50 rounded-xl p-4">
-                <p className="text-sm text-gray-500">Đơn hoàn thành</p>
-                <p className="text-2xl font-bold text-green-700">{revenueData.soDonHoanThanh ?? 0}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {topProducts.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border p-6">
-            <h2 className="font-semibold text-lg mb-4 flex items-center gap-2"><Eye className="h-5 w-5 text-blue-600" /> Sản phẩm xem nhiều nhất</h2>
-            <div className="space-y-3">
-              {topProducts.map((p, i) => (
-                <div key={p.maSanPham || i} className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-slate-400 w-6">#{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.tenSanPham}</p>
-                    <div className="w-full bg-gray-100 rounded-full h-2 mt-1">
-                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, ((p.soLanXem ?? 0) / (topProducts[0]?.soLanXem || 1)) * 100)}%` }} />
+                <div className="relative w-[110px] h-[95px] rounded-[32px] bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 shadow-2xl shadow-blue-300/40 ring-[3px] ring-white/70 flex flex-col items-center justify-center overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent pointer-events-none" />
+                  <div className="flex gap-5 items-center">
+                    <div className="relative">
+                      <div className="w-[21px] h-[21px] rounded-full bg-gradient-to-br from-cyan-200 to-cyan-400 shadow-[0_0_14px_4px_rgba(34,211,238,0.6)] flex items-center justify-center">
+                        <div className="w-[10px] h-[10px] rounded-full bg-white shadow-inner shadow-white/80" />
+                      </div>
+                      <div className="absolute -inset-1.5 rounded-full bg-cyan-400/20 animate-glow-pulse" />
+                    </div>
+                    <div className="relative">
+                      <div className="w-[21px] h-[21px] rounded-full bg-gradient-to-br from-cyan-200 to-cyan-400 shadow-[0_0_14px_4px_rgba(34,211,238,0.6)] flex items-center justify-center">
+                        <div className="w-[10px] h-[10px] rounded-full bg-white shadow-inner shadow-white/80" />
+                      </div>
+                      <div className="absolute -inset-1.5 rounded-full bg-cyan-400/20 animate-glow-pulse" />
                     </div>
                   </div>
-                  <span className="text-xs text-gray-500 shrink-0">{p.soLanXem ?? 0} lượt</span>
+                  <div className="mt-2 flex gap-[4px]">
+                    <div className="w-[4px] h-[4px] rounded-full bg-white/60" />
+                    <div className="w-[4px] h-[4px] rounded-full bg-white/80" />
+                    <div className="w-[4px] h-[4px] rounded-full bg-white/60" />
+                  </div>
+                  <div className="absolute left-3 bottom-4 w-4 h-2.5 rounded-full bg-gradient-to-r from-pink-300/30 to-transparent" />
+                  <div className="absolute right-3 bottom-4 w-4 h-2.5 rounded-full bg-gradient-to-l from-pink-300/30 to-transparent" />
                 </div>
-              ))}
+                <div className="relative -mt-[4px]">
+                  <div className="w-[84px] h-[42px] rounded-[20px] bg-gradient-to-b from-blue-600 to-indigo-700 shadow-inner shadow-blue-900/60 ring-[2px] ring-white/10">
+                    <div className="absolute inset-0 flex items-center justify-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-cyan-400/70 shadow-[0_0_5px_2px_rgba(34,211,238,0.3)] animate-glow-pulse" style={{ animationDelay: '0s' }} />
+                      <div className="w-2 h-2 rounded-full bg-cyan-400/40 shadow-[0_0_5px_2px_rgba(34,211,238,0.15)]" />
+                      <div className="w-2 h-2 rounded-full bg-cyan-400/70 shadow-[0_0_5px_2px_rgba(34,211,238,0.3)] animate-glow-pulse" style={{ animationDelay: '0.5s' }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute top-[108px] -left-[20px] w-[20px] h-[28px] rounded-lg bg-gradient-to-b from-blue-500 to-indigo-600 shadow-sm ring-[1px] ring-white/20 -rotate-[18deg] origin-top" />
+                <div className="absolute top-[108px] -right-[20px] w-[20px] h-[28px] rounded-lg bg-gradient-to-b from-blue-500 to-indigo-600 shadow-sm ring-[1px] ring-white/20 rotate-[18deg] origin-top" />
+                <div className="flex gap-[20px] -mt-px">
+                  <div className="w-[25px] h-[22px] rounded-b-[12px] bg-gradient-to-b from-blue-600 to-indigo-700 ring-[1px] ring-white/10" />
+                  <div className="w-[25px] h-[22px] rounded-b-[12px] bg-gradient-to-b from-blue-600 to-indigo-700 ring-[1px] ring-white/10" />
+                </div>
+              </div>
+              <span className="text-xs text-gray-400 font-medium mt-3 tracking-wider">TRỢ LÝ AI</span>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

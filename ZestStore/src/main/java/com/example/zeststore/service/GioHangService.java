@@ -51,6 +51,7 @@ public class GioHangService {
             itemMap.put("tonKho", variant != null ? variant.getTonKho() : 0);
             itemMap.put("thanhTien", variant != null ? variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())) : BigDecimal.ZERO);
             itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
+            itemMap.put("ngayXoa", variant != null ? variant.getNgayXoa() : null);
             result.add(itemMap);
         }
         return result;
@@ -65,6 +66,9 @@ public class GioHangService {
         BienTheSanPham variant = bienTheRepository.findById(maBienThe)
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", maBienThe));
 
+        if (variant.getNgayXoa() != null) {
+            throw new BadRequestException("Variant no longer exists");
+        }
         if (variant.getTonKho() < soLuong) {
             throw new BadRequestException("Insufficient stock. Available: " + variant.getTonKho());
         }

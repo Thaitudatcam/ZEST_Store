@@ -15,6 +15,7 @@ export default function Cart() {
   const [toast, setToast] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [selectedItem, setSelectedItem] = useState(null)
+  const [deletedItem, setDeletedItem] = useState(null)
   const { refreshCount } = useCart()
 
   const load = () => getCart().then(setItems).finally(() => setLoading(false))
@@ -44,6 +45,24 @@ export default function Cart() {
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Không thể cập nhật số lượng', type: 'error' })
     }
+  }
+
+  const handleItemClick = (item) => {
+    if (item.ngayXoa) {
+      setDeletedItem(item)
+    } else {
+      setSelectedItem(item)
+    }
+  }
+
+  const handleRemoveDeleted = async () => {
+    if (!deletedItem) return
+    try {
+      await removeCartItem(deletedItem.maBienThe)
+      setItems(prev => { const next = prev.filter(i => i.maBienThe !== deletedItem.maBienThe); setSelectedIds(s => { const n = new Set(s); n.delete(deletedItem.maBienThe); return n }); return next })
+      refreshCount()
+    } catch { setToast({ message: 'Không thể xóa sản phẩm', type: 'error' }) }
+    setDeletedItem(null)
   }
 
   const handleRemove = async (vid) => {
@@ -87,7 +106,25 @@ export default function Cart() {
     navigate('/checkout', { state: { selectedItems: items.filter(i => selectedIds.has(i.maBienThe)) } })
   }
 
-  const total = items.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
+  const groups = items.reduce((acc, i) => {
+    const pid = i.maSanPham
+    if (!acc[pid]) acc[pid] = { product: i.tenSanPham || `Sản phẩm #${pid}`, variants: [] }
+    acc[pid].variants.push(i)
+    return acc
+  }, {})
+
+  const isProductSelected = (pid) => groups[pid].variants.every(v => selectedIds.has(v.maBienThe))
+
+  const toggleProduct = (pid) => {
+    const g = groups[pid]
+    const allSel = g.variants.every(v => selectedIds.has(v.maBienThe))
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      g.variants.forEach(v => { if (allSel) next.delete(v.maBienThe); else next.add(v.maBienThe) })
+      return next
+    })
+  }
+
   const selectedTotal = items.filter(i => selectedIds.has(i.maBienThe)).reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const allSelected = items.length > 0 && selectedIds.size === items.length
 
@@ -120,45 +157,46 @@ export default function Cart() {
             <button onClick={() => setSelectedIds(new Set())} className="hover:text-gray-700">Bỏ chọn</button>
           </div>
 
-          <div className="space-y-3">
-            {items.map((i, idx) => (
-              <div key={i.maBienThe}
-                className={`bg-white rounded-xl border p-4 flex items-center gap-4 transition-all duration-300 hover:shadow-md animate-fade-in ${selectedIds.has(i.maBienThe) ? 'border-blue-400 shadow-sm' : ''}`}
-                style={{ animationDelay: `${idx * 50}ms` }}>
-                <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0" />
-                <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => setSelectedItem(i)}>
-                  <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
+          <div className="space-y-4">
+            {Object.entries(groups).map(([pid, g]) => {
+              const prodSel = isProductSelected(Number(pid))
+              return (
+                <div key={pid} className={`bg-white rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-md ${prodSel ? 'border-blue-400 shadow-sm' : ''}`}>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b">
+                    <input type="checkbox" checked={prodSel} onChange={() => toggleProduct(Number(pid))}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0" />
+                    <span className="font-semibold text-sm">{g.product}</span>
+                    <span className="text-xs text-gray-400 ml-auto">{g.variants.length} biến thể</span>
+                  </div>
+                  <div className="divide-y">
+                    {g.variants.map((i, vi) => (
+                      <div key={i.maBienThe}
+                        className={`flex items-center gap-3 px-4 py-3 transition ${selectedIds.has(i.maBienThe) ? 'bg-blue-50/40' : ''}`}
+                        style={{ animationDelay: `${vi * 50}ms` }}>
+                        <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0" />
+                        <div className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer" onClick={() => handleItemClick(i)}>
+                          <p className="text-sm text-gray-700 min-w-[120px]">{i.mauSac ? `${i.mauSac} / ${i.kichCo || ''}` : (i.kichCo || '')}</p>
+                          <p className="text-blue-700 font-semibold text-sm">{VND(i.donGia || 0)}</p>
+                        </div>
+                        <div className="flex items-center border rounded-lg">
+                          <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1}
+                            className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Minus className="h-3 w-3" /></button>
+                          <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999}
+                            onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
+                            onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
+                            className="w-10 px-1 py-1 border-x text-center text-xs outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                          <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999)}
+                            className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="h-3 w-3" /></button>
+                        </div>
+                        {i.tonKho !== undefined && <span className="text-[10px] text-gray-400 w-12 text-right">Kho: {i.tonKho}</span>}
+                        <button onClick={() => handleRemove(i.maBienThe)} className="text-red-400 hover:text-red-600 transition active:scale-90"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedItem(i)}>
-                  <p className="font-semibold truncate">{i.tenSanPham || `Sản phẩm #${i.maSanPham}`}</p>
-                  <p className="text-sm text-gray-500">{[i.kichCo, i.mauSac].filter(Boolean).join(' - ')}</p>
-                  <p className="text-blue-700 font-bold">{VND(i.donGia || 0)}</p>
-                </div>
-                <div className="flex items-center border rounded-lg">
-                  <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1}
-                    className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Minus className="h-4 w-4" /></button>
-                  <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999}
-                    onChange={e => {
-                      const v = parseInt(e.target.value)
-                      if (!v || v < 1) return
-                      setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x))
-                    }}
-                    onBlur={e => {
-                      const v = parseInt(e.target.value)
-                      if (!v || v < 1) handleQtyInput(i.maBienThe, 1)
-                      else handleQtyInput(i.maBienThe, v)
-                    }}
-                    className="w-12 px-1 py-1 border-x text-center text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                  <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999)}
-                    className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="h-4 w-4" /></button>
-                </div>
-                {i.tonKho !== undefined && (
-                  <span className="text-[11px] text-gray-400 -mt-1 text-right">Kho: {i.tonKho}</span>
-                )}
-                <button onClick={() => handleRemove(i.maBienThe)} className="text-red-400 hover:text-red-600 transition active:scale-90"><Trash2 className="h-5 w-5" /></button>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="mt-6 bg-white rounded-xl border p-6 transition-all duration-300 hover:shadow-md">
@@ -225,6 +263,17 @@ export default function Cart() {
           </div>
         </div>
       )})()}
+
+      {deletedItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setDeletedItem(null)}>
+          <div className="bg-white rounded-2xl max-w-sm w-full animate-scale-in shadow-xl p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="text-red-500 mb-3"><XCircle className="h-12 w-12 mx-auto" /></div>
+            <h3 className="font-bold text-lg mb-2">Mặt hàng này hiện không còn tồn tại nữa</h3>
+            <p className="text-sm text-gray-500 mb-6">Sản phẩm đã bị xóa khỏi hệ thống</p>
+            <button onClick={handleRemoveDeleted} className="w-full bg-blue-700 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-800 transition">OK</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

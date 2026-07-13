@@ -42,7 +42,7 @@ public class DonHangController {
     }
 
     @GetMapping("/admin/{id}/detail")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> getOrderDetailAdmin(@PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.getOrderDetail(id));
     }
@@ -65,7 +65,7 @@ public class DonHangController {
     }
 
     @GetMapping("/admin/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -74,7 +74,7 @@ public class DonHangController {
     }
 
     @GetMapping("/admin/detail/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> getAdminOrderDetail(@PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.getOrderDetail(id));
     }
@@ -93,7 +93,7 @@ public class DonHangController {
     }
 
     @PutMapping("/admin/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> updateStatus(@PathVariable Integer id, @Valid @RequestBody StatusUpdateRequest request,
                                            Authentication auth) {
         return ResponseEntity.ok(donHangService.updateOrderStatus(

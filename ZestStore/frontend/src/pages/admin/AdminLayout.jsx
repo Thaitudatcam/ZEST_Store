@@ -9,7 +9,7 @@ export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [navOpen, setNavOpen] = useState({})
+  const [navOpen, setNavOpen] = useState({ 'Bán hàng': true })
 
   const role = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro : user?.vaiTro
   const isStaff = role === 'STAFF'
