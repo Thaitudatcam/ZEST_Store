@@ -239,6 +239,13 @@ public class DonHangService {
                         v.setNgaySuDung(LocalDateTime.now());
                         voucherNguoiDungRepository.save(v);
                     });
+            if (coupon.getSoLuong() != null && coupon.getSoLuong() > 0) {
+                coupon.setSoLuong(coupon.getSoLuong() - 1);
+                if (coupon.getSoLuong() <= 0) {
+                    coupon.setTrangThai(0);
+                }
+                phieuGiamGiaRepository.save(coupon);
+            }
         }
 
         Map<String, Object> result = new LinkedHashMap<>();

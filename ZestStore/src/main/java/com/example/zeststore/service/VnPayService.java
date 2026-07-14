@@ -65,6 +65,11 @@ public class VnPayService {
         String secureHash = params.remove("vnp_SecureHash");
         params.remove("vnp_SecureHashType");
 
+        if (secureHash == null || secureHash.isBlank()) {
+            log.warn("VNPay return missing vnp_SecureHash");
+            return false;
+        }
+
         Map<String, String> sorted = new TreeMap<>(params);
         String hashData = buildHashData(sorted);
         String calculated = hmacSHA512(paymentConfig.getVnpay().getHashSecret(), hashData);

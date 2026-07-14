@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getOrderDetail, cancelOrder, requestReturn, confirmReceived } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, retryPayment } from '../api/payment'
@@ -8,7 +8,16 @@ import { SkeletonPage, SkeletonCard } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
-import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader, X } from 'lucide-react'
+import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader, X, Image, Camera } from 'lucide-react'
+
+const RETURN_REASONS = [
+  { value: 'Sản phẩm bị lỗi/hư hỏng', label: 'Sản phẩm bị lỗi/hư hỏng' },
+  { value: 'Sai kích cỡ/màu sắc', label: 'Sai kích cỡ/màu sắc' },
+  { value: 'Không giống mô tả', label: 'Không giống mô tả' },
+  { value: 'Giao sai sản phẩm', label: 'Giao sai sản phẩm' },
+  { value: 'Hết nhu cầu sử dụng', label: 'Hết nhu cầu sử dụng' },
+  { value: 'Khác', label: 'Lý do khác' },
+]
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -111,9 +120,13 @@ export default function OrderDetail() {
   const [paying, setPaying] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [returnLyDo, setReturnLyDo] = useState('')
+  const [returnReason, setReturnReason] = useState('')
+  const [returnImages, setReturnImages] = useState([])
   const [returning, setReturning] = useState(false)
   const [confirmingReceived, setConfirmingReceived] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const returnFileRef = useRef(null)
+  const returnCameraRef = useRef(null)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -158,16 +171,36 @@ export default function OrderDetail() {
   }
 
   const handleRequestReturn = async () => {
-    if (!returnLyDo.trim()) return toast.error('Vui lòng nhập lý do trả hàng')
+    const reason = returnReason === 'Khác' ? returnLyDo.trim() : returnReason
+    if (!reason) return toast.error('Vui lòng chọn lý do trả hàng')
     setReturning(true)
     try {
-      await requestReturn(id, returnLyDo.trim())
+      const hinhAnh = returnImages.length > 0 ? returnImages.join(',') : undefined
+      await requestReturn(id, reason, hinhAnh)
       setReturnOpen(false)
+      setReturnReason('')
       setReturnLyDo('')
+      setReturnImages([])
       await load()
       toast.success('Yêu cầu trả hàng đã gửi')
     } catch (err) { toast.error(err?.response?.data?.message || 'Yêu cầu trả hàng thất bại') }
     finally { setReturning(false) }
+  }
+
+  const handleReturnImageSelect = async (e) => {
+    const files = Array.from(e.target.files || [])
+    const newImages = []
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) continue
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(file)
+      })
+      newImages.push(base64)
+    }
+    setReturnImages(prev => [...prev, ...newImages].slice(0, 3))
+    e.target.value = ''
   }
 
   const handlePayNow = async (payment) => {
@@ -409,18 +442,75 @@ export default function OrderDetail() {
       </div>
 
       {returnOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setReturnOpen(false)}>
-          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-3">Yêu cầu trả hàng</h3>
-            <textarea value={returnLyDo} onChange={e => setReturnLyDo(e.target.value)}
-              placeholder="Vui lòng nhập lý do trả hàng..."
-              className="w-full border rounded-lg p-3 text-sm min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setReturnOpen(false)} className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">Hủy</button>
-              <button onClick={handleRequestReturn} disabled={returning}
-                className="flex-1 bg-orange-600 text-white rounded-lg py-2 text-sm hover:bg-orange-700 transition disabled:opacity-50">
-                {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
-              </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setReturnOpen(false)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-orange-600 px-6 py-4">
+              <h3 className="font-bold text-lg text-white">Yêu cầu trả hàng</h3>
+              <p className="text-orange-100 text-sm">Đơn hàng #{order.maDonHang}</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Lý do trả hàng</p>
+                <div className="space-y-2">
+                  {RETURN_REASONS.map((r) => (
+                    <label key={r.value}
+                      className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition text-sm
+                        ${returnReason === r.value ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                      <input type="radio" name="returnReason" value={r.value}
+                        checked={returnReason === r.value}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                        className="accent-orange-600" />
+                      {r.label}
+                    </label>
+                  ))}
+                </div>
+                {returnReason === 'Khác' && (
+                  <textarea value={returnLyDo} onChange={e => setReturnLyDo(e.target.value)}
+                    placeholder="Mô tả chi tiết lý do trả hàng..."
+                    className="w-full border rounded-lg p-3 text-sm min-h-[80px] mt-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                )}
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Hình ảnh minh chứng (tối đa 3 ảnh)</p>
+                <div className="flex gap-2 flex-wrap">
+                  {returnImages.map((img, i) => (
+                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <button onClick={() => setReturnImages(prev => prev.filter((_, j) => j !== i))}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {returnImages.length < 3 && (
+                    <>
+                      <button onClick={() => returnFileRef.current?.click()}
+                        className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-orange-400 hover:text-orange-500 transition">
+                        <Image className="h-5 w-5" />
+                        <span className="text-[10px] mt-0.5">Tải ảnh</span>
+                      </button>
+                      <button onClick={() => returnCameraRef.current?.click()}
+                        className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-orange-400 hover:text-orange-500 transition">
+                        <Camera className="h-5 w-5" />
+                        <span className="text-[10px] mt-0.5">Chụp ảnh</span>
+                      </button>
+                      <input type="file" accept="image/*" ref={returnFileRef} onChange={handleReturnImageSelect} className="hidden" multiple />
+                      <input type="file" accept="image/*" capture="environment" ref={returnCameraRef} onChange={handleReturnImageSelect} className="hidden" />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => { setReturnOpen(false); setReturnReason(''); setReturnLyDo(''); setReturnImages([]) }}
+                  className="flex-1 border-2 border-gray-200 rounded-xl py-3 text-sm font-semibold hover:bg-gray-50 transition">Hủy</button>
+                <button onClick={handleRequestReturn} disabled={returning || !returnReason}
+                  className="flex-1 bg-orange-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  {returning ? <Loader className="h-4 w-4 animate-spin" /> : null}
+                  {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

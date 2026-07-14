@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState } from 'react'
 import AiChat from '../../components/AiChat'
@@ -31,6 +31,7 @@ export default function AdminLayout() {
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
     { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
+    { to: '/admin/returns', label: 'Trả hàng', icon: RefreshCw },
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
       { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },

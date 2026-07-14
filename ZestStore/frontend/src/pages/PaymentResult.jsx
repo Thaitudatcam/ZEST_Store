@@ -4,15 +4,39 @@ import { getOrderDetail } from '../api/orders'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { CheckCircle, XCircle, Loader } from 'lucide-react'
 
+const POLL_TIMEOUT = 15000
+
 export default function PaymentResult() {
   const [searchParams] = useSearchParams()
   const [done, setDone] = useState(false)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [manualCheckLoading, setManualCheckLoading] = useState(false)
   const pollRef = useRef(null)
 
   const successParam = searchParams.get('success')
   const orderId = searchParams.get('orderId')
+
+  const checkOrderStatus = async () => {
+    if (!orderId) return
+    setManualCheckLoading(true)
+    try {
+      const data = await getOrderDetail(orderId)
+      const payment = (data.payments || [])[0]
+      if (payment) {
+        if (payment.trangThaiThanhToan === 2) {
+          setSuccess(true); setDone(true); setLoading(false)
+          return true
+        }
+        if (payment.trangThaiThanhToan === 3) {
+          setSuccess(false); setDone(true); setLoading(false)
+          return true
+        }
+      }
+    } catch {}
+    setManualCheckLoading(false)
+    return false
+  }
 
   useEffect(() => {
     if (successParam === 'true' || successParam === 'false') {
@@ -28,22 +52,24 @@ export default function PaymentResult() {
       return
     }
 
+    const startedAt = Date.now()
+
     const poll = async () => {
+      if (Date.now() - startedAt > POLL_TIMEOUT) {
+        setLoading(false)
+        return
+      }
+
       try {
         const data = await getOrderDetail(orderId)
-        const payments = data.payments || []
-        const payment = payments[0]
+        const payment = (data.payments || [])[0]
         if (payment) {
           if (payment.trangThaiThanhToan === 2) {
-            setSuccess(true)
-            setDone(true)
-            setLoading(false)
+            setSuccess(true); setDone(true); setLoading(false)
             return
           }
           if (payment.trangThaiThanhToan === 3) {
-            setSuccess(false)
-            setDone(true)
-            setLoading(false)
+            setSuccess(false); setDone(true); setLoading(false)
             return
           }
         }
@@ -62,7 +88,13 @@ export default function PaymentResult() {
       <div className="max-w-md mx-auto px-4 py-16 text-center">
         <Loader className="h-16 w-16 mx-auto text-blue-500 animate-spin mb-4" />
         <h1 className="text-xl font-bold mb-2">Đang xử lý thanh toán...</h1>
-        <p className="text-gray-500">Vui lòng chờ trong giây lát</p>
+        <p className="text-gray-500 mb-6">Vui lòng chờ trong giây lát</p>
+        <p className="text-xs text-gray-400 mb-4">Nếu bạn đã thanh toán xong, hãy nhấn "Kiểm tra"</p>
+        <button onClick={checkOrderStatus} disabled={manualCheckLoading}
+          className="inline-flex items-center gap-2 bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50">
+          {manualCheckLoading ? <Loader className="h-4 w-4 animate-spin" /> : null}
+          Kiểm tra
+        </button>
       </div>
     )
   }

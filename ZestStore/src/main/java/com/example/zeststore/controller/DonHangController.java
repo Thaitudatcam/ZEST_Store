@@ -5,6 +5,7 @@ import com.example.zeststore.dto.request.StatusUpdateRequest;
 import com.example.zeststore.service.DonHangService;
 import com.example.zeststore.service.OrderSseService;
 import com.example.zeststore.service.UserService;
+import com.example.zeststore.service.YeuCauTraHangService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -24,6 +25,7 @@ public class DonHangController {
     private final DonHangService donHangService;
     private final UserService userService;
     private final OrderSseService orderSseService;
+    private final YeuCauTraHangService yeuCauTraHangService;
 
     @GetMapping
     public ResponseEntity<?> getMyOrders(Authentication auth) {
@@ -60,8 +62,8 @@ public class DonHangController {
     @PostMapping("/{id}/return-request")
     public ResponseEntity<?> requestReturn(Authentication auth, @PathVariable Integer id,
                                             @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(donHangService.requestReturn(
-                id, userService.getUserIdFromAuth(auth), body.get("lyDo")));
+        return ResponseEntity.ok(yeuCauTraHangService.createReturnRequest(
+                id, userService.getUserIdFromAuth(auth), body.get("lyDo"), body.get("hinhAnh")));
     }
 
     @GetMapping("/admin/all")
