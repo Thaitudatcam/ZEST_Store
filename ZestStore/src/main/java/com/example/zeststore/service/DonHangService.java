@@ -35,6 +35,7 @@ public class DonHangService {
     private final OrderSseService orderSseService;
     private final GhnService ghnService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
+    private final PhieuGiamGiaService phieuGiamGiaService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -231,21 +232,8 @@ public class DonHangService {
         }
 
         if (coupon != null) {
-            voucherNguoiDungRepository
-                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(
-                            user.getMaNguoiDung(), coupon.getMaPhieuGiamGia())
-                    .ifPresent(v -> {
-                        v.setTrangThai(2);
-                        v.setNgaySuDung(LocalDateTime.now());
-                        voucherNguoiDungRepository.save(v);
-                    });
-            if (coupon.getSoLuong() != null && coupon.getSoLuong() > 0) {
-                coupon.setSoLuong(coupon.getSoLuong() - 1);
-                if (coupon.getSoLuong() <= 0) {
-                    coupon.setTrangThai(0);
-                }
-                phieuGiamGiaRepository.save(coupon);
-            }
+            phieuGiamGiaService.useCoupon(coupon.getMaCode(), user.getMaNguoiDung(),
+                    order.getMaDonHang(), soTienGiam, "ONLINE");
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -463,10 +451,8 @@ public class DonHangService {
             }
         }
 
-        if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {
-            PhieuGiamGia coupon = order.getPhieuGiamGia();
-            coupon.setSoLuong(coupon.getSoLuong() + 1);
-            phieuGiamGiaRepository.save(coupon);
+        if (order.getPhieuGiamGia() != null) {
+            phieuGiamGiaService.restoreCoupon(order.getPhieuGiamGia());
         }
 
         Integer oldStatus = order.getTrangThaiDon();

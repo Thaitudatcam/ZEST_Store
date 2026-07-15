@@ -27,15 +27,38 @@ public class PhieuGiamGiaController {
 
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request) {
-        return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(request.getMaCode(), request.getTongTien()));
+        return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(
+                request.getMaCode(), request.getTongTien(), request.getMaSanPhamIds()));
     }
 
     @GetMapping("/available")
     public ResponseEntity<?> getAvailable(
             @RequestParam(defaultValue = "0") BigDecimal tongTien,
+            @RequestParam(required = false) List<Integer> maSanPhamIds,
             Authentication auth) {
         Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
-        return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien, userId));
+        return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien, userId, maSanPhamIds));
+    }
+
+    @PostMapping("/best-offer")
+    public ResponseEntity<?> getBestOffer(
+            @RequestParam(defaultValue = "0") BigDecimal tongTien,
+            @RequestParam(required = false) List<Integer> maSanPhamIds,
+            Authentication auth) {
+        Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
+        return ResponseEntity.ok(phieuGiamGiaService.getBestOffer(tongTien, userId, maSanPhamIds));
+    }
+
+    @PostMapping("/reserve")
+    public ResponseEntity<?> reserve(@RequestParam String maCode, Authentication auth) {
+        Integer userId = userService.getUserIdFromAuth(auth);
+        return ResponseEntity.ok(phieuGiamGiaService.reserveCoupon(maCode, userId));
+    }
+
+    @PostMapping("/release")
+    public ResponseEntity<?> release(@RequestParam String maCode) {
+        phieuGiamGiaService.releaseReservation(maCode);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping
@@ -67,6 +90,7 @@ public class PhieuGiamGiaController {
         List<CouponResponse> result = phieuGiamGiaService.filterPhieuGiamGia(ngayBatDau, ngayKetThuc, kieuGiamGia, giaTriGiam);
         return ResponseEntity.ok(result);
     }
+
     @PutMapping("/{id}/toggle-status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {

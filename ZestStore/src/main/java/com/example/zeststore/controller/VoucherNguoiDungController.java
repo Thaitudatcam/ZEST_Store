@@ -4,6 +4,7 @@ import com.example.zeststore.service.UserService;
 import com.example.zeststore.service.VoucherNguoiDungService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,12 @@ public class VoucherNguoiDungController {
                 .getUserVoucherCount(userService.getUserIdFromAuth(auth)));
     }
 
+    @GetMapping("/unclaimed-count")
+    public ResponseEntity<?> getUnclaimedCount(Authentication auth) {
+        return ResponseEntity.ok(voucherNguoiDungService
+                .getUnclaimedCount(userService.getUserIdFromAuth(auth)));
+    }
+
     @PostMapping("/claim")
     public ResponseEntity<?> claimVoucher(Authentication auth, @RequestBody Map<String, String> body) {
         String maCode = body.get("maCode");
@@ -37,5 +44,28 @@ public class VoucherNguoiDungController {
         }
         return ResponseEntity.ok(voucherNguoiDungService
                 .claimVoucher(userService.getUserIdFromAuth(auth), maCode.trim()));
+    }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<?> acceptVoucher(@PathVariable Integer id, Authentication auth) {
+        return ResponseEntity.ok(voucherNguoiDungService
+                .acceptVoucher(id, userService.getUserIdFromAuth(auth)));
+    }
+
+    @PostMapping("/grant")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> grantVoucher(@RequestBody Map<String, Integer> body) {
+        Integer userId = body.get("maNguoiDung");
+        Integer couponId = body.get("maPhieuGiamGia");
+        if (userId == null || couponId == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Thiếu thông tin"));
+        }
+        return ResponseEntity.ok(voucherNguoiDungService.grantVoucher(userId, couponId));
+    }
+
+    @PostMapping("/{id}/revoke")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> revokeVoucher(@PathVariable Integer id) {
+        return ResponseEntity.ok(voucherNguoiDungService.revokeVoucher(id));
     }
 }

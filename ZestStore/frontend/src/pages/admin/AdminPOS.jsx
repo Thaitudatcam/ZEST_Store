@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { createCustomer, getCoupons, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
+import { getBestOffer } from '../../api/coupons'
 import { VND } from '../../components/ProductCard'
 import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag, ScanBarcode, QrCode } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
@@ -54,6 +55,8 @@ export default function AdminPOS() {
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [couponListLoading, setCouponListLoading] = useState(false)
   const [couponSearch, setCouponSearch] = useState('')
+  const [autoApplying, setAutoApplying] = useState(false)
+  const isManualCoupon = useRef(false)
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -251,7 +254,33 @@ export default function AdminPOS() {
     }
   }
 
+  const doAutoApply = useCallback(async (rawTotal) => {
+    if (isManualCoupon.current || cart.length === 0) return
+    setAutoApplying(true)
+    try {
+      const prodIds = cart.map(c => c.maSanPham).filter(Boolean)
+      const result = await getBestOffer(rawTotal, prodIds.length > 0 ? prodIds : undefined)
+      if (result.found) {
+        setCoupon(result)
+        setCouponCode(result.maCode)
+        setCouponMsg('')
+      } else if (!coupon) {
+        setCoupon(null)
+        setCouponCode('')
+        setCouponMsg('')
+      }
+    } catch { /* silent */ }
+    finally { setAutoApplying(false) }
+  }, [cart, coupon])
+
+  useEffect(() => {
+    if (cart.length === 0) { setCoupon(null); setCouponCode(''); setCouponMsg(''); return }
+    const timer = setTimeout(() => doAutoApply(total), 500)
+    return () => clearTimeout(timer)
+  }, [total, cart.length])
+
   const selectCoupon = async (c) => {
+    isManualCoupon.current = true
     setCouponCode(c.maCode)
     setCouponModal(false)
     setCoupon(null)
@@ -562,12 +591,16 @@ export default function AdminPOS() {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border transition">
               <Tag className="h-4 w-4" /> Chọn mã giảm giá
             </button>
+            {autoApplying && <p className="text-xs text-blue-500 text-center">Đang tìm mã tốt nhất...</p>}
             {couponMsg && <p className="text-xs text-red-500">{couponMsg}</p>}
             {coupon && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
-                  <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg('') }}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
+                    {coupon.isBest && !isManualCoupon.current && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">Tốt nhất</span>}
+                  </div>
+                  <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg(''); isManualCoupon.current = false }}
                     className="text-green-500 hover:text-green-700"><X className="h-3.5 w-3.5" /></button>
                 </div>
                 <p className="text-xs text-green-600">Giảm {VND(coupon.soTienGiam)}</p>

@@ -1,8 +1,6 @@
 package com.example.zeststore.service;
 
-import com.example.zeststore.entity.NguoiDung;
-import com.example.zeststore.entity.PhieuGiamGia;
-import com.example.zeststore.entity.VoucherNguoiDung;
+import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.NguoiDungRepository;
@@ -25,32 +23,43 @@ public class VoucherNguoiDungService {
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
+    private final PhieuGiamGiaService phieuGiamGiaService;
 
+    /**
+     * Lấy danh sách voucher cá nhân — chỉ trả về CHUA_NHAN và DA_NHAN,
+     * ẩn hoàn toàn DA_DUNG và DA_THU_HOI.
+     */
     public List<Map<String, Object>> getUserVouchers(Integer userId) {
         List<VoucherNguoiDung> list = voucherNguoiDungRepository
                 .findByNguoiDung_MaNguoiDungOrderByNgayNhanDesc(userId);
-        return list.stream().map(v -> {
-            PhieuGiamGia p = v.getPhieuGiamGia();
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("maVoucherNguoiDung", v.getMaVoucherNguoiDung());
-            m.put("maCode", p.getMaCode());
-            m.put("kieuGiamGia", p.getKieuGiamGia());
-            m.put("giaTriGiam", p.getGiaTriGiam());
-            m.put("giaTriDonToiThieu", p.getGiaTriDonToiThieu());
-            m.put("giaTriGiamToiDa", p.getGiaTriGiamToiDa());
-            m.put("ngayNhan", v.getNgayNhan());
-            m.put("ngaySuDung", v.getNgaySuDung());
-            m.put("trangThai", v.getTrangThai());
-            m.put("ngayKetThuc", p.getNgayKetThuc());
-            return m;
-        }).collect(Collectors.toList());
+        return list.stream()
+                .filter(v -> v.getTrangThai() == TrangThaiVoucher.CHUA_NHAN
+                        || v.getTrangThai() == TrangThaiVoucher.DA_NHAN)
+                .map(this::toMap)
+                .collect(Collectors.toList());
     }
 
-    public Map<String, Object> getUserVoucherCount(Integer userId) {
+    /**
+     * Đếm voucher CHUA_NHAN của user (hiển thị badge đỏ trên FE).
+     */
+    public Map<String, Object> getUnclaimedCount(Integer userId) {
         long count = voucherNguoiDungRepository
-                .countByNguoiDung_MaNguoiDungAndTrangThai(userId, 1);
+                .countByNguoiDung_MaNguoiDungAndTrangThai(userId, TrangThaiVoucher.CHUA_NHAN);
         return Map.of("count", count);
     }
+
+    /**
+     * Đếm voucher còn dùng được (CHUA_NHAN + DA_NHAN) — dùng cho header badge.
+     */
+    public Map<String, Object> getUserVoucherCount(Integer userId) {
+        long nhan = voucherNguoiDungRepository
+                .countByNguoiDung_MaNguoiDungAndTrangThai(userId, TrangThaiVoucher.DA_NHAN);
+        long chuaNhan = voucherNguoiDungRepository
+                .countByNguoiDung_MaNguoiDungAndTrangThai(userId, TrangThaiVoucher.CHUA_NHAN);
+        return Map.of("count", nhan + chuaNhan);
+    }
+
+    // ========== CLAIM (public coupon) ==========
 
     @Transactional
     public Map<String, Object> claimVoucher(Integer userId, String maCode) {
@@ -71,7 +80,8 @@ public class VoucherNguoiDungService {
         }
 
         boolean alreadyClaimed = voucherNguoiDungRepository
-                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, coupon.getMaPhieuGiamGia())
+                .findByUserAndCouponAndStatusIn(userId, coupon.getMaPhieuGiamGia(),
+                        List.of(TrangThaiVoucher.CHUA_NHAN, TrangThaiVoucher.DA_NHAN))
                 .isPresent();
         if (alreadyClaimed) {
             throw new BadRequestException("Bạn đã nhận voucher này rồi");
@@ -83,24 +93,123 @@ public class VoucherNguoiDungService {
         VoucherNguoiDung v = VoucherNguoiDung.builder()
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
-                .trangThai(1)
+                .trangThai(TrangThaiVoucher.DA_NHAN)
                 .build();
         voucherNguoiDungRepository.save(v);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("message", "Nhận voucher thành công");
-        result.put("maCode", coupon.getMaCode());
-        return result;
+        return Map.of("message", "Nhận voucher thành công", "maCode", coupon.getMaCode());
     }
+
+    // ========== GRANT (admin tặng) ==========
+
+    @Transactional
+    public Map<String, Object> grantVoucher(Integer userId, Integer couponId) {
+        PhieuGiamGia coupon = phieuGiamGiaRepository.findById(couponId)
+                .orElseThrow(() -> new BadRequestException("Mã giảm giá không tồn tại"));
+
+        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
+            throw new BadRequestException("Mã giảm giá đã hết lượt");
+        }
+
+        boolean already = voucherNguoiDungRepository
+                .findByUserAndCouponAndStatusIn(userId, couponId,
+                        List.of(TrangThaiVoucher.CHUA_NHAN, TrangThaiVoucher.DA_NHAN))
+                .isPresent();
+        if (already) {
+            throw new BadRequestException("Người dùng này đã có voucher này rồi");
+        }
+
+        NguoiDung user = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        if (coupon.getSoLuong() != null) {
+            coupon.setSoLuong(coupon.getSoLuong() - 1);
+            if (coupon.getSoLuong() <= 0) {
+                coupon.setTrangThai(0);
+            }
+            phieuGiamGiaRepository.save(coupon);
+        }
+
+        VoucherNguoiDung v = VoucherNguoiDung.builder()
+                .nguoiDung(user)
+                .phieuGiamGia(coupon)
+                .trangThai(TrangThaiVoucher.CHUA_NHAN)
+                .ngayHetHan(LocalDateTime.now().plusDays(7))
+                .build();
+        voucherNguoiDungRepository.save(v);
+
+        return Map.of("message", "Cấp voucher thành công",
+                "maVoucherNguoiDung", v.getMaVoucherNguoiDung());
+    }
+
+    // ========== ACCEPT (user nhận voucher được tặng) ==========
+
+    @Transactional
+    public Map<String, Object> acceptVoucher(Integer maVoucherNguoiDung, Integer userId) {
+        VoucherNguoiDung v = voucherNguoiDungRepository.findById(maVoucherNguoiDung)
+                .orElseThrow(() -> new BadRequestException("Voucher không tồn tại"));
+
+        if (!v.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Voucher không thuộc về bạn");
+        }
+        if (v.getTrangThai() != TrangThaiVoucher.CHUA_NHAN) {
+            throw new BadRequestException("Voucher không ở trạng thái chờ nhận");
+        }
+
+        v.setTrangThai(TrangThaiVoucher.DA_NHAN);
+        v.setNgayHetHan(null);
+        voucherNguoiDungRepository.save(v);
+
+        return Map.of("message", "Nhận voucher thành công");
+    }
+
+    // ========== REVOKE (admin thu hồi) ==========
+
+    @Transactional
+    public Map<String, Object> revokeVoucher(Integer maVoucherNguoiDung) {
+        VoucherNguoiDung v = voucherNguoiDungRepository.findById(maVoucherNguoiDung)
+                .orElseThrow(() -> new BadRequestException("Voucher không tồn tại"));
+
+        if (v.getTrangThai() != TrangThaiVoucher.CHUA_NHAN) {
+            throw new BadRequestException("Chỉ có thể thu hồi voucher ở trạng thái chờ nhận");
+        }
+
+        v.setTrangThai(TrangThaiVoucher.DA_THU_HOI);
+        voucherNguoiDungRepository.save(v);
+        phieuGiamGiaService.restoreCoupon(v.getPhieuGiamGia());
+
+        return Map.of("message", "Thu hồi voucher thành công");
+    }
+
+    // ========== MARK AS USED ==========
 
     @Transactional
     public void markAsUsed(Integer userId, Integer maPhieuGiamGia) {
         voucherNguoiDungRepository
                 .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, maPhieuGiamGia)
                 .ifPresent(v -> {
-                    v.setTrangThai(2);
+                    v.setTrangThai(TrangThaiVoucher.DA_DUNG);
                     v.setNgaySuDung(LocalDateTime.now());
                     voucherNguoiDungRepository.save(v);
                 });
+    }
+
+    // ========== HELPER ==========
+
+    private Map<String, Object> toMap(VoucherNguoiDung v) {
+        PhieuGiamGia p = v.getPhieuGiamGia();
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("maVoucherNguoiDung", v.getMaVoucherNguoiDung());
+        m.put("maCode", p.getMaCode());
+        m.put("kieuGiamGia", p.getKieuGiamGia());
+        m.put("giaTriGiam", p.getGiaTriGiam());
+        m.put("giaTriDonToiThieu", p.getGiaTriDonToiThieu());
+        m.put("giaTriGiamToiDa", p.getGiaTriGiamToiDa());
+        m.put("ngayNhan", v.getNgayNhan());
+        m.put("ngaySuDung", v.getNgaySuDung());
+        m.put("ngayHetHan", v.getNgayHetHan());
+        m.put("trangThai", v.getTrangThai().getValue());
+        m.put("ngayKetThuc", p.getNgayKetThuc());
+        return m;
     }
 }

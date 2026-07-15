@@ -1,6 +1,5 @@
 package com.example.zeststore.dto.response;
 
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,32 +7,43 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CouponResponse {
-    @NotBlank
     private String maCode;
-
-    @NotNull
     private Integer kieuGiamGia;
-
-    @NotNull @Positive
     private BigDecimal giaTriGiam;
-
     private BigDecimal giaTriDonToiThieu;
-
-    @NotNull @FutureOrPresent
     private LocalDateTime ngayBatDau;
-
-    @NotNull @Future
     private LocalDateTime ngayKetThuc;
-
     private Integer trangThai;
-
+    private Integer trangThaiThucTe;
+    private String trangThaiThucTeText;
     private Integer soLuong;
-
     private BigDecimal giaTriGiamToiDa;
+    private Boolean exclusive;
+    private List<CategoryInfo> danhMucApDung;
+    private List<ProductInfo> sanPhamApDung;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CategoryInfo {
+        private Integer maDanhMuc;
+        private String tenDanhMuc;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ProductInfo {
+        private Integer maSanPham;
+        private String tenSanPham;
+    }
 }

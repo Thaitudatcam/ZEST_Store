@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
-import { getAvailableCoupons } from '../api/coupons'
+import { getAvailableCoupons, getBestOffer } from '../api/coupons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus } from 'lucide-react'
@@ -95,6 +95,8 @@ export default function Checkout() {
   const [voucherModal, setVoucherModal] = useState(false)
   const [availableVouchers, setAvailableVouchers] = useState([])
   const [vouchersLoading, setVouchersLoading] = useState(false)
+  const [autoApplying, setAutoApplying] = useState(false)
+  const isManualCoupon = useRef(false)
   const [step, setStep] = useState('delivery')
   const [form, setForm] = useState({
     maDiaChi: '',
@@ -333,6 +335,7 @@ export default function Checkout() {
   }, [voucherModal])
 
   const handleApplyVoucher = async (v) => {
+    isManualCoupon.current = true
     try {
       const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
       setCoupon(res.data)
@@ -346,6 +349,24 @@ export default function Checkout() {
 
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
+
+  const doAutoApply = useCallback((rawT) => {
+    if (isManualCoupon.current) return
+    setAutoApplying(true)
+    getBestOffer(rawT, undefined)
+      .then(result => {
+        if (result.found) { setCoupon(result); setCouponMsg('') }
+        else if (!coupon) { setCoupon(null); setCouponMsg('') }
+      })
+      .catch(() => {})
+      .finally(() => setAutoApplying(false))
+  }, [coupon])
+
+  useEffect(() => {
+    if (!cart.length) { setCoupon(null); return }
+    const timer = setTimeout(() => doAutoApply(rawTotal), 600)
+    return () => clearTimeout(timer)
+  }, [rawTotal, cart.length])
   const discount = coupon?.soTienGiam || 0
   const shippingFee = ghnFee !== null ? Number(ghnFee) : 0
   const freeshipDiscount = coupon?.kieuGiamGia === 3
@@ -559,7 +580,8 @@ export default function Checkout() {
                 {coupon ? (
                   <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm mb-3">
                     <span className="text-green-700 font-medium">{coupon.maCode} — Giảm {VND(discount)}</span>
-                    <button onClick={() => { setCoupon(null); setCouponMsg('') }} className="text-green-600 hover:text-green-800">
+                    {coupon.isBest && !isManualCoupon.current && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">Tốt nhất</span>}
+                    <button onClick={() => { setCoupon(null); setCouponMsg(''); isManualCoupon.current = false }} className="text-green-600 hover:text-green-800">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -568,6 +590,7 @@ export default function Checkout() {
                     <Tag className="h-4 w-4" /> Áp dụng Voucher
                   </button>
                 )}
+                {autoApplying && <p className="text-blue-500 text-xs mt-1">Đang tìm mã tốt nhất...</p>}
                 {couponMsg && <p className="text-red-500 text-xs mt-1">{couponMsg}</p>}
               </div>
 
@@ -766,6 +789,7 @@ export default function Checkout() {
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-blue-700">{v.maCode}</p>
                           {v.isPersonal && <span className="text-[10px] bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">Của bạn</span>}
+                          {v.isBest && <span className="text-[10px] bg-amber-100 text-amber-700 font-semibold px-1.5 py-0.5 rounded">Tốt nhất</span>}
                         </div>
                         <p className="text-sm text-gray-600 mt-1">{v.moTa}</p>
                         <p className="text-xs text-gray-400 mt-1">

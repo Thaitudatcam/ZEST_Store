@@ -32,13 +32,17 @@ public class VoucherNguoiDung {
     @Column(name = "ngay_su_dung")
     private LocalDateTime ngaySuDung;
 
+    @Column(name = "ngay_het_han")
+    private LocalDateTime ngayHetHan;
+
+    @Enumerated(EnumType.ORDINAL)
     @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default
-    private Integer trangThai = 1;
+    private TrangThaiVoucher trangThai = TrangThaiVoucher.DA_NHAN;
 
     @PrePersist
     protected void onCreate() {
         this.ngayNhan = LocalDateTime.now();
-        if (this.trangThai == null) this.trangThai = 1;
+        if (this.trangThai == null) this.trangThai = TrangThaiVoucher.DA_NHAN;
     }
 }

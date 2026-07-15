@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react'
-import { getUserVouchers, claimVoucher } from '../api/userVoucher'
+import { getUserVouchers, claimVoucher, acceptVoucher } from '../api/userVoucher'
 import { getAvailableCoupons } from '../api/coupons'
 import { useVoucher } from '../context/VoucherContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { Ticket, Gift, Clock, CheckCircle, XCircle, Tag } from 'lucide-react'
+import { Ticket, Gift, Clock, CheckCircle, XCircle, Tag, AlertCircle } from 'lucide-react'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
-const STATUS = { 1: { label: 'Khả dụng', cls: 'text-green-600 bg-green-50 border-green-200' }, 2: { label: 'Đã dùng', cls: 'text-gray-500 bg-gray-50 border-gray-200' }, 3: { label: 'Hết hạn', cls: 'text-red-500 bg-red-50 border-red-200' } }
+const STATUS = {
+  0: { label: 'Chờ nhận', cls: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
+  1: { label: 'Khả dụng', cls: 'text-green-600 bg-green-50 border-green-200' },
+  2: { label: 'Đã dùng', cls: 'text-gray-400 bg-gray-50 border-gray-200', hidden: true },
+  3: { label: 'Đã thu hồi', cls: 'text-red-500 bg-red-50 border-red-200', hidden: true },
+}
 
 export default function UserVouchers() {
   const { refreshVoucherCount } = useVoucher()
@@ -46,6 +51,16 @@ export default function UserVouchers() {
     } catch (err) {
       setClaimMsg({ type: 'error', text: err.response?.data?.message || 'Mã không hợp lệ' })
     } finally { setClaiming(false) }
+  }
+
+  const handleAccept = async (v) => {
+    try {
+      await acceptVoucher(v.maVoucherNguoiDung)
+      load()
+      refreshVoucherCount()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi nhận voucher')
+    }
   }
 
   if (loading) return <LoadingSpinner className="py-20" />
@@ -94,7 +109,12 @@ export default function UserVouchers() {
                         <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded">
                           {v.maCode}
                         </span>
-                        <span className="text-[10px] bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">Đã nhận</span>
+                        {v.trangThai === 0 && (
+                          <span className="text-[10px] bg-yellow-100 text-yellow-700 font-semibold px-1.5 py-0.5 rounded">Chờ nhận</span>
+                        )}
+                        {v.trangThai === 1 && (
+                          <span className="text-[10px] bg-green-100 text-green-700 font-semibold px-1.5 py-0.5 rounded">Đã nhận</span>
+                        )}
                       </div>
                       <p className="font-medium text-sm">
                         {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : v.kieuGiamGia === 3 ? (v.giaTriGiam > 0 ? `Giảm tối đa ${VND(v.giaTriGiam)} tiền ship` : 'Miễn phí vận chuyển') : `Giảm ${VND(v.giaTriGiam)}`}
@@ -105,11 +125,20 @@ export default function UserVouchers() {
                         <Clock className="h-3 w-3 inline mr-0.5" />
                         Nhận: {new Date(v.ngayNhan).toLocaleDateString('vi-VN')}
                         {v.ngaySuDung ? ` · Dùng: ${new Date(v.ngaySuDung).toLocaleDateString('vi-VN')}` : ''}
+                        {v.ngayHetHan && v.trangThai === 0 ? ` · HSD: ${new Date(v.ngayHetHan).toLocaleDateString('vi-VN')}` : ''}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 text-xs font-medium whitespace-nowrap">
-                      {v.trangThai === 1 ? <CheckCircle className="h-4 w-4 text-green-600" /> : v.trangThai === 2 ? <CheckCircle className="h-4 w-4 text-gray-400" /> : <XCircle className="h-4 w-4 text-red-500" />}
-                      {s.label}
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-1 text-xs font-medium whitespace-nowrap">
+                        {v.trangThai === 0 ? <AlertCircle className="h-4 w-4 text-yellow-600" /> : v.trangThai === 1 ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                        {s.label}
+                      </div>
+                      {v.trangThai === 0 && (
+                        <button onClick={() => handleAccept(v)}
+                          className="bg-yellow-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-yellow-600 transition">
+                          Nhận
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

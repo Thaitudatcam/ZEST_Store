@@ -24,6 +24,7 @@ public class POSService {
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PosCartRepository posCartRepository;
+    private final PhieuGiamGiaService phieuGiamGiaService;
 
     @Transactional
     public Map<String, Object> createPosOrder(PosOrderRequest request, Integer adminUserId) {
@@ -141,6 +142,12 @@ public class POSService {
                 .phieuGiamGia(coupon)
                 .build();
         order = donHangRepository.save(order);
+
+        if (coupon != null) {
+            phieuGiamGiaService.logCouponUsage(coupon.getMaCode(),
+                    customer != null ? customer.getMaNguoiDung() : null,
+                    order.getMaDonHang(), soTienGiam, "POS");
+        }
 
         for (Map<String, Object> item : orderItems) {
             BienTheSanPham variant = (BienTheSanPham) item.get("bienThe");

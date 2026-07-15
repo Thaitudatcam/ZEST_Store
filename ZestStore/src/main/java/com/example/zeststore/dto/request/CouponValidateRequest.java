@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -16,4 +17,6 @@ public class CouponValidateRequest {
 
     @PositiveOrZero
     private BigDecimal tongTien;
+
+    private List<Integer> maSanPhamIds;
 }

@@ -1,12 +1,13 @@
 package com.example.zeststore.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -36,7 +37,6 @@ public class PhieuGiamGia {
     @Column(name = "gia_tri_don_toi_thieu", precision = 18, scale = 2)
     private BigDecimal giaTriDonToiThieu;
 
-
     @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
 
@@ -53,18 +53,6 @@ public class PhieuGiamGia {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
-    @OneToMany(mappedBy = "phieuGiamGia")
-    @ToString.Exclude
-    @JsonIgnore
-    private List<DonHang> donHangs;
-
-    @PrePersist
-    protected void onCreate() {
-        this.ngayTao = LocalDateTime.now();
-        if (this.trangThai == null) this.trangThai = 1;
-        if (this.kieuGiamGia == null) this.kieuGiamGia = 1;
-    }
-
     @PositiveOrZero
     @Column(name = "so_luong")
     private Integer soLuong;
@@ -72,4 +60,61 @@ public class PhieuGiamGia {
     @PositiveOrZero
     @Column(name = "gia_tri_giam_toi_da", precision = 18, scale = 2)
     private BigDecimal giaTriGiamToiDa;
+
+    @Column(name = "exclusive", nullable = false)
+    @Builder.Default
+    private Boolean exclusive = false;
+
+    @ManyToMany
+    @JoinTable(name = "coupon_danh_muc",
+        joinColumns = @JoinColumn(name = "ma_phieu_giam_gia"),
+        inverseJoinColumns = @JoinColumn(name = "ma_danh_muc"))
+    @JsonIgnoreProperties({"sanPhams", "danhMucCons", "danhMucCha"})
+    @Builder.Default
+    private Set<DanhMuc> danhMucApDung = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(name = "coupon_san_pham",
+        joinColumns = @JoinColumn(name = "ma_phieu_giam_gia"),
+        inverseJoinColumns = @JoinColumn(name = "ma_san_pham"))
+    @JsonIgnoreProperties({"danhMuc", "bienTheSanPhams", "danhGias", "hinhAnhs", "mucYeuThichs", "hanhVis"})
+    @Builder.Default
+    private Set<SanPham> sanPhamApDung = new HashSet<>();
+
+    @OneToMany(mappedBy = "phieuGiamGia")
+    @ToString.Exclude
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<DonHang> donHangs;
+
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("trangThaiThucTe")
+    public int getTrangThaiThucTe() {
+        if (ngayXoa != null) return 5;
+        if (trangThai == 0) return 0;
+        if (ngayBatDau != null && ngayBatDau.isAfter(LocalDateTime.now())) return 1;
+        if (ngayKetThuc != null && ngayKetThuc.isBefore(LocalDateTime.now())) return 4;
+        if (soLuong != null && soLuong <= 0) return 3;
+        return 2;
+    }
+
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("trangThaiThucTeText")
+    public String getTrangThaiThucTeText() {
+        return switch (getTrangThaiThucTe()) {
+            case 0 -> "Đã huỷ";
+            case 1 -> "Chưa bắt đầu";
+            case 2 -> "Đang hoạt động";
+            case 3 -> "Hết lượt";
+            case 4 -> "Hết hạn";
+            case 5 -> "Đã xoá";
+            default -> "Không xác định";
+        };
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.ngayTao = LocalDateTime.now();
+        if (this.trangThai == null) this.trangThai = 1;
+        if (this.kieuGiamGia == null) this.kieuGiamGia = 1;
+    }
 }
