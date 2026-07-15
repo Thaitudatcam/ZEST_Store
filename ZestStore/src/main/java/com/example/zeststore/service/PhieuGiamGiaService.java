@@ -268,21 +268,20 @@ public class PhieuGiamGiaService {
     }
 
     // ========== AUTO-APPLY BEST OFFER ==========
-    public Map<String, Object> getBestOffer(BigDecimal tongTien, Integer userId, List<Integer> maSanPhamIds) {
+    public Map<String, Object> getBestOffer(BigDecimal tongTien, Integer userId, List<Integer> maSanPhamIds, boolean pos) {
         if (tongTien == null) tongTien = BigDecimal.ZERO;
         List<Map<String, Object>> available = getAvailableCoupons(tongTien, userId, maSanPhamIds);
+        if (pos) {
+            available = available.stream()
+                    .filter(m -> !Integer.valueOf(3).equals(m.get("kieuGiamGia")))
+                    .collect(Collectors.toList());
+        }
         if (available.isEmpty()) {
             return Map.of("found", false, "message", "Không có mã giảm giá phù hợp");
         }
         Map<String, Object> best = available.stream()
-                .filter(m -> !Boolean.TRUE.equals(m.get("exclusive")))
                 .max(Comparator.comparing(m -> (BigDecimal) m.get("soTienGiam")))
                 .orElse(null);
-        if (best == null) {
-            best = available.stream()
-                    .max(Comparator.comparing(m -> (BigDecimal) m.get("soTienGiam")))
-                    .orElse(null);
-        }
         if (best == null) {
             return Map.of("found", false, "message", "Không có mã giảm giá phù hợp");
         }

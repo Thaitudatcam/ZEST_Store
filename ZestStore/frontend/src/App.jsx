@@ -31,6 +31,7 @@ import AdminCoupons from './pages/admin/AdminCoupons'
 import AdminInvoices from './pages/admin/AdminInvoices'
 import AdminReturns from './pages/admin/AdminReturns'
 import AdminReviews from './pages/admin/AdminReviews'
+import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="categories" element={<AdminCategories />} />
         <Route path="thong-ke" element={<AdminThongKe />} />
         <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="campaigns" element={<AdminCampaigns />} />
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="customers" element={<AdminUsers />} />

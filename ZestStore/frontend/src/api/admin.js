@@ -63,3 +63,8 @@ export const updateShippingFee = (id, data) => api.put(`/admin/shipping-fees/${i
 export const deleteShippingFee = (id) => api.delete(`/admin/shipping-fees/${id}`).then((r) => r.data)
 export const toggleCouponStatus = (id) => api.put(`/coupons/${id}/toggle-status`).then(r => r.data)
 export const lookupSku = (sku) => api.get(`/admin/pos/scan`, { params: { sku } }).then((r) => r.data)
+
+export const getCampaigns = () => api.get('/admin/campaigns').then((r) => r.data)
+export const createCampaign = (data) => api.post('/admin/campaigns', data).then((r) => r.data)
+export const toggleCampaignStatus = (id) => api.put(`/admin/campaigns/${id}/toggle-status`).then((r) => r.data)
+export const launchCampaign = (id) => api.post(`/admin/campaigns/${id}/launch`).then((r) => r.data)

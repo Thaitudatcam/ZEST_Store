@@ -33,18 +33,22 @@ public class VoucherNguoiDungService {
         List<VoucherNguoiDung> list = voucherNguoiDungRepository
                 .findByNguoiDung_MaNguoiDungOrderByNgayNhanDesc(userId);
         return list.stream()
-                .filter(v -> v.getTrangThai() == TrangThaiVoucher.CHUA_NHAN
+                .filter(v -> (v.getTrangThai() == TrangThaiVoucher.CHUA_NHAN
                         || v.getTrangThai() == TrangThaiVoucher.DA_NHAN)
+                        && v.getPhieuGiamGia().getNgayXoa() == null
+                        && Integer.valueOf(1).equals(v.getPhieuGiamGia().getTrangThai()))
                 .map(this::toMap)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Đếm voucher CHUA_NHAN của user (hiển thị badge đỏ trên FE).
-     */
     public Map<String, Object> getUnclaimedCount(Integer userId) {
         long count = voucherNguoiDungRepository
-                .countByNguoiDung_MaNguoiDungAndTrangThai(userId, TrangThaiVoucher.CHUA_NHAN);
+                .findByNguoiDung_MaNguoiDungOrderByNgayNhanDesc(userId)
+                .stream()
+                .filter(v -> v.getTrangThai() == TrangThaiVoucher.CHUA_NHAN
+                        && v.getPhieuGiamGia().getNgayXoa() == null
+                        && Integer.valueOf(1).equals(v.getPhieuGiamGia().getTrangThai()))
+                .count();
         return Map.of("count", count);
     }
 

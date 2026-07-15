@@ -29,7 +29,7 @@ export default function AdminCoupons() {
   const [form, setForm] = useState({
     maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '',
     ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '',
-    exclusive: false, maDanhMucIds: [], maSanPhamIds: [],
+    maDanhMucIds: [], maSanPhamIds: [],
   })
 
   useEffect(() => { getCategories().then(setCategories).catch(() => {}) }, [])
@@ -117,14 +117,14 @@ export default function AdminCoupons() {
       ngayKetThuc: form.ngayKetThuc + 'T23:59:59',
       soLuong: form.soLuong ? Number(form.soLuong) : null,
       giaTriGiamToiDa: form.kieuGiamGia === 2 || form.kieuGiamGia === 3 ? null : (form.giaTriGiamToiDa ? Number(form.giaTriGiamToiDa) : null),
-      exclusive: form.exclusive,
+
       maDanhMucIds: form.maDanhMucIds.length > 0 ? form.maDanhMucIds : null,
       maSanPhamIds: form.maSanPhamIds.length > 0 ? form.maSanPhamIds : null,
     }
     try {
       await createCoupon(payload)
       setShowForm(false)
-      setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', exclusive: false, maDanhMucIds: [], maSanPhamIds: [] })
+      setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', maDanhMucIds: [], maSanPhamIds: [] })
       load()
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi tạo coupon')
@@ -242,7 +242,7 @@ export default function AdminCoupons() {
                   className={`hover:bg-gray-50 ${c.kieuGiamGia === 3 ? 'bg-green-50/40' : [0, 4, 5].includes(c.trangThaiThucTe ?? c.trangThai) ? 'bg-red-50' : ''}`}>
                   <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-green-700' : 'text-blue-700'}`}>
                     {c.maCode}
-                    {c.exclusive && <span className="ml-1.5 text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">ĐỘC QUYỀN</span>}
+
                   </td>
                   <td className="px-3 py-3 text-center">
                     {c.kieuGiamGia === 1 ? `${c.giaTriGiam}%` : c.kieuGiamGia === 3 ? (c.giaTriGiam && Number(c.giaTriGiam) > 0 ? `Giảm tối đa ${VND(c.giaTriGiam)} tiền ship` : 'Miễn phí vận chuyển') : VND(c.giaTriGiam)}
@@ -381,13 +381,6 @@ export default function AdminCoupons() {
                 <input type="number" value={form.giaTriGiamToiDa} onChange={e => setForm({ ...form, giaTriGiamToiDa: e.target.value })}
                   placeholder="Giá trị giảm tối đa (để trống = không giới hạn)" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               )}
-
-              {/* Exclusive toggle */}
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" checked={form.exclusive}
-                  onChange={e => setForm({ ...form, exclusive: e.target.checked })} className="h-4 w-4" />
-                <span className="font-medium">Độc quyền — <span className="text-gray-500">không auto-apply, không stack với mã khác</span></span>
-              </label>
 
               {/* Category/Product selection */}
               <div>

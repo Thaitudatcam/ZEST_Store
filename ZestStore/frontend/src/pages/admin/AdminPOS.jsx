@@ -259,7 +259,7 @@ export default function AdminPOS() {
     setAutoApplying(true)
     try {
       const prodIds = cart.map(c => c.maSanPham).filter(Boolean)
-      const result = await getBestOffer(rawTotal, prodIds.length > 0 ? prodIds : undefined)
+      const result = await getBestOffer(rawTotal, prodIds.length > 0 ? prodIds : undefined, true)
       if (result.found) {
         setCoupon(result)
         setCouponCode(result.maCode)

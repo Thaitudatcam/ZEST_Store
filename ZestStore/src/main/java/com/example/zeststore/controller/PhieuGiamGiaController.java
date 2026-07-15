@@ -44,9 +44,10 @@ public class PhieuGiamGiaController {
     public ResponseEntity<?> getBestOffer(
             @RequestParam(defaultValue = "0") BigDecimal tongTien,
             @RequestParam(required = false) List<Integer> maSanPhamIds,
+            @RequestParam(defaultValue = "false") boolean pos,
             Authentication auth) {
         Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
-        return ResponseEntity.ok(phieuGiamGiaService.getBestOffer(tongTien, userId, maSanPhamIds));
+        return ResponseEntity.ok(phieuGiamGiaService.getBestOffer(tongTien, userId, maSanPhamIds, pos));
     }
 
     @PostMapping("/reserve")

@@ -35,6 +35,10 @@ public class VoucherNguoiDung {
     @Column(name = "ngay_het_han")
     private LocalDateTime ngayHetHan;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_chuong_trinh")
+    private ChuongTrinhQuaTang chuongTrinhQuaTang;
+
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
     @Builder.Default

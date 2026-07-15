@@ -1,5 +1,6 @@
 package com.example.zeststore.repository;
 
+import com.example.zeststore.entity.LoaiTrigger;
 import com.example.zeststore.entity.TrangThaiVoucher;
 import com.example.zeststore.entity.VoucherNguoiDung;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,4 +36,13 @@ public interface VoucherNguoiDungRepository extends JpaRepository<VoucherNguoiDu
     List<VoucherNguoiDung> findExpiredByStatus(
             @Param("trangThai") TrangThaiVoucher trangThai,
             @Param("now") LocalDateTime now);
+
+    boolean existsByNguoiDung_MaNguoiDungAndChuongTrinhQuaTang_MaChuongTrinh(
+            Integer maNguoiDung, Integer maChuongTrinh);
+
+    @Query("SELECT v FROM VoucherNguoiDung v WHERE v.chuongTrinhQuaTang.loaiTrigger = :loaiTrigger "
+            + "AND v.nguoiDung.maNguoiDung = :userId")
+    List<VoucherNguoiDung> findByUserAndLoaiTrigger(
+            @Param("userId") Integer userId,
+            @Param("loaiTrigger") LoaiTrigger loaiTrigger);
 }

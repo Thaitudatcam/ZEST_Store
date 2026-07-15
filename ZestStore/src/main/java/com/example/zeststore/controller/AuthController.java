@@ -13,6 +13,7 @@ import com.example.zeststore.repository.GioHangRepository;
 import com.example.zeststore.repository.DanhSachYeuThichRepository;
 import com.example.zeststore.repository.VaiTroRepository;
 import com.example.zeststore.security.JwtTokenProvider;
+import com.example.zeststore.service.AutoGrantService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 @RestController
@@ -39,6 +42,7 @@ public class AuthController {
     private final GioHangRepository gioHangRepository;
     private final DanhSachYeuThichRepository danhSachYeuThichRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AutoGrantService autoGrantService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
@@ -47,6 +51,15 @@ public class AuthController {
 
         NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        LocalDateTime lastLogin = nguoiDung.getNgayDangNhapCuoi();
+        nguoiDung.setNgayDangNhapCuoi(LocalDateTime.now());
+        nguoiDungRepository.save(nguoiDung);
+
+        if (lastLogin != null) {
+            long diffDays = ChronoUnit.DAYS.between(lastLogin, LocalDateTime.now());
+            autoGrantService.handleQuayLai(nguoiDung, diffDays);
+        }
 
         String token = jwtTokenProvider.generateToken(
                 nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro(), nguoiDung.getChoPhepBanHang());
@@ -100,6 +113,8 @@ public class AuthController {
 
         gioHangRepository.save(GioHang.builder().nguoiDung(nguoiDung).build());
         danhSachYeuThichRepository.save(DanhSachYeuThich.builder().nguoiDung(nguoiDung).build());
+
+        autoGrantService.handleDangKyMoi(nguoiDung);
 
         String token = jwtTokenProvider.generateToken(
                 nguoiDung.getEmail(), nguoiDung.getVaiTro().getTenVaiTro(), nguoiDung.getChoPhepBanHang());
