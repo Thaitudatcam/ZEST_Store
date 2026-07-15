@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { getCart, removeCartItem, updateCartItem, clearCart } from '../api/cart'
+import { useState, useEffect, useRef } from 'react'
+import { getCart, removeCartItem, updateCartItem, clearCart, validateCart } from '../api/cart'
 import { useCart } from '../context/CartContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Toast from '../components/Toast'
@@ -20,6 +20,51 @@ export default function Cart() {
 
   const load = () => getCart().then(setItems).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
+
+  const activeRef = useRef(true)
+  useEffect(() => {
+    const checkStock = async () => {
+      if (!activeRef.current) return
+      try {
+        const issues = await validateCart()
+        if (issues.length > 0) {
+          let changed = false
+          for (const issue of issues) {
+            if (issue.type === 'insufficient') {
+              await updateCartItem(issue.maBienThe, { soLuong: issue.availableStock })
+              setItems(prev => prev.map(i =>
+                i.maBienThe === issue.maBienThe
+                  ? { ...i, soLuong: issue.availableStock, tonKho: issue.availableStock }
+                  : i
+              ))
+              setToast({ message: issue.message, type: 'warning' })
+              changed = true
+            }
+            if (issue.type === 'deleted') {
+              if (issue.maBienThe) {
+                await removeCartItem(issue.maBienThe).catch(() => {})
+              }
+              setItems(prev => prev.filter(i => i.maMucGioHang !== issue.maMucGioHang))
+              setToast({ message: issue.message, type: 'error' })
+              changed = true
+            }
+          }
+          if (changed) refreshCount()
+        }
+      } catch {}
+    }
+
+    const handleVisibility = () => { activeRef.current = !document.hidden }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    const timer = setInterval(checkStock, 15000)
+    checkStock()
+
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [])
 
   const handleQty = async (vid, delta) => {
     const item = items.find((i) => i.maBienThe === vid)

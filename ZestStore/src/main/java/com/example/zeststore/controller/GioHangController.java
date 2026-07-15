@@ -23,6 +23,11 @@ public class GioHangController {
         return ResponseEntity.ok(gioHangService.getCartItems(userService.getUserIdFromAuth(auth)));
     }
 
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateCart(Authentication auth) {
+        return ResponseEntity.ok(gioHangService.validateCartStock(userService.getUserIdFromAuth(auth)));
+    }
+
     @PostMapping
     public ResponseEntity<?> addItem(Authentication auth, @Valid @RequestBody CartItemRequest request) {
         return ResponseEntity.ok(gioHangService.addItem(

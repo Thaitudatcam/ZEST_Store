@@ -115,6 +115,33 @@ public class GioHangService {
         return Map.of("message", "Quantity updated");
     }
 
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> validateCartStock(Integer userId) {
+        GioHang cart = getOrCreateCart(userId);
+        List<MucGioHang> items = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
+        List<Map<String, Object>> issues = new ArrayList<>();
+        for (MucGioHang item : items) {
+            BienTheSanPham variant = item.getBienThe();
+            if (variant == null || variant.getNgayXoa() != null) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("maMucGioHang", item.getMaMucGioHang());
+                m.put("maBienThe", variant != null ? variant.getMaBienThe() : null);
+                m.put("type", "deleted");
+                m.put("message", "Sản phẩm đã bị xoá");
+                issues.add(m);
+            } else if (variant.getTonKho() < item.getSoLuong()) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("maBienThe", variant.getMaBienThe());
+                m.put("type", "insufficient");
+                m.put("currentQty", item.getSoLuong());
+                m.put("availableStock", variant.getTonKho());
+                m.put("message", "Chỉ còn " + variant.getTonKho() + " sản phẩm");
+                issues.add(m);
+            }
+        }
+        return issues;
+    }
+
     @Transactional
     public Map<String, String> removeItem(Integer userId, Integer maBienThe) {
         GioHang cart = getOrCreateCart(userId);
