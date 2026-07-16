@@ -15,6 +15,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class GioHangService {
 
+    private static final int MAX_QTY_PER_ITEM = 5;
+
     private final GioHangRepository gioHangRepository;
     private final MucGioHangRepository mucGioHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
@@ -52,6 +54,8 @@ public class GioHangService {
             itemMap.put("thanhTien", variant != null ? variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())) : BigDecimal.ZERO);
             itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
             itemMap.put("ngayXoa", variant != null ? variant.getNgayXoa() : null);
+            itemMap.put("sanPhamTrangThai", product != null ? product.getTrangThai() : null);
+            itemMap.put("sanPhamNgayXoa", product != null ? product.getNgayXoa() : null);
             result.add(itemMap);
         }
         return result;
@@ -76,21 +80,27 @@ public class GioHangService {
         Optional<MucGioHang> existing = mucGioHangRepository
                 .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), maBienThe);
 
-        if (existing.isPresent()) {
-            MucGioHang item = existing.get();
-            int newQuantity = item.getSoLuong() + soLuong;
-            if (newQuantity > variant.getTonKho()) {
-                throw new BadRequestException("Insufficient stock. Available: " + variant.getTonKho());
-            }
-            item.setSoLuong(newQuantity);
-            mucGioHangRepository.save(item);
-        } else {
-            mucGioHangRepository.save(MucGioHang.builder()
-                    .gioHang(cart)
-                    .bienThe(variant)
-                    .soLuong(soLuong)
-                    .build());
+    if (existing.isPresent()) {
+        MucGioHang item = existing.get();
+        int newQuantity = item.getSoLuong() + soLuong;
+        if (newQuantity > MAX_QTY_PER_ITEM) {
+            throw new BadRequestException("Bạn đã có số lượng tối đa sản phẩm này trong giỏ hàng");
         }
+        if (newQuantity > variant.getTonKho()) {
+            throw new BadRequestException("Insufficient stock. Available: " + variant.getTonKho());
+        }
+        item.setSoLuong(newQuantity);
+        mucGioHangRepository.save(item);
+    } else {
+        if (soLuong > MAX_QTY_PER_ITEM) {
+            throw new BadRequestException("Bạn đã có số lượng tối đa sản phẩm này trong giỏ hàng");
+        }
+        mucGioHangRepository.save(MucGioHang.builder()
+                .gioHang(cart)
+                .bienThe(variant)
+                .soLuong(soLuong)
+                .build());
+    }
 
         return Map.of("message", "Item added to cart");
     }

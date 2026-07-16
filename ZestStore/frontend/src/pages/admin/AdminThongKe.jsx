@@ -5,9 +5,7 @@ import { getRevenueByDay, getRevenueByMonth, getRevenueByYear,
          exportAndSendEmail
 } from '../../api/admin'
 import { DollarSign, ShoppingCart, Package, Users, TrendingUp, XCircle, CheckCircle, Clock, Loader } from 'lucide-react'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
-
-const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6']
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 export default function AdminThongKe() {
   const [tab, setTab] = useState('day')
@@ -138,13 +136,6 @@ if (tab === 'month') {
     { label: 'Đang chờ', value: orderStats.pending ?? 0, icon: Clock, color: 'from-amber-500 to-amber-600' },
   ] : []
 
-  const donutData = orderStats ? [
-    { name: 'Đang chờ', value: orderStats.pending ?? 0 },
-    { name: 'Đang giao', value: orderStats.shipping ?? 0 },
-    { name: 'Đã giao', value: orderStats.completed ?? 0 },
-    { name: 'Đã hủy', value: orderStats.cancelled ?? 0 },
-  ].filter(d => d.value > 0) : []
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -247,9 +238,7 @@ if (tab === 'month') {
         ) : <p className="text-center text-gray-400 py-10">Chưa có dữ liệu</p>}
       </div>
 
-      {/* 2 cột: Sản phẩm bán chạy + Biểu đồ tròn đơn hàng */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sản phẩm bán chạy */}
+      {/* Sản phẩm bán chạy */}
         <div className="bg-white rounded-2xl shadow-sm border p-6">
           <h2 className="font-semibold text-lg mb-4">Sản phẩm bán chạy</h2>
           {bestSelling.length > 0 ? (
@@ -259,7 +248,9 @@ if (tab === 'month') {
                   <span className="text-sm font-bold text-slate-400 w-6">#{i + 1}</span>
                   <img src={p.urlAnh || 'https://placehold.co/40x40/e2e8f0/475569?text=P'} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.tenSanPham}</p>
+                    <p className="text-sm font-medium truncate">{p.tenSanPham}
+                      {p.ngayXoa && <span className="ml-1 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">(đã ngừng bán)</span>}
+                    </p>
                     <div className="w-full bg-gray-100 rounded-full h-2 mt-1">
                       <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${Math.min(100, ((p.soLuongDaBan ?? 0) / (bestSelling[0]?.soLuongDaBan || 1)) * 100)}%` }} />
                     </div>
@@ -270,22 +261,6 @@ if (tab === 'month') {
             </div>
           ) : <p className="text-center text-gray-400 py-8">Chưa có dữ liệu</p>}
         </div>
-
-        {/* Biểu đồ tròn đơn hàng */}
-        <div className="bg-white rounded-2xl shadow-sm border p-6">
-          <h2 className="font-semibold text-lg mb-4">Phân loại đơn hàng</h2>
-          {donutData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={donutData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {donutData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={(v) => v + ' đơn'} />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <p className="text-center text-gray-400 py-10">Chưa có dữ liệu</p>}
-        </div>
-      </div>
     </div>
   )
 }

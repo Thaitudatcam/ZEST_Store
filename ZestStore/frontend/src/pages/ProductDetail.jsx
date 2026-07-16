@@ -117,8 +117,6 @@ export default function ProductDetail() {
     try {
       const variantId = selectedVar || (variants[0]?.maBienThe)
       if (!variantId) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
-      await addToCart({ maBienThe: variantId, soLuong: qty })
-      refreshCount()
       const selected = [{
         maBienThe: variantId,
         soLuong: qty,
@@ -557,27 +555,27 @@ export default function ProductDetail() {
           onConfirm={async (vid, sl) => {
             setModalOpen(false)
             if (!user) return navigate('/login')
+            if (buyNowMode) {
+              const v = variants.find(x => x.maBienThe === vid) || {}
+              const s = { ...v.sanPham } || {}
+              navigate('/checkout', {
+                state: {
+                  selectedItems: [{
+                    maBienThe: vid,
+                    soLuong: sl || qty,
+                    tenSanPham: s.tenSanPham || product.tenSanPham,
+                    donGia: v.gia || variantPrice,
+                    urlAnh: v.urlAnh || mainImg,
+                    maSanPham: s.maSanPham || product.maSanPham,
+                  }]
+                }
+              })
+              return
+            }
             try {
               await addToCart({ maBienThe: vid, soLuong: sl || qty })
               refreshCount()
-              if (buyNowMode) {
-                const v = variants.find(x => x.maBienThe === vid) || {}
-                const s = { ...v.sanPham } || {}
-                navigate('/checkout', {
-                  state: {
-                    selectedItems: [{
-                      maBienThe: vid,
-                      soLuong: sl || qty,
-                      tenSanPham: s.tenSanPham || product.tenSanPham,
-                      donGia: v.gia || variantPrice,
-                      urlAnh: v.urlAnh || mainImg,
-                      maSanPham: s.maSanPham || product.maSanPham,
-                    }]
-                  }
-                })
-              } else {
-                setToast({ message: 'Đã thêm vào giỏ hàng!', type: 'success' })
-              }
+              setToast({ message: 'Đã thêm vào giỏ hàng!', type: 'success' })
             } catch (err) {
               setToast({ message: err.response?.data?.message || 'Thêm thất bại', type: 'error' })
             }

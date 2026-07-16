@@ -15,7 +15,6 @@ export default function Cart() {
   const [toast, setToast] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [selectedItem, setSelectedItem] = useState(null)
-  const [deletedItem, setDeletedItem] = useState(null)
   const { refreshCount } = useCart()
 
   const load = () => getCart().then(setItems).finally(() => setLoading(false))
@@ -41,11 +40,6 @@ export default function Cart() {
               changed = true
             }
             if (issue.type === 'deleted') {
-              if (issue.maBienThe) {
-                await removeCartItem(issue.maBienThe).catch(() => {})
-              }
-              setItems(prev => prev.filter(i => i.maMucGioHang !== issue.maMucGioHang))
-              setToast({ message: issue.message, type: 'error' })
               changed = true
             }
           }
@@ -93,21 +87,7 @@ export default function Cart() {
   }
 
   const handleItemClick = (item) => {
-    if (item.ngayXoa) {
-      setDeletedItem(item)
-    } else {
-      setSelectedItem(item)
-    }
-  }
-
-  const handleRemoveDeleted = async () => {
-    if (!deletedItem) return
-    try {
-      await removeCartItem(deletedItem.maBienThe)
-      setItems(prev => { const next = prev.filter(i => i.maBienThe !== deletedItem.maBienThe); setSelectedIds(s => { const n = new Set(s); n.delete(deletedItem.maBienThe); return n }); return next })
-      refreshCount()
-    } catch { setToast({ message: 'Không thể xóa sản phẩm', type: 'error' }) }
-    setDeletedItem(null)
+    setSelectedItem(item)
   }
 
   const handleRemove = async (vid) => {
@@ -210,7 +190,12 @@ export default function Cart() {
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b">
                     <input type="checkbox" checked={prodSel} onChange={() => toggleProduct(Number(pid))}
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0" />
-                    <span className="font-semibold text-sm">{g.product}</span>
+                    <span className={`font-semibold text-sm ${g.variants.some(v => v.sanPhamTrangThai === 0 || v.sanPhamNgayXoa) ? 'line-through text-gray-400' : ''}`}>
+                      {g.product}
+                    </span>
+                    {g.variants.some(v => v.sanPhamTrangThai === 0 || v.sanPhamNgayXoa) && (
+                      <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">không tồn tại</span>
+                    )}
                     <span className="text-xs text-gray-400 ml-auto">{g.variants.length} biến thể</span>
                   </div>
                   <div className="divide-y">
@@ -221,17 +206,20 @@ export default function Cart() {
                         <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0" />
                         <div className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer" onClick={() => handleItemClick(i)}>
-                          <p className="text-sm text-gray-700 min-w-[120px]">{i.mauSac ? `${i.mauSac} / ${i.kichCo || ''}` : (i.kichCo || '')}</p>
+                          <p className={`text-sm min-w-[120px] ${i.ngayXoa ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                            {i.mauSac ? `${i.mauSac} / ${i.kichCo || ''}` : (i.kichCo || '')}
+                            {i.ngayXoa && <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium not-italic no-underline">không tồn tại</span>}
+                          </p>
                           <p className="text-blue-700 font-semibold text-sm">{VND(i.donGia || 0)}</p>
                         </div>
                         <div className="flex items-center border rounded-lg">
-                          <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1}
+                          <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
                             className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Minus className="h-3 w-3" /></button>
-                          <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999}
+                          <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999} disabled={!!i.ngayXoa}
                             onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
                             onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
-                            className="w-10 px-1 py-1 border-x text-center text-xs outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                          <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999)}
+                            className="w-10 px-1 py-1 border-x text-center text-xs outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed" />
+                          <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || i.ngayXoa}
                             className="px-2 py-1 hover:bg-gray-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="h-3 w-3" /></button>
                         </div>
                         {i.tonKho !== undefined && <span className="text-[10px] text-gray-400 w-12 text-right">Kho: {i.tonKho}</span>}
@@ -255,7 +243,7 @@ export default function Cart() {
             </div>
             <button onClick={handleCheckout}
               className="mt-4 block w-full bg-blue-700 text-white text-center font-semibold py-3 rounded-lg hover:bg-blue-800 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={selectedIds.size === 0}>
+              disabled={selectedIds.size === 0 || items.some(i => selectedIds.has(i.maBienThe) && (i.ngayXoa || i.sanPhamTrangThai === 0 || i.sanPhamNgayXoa))}>
               Thanh toán ({selectedIds.size} sản phẩm)
             </button>
           </div>
@@ -309,16 +297,6 @@ export default function Cart() {
         </div>
       )})()}
 
-      {deletedItem && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setDeletedItem(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full animate-scale-in shadow-xl p-6 text-center" onClick={e => e.stopPropagation()}>
-            <div className="text-red-500 mb-3"><XCircle className="h-12 w-12 mx-auto" /></div>
-            <h3 className="font-bold text-lg mb-2">Mặt hàng này hiện không còn tồn tại nữa</h3>
-            <p className="text-sm text-gray-500 mb-6">Sản phẩm đã bị xóa khỏi hệ thống</p>
-            <button onClick={handleRemoveDeleted} className="w-full bg-blue-700 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-800 transition">OK</button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -6,7 +6,7 @@ export const getTopProducts = (hanhDong = 'view', limit = 10) =>
   api.get('/dashboard/best-selling', {
     params: { limit }
   }).then((r) => r.data)
-export const getAllOrders = (page = 0, size = 20, loaiDonHang) => api.get('/orders/admin/all', { params: { page, size, loaiDonHang } }).then((r) => r.data)
+export const getAllOrders = (page = 0, size = 20, loaiDonHang, q) => api.get('/orders/admin/all', { params: { page, size, loaiDonHang, q } }).then((r) => r.data)
 export const updateOrderStatus = (id, trangThai) =>
   api.put(`/orders/admin/${id}/status`, { trangThai }).then((r) => r.data)
 export const getAdminOrderDetail = (id) => api.get(`/orders/admin/${id}/detail`).then((r) => r.data)

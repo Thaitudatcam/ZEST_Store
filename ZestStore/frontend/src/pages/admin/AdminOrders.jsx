@@ -47,10 +47,10 @@ export default function AdminOrders() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const loadOrders = (p, loai) => {
+  const loadOrders = (p, loai, q) => {
     setLoading(true)
     const l = loai ?? loaiDonHang
-    getAllOrders(p, 10, l).then(data => {
+    getAllOrders(p, 10, l, q || undefined).then(data => {
       setOrders(data.content || [])
       setTotalPages(data.totalPages || 0)
       setPage(data.number || 0)
@@ -58,13 +58,7 @@ export default function AdminOrders() {
     .finally(() => setLoading(false))
   }
 
-  useEffect(() => { loadOrders(0, loaiDonHang) }, [pathname])
-
-  const filtered = orders.filter((o) => {
-    const matchSearch = !search || String(o.maDonHang).includes(search) || (o.nguoiDung?.email || '').toLowerCase().includes(search.toLowerCase()) || (o.nguoiDung?.soDienThoai || '').includes(search)
-    const matchStatus = statusFilter === 0 || o.trangThaiDon === statusFilter
-    return matchSearch && matchStatus
-  })
+  useEffect(() => { loadOrders(0, loaiDonHang, search) }, [pathname, search])
 
   return (
     <div>
@@ -119,7 +113,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((o) => {
+              {orders.map((o) => {
                 return (
                   <tr key={o.maDonHang} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3 font-medium">#{o.maDonHang}</td>
@@ -140,22 +134,22 @@ export default function AdminOrders() {
           </table>
           )}
         </div>
-        {filtered.length === 0 && !loading && <p className="text-center text-gray-500 py-8">Không có đơn hàng</p>}
+        {orders.length === 0 && !loading && <p className="text-center text-gray-500 py-8">Không có đơn hàng</p>}
       </div>
 
       {totalPages > 0 && (
         <div className="flex items-center justify-center gap-2 mt-4">
-          <button onClick={() => loadOrders(0)} disabled={page === 0}
+          <button onClick={() => loadOrders(0, null, search)} disabled={page === 0}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Đầu</button>
-          <button onClick={() => loadOrders(page - 1)} disabled={page === 0}
+          <button onClick={() => loadOrders(page - 1, null, search)} disabled={page === 0}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Trước</button>
           {Array.from({ length: totalPages }, (_, i) => i).map(p => (
-            <button key={p} onClick={() => loadOrders(p)}
+            <button key={p} onClick={() => loadOrders(p, null, search)}
               className={`px-3 py-1.5 text-sm border rounded-lg ${p === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{p + 1}</button>
           ))}
-          <button onClick={() => loadOrders(page + 1)} disabled={page >= totalPages - 1}
+          <button onClick={() => loadOrders(page + 1, null, search)} disabled={page >= totalPages - 1}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Sau</button>
-          <button onClick={() => loadOrders(totalPages - 1)} disabled={page >= totalPages - 1}
+          <button onClick={() => loadOrders(totalPages - 1, null, search)} disabled={page >= totalPages - 1}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Cuối</button>
         </div>
       )}

@@ -97,10 +97,14 @@ public class ThongKeService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (Object[] row : rows) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("maSanPham", row[0]);
+            Integer maSanPham = (Integer) row[0];
+            item.put("maSanPham", maSanPham);
             item.put("tenSanPham", row[1]);
             item.put("urlAnh", row[2]);
             item.put("soLuongDaBan", row[3]);
+            sanPhamRepository.findById(maSanPham).ifPresent(sp ->
+                item.put("ngayXoa", sp.getNgayXoa())
+            );
             result.add(item);
         }
         return result;

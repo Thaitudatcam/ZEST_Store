@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
-import { getAvailableCoupons, getBestOffer } from '../api/coupons'
+import { getUserVouchers } from '../api/userVoucher'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus } from 'lucide-react'
@@ -90,13 +90,15 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
-  const [coupon, setCoupon] = useState(null)
-  const [couponMsg, setCouponMsg] = useState('')
-  const [voucherModal, setVoucherModal] = useState(false)
-  const [availableVouchers, setAvailableVouchers] = useState([])
-  const [vouchersLoading, setVouchersLoading] = useState(false)
-  const [autoApplying, setAutoApplying] = useState(false)
-  const isManualCoupon = useRef(false)
+  const [discountCoupon, setDiscountCoupon] = useState(null)
+  const [discountMsg, setDiscountMsg] = useState('')
+  const [discountLoading, setDiscountLoading] = useState(false)
+  const [discountCode, setDiscountCode] = useState('')
+  const [discountVouchersOpen, setDiscountVouchersOpen] = useState(false)
+  const [freeshipVoucher, setFreeshipVoucher] = useState(null)
+  const [freeshipMsg, setFreeshipMsg] = useState('')
+  const [userVouchers, setUserVouchers] = useState([])
+  const [vouchersOpen, setVouchersOpen] = useState(false)
   const [step, setStep] = useState('delivery')
   const [form, setForm] = useState({
     maDiaChi: '',
@@ -328,49 +330,57 @@ export default function Checkout() {
   }
 
   useEffect(() => {
-    if (voucherModal && availableVouchers.length === 0) {
-      setVouchersLoading(true)
-      getAvailableCoupons(rawTotal).then(setAvailableVouchers).catch(() => {}).finally(() => setVouchersLoading(false))
-    }
-  }, [voucherModal])
+    if (!cart.length) { setDiscountCoupon(null); setDiscountMsg(''); setDiscountCode(''); setFreeshipVoucher(null); setFreeshipMsg(''); return }
+  }, [cart.length])
 
-  const handleApplyVoucher = async (v) => {
-    isManualCoupon.current = true
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) return
+    setDiscountCoupon(null)
+    setDiscountMsg('')
+    setDiscountLoading(true)
     try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
-      setCoupon(res.data)
-      setCouponMsg('')
-      setVoucherModal(false)
+      const res = await api.post('/coupons/validate', { maCode: discountCode.trim(), tongTien: rawTotal })
+      setDiscountCoupon(res.data)
     } catch (err) {
-      setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+      setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+    } finally {
+      setDiscountLoading(false)
     }
   }
 
+  const handleSelectDiscountVoucher = async (v) => {
+    setDiscountCoupon(null)
+    setDiscountMsg('')
+    setDiscountCode(v.maCode)
+    try {
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
+      setDiscountCoupon(res.data)
+    } catch (err) {
+      setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+    }
+  }
 
-
-  const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
-
-  const doAutoApply = useCallback((rawT) => {
-    if (isManualCoupon.current) return
-    setAutoApplying(true)
-    getBestOffer(rawT, undefined)
-      .then(result => {
-        if (result.found) { setCoupon(result); setCouponMsg('') }
-        else if (!coupon) { setCoupon(null); setCouponMsg('') }
-      })
-      .catch(() => {})
-      .finally(() => setAutoApplying(false))
-  }, [coupon])
+  const handleSelectFreeship = async (v) => {
+    setFreeshipVoucher(null)
+    setFreeshipMsg('')
+    try {
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
+      setFreeshipVoucher(res.data)
+      setVouchersOpen(false)
+    } catch (err) {
+      setFreeshipMsg(err.response?.data?.message || 'Mã freeship không hợp lệ')
+    }
+  }
 
   useEffect(() => {
-    if (!cart.length) { setCoupon(null); return }
-    const timer = setTimeout(() => doAutoApply(rawTotal), 600)
-    return () => clearTimeout(timer)
-  }, [rawTotal, cart.length])
-  const discount = coupon?.soTienGiam || 0
+    getUserVouchers().then(setUserVouchers).catch(() => {})
+  }, [])
+
+  const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const shippingFee = ghnFee !== null ? Number(ghnFee) : 0
-  const freeshipDiscount = coupon?.kieuGiamGia === 3
-    ? (coupon.giaTriGiam === 0 ? shippingFee : Math.min(coupon.giaTriGiam, shippingFee))
+  const discount = discountCoupon?.soTienGiam || 0
+  const freeshipDiscount = freeshipVoucher?.kieuGiamGia === 3
+    ? (freeshipVoucher.giaTriGiam === 0 ? shippingFee : Math.min(freeshipVoucher.giaTriGiam, shippingFee))
     : 0
   const effectiveShippingFee = shippingFee - freeshipDiscount
   const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee)
@@ -394,7 +404,8 @@ export default function Checkout() {
         diaChiGiaoHang: form.diaChiGiaoHang,
         ghiChu: form.ghiChu,
         phuongThucThanhToan: form.phuongThucThanhToan,
-        maCode: coupon?.maCode || undefined,
+        maCode: discountCoupon?.maCode || undefined,
+        maCodeFreeship: freeshipVoucher?.maCode || undefined,
         phiVanChuyen: shippingFee,
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
@@ -575,23 +586,90 @@ export default function Checkout() {
                 <p>{PAYMENT_CARDS.find(p => p.value === form.phuongThucThanhToan)?.label}</p>
               </div>
 
-              <div className="border-t pt-4 mb-4">
-                <h2 className="font-semibold mb-4 flex items-center gap-2"><Tag className="h-5 w-5 text-blue-700" /> Mã giảm giá</h2>
-                {coupon ? (
-                  <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm mb-3">
-                    <span className="text-green-700 font-medium">{coupon.maCode} — Giảm {VND(discount)}</span>
-                    {coupon.isBest && !isManualCoupon.current && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">Tốt nhất</span>}
-                    <button onClick={() => { setCoupon(null); setCouponMsg(''); isManualCoupon.current = false }} className="text-green-600 hover:text-green-800">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setVoucherModal(true)} className="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-100 transition w-full justify-center">
-                    <Tag className="h-4 w-4" /> Áp dụng Voucher
-                  </button>
-                )}
-                {autoApplying && <p className="text-blue-500 text-xs mt-1">Đang tìm mã tốt nhất...</p>}
-                {couponMsg && <p className="text-red-500 text-xs mt-1">{couponMsg}</p>}
+              <div className="border-t pt-4 mb-4 space-y-4">
+                <div>
+                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Tag className="h-4 w-4 text-blue-700" /> Mã giảm giá (Coupon)</h2>
+                  <p className="text-xs text-gray-400 mb-2">Nhập mã giảm giá công khai</p>
+                  {discountCoupon ? (
+                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm">
+                      <span className="text-green-700 font-medium">{discountCoupon.maCode} — Giảm {VND(discount)}</span>
+                      <button onClick={() => { setDiscountCoupon(null); setDiscountMsg(''); setDiscountCode('') }} className="text-green-600 hover:text-green-800">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2">
+                        <input value={discountCode} onChange={e => setDiscountCode(e.target.value)}
+                          placeholder="Nhập mã..."
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <button onClick={handleApplyDiscount} disabled={discountLoading || !discountCode.trim()}
+                          className="px-3 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
+                          {discountLoading ? '...' : 'Áp dụng'}
+                        </button>
+                      </div>
+                      {userVouchers.filter(v => v.kieuGiamGia !== 3).length > 0 && (
+                        <div className="relative mt-2">
+                          <button onClick={() => setDiscountVouchersOpen(!discountVouchersOpen)} type="button"
+                            className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-white hover:border-blue-400 transition">
+                            <span className="text-gray-500">Chọn mã từ ví của bạn...</span>
+                            <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${discountVouchersOpen ? 'rotate-90' : ''}`} />
+                          </button>
+                          {discountVouchersOpen && (
+                            <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {userVouchers.filter(v => v.kieuGiamGia !== 3).map(v => (
+                                <button key={v.maVoucherNguoiDung} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
+                                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 border-b last:border-b-0 transition flex items-center justify-between">
+                                  <span className="font-medium">{v.maCode}</span>
+                                  <span className="text-green-600 text-xs font-medium">
+                                    {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {discountMsg && <p className="text-red-500 text-xs mt-1">{discountMsg}</p>}
+                </div>
+                <div className="border-t pt-3">
+                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Truck className="h-4 w-4 text-green-700" /> Miễn phí vận chuyển (Voucher)</h2>
+                  <p className="text-xs text-gray-400 mb-2">Chọn voucher cá nhân của bạn</p>
+                  {freeshipVoucher ? (
+                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm">
+                      <span className="text-green-700 font-medium">{freeshipVoucher.maCode} — Miễn phí vận chuyển</span>
+                      <button onClick={() => { setFreeshipVoucher(null); setFreeshipMsg('') }} className="text-green-600 hover:text-green-800">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <button onClick={() => setVouchersOpen(!vouchersOpen)} type="button"
+                        className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-white hover:border-blue-400 transition">
+                        <span className="text-gray-500">Chọn voucher freeship...</span>
+                        <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${vouchersOpen ? 'rotate-90' : ''}`} />
+                      </button>
+                      {vouchersOpen && (
+                        <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {userVouchers.length === 0 ? (
+                            <p className="text-center text-gray-400 py-4 text-sm">Không có voucher khả dụng</p>
+                          ) : (
+                            userVouchers.filter(v => v.kieuGiamGia === 3).map(v => (
+                              <button key={v.maVoucherNguoiDung} onClick={() => handleSelectFreeship(v)}
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 border-b last:border-b-0 transition">
+                                <span className="font-medium">{v.maCode}</span>
+                                {v.ngayHetHan && <span className="text-xs text-gray-400 ml-2">HSD: {new Date(v.ngayHetHan).toLocaleDateString('vi-VN')}</span>}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {freeshipMsg && <p className="text-red-500 text-xs mt-1">{freeshipMsg}</p>}
+                </div>
               </div>
 
               {ghnError && <p className="text-red-500 text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
@@ -629,15 +707,16 @@ export default function Checkout() {
                 <span>Tạm tính</span>
                 <span>{VND(rawTotal)}</span>
               </div>
-              {freeshipDiscount > 0 ? (
-                <div className="flex justify-between text-green-600">
-                  <span>Miễn phí vận chuyển</span>
-                  <span>-{VND(freeshipDiscount)}</span>
-                </div>
-              ) : discount > 0 && (
+              {discount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Giảm giá</span>
                   <span>-{VND(discount)}</span>
+                </div>
+              )}
+              {freeshipDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Miễn phí vận chuyển</span>
+                  <span>-{VND(freeshipDiscount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600">
@@ -764,49 +843,6 @@ export default function Checkout() {
       </div>
       )}
 
-      {voucherModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-        onClick={() => setVoucherModal(false)}>
-        <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-6 animate-scale-in max-h-[80vh] flex flex-col"
-          onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg">Chọn Voucher</h3>
-            <button onClick={() => setVoucherModal(false)} className="text-gray-400 hover:text-gray-600">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          {vouchersLoading ? (
-            <div className="flex items-center justify-center py-10"><Loader className="h-6 w-6 animate-spin text-blue-700" /></div>
-          ) : availableVouchers.length === 0 ? (
-            <p className="text-center text-gray-400 py-10">Không có voucher khả dụng</p>
-          ) : (
-            <div className="space-y-3 overflow-y-auto flex-1">
-              {availableVouchers.map((v) => (
-                  <div key={v.maCode} onClick={() => handleApplyVoucher(v)}
-                    className="border rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition active:scale-[0.98]">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-blue-700">{v.maCode}</p>
-                          {v.isPersonal && <span className="text-[10px] bg-orange-100 text-orange-700 font-semibold px-1.5 py-0.5 rounded">Của bạn</span>}
-                          {v.isBest && <span className="text-[10px] bg-amber-100 text-amber-700 font-semibold px-1.5 py-0.5 rounded">Tốt nhất</span>}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">{v.moTa}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {v.kieuGiamGia === 3
-                            ? <span className="text-green-600 font-semibold">Miễn phí vận chuyển</span>
-                            : <>Giảm <span className="font-semibold text-green-600">{VND(v.soTienGiam)}</span></>
-                          }
-                        </p>
-                      </div>
-                      <span className="shrink-0 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full">Áp dụng</span>
-                    </div>
-                  </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      )}
+
   </>)
 }

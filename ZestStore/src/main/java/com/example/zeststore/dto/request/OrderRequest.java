@@ -29,6 +29,8 @@ public class OrderRequest {
 
     private String maCode;
 
+    private String maCodeFreeship;
+
     @NotNull
     private Integer phuongThucThanhToan;
 

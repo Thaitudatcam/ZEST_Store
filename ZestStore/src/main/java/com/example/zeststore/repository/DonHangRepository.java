@@ -23,6 +23,20 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
     Page<DonHang> findByLoaiDonHang(Integer loaiDonHang, Pageable pageable);
 
+    @Query("SELECT d FROM DonHang d WHERE "
+            + "CAST(d.maDonHang AS string) LIKE %:q% "
+            + "OR d.nguoiDung.hoTen LIKE %:q% "
+            + "OR d.nguoiDung.email LIKE %:q% "
+            + "OR d.nguoiDung.soDienThoai LIKE %:q%")
+    Page<DonHang> searchByKeyword(@Param("q") String q, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND ("
+            + "CAST(d.maDonHang AS string) LIKE %:q% "
+            + "OR d.nguoiDung.hoTen LIKE %:q% "
+            + "OR d.nguoiDung.email LIKE %:q% "
+            + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
+    Page<DonHang> searchByKeywordAndLoai(@Param("q") String q, @Param("loai") Integer loai, Pageable pageable);
+
     @Query("SELECT d FROM DonHang d WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay")
     List<DonHang> findByNgayDatBetween(@Param("tuNgay") LocalDateTime tuNgay,
                                        @Param("denNgay") LocalDateTime denNgay);

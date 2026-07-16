@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
-import { createCustomer, getCoupons, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
-import { getBestOffer } from '../../api/coupons'
+import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, Tag, ScanBarcode, QrCode } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
 
@@ -51,12 +50,7 @@ export default function AdminPOS() {
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
-  const [couponModal, setCouponModal] = useState(false)
-  const [availableCoupons, setAvailableCoupons] = useState([])
-  const [couponListLoading, setCouponListLoading] = useState(false)
-  const [couponSearch, setCouponSearch] = useState('')
-  const [autoApplying, setAutoApplying] = useState(false)
-  const isManualCoupon = useRef(false)
+
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -240,61 +234,18 @@ export default function AdminPOS() {
 
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
 
-  const handleOpenCouponModal = async () => {
-    setCouponModal(true)
-    setCouponSearch('')
-    setCouponListLoading(true)
-    try {
-      const list = await getCoupons()
-      setAvailableCoupons(list.filter(c => c.trangThai === 1 && c.kieuGiamGia !== 3))
-    } catch {
-      setMsg({ type: 'error', text: 'Không thể tải danh sách mã giảm giá' })
-    } finally {
-      setCouponListLoading(false)
-    }
-  }
-
-  const doAutoApply = useCallback(async (rawTotal) => {
-    if (isManualCoupon.current || cart.length === 0) return
-    setAutoApplying(true)
-    try {
-      const prodIds = cart.map(c => c.maSanPham).filter(Boolean)
-      const result = await getBestOffer(rawTotal, prodIds.length > 0 ? prodIds : undefined, true)
-      if (result.found) {
-        setCoupon(result)
-        setCouponCode(result.maCode)
-        setCouponMsg('')
-      } else if (!coupon) {
-        setCoupon(null)
-        setCouponCode('')
-        setCouponMsg('')
-      }
-    } catch { /* silent */ }
-    finally { setAutoApplying(false) }
-  }, [cart, coupon])
-
-  useEffect(() => {
-    if (cart.length === 0) { setCoupon(null); setCouponCode(''); setCouponMsg(''); return }
-    const timer = setTimeout(() => doAutoApply(total), 500)
-    return () => clearTimeout(timer)
-  }, [total, cart.length])
-
-  const selectCoupon = async (c) => {
-    isManualCoupon.current = true
-    setCouponCode(c.maCode)
-    setCouponModal(false)
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return
     setCoupon(null)
     setCouponMsg('')
-    if (total > 0) {
-      try {
-        setCouponLoading(true)
-        const res = await api.post('/coupons/validate', { maCode: c.maCode, tongTien: total }).then(r => r.data)
-        setCoupon(res)
-      } catch (err) {
-        setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
-      } finally {
-        setCouponLoading(false)
-      }
+    try {
+      setCouponLoading(true)
+      const res = await api.post('/coupons/validate', { maCode: couponCode.trim(), tongTien: total }).then(r => r.data)
+      setCoupon(res)
+    } catch (err) {
+      setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+    } finally {
+      setCouponLoading(false)
     }
   }
 
@@ -587,20 +538,22 @@ export default function AdminPOS() {
             placeholder="SĐT (không bắt buộc)"
             className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <div className="border-t pt-2 space-y-2">
-            <button onClick={handleOpenCouponModal} type="button"
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border transition">
-              <Tag className="h-4 w-4" /> Chọn mã giảm giá
-            </button>
-            {autoApplying && <p className="text-xs text-blue-500 text-center">Đang tìm mã tốt nhất...</p>}
+            <label className="text-xs font-medium text-gray-500">Mã giảm giá</label>
+            <div className="flex gap-2">
+              <input value={couponCode} onChange={e => setCouponCode(e.target.value)}
+                placeholder="Nhập hoặc quét mã..."
+                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}
+                className="px-3 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
+                {couponLoading ? '...' : 'Áp dụng'}
+              </button>
+            </div>
             {couponMsg && <p className="text-xs text-red-500">{couponMsg}</p>}
             {coupon && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
-                    {coupon.isBest && !isManualCoupon.current && <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">Tốt nhất</span>}
-                  </div>
-                  <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg(''); isManualCoupon.current = false }}
+                  <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
+                  <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg('') }}
                     className="text-green-500 hover:text-green-700"><X className="h-3.5 w-3.5" /></button>
                 </div>
                 <p className="text-xs text-green-600">Giảm {VND(coupon.soTienGiam)}</p>
@@ -667,63 +620,6 @@ export default function AdminPOS() {
                 className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
                 {quickSaving ? 'Đang lưu...' : 'Thêm khách hàng'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {couponModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
-          onClick={() => setCouponModal(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 max-h-[70vh] flex flex-col animate-scale-in"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-bold text-lg">Chọn mã giảm giá</h3>
-              <button onClick={() => setCouponModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-4 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input value={couponSearch} onChange={e => setCouponSearch(e.target.value)}
-                  placeholder="Tìm mã giảm giá..."
-                  className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-            </div>
-            <div className="overflow-y-auto p-4 space-y-2">
-              {couponListLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="h-6 w-6 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                (() => {
-                  const filtered = couponSearch.trim()
-                    ? availableCoupons.filter(c => c.maCode.toLowerCase().includes(couponSearch.toLowerCase()))
-                    : availableCoupons
-                  return filtered.length === 0 ? (
-                    <p className="text-center text-gray-400 py-8">Không có mã giảm giá nào khả dụng</p>
-                  ) : (
-                    filtered.map(c => (
-                      <button key={c.maPhieuGiamGia} onClick={() => selectCoupon(c)}
-                        className="w-full text-left border rounded-xl p-3 hover:border-blue-400 hover:bg-blue-50 transition flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                          <Tag className="h-5 w-5 text-red-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm">{c.maCode}</p>
-                          <p className="text-xs text-gray-500">
-                            {c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam}%` : `Giảm ${VND(c.giaTriGiam)}`}
-                            {c.giaTriDonToiThieu ? ` - Đơn tối thiểu ${VND(c.giaTriDonToiThieu)}` : ''}
-                            {c.soLuong != null ? ` - Còn ${c.soLuong} lượt` : ''}
-                          </p>
-                        </div>
-                        <ChevronDown className="h-5 w-5 text-gray-400 -rotate-90 shrink-0" />
-                      </button>
-                    ))
-                  )
-                })()
-              )}
             </div>
           </div>
         </div>

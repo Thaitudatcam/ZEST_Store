@@ -49,8 +49,14 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang) {
+    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang, String q) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
+        if (q != null && !q.trim().isEmpty()) {
+            if (loaiDonHang != null) {
+                return donHangRepository.searchByKeywordAndLoai(q.trim(), loaiDonHang, pageable);
+            }
+            return donHangRepository.searchByKeyword(q.trim(), pageable);
+        }
         if (loaiDonHang != null) {
             return donHangRepository.findByLoaiDonHang(loaiDonHang, pageable);
         }
@@ -144,11 +150,11 @@ public class DonHangService {
             if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
                 throw new BadRequestException("Chưa đạt giá trị đơn tối thiểu để áp dụng mã này");
             }
-
             if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
-                // FREESHIP: giảm trên phí ship, không giảm tiền SP
-                soTienGiam = BigDecimal.ZERO;
-            } else if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
+                throw new BadRequestException("Mã freeship chỉ áp dụng ở mục miễn phí vận chuyển");
+            }
+
+            if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
                 soTienGiam = tongTien.multiply(coupon.getGiaTriGiam())
                         .divide(BigDecimal.valueOf(100));
             } else {
@@ -163,10 +169,26 @@ public class DonHangService {
         }
 
         BigDecimal phiVanChuyen = recalculateShippingFee(request, orderItems);
-        if (coupon != null && Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
-            BigDecimal giamShip = (coupon.getGiaTriGiam() == null || coupon.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0)
+
+        PhieuGiamGia freeshipCoupon = null;
+        if (request.getMaCodeFreeship() != null && !request.getMaCodeFreeship().isEmpty()) {
+            freeshipCoupon = phieuGiamGiaRepository.findByMaCode(request.getMaCodeFreeship())
+                    .orElseThrow(() -> new BadRequestException("Mã freeship không hợp lệ"));
+            if (!Integer.valueOf(3).equals(freeshipCoupon.getKieuGiamGia())) {
+                throw new BadRequestException("Mã này không phải mã freeship");
+            }
+            if (!Integer.valueOf(1).equals(freeshipCoupon.getTrangThai())) {
+                throw new BadRequestException("Mã freeship đã ngừng hoạt động");
+            }
+            if (freeshipCoupon.getNgayBatDau() != null && LocalDateTime.now().isBefore(freeshipCoupon.getNgayBatDau())) {
+                throw new BadRequestException("Mã freeship chưa đến hạn sử dụng");
+            }
+            if (freeshipCoupon.getNgayKetThuc() != null && LocalDateTime.now().isAfter(freeshipCoupon.getNgayKetThuc())) {
+                throw new BadRequestException("Mã freeship đã hết hạn");
+            }
+            BigDecimal giamShip = (freeshipCoupon.getGiaTriGiam() == null || freeshipCoupon.getGiaTriGiam().compareTo(BigDecimal.ZERO) == 0)
                 ? phiVanChuyen
-                : coupon.getGiaTriGiam().min(phiVanChuyen);
+                : freeshipCoupon.getGiaTriGiam().min(phiVanChuyen);
             phiVanChuyen = phiVanChuyen.subtract(giamShip).max(BigDecimal.ZERO);
         }
         BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
@@ -234,6 +256,10 @@ public class DonHangService {
         if (coupon != null) {
             phieuGiamGiaService.useCoupon(coupon.getMaCode(), user.getMaNguoiDung(),
                     order.getMaDonHang(), soTienGiam, "ONLINE");
+        }
+        if (freeshipCoupon != null) {
+            phieuGiamGiaService.useCoupon(freeshipCoupon.getMaCode(), user.getMaNguoiDung(),
+                    order.getMaDonHang(), BigDecimal.ZERO, "ONLINE_FREESHIP");
         }
 
         Map<String, Object> result = new LinkedHashMap<>();

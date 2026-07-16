@@ -71,8 +71,9 @@ public class DonHangController {
     public ResponseEntity<?> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) Integer loaiDonHang) {
-        return ResponseEntity.ok(donHangService.getAllOrders(page, size, loaiDonHang));
+            @RequestParam(required = false) Integer loaiDonHang,
+            @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(donHangService.getAllOrders(page, size, loaiDonHang, q));
     }
 
     @GetMapping("/admin/detail/{id}")
