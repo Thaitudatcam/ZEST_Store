@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ public class AdminCustomerService {
 
     public List<Map<String, Object>> getAllCustomers() {
         return nguoiDungRepository.findAll().stream()
+                .filter(u -> u.getNgayXoa() == null)
                 .filter(u -> u.getVaiTro() != null && "CUSTOMER".equals(u.getVaiTro().getTenVaiTro()))
                 .map(u -> {
                     Map<String, Object> m = new LinkedHashMap<>();
@@ -116,5 +118,21 @@ public class AdminCustomerService {
         u.setTrangThai(u.getTrangThai() == 1 ? 0 : 1);
         nguoiDungRepository.save(u);
         return Map.of("message", "Status updated", "trangThai", u.getTrangThai());
+    }
+
+    @Transactional
+    public Map<String, Object> bulkDeleteCustomers(List<Integer> ids) {
+        int count = 0;
+        for (Integer id : ids) {
+            NguoiDung u = nguoiDungRepository.findById(id).orElse(null);
+            if (u != null && u.getNgayXoa() == null
+                    && u.getVaiTro() != null && "CUSTOMER".equals(u.getVaiTro().getTenVaiTro())) {
+                u.setNgayXoa(LocalDateTime.now());
+                u.setTrangThai(0);
+                nguoiDungRepository.save(u);
+                count++;
+            }
+        }
+        return Map.of("deletedCount", count);
     }
 }

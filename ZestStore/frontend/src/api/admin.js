@@ -34,6 +34,7 @@ export const getCustomerDetail = (id) => api.get(`/admin/customers/${id}`).then(
 export const toggleCustomerStatus = (id) => api.put(`/admin/customers/${id}/status`).then((r) => r.data)
 export const searchCustomers = (q) => api.get('/admin/customers/search', { params: { q } }).then((r) => r.data)
 export const createCustomer = (data) => api.post('/admin/customers', data).then((r) => r.data)
+export const deleteCustomers = (ids) => api.post('/admin/customers/bulk-delete', ids).then((r) => r.data)
 
 export const getEmployees = () => api.get('/admin/employees').then((r) => r.data)
 export const createEmployee = (data) => api.post('/admin/employees', data).then((r) => r.data)

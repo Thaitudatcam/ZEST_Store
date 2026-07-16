@@ -104,18 +104,29 @@ export default function AdminProductForm() {
       let productId = isEdit ? id : null
       if (isEdit) {
         await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug })
-        const unsavedVariants = variants.filter(v => !v.maBienThe)
-        for (const v of unsavedVariants) {
-          const res = await api.post(`/products/${id}/variants`, {
-            maKichCo: Number(v.maKichCo),
-            maMauSac: Number(v.maMauSac),
-            maThuongHieu: Number(product.maThuongHieu),
-            gia: Number(v.gia),
-            tonKho: Number(v.tonKho || 0),
-            urlAnh: v.urlAnh || undefined,
-            sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
-          })
-          v.maBienThe = res.data.maBienThe
+        for (const v of variants) {
+          if (v.maBienThe) {
+            await api.put(`/products/variants/${v.maBienThe}`, {
+              sku: v.sku || `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+              maThuongHieu: Number(product.maThuongHieu),
+              maKichCo: Number(v.maKichCo),
+              maMauSac: Number(v.maMauSac),
+              gia: Number(v.gia),
+              tonKho: Number(v.tonKho || 0),
+              urlAnh: v.urlAnh || undefined,
+            })
+          } else {
+            const res = await api.post(`/products/${id}/variants`, {
+              maKichCo: Number(v.maKichCo),
+              maMauSac: Number(v.maMauSac),
+              maThuongHieu: Number(product.maThuongHieu),
+              gia: Number(v.gia),
+              tonKho: Number(v.tonKho || 0),
+              urlAnh: v.urlAnh || undefined,
+              sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+            })
+            v.maBienThe = res.data.maBienThe
+          }
         }
       } else {
         const variantReqs = variants.map(v => ({
@@ -199,6 +210,8 @@ export default function AdminProductForm() {
       if (v.maBienThe) {
         try {
           await api.put(`/products/variants/${v.maBienThe}`, {
+            sku: v.sku,
+            maThuongHieu: Number(product.maThuongHieu),
             maKichCo: Number(vform.maKichCo),
             maMauSac: Number(vform.maMauSac),
             gia: Number(vform.gia),
@@ -293,6 +306,8 @@ export default function AdminProductForm() {
     try {
       if (v.maBienThe) {
         await api.put(`/products/variants/${v.maBienThe}`, {
+          sku: v.sku,
+          maThuongHieu: Number(product.maThuongHieu),
           maKichCo: Number(v.maKichCo),
           maMauSac: Number(v.maMauSac),
           gia: Number(v.gia),

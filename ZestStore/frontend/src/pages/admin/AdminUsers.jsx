@@ -205,14 +205,27 @@ export default function AdminUsers() {
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
 
-      {selectedIds.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
-          <span className="text-sm text-blue-800 font-medium">Đã chọn {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</span>
-          <button onClick={() => setConfirmBulk('lock')} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-semibold">Khóa</button>
-          <button onClick={() => setConfirmBulk('unlock')} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700 font-semibold ml-2">Mở khóa</button>
-          <button onClick={() => setSelectedIds([])} className="text-xs text-gray-500 hover:text-gray-700 ml-3 font-medium">Bỏ chọn</button>
-        </div>
-      )}
+      {selectedIds.length > 0 && (() => {
+        const currentList = tab === 'customers' ? customers : employees
+        const hasLocked = selectedIds.some(id => {
+          const u = currentList.find(x => x.maNguoiDung === id)
+          return u && u.trangThai !== 1
+        })
+        const bulkAction = hasLocked ? 'unlock' : 'lock'
+        const bulkLabel = bulkAction === 'lock' ? 'Khóa' : 'Mở khóa'
+        return (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
+            <span className="text-sm text-blue-800 font-medium">Đã chọn {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setConfirmBulk(bulkAction)}
+                className={`text-xs text-white px-3 py-1.5 rounded-lg font-semibold ${bulkAction === 'lock' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                {bulkLabel}
+              </button>
+              <button onClick={() => setSelectedIds([])} className="text-xs text-gray-500 hover:text-gray-700 font-medium">Bỏ chọn</button>
+            </div>
+          </div>
+        )
+      })()}
 
       {confirmBulk && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmBulk(null)}>

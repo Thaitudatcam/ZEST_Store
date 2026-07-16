@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -44,5 +45,10 @@ public class AdminCustomerController {
     @PutMapping("/{id}/status")
     public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
         return ResponseEntity.ok(adminCustomerService.toggleStatus(id));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<?> bulkDelete(@RequestBody List<Integer> ids) {
+        return ResponseEntity.ok(adminCustomerService.bulkDeleteCustomers(ids));
     }
 }
