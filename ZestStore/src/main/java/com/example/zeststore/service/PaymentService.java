@@ -39,7 +39,6 @@ public class PaymentService {
             momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
             return base + "?success=true&orderId=" + result.get("orderIdInt");
         }
-        if (result.get("orderId") != null) momoService.handleFailedPayment(result.get("orderId"));
         String redirect = base + "?success=false";
         if (result.get("orderIdInt") != null) redirect += "&orderId=" + result.get("orderIdInt");
         return redirect;
@@ -80,7 +79,6 @@ public class PaymentService {
             vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
             return base + "?success=true&orderId=" + result.get("orderId");
         }
-        if (result.get("txnRef") != null) vnPayService.handleFailedPayment(result.get("txnRef"));
         String redirect = base + "?success=false";
         if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
         return redirect;

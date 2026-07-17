@@ -36,8 +36,8 @@ public class YeuCauTraHangService {
             throw new BadRequestException("Order does not belong to user");
         }
         Integer currentStatus = order.getTrangThaiDon();
-        if (!Integer.valueOf(4).equals(currentStatus) && !Integer.valueOf(6).equals(currentStatus)) {
-            throw new BadRequestException("Chỉ có thể yêu cầu trả hàng cho đơn đang giao hoặc đã giao");
+        if (!Integer.valueOf(6).equals(currentStatus)) {
+            throw new BadRequestException("Chỉ có thể yêu cầu trả hàng cho đơn đã giao");
         }
         if (lyDo == null || lyDo.isBlank()) {
             throw new BadRequestException("Vui lòng nhập lý do trả hàng");

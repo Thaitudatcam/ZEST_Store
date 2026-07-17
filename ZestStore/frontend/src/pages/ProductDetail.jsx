@@ -117,6 +117,8 @@ export default function ProductDetail() {
     try {
       const variantId = selectedVar || (variants[0]?.maBienThe)
       if (!variantId) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
+      await addToCart({ maBienThe: variantId, soLuong: qty })
+      refreshCount()
       const selected = [{
         maBienThe: variantId,
         soLuong: qty,
@@ -558,6 +560,10 @@ export default function ProductDetail() {
             if (buyNowMode) {
               const v = variants.find(x => x.maBienThe === vid) || {}
               const s = { ...v.sanPham } || {}
+              try {
+                await addToCart({ maBienThe: vid, soLuong: sl || qty })
+                refreshCount()
+              } catch {}
               navigate('/checkout', {
                 state: {
                   selectedItems: [{

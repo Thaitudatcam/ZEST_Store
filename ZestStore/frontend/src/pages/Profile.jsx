@@ -36,14 +36,12 @@ export default function Profile() {
   useEffect(() => {
     if (provinceId) {
       getDistricts(provinceId).then(setDistricts).catch(() => setDistricts([]))
-      setDistrictId(0); setWardCode(''); setWards([])
     }
   }, [provinceId])
 
   useEffect(() => {
     if (districtId) {
       getWards(districtId).then(setWards).catch(() => setWards([]))
-      setWardCode('')
     }
   }, [districtId])
 
@@ -82,13 +80,11 @@ export default function Profile() {
     setEditAddr(a.maDiaChi)
     setAddrForm({ tenNguoiNhan: a.tenNguoiNhan, soDienThoai: a.soDienThoai, tinhThanhPho: a.tinhThanhPho || '', quanHuyen: a.quanHuyen || '', phuongXa: a.phuongXa || '', provinceId: a.provinceId, districtId: a.districtId, wardCode: a.wardCode || '', chiTietDiaChi: a.chiTietDiaChi, laMacDinh: a.laMacDinh })
     if (a.provinceId) {
-      try { const d = await getDistricts(a.provinceId); setDistricts(d || []) } catch {}
       setProvinceId(a.provinceId)
       if (a.districtId) {
         setDistrictId(a.districtId)
-        try { const w = await getWards(a.districtId); setWards(w || []) } catch {}
         if (a.wardCode) setWardCode(a.wardCode)
-      } else { setDistrictId(0); setWardCode('') }
+      }
     } else { setProvinceId(0); setDistrictId(0); setWardCode('') }
     setTab('addresses')
   }

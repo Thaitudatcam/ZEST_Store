@@ -50,7 +50,10 @@ export default function Orders() {
   const [hoverStar, setHoverStar] = useState({});
   const load = () =>
     getOrders()
-      .then(setOrders)
+      .then(list => {
+        if (import.meta.env.DEV && list.length > 0) console.log('[Orders] first order:', list[0].trangThaiDon, typeof list[0].trangThaiDon, 'keys:', Object.keys(list[0]).filter(k => k.includes('trangThai') || k.includes('status')))
+        setOrders(list)
+      })
       .finally(() => setLoading(false));
   useEffect(() => {
     load();

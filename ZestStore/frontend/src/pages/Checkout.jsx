@@ -239,9 +239,10 @@ export default function Checkout() {
       const matchedDist = matchDistrict(districtName, distData)
       if (matchedDist) {
         setSelectedDistrictId(matchedDist)
-        try { const w = await getWards(matchedDist); setWards(w || []) } catch {}
-        if (wardName && w?.length > 0) {
-          const matchedWard = matchWard(wardName, w)
+        let wardData = []
+        try { wardData = await getWards(matchedDist); setWards(wardData || []) } catch {}
+        if (wardName && wardData?.length > 0) {
+          const matchedWard = matchWard(wardName, wardData)
           if (matchedWard) setSelectedWardCode(matchedWard.WardCode)
         }
         cascadingRef.current = false

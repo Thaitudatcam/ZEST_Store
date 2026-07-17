@@ -24,19 +24,19 @@ public class DiaChiNguoiDung {
     @JoinColumn(name = "ma_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
-    @Column(name = "ten_nguoi_nhan", nullable = false, length = 100)
+    @Column(name = "ten_nguoi_nhan", nullable = false, columnDefinition = "NVARCHAR(100)")
     private String tenNguoiNhan;
 
-    @Column(name = "so_dien_thoai", nullable = false, length = 15)
+    @Column(name = "so_dien_thoai", nullable = false, columnDefinition = "NVARCHAR(15)")
     private String soDienThoai;
 
-    @Column(name = "tinh_thanh_pho", length = 100)
+    @Column(name = "tinh_thanh_pho", columnDefinition = "NVARCHAR(100)")
     private String tinhThanhPho;
 
-    @Column(name = "quan_huyen", length = 100)
+    @Column(name = "quan_huyen", columnDefinition = "NVARCHAR(100)")
     private String quanHuyen;
 
-    @Column(name = "phuong_xa", length = 100)
+    @Column(name = "phuong_xa", columnDefinition = "NVARCHAR(100)")
     private String phuongXa;
 
     @Column(name = "province_id")
@@ -48,7 +48,7 @@ public class DiaChiNguoiDung {
     @Column(name = "ward_code", length = 20)
     private String wardCode;
 
-    @Column(name = "chi_tiet_dia_chi", nullable = false, length = 500)
+    @Column(name = "chi_tiet_dia_chi", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String chiTietDiaChi;
 
     @Column(name = "la_mac_dinh", nullable = false)
