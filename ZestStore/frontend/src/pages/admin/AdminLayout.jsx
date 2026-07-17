@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw, Gift } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '../../api/axios'
 import AiChat from '../../components/AiChat'
 
 export default function AdminLayout() {
@@ -10,6 +11,15 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navOpen, setNavOpen] = useState({ 'Bán hàng': true })
+  const [pendingReturns, setPendingReturns] = useState(0)
+
+  useEffect(() => {
+    if (!user || user.vaiTro === 'STAFF') return
+    const fetch = () => api.get('/admin/return-requests/count').then(r => setPendingReturns(r.data.count)).catch(() => {})
+    fetch()
+    const interval = setInterval(fetch, 30000)
+    return () => clearInterval(interval)
+  }, [user])
 
   const role = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro : user?.vaiTro
   const isStaff = role === 'STAFF'
@@ -31,7 +41,7 @@ export default function AdminLayout() {
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
     { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
-    { to: '/admin/returns', label: 'Trả hàng', icon: RefreshCw },
+    { to: '/admin/returns', label: 'Trả hàng', icon: RefreshCw, badge: pendingReturns },
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
       { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },
@@ -126,6 +136,7 @@ export default function AdminLayout() {
                   <item.icon className="h-4 w-4" />
                 </div>
                 <span className="truncate">{item.label}</span>
+                {item.badge > 0 && <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge > 99 ? '99+' : item.badge}</span>}
               </Link>
             )
           })}

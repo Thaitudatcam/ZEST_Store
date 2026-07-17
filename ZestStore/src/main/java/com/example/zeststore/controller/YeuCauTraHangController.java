@@ -17,16 +17,6 @@ public class YeuCauTraHangController {
     private final YeuCauTraHangService yeuCauTraHangService;
     private final UserService userService;
 
-    @PostMapping("/api/orders/{orderId}/return-request")
-    public ResponseEntity<?> createReturnRequest(Authentication auth, @PathVariable Integer orderId,
-                                                  @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(yeuCauTraHangService.createReturnRequest(
-                orderId,
-                userService.getUserIdFromAuth(auth),
-                body.get("lyDo"),
-                body.get("hinhAnh")));
-    }
-
     @GetMapping("/api/return-requests")
     public ResponseEntity<?> getMyRequests(Authentication auth) {
         return ResponseEntity.ok(yeuCauTraHangService.getUserRequests(
@@ -41,6 +31,12 @@ public class YeuCauTraHangController {
             return ResponseEntity.ok(yeuCauTraHangService.getRequestsByStatus(trangThai));
         }
         return ResponseEntity.ok(yeuCauTraHangService.getAllRequests());
+    }
+
+    @GetMapping("/api/admin/return-requests/count")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<?> countPending() {
+        return ResponseEntity.ok(Map.of("count", yeuCauTraHangService.countByTrangThai(1)));
     }
 
     @GetMapping("/api/admin/return-requests/{id}")

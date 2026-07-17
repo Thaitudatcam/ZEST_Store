@@ -133,8 +133,9 @@ public class ThanhToanService {
     @Transactional
     public ThanhToan retryPayment(Integer paymentId, Integer userId) {
         ThanhToan payment = getPaymentById(paymentId);
-        if (!Integer.valueOf(3).equals(payment.getTrangThaiThanhToan())) {
-            throw new BadRequestException("Can only retry failed payments");
+        if (!Integer.valueOf(1).equals(payment.getTrangThaiThanhToan())
+                && !Integer.valueOf(3).equals(payment.getTrangThaiThanhToan())) {
+            throw new BadRequestException("Can only retry pending or failed payments");
         }
         if (!payment.getDonHang().getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Payment does not belong to current user");

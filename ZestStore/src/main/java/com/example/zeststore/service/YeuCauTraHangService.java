@@ -149,13 +149,20 @@ public class YeuCauTraHangService {
 
         DonHang order = yeuCau.getDonHang();
         Integer oldStatus = order.getTrangThaiDon();
+        Integer revertStatus = lichSuDonHangRepository
+                .findByDonHang_MaDonHangOrderByThoiGianDesc(order.getMaDonHang())
+                .stream()
+                .filter(h -> Integer.valueOf(7).equals(h.getTrangThaiMoi()))
+                .findFirst()
+                .map(LichSuDonHang::getTrangThaiCu)
+                .orElse(6);
 
         yeuCau.setTrangThai(3);
         yeuCau.setLyDoTuChoi(lyDoTuChoi);
         yeuCau.setNgayCapNhat(LocalDateTime.now());
         yeuCauTraHangRepository.save(yeuCau);
 
-        order.setTrangThaiDon(6);
+        order.setTrangThaiDon(revertStatus);
         donHangRepository.save(order);
 
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
@@ -163,12 +170,12 @@ public class YeuCauTraHangService {
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(oldStatus)
-                .trangThaiMoi(6)
+                .trangThaiMoi(revertStatus)
                 .nguoiCapNhat(admin)
                 .ghiChu("Từ chối trả hàng: " + (lyDoTuChoi != null ? lyDoTuChoi : "Không hợp lệ"))
                 .build());
 
-        orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 6, oldStatus, "admin", "return_rejected");
+        orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), revertStatus, oldStatus, "admin", "return_rejected");
 
         return Map.of("message", "Đã từ chối yêu cầu trả hàng");
     }
@@ -184,6 +191,10 @@ public class YeuCauTraHangService {
     public YeuCauTraHang getRequestById(Integer requestId) {
         return yeuCauTraHangRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Return request", requestId));
+    }
+
+    public long countByTrangThai(Integer trangThai) {
+        return yeuCauTraHangRepository.countByTrangThai(trangThai);
     }
 
     public List<YeuCauTraHang> getUserRequests(Integer userId) {

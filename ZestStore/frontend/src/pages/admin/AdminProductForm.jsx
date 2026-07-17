@@ -96,6 +96,7 @@ export default function AdminProductForm() {
     if (!product.tenSanPham.trim()) { toast.error('Vui lòng nhập tên sản phẩm'); return }
     if (!product.maDanhMuc) { toast.error('Vui lòng chọn danh mục'); return }
     if (!product.maThuongHieu) { toast.error('Vui lòng chọn thương hiệu'); return }
+    if (variants.length === 0) { toast.error('Vui lòng tạo ít nhất một biến thể'); return }
     const zeroPriceVariant = variants.find(v => !v.gia || Number(v.gia) <= 0)
     if (zeroPriceVariant) { toast.error('Giá biến thể phải lớn hơn 0'); return }
     setSaving(true)

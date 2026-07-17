@@ -7,6 +7,7 @@ import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createViet
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus } from 'lucide-react'
 import api from '../api/axios'
@@ -84,6 +85,7 @@ export default function Checkout() {
   const location = useLocation()
   const selectedItems = location.state?.selectedItems
 
+  const toast = useToast()
   const [cart, setCart] = useState(selectedItems || [])
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(!selectedItems)
@@ -388,6 +390,8 @@ export default function Checkout() {
   const goToStep = (s) => {
     if (s === 'payment' || s === 'review') {
       if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) return
+      if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn Tỉnh/Thành phố, Quận/Huyện và Phường/Xã'); return }
+      if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
     }
     setStep(s)
   }
@@ -395,6 +399,8 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { return }
     if (cart.length === 0) { return }
+    if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn đầy đủ địa chỉ giao hàng'); return }
+    if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
     setPlacing(true)
     try {
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)

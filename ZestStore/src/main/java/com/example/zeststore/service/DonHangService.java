@@ -281,7 +281,15 @@ public class DonHangService {
         }
         DonHang order = getOrderById(orderId);
         Integer oldStatus = order.getTrangThaiDon();
-        order.setTrangThaiDon(status);
+
+        if (Integer.valueOf(2).equals(status) || Integer.valueOf(6).equals(status)
+                || Integer.valueOf(3).equals(status) || Integer.valueOf(4).equals(status)) {
+            boolean hasUnpaidOnline = thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                    .anyMatch(t -> t.getPhuongThuc() > 1 && !Integer.valueOf(2).equals(t.getTrangThaiThanhToan()));
+            if (hasUnpaidOnline) {
+                throw new BadRequestException("Đơn hàng có thanh toán online chưa được thanh toán");
+            }
+        }
 
         if (Integer.valueOf(2).equals(status)) {
             boolean isCOD = thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
@@ -291,8 +299,26 @@ public class DonHangService {
             }
         }
 
-        if (Integer.valueOf(8).equals(status) || Integer.valueOf(9).equals(status)) {
-            boolean wasStockDeducted = wasStockDeductedForOrder(order);
+        if (Integer.valueOf(8).equals(status)) {
+            boolean wasStockDeducted = oldStatus >= 2;
+            if (wasStockDeducted) {
+                restoreStock(orderId);
+            }
+            if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {
+                PhieuGiamGia coupon = order.getPhieuGiamGia();
+                coupon.setSoLuong(coupon.getSoLuong() + 1);
+                phieuGiamGiaRepository.save(coupon);
+            }
+            thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                    .filter(t -> Integer.valueOf(2).equals(t.getTrangThaiThanhToan()))
+                    .forEach(t -> {
+                        t.setTrangThaiThanhToan(3);
+                        thanhToanRepository.save(t);
+                    });
+        }
+
+        if (Integer.valueOf(9).equals(status)) {
+            boolean wasStockDeducted = oldStatus >= 2;
             if (wasStockDeducted) {
                 restoreStock(orderId);
             }
@@ -316,6 +342,7 @@ public class DonHangService {
                     });
         }
 
+        order.setTrangThaiDon(status);
         order = donHangRepository.save(order);
 
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
@@ -340,6 +367,12 @@ public class DonHangService {
         }
         if (!Integer.valueOf(4).equals(order.getTrangThaiDon())) {
             throw new BadRequestException("Can only confirm received orders that are delivered");
+        }
+
+        boolean hasUnpaidOnline = thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
+                .anyMatch(t -> t.getPhuongThuc() > 1 && !Integer.valueOf(2).equals(t.getTrangThaiThanhToan()));
+        if (hasUnpaidOnline) {
+            throw new BadRequestException("Đơn hàng có thanh toán online chưa được thanh toán");
         }
 
         Integer oldStatus = order.getTrangThaiDon();

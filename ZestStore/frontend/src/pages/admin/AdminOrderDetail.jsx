@@ -122,10 +122,15 @@ export default function AdminOrderDetail() {
   const { order, items, payments, history } = data
   const backTo = order?.loaiDonHang === 2 ? '/admin/orders/pos' : '/admin/orders/online'
 
-  const ONLINE_NEXT_STATUS = { 1: [2, 5], 2: [3, 5], 3: [4], 4: [6, 9], 7: [4, 8] }
+  const ONLINE_NEXT_STATUS = { 1: [2, 5], 2: [3, 5], 3: [4], 4: [6, 9] }
   const POS_NEXT_STATUS = { 1: [6, 5] }
   const NEXT_STATUS = order.loaiDonHang === 2 ? POS_NEXT_STATUS : ONLINE_NEXT_STATUS
-  const nextStatuses = NEXT_STATUS[order.trangThaiDon] || []
+  const baseNextStatuses = NEXT_STATUS[order.trangThaiDon] || []
+  const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
+  const nextStatuses = baseNextStatuses.filter(s => {
+    if (hasUnpaidOnline && (s === 2 || s === 3 || s === 4 || s === 6)) return false
+    return true
+  })
 
   const handleUpdateStatus = async (trangThai) => {
     setUpdating(trangThai)

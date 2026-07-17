@@ -265,11 +265,12 @@ public class SanPhamService {
 
     @Transactional
     public SanPham createProductWithVariants(SanPhamRequest productReq, List<BienTheRequest> variantReqs) {
+        if (variantReqs == null || variantReqs.isEmpty()) {
+            throw new BadRequestException("Sản phẩm phải có ít nhất một biến thể");
+        }
         SanPham product = createProduct(productReq);
-        if (variantReqs != null) {
-            for (BienTheRequest req : variantReqs) {
-                createVariant(product.getMaSanPham(), req);
-            }
+        for (BienTheRequest req : variantReqs) {
+            createVariant(product.getMaSanPham(), req);
         }
         return sanPhamRepository.findById(product.getMaSanPham()).get();
     }

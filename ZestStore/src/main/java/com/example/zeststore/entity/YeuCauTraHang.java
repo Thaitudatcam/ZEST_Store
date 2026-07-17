@@ -29,11 +29,11 @@ public class YeuCauTraHang {
     private NguoiDung nguoiDung;
 
     @NotBlank @Size(max = 500)
-    @Column(name = "ly_do", nullable = false, length = 500)
+    @Column(name = "ly_do", nullable = false, columnDefinition = "NVARCHAR(500)")
     private String lyDo;
 
-    @Size(max = 1000)
-    @Column(name = "hinh_anh", length = 1000)
+    @Lob
+    @Column(name = "hinh_anh", columnDefinition = "NVARCHAR(MAX)")
     private String hinhAnh;
 
     @Column(name = "trang_thai", nullable = false, columnDefinition = "TINYINT")
@@ -51,7 +51,7 @@ public class YeuCauTraHang {
     private LocalDateTime ngayCapNhat;
 
     @Size(max = 500)
-    @Column(name = "ly_do_tu_choi", length = 500)
+    @Column(name = "ly_do_tu_choi", columnDefinition = "NVARCHAR(500)")
     private String lyDoTuChoi;
 
     @PrePersist

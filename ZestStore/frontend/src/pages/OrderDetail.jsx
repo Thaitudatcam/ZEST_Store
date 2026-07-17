@@ -207,10 +207,8 @@ export default function OrderDetail() {
     if (paying) return
     setPaying(true)
     try {
+      await retryPayment(payment.maThanhToan)
       const method = payment.phuongThuc
-      if (payment.trangThaiThanhToan === 3) {
-        await retryPayment(payment.maThanhToan)
-      }
       const orderIdNum = Number(id)
       let paymentRes
       if (method === 2) paymentRes = await createVnPayPayment(orderIdNum)
@@ -255,7 +253,8 @@ export default function OrderDetail() {
   const history = data.history || []
 
   const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 4
-  const canConfirmReceived = order.trangThaiDon === 4
+  const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
+  const canConfirmReceived = order.trangThaiDon === 4 && !hasUnpaidOnline
   const hasRequestedReturn = history?.some(h => h.trangThaiMoi === 7)
   const canRequestReturn = (order.trangThaiDon === 4 || order.trangThaiDon === 6) && !hasRequestedReturn
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)

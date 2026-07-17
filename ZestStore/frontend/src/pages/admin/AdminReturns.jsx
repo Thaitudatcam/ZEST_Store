@@ -29,6 +29,12 @@ export default function AdminReturns() {
   }
   useEffect(() => { load() }, [filter])
 
+  useEffect(() => {
+    if (filter !== 1) return
+    const interval = setInterval(load, 15000)
+    return () => clearInterval(interval)
+  }, [filter])
+
   const handleApprove = async (id) => {
     setActionLoading(id)
     try {

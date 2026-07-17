@@ -14,4 +14,5 @@ public interface YeuCauTraHangRepository extends JpaRepository<YeuCauTraHang, In
     List<YeuCauTraHang> findAllByOrderByNgayTaoDesc();
     List<YeuCauTraHang> findByTrangThaiOrderByNgayTaoDesc(Integer trangThai);
     Optional<YeuCauTraHang> findByDonHang_MaDonHangAndTrangThai(Integer maDonHang, Integer trangThai);
+    long countByTrangThai(Integer trangThai);
 }
