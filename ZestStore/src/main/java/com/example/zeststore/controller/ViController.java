@@ -1,5 +1,6 @@
 package com.example.zeststore.controller;
 
+import com.example.zeststore.service.NapTienService;
 import com.example.zeststore.service.ViService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class ViController {
 
     private final ViService viService;
+    private final NapTienService napTienService;
 
     @GetMapping("/so-du")
     public ResponseEntity<?> getSoDu(Authentication auth) {
@@ -48,7 +50,7 @@ public class ViController {
         Integer phuongThuc = Integer.valueOf(body.get("phuongThuc").toString());
         Integer userId = Integer.valueOf(auth.getName());
         String ipAddress = request.getRemoteAddr();
-        Map<String, Object> result = viService.createNapTien(soTien, phuongThuc, userId, ipAddress);
+        Map<String, Object> result = napTienService.createNapTien(soTien, phuongThuc, userId, ipAddress);
         return ResponseEntity.ok(result);
     }
 }
