@@ -3,6 +3,7 @@ package com.example.zeststore.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -75,6 +76,10 @@ public class NguoiDung {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
+    @Column(name = "so_du", nullable = false, precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal soDu = BigDecimal.ZERO;
+
     @OneToMany(mappedBy = "nguoiDung", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore
@@ -124,6 +129,7 @@ public class NguoiDung {
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
         if (this.trangThai == null) this.trangThai = 1;
+        if (this.soDu == null) this.soDu = BigDecimal.ZERO;
     }
 
     @PreUpdate

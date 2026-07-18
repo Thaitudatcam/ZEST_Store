@@ -16,6 +16,7 @@ import Wishlist from './pages/Wishlist'
 import UserVouchers from './pages/UserVouchers'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
+import ViZeststore from './pages/ViZeststore'
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -91,6 +92,7 @@ export default function App() {
               <Route path="/vouchers" element={<ProtectedRoute><UserVouchers /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><ErrorBoundary><OrderDetail /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/vi-zeststore" element={<ProtectedRoute><ViZeststore /></ProtectedRoute>} />
               <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
           </main>

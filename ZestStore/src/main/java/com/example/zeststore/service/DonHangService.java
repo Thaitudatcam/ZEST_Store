@@ -36,6 +36,7 @@ public class DonHangService {
     private final GhnService ghnService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
+    private final ViService viService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -243,18 +244,27 @@ public class DonHangService {
             case 2 -> "VNPay";
             case 3 -> "MoMo";
             case 4 -> "ZaloPay";
+            case 7 -> "Ví ZestStore";
             default -> "Tiền mặt";
         };
+        boolean isWalletPayment = Integer.valueOf(7).equals(request.getPhuongThucThanhToan());
+
+        if (isWalletPayment) {
+            viService.truTien(user.getMaNguoiDung(), finalTotal,
+                    "Thanh toán đơn hàng #" + order.getMaDonHang(), order.getMaDonHang());
+        }
+
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
                 .phuongThuc(request.getPhuongThucThanhToan())
                 .nhaCungCap(nhaCungCap)
-                .trangThaiThanhToan(1)
+                .trangThaiThanhToan(isWalletPayment ? 2 : 1)
                 .soTien(finalTotal)
                 .maGiaoDich(paymentRef)
+                .thoiGianTt(isWalletPayment ? LocalDateTime.now() : null)
                 .build());
 
-        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan()) || isWalletPayment) {
             hoaDonService.generateInvoice(order.getMaDonHang());
         }
 
@@ -265,7 +275,7 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan()) || isWalletPayment) {
             mucGioHangRepository.deleteAll(cartItems);
         }
 
@@ -528,6 +538,21 @@ public class DonHangService {
 
         if (order.getPhieuGiamGia() != null) {
             phieuGiamGiaService.restoreCoupon(order.getPhieuGiamGia());
+        }
+
+        BigDecimal refundAmount = BigDecimal.ZERO;
+        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
+        for (ThanhToan payment : payments) {
+            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())
+                    && !Integer.valueOf(1).equals(payment.getPhuongThuc())) {
+                refundAmount = refundAmount.add(payment.getSoTien());
+                payment.setTrangThaiThanhToan(3);
+                thanhToanRepository.save(payment);
+            }
+        }
+        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+            viService.napTien(userId, refundAmount,
+                    "Hoàn tiền hủy đơn #" + order.getMaDonHang(), orderId);
         }
 
         Integer oldStatus = order.getTrangThaiDon();

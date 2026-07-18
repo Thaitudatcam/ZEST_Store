@@ -27,6 +27,7 @@ public class YeuCauTraHangService {
     private final MucDonHangRepository mucDonHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
     private final OrderSseService orderSseService;
+    private final ViService viService;
 
     @Transactional
     public Map<String, Object> createReturnRequest(Integer orderId, Integer userId, String lyDo, String hinhAnh) {
@@ -104,6 +105,12 @@ public class YeuCauTraHangService {
                 thanhToanRepository.save(payment);
             }
         }
+
+        if (refundAmount.compareTo(BigDecimal.ZERO) > 0 && order.getNguoiDung() != null) {
+            viService.napTien(order.getNguoiDung().getMaNguoiDung(), refundAmount,
+                    "Hoàn tiền trả hàng - Đơn #" + order.getMaDonHang(), order.getMaDonHang());
+        }
+
         yeuCau.setSoTienHoan(refundAmount);
 
         boolean wasStockDeducted = wasStockDeductedForOrder(order);

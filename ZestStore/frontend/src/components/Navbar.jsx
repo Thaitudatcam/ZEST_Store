@@ -157,6 +157,7 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border py-2 z-50">
                       <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Tài khoản</Link>
                       <Link to="/orders" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đơn hàng</Link>
+                      <Link to="/vi-zeststore" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Ví ZestStore</Link>
                       <Link to="/profile?tab=password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đổi mật khẩu</Link>
                       <hr className="my-1" />
                       {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
@@ -224,6 +225,7 @@ export default function Navbar() {
               <Link to="/vouchers" onClick={() => setOpen(false)} className="block text-gray-600">Voucher</Link>
               <Link to="/cart" onClick={() => setOpen(false)} className="block text-gray-600">Giỏ hàng</Link>
               <Link to="/orders" onClick={() => setOpen(false)} className="block text-gray-600">Đơn hàng</Link>
+              <Link to="/vi-zeststore" onClick={() => setOpen(false)} className="block text-gray-600">Ví ZestStore</Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block text-gray-600">Tài khoản</Link>
               <Link to="/profile?tab=password" onClick={() => setOpen(false)} className="block text-gray-600">Đổi mật khẩu</Link>
               {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (

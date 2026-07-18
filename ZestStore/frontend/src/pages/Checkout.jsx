@@ -3,13 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
+import { getSoDu } from '../api/vi'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 
@@ -25,6 +26,7 @@ const PAYMENT_CARDS = [
   { value: 3, label: 'MoMo', desc: 'Thanh toán qua MoMo (ATM / Visa / Master)', icon: Smartphone, badge: null },
   { value: 4, label: 'ZaloPay', desc: 'Ví điện tử ZaloPay', icon: Smartphone, badge: null },
   { value: 6, label: 'VietQR', desc: 'Quét mã QR ngân hàng', icon: QrCode, badge: null },
+  { value: 7, label: 'Ví ZestStore', desc: 'Thanh toán bằng số dư ví', icon: Wallet, badge: null },
 ]
 
 const flexibleMatch = (name, list, nameKey, extensionKey) => {
@@ -90,6 +92,7 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(!selectedItems)
   const [placing, setPlacing] = useState(false)
+  const [soDuVi, setSoDuVi] = useState(0)
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
@@ -139,6 +142,7 @@ export default function Checkout() {
   const [addrLoading, setAddrLoading] = useState(false)
 
   useEffect(() => {
+    getSoDu().then(d => setSoDuVi(d.soDu || 0)).catch(() => {})
     Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProvinces()])
       .then(([cartData, addrData, provData]) => {
         if (!selectedItems) setCart(cartData)
@@ -425,7 +429,7 @@ export default function Checkout() {
       const result = await placeOrder(orderPayload)
 
       const method = form.phuongThucThanhToan
-      if (method === 1) {
+      if (method === 1 || method === 7) {
         navigate(`/orders/${result.maDonHang}`)
       } else if (method === 2) {
         const paymentRes = await createVnPayPayment(result.maDonHang)
@@ -564,7 +568,7 @@ export default function Checkout() {
                             <p className="font-medium text-sm">{pm.label}</p>
                             {pm.badge && <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{pm.badge}</span>}
                           </div>
-                          <p className="text-xs text-gray-400">{pm.desc}</p>
+                          <p className="text-xs text-gray-400">{pm.value === 7 ? `Số dư: ${VND(soDuVi)}` : pm.desc}</p>
                         </div>
                         <Icon className={`h-6 w-6 shrink-0 ${form.phuongThucThanhToan === pm.value ? 'text-blue-700' : 'text-gray-300'}`} />
                       </div>
@@ -591,6 +595,9 @@ export default function Checkout() {
               <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-700" /> Phương thức thanh toán</h2>
               <div className="text-sm p-3 bg-gray-50 rounded-lg mb-4">
                 <p>{PAYMENT_CARDS.find(p => p.value === form.phuongThucThanhToan)?.label}</p>
+                {form.phuongThucThanhToan === 7 && soDuVi < finalTotal && (
+                  <p className="text-xs text-red-500 mt-1">⚠ Số dư ví không đủ ({VND(soDuVi)}) để thanh toán ({VND(finalTotal)})</p>
+                )}
               </div>
 
               <div className="border-t pt-4 mb-4 space-y-4">
