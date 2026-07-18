@@ -18,6 +18,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -28,6 +30,7 @@ public class DonHangController {
     private final UserService userService;
     private final OrderSseService orderSseService;
     private final YeuCauTraHangService yeuCauTraHangService;
+    private static final Logger log = LoggerFactory.getLogger(DonHangController.class);
 
     @GetMapping
     public ResponseEntity<?> getMyOrders(Authentication auth) {
@@ -64,8 +67,10 @@ public class DonHangController {
     @PostMapping("/{id}/return-request")
     public ResponseEntity<?> requestReturn(Authentication auth, @PathVariable Integer id,
                                             @RequestBody Map<String, String> body) {
+        String lyDo = body.get("lyDo");
+        log.info("lyDo nhan duoc: [{}]", lyDo);
         return ResponseEntity.ok(yeuCauTraHangService.createReturnRequest(
-                id, userService.getUserIdFromAuth(auth), body.get("lyDo"), body.get("hinhAnh")));
+                id, userService.getUserIdFromAuth(auth), lyDo, body.get("hinhAnh")));
     }
 
     @GetMapping("/admin/all")
