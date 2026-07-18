@@ -68,7 +68,6 @@ public class DonHangController {
     public ResponseEntity<?> requestReturn(Authentication auth, @PathVariable Integer id,
                                             @RequestBody Map<String, String> body) {
         String lyDo = body.get("lyDo");
-        log.info("lyDo nhan duoc: [{}]", lyDo);
         return ResponseEntity.ok(yeuCauTraHangService.createReturnRequest(
                 id, userService.getUserIdFromAuth(auth), lyDo, body.get("hinhAnh")));
     }
