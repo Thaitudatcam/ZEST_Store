@@ -21,9 +21,12 @@ public class ThanhToan {
     private Integer maThanhToan;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ma_don_hang", nullable = false)
+    @JoinColumn(name = "ma_don_hang")
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"thanhToans", "mucDonHangs", "danhGias", "hoaDon", "lichSuDonHangs"})
     private DonHang donHang;
+
+    @Column(name = "ma_nguoi_dung")
+    private Integer maNguoiDung;
 
     @Column(name = "phuong_thuc", nullable = false, columnDefinition = "TINYINT")
     private Integer phuongThuc;

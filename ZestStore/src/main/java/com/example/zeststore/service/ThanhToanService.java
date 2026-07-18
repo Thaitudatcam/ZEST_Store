@@ -37,29 +37,44 @@ public class ThanhToanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
     }
 
+    private final ViService viService;
+
     @Transactional
     public ThanhToan completePayment(Integer paymentId, String maGiaoDich) {
-        ThanhToan payment = getPaymentById(paymentId);
+        ThanhToan payment = thanhToanRepository.findByIdForUpdate(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
+
+        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) {
+            return payment;
+        }
+
         payment.setMaGiaoDich(maGiaoDich);
         payment.setTrangThaiThanhToan(2);
         payment.setThoiGianTt(java.time.LocalDateTime.now());
 
-        DonHang order = payment.getDonHang();
-        if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
-            order.setTrangThaiDon(2);
-            donHangRepository.save(order);
-            orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
+        if (payment.getDonHang() == null) {
+            thanhToanRepository.save(payment);
+            String gateway = payment.getNhaCungCap() != null ? payment.getNhaCungCap() : "Ví ZestStore";
+            viService.napTien(payment.getMaNguoiDung(), payment.getSoTien(),
+                    "Nạp tiền qua " + gateway, payment.getMaThanhToan());
+        } else {
+            DonHang order = payment.getDonHang();
+            if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+                order.setTrangThaiDon(2);
+                donHangRepository.save(order);
+                orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
 
-            boolean isCOD = Integer.valueOf(1).equals(payment.getPhuongThuc());
-            if (!isCOD) {
-                deductStock(order.getMaDonHang());
+                boolean isCOD = Integer.valueOf(1).equals(payment.getPhuongThuc());
+                if (!isCOD) {
+                    deductStock(order.getMaDonHang());
+                }
             }
+
+            thanhToanRepository.save(payment);
+
+            clearCartForOrder(order);
+            hoaDonService.generateInvoice(order.getMaDonHang());
         }
-
-        thanhToanRepository.save(payment);
-
-        clearCartForOrder(order);
-        hoaDonService.generateInvoice(order.getMaDonHang());
 
         return payment;
     }

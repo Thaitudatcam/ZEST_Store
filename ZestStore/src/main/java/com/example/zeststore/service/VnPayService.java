@@ -32,7 +32,16 @@ public class VnPayService {
         ThanhToan payment = thanhToanRepository
                 .findByDonHang_MaDonHangAndTrangThaiThanhToan(orderId, 1)
                 .orElseThrow(() -> new ResourceNotFoundException("Pending payment for order", orderId));
+        return buildPaymentUrl(payment, "Thanh toan don hang #" + orderId, ipAddress);
+    }
 
+    public String createPaymentUrl(String maGiaoDich, String ipAddress) {
+        ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
+        return buildPaymentUrl(payment, "Nạp tiền Ví ZestStore", ipAddress);
+    }
+
+    private String buildPaymentUrl(ThanhToan payment, String orderInfo, String ipAddress) {
         PaymentConfig.VnpayConfig config = paymentConfig.getVnpay();
         BigDecimal amount = payment.getSoTien().multiply(BigDecimal.valueOf(100));
 
@@ -45,7 +54,7 @@ public class VnPayService {
         params.put("vnp_CurrCode", "VND");
         params.put("vnp_IpAddr", ipAddress);
         params.put("vnp_Locale", "vn");
-        params.put("vnp_OrderInfo", "Thanh toan don hang #" + orderId);
+        params.put("vnp_OrderInfo", orderInfo);
         params.put("vnp_OrderType", "other");
         params.put("vnp_ReturnUrl", config.getReturnUrl());
         params.put("vnp_TxnRef", payment.getMaGiaoDich());

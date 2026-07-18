@@ -1,7 +1,9 @@
 package com.example.zeststore.repository;
 
 import com.example.zeststore.entity.NguoiDung;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +20,10 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
     boolean existsByEmail(String email);
 
     boolean existsBySoDienThoai(String soDienThoai);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM NguoiDung u WHERE u.maNguoiDung = :id")
+    Optional<NguoiDung> findByIdForUpdate(@Param("id") Integer id);
 
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro.tenVaiTro = 'CUSTOMER' AND u.trangThai = 1 AND (LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :q, '%')) OR u.soDienThoai LIKE CONCAT('%', :q, '%') OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%')))")
     List<NguoiDung> searchCustomers(@Param("q") String query);

@@ -29,10 +29,19 @@ public class MomoService {
         ThanhToan payment = thanhToanRepository
                 .findByDonHang_MaDonHangAndTrangThaiThanhToan(orderId, 1)
                 .orElseThrow(() -> new ResourceNotFoundException("Pending payment for order", orderId));
+        return buildPaymentUrl(payment, "Thanh toan don hang #" + orderId);
+    }
 
+    public String createPaymentUrl(String maGiaoDich) {
+        ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
+        return buildPaymentUrl(payment, "Nạp tiền Ví ZestStore");
+    }
+
+    @SuppressWarnings("unchecked")
+    private String buildPaymentUrl(ThanhToan payment, String orderInfo) {
         PaymentConfig.MomoConfig config = paymentConfig.getMomo();
         String requestId = payment.getMaGiaoDich();
-        String orderInfo = "Thanh toan don hang #" + orderId;
         String extraData = "";
 
         String requestType = "payWithATM";

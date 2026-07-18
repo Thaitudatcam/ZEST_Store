@@ -35,7 +35,17 @@ public class ZaloPayService {
         ThanhToan payment = thanhToanRepository
                 .findByDonHang_MaDonHangAndTrangThaiThanhToan(orderId, 1)
                 .orElseThrow(() -> new ResourceNotFoundException("Pending payment for order", orderId));
+        return buildZaloOrder(payment, "user_" + orderId, orderId, "Thanh toan don hang #" + orderId);
+    }
 
+    public Map<String, String> createOrderByMaGiaoDich(String maGiaoDich) {
+        ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
+        return buildZaloOrder(payment, "user_" + payment.getMaNguoiDung(), 0, "Nạp tiền Ví ZestStore");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> buildZaloOrder(ThanhToan payment, String appUser, Integer orderId, String description) {
         PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
         String appTransId = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
                 + "_" + payment.getMaGiaoDich();
@@ -43,15 +53,14 @@ public class ZaloPayService {
         String returnUrl = config.getCallbackUrl().replace("/callback", "/return");
         String embedData = "{\"redirecturl\":\"" + returnUrl + "\",\"orderId\":" + orderId + "}";
         String items = "[]";
-        String description = "Thanh toan don hang #" + orderId;
 
-        String macData = config.getAppId() + "|" + appTransId + "|" + "user_" + orderId
+        String macData = config.getAppId() + "|" + appTransId + "|" + appUser
                 + "|" + payment.getSoTien().longValue() + "|" + appTime + "|" + embedData + "|" + items;
         String mac = hmacSHA256(config.getKey1(), macData);
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("app_id", config.getAppId());
-        body.put("app_user", "user_" + orderId);
+        body.put("app_user", appUser);
         body.put("app_trans_id", appTransId);
         body.put("app_time", appTime);
         body.put("amount", payment.getSoTien().longValue());

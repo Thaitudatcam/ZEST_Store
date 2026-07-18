@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
-import { getSoDu, getLichSuVi } from '../api/vi'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { getSoDu, getLichSuVi, napTien } from '../api/vi'
 import { VND } from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw } from 'lucide-react'
+import { Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Plus, X, Banknote } from 'lucide-react'
 
 const LOAI_LABELS = { 1: 'Nạp tiền', 2: 'Thanh toán' }
 const LOAI_COLORS = { 1: 'text-green-600 bg-green-50', 2: 'text-red-600 bg-red-50' }
 const LOAI_ICONS = { 1: ArrowDownLeft, 2: ArrowUpRight }
+
+const PRESET_AMOUNTS = [20000, 50000, 100000, 200000, 500000, 1000000]
 
 export default function ViZeststore() {
   const [soDu, setSoDu] = useState(0)
@@ -14,10 +17,16 @@ export default function ViZeststore() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [amount, setAmount] = useState('')
+  const [selectedChip, setSelectedChip] = useState(null)
+  const [napLoading, setNapLoading] = useState(false)
+  const [statusMsg, setStatusMsg] = useState('')
+  const [searchParams] = useSearchParams()
 
-  const loadSoDu = () => getSoDu().then(d => setSoDu(d.soDu || 0))
+  const loadSoDu = useCallback(() => getSoDu().then(d => setSoDu(d.soDu || 0)), [])
 
-  const loadLichSu = (p) => {
+  const loadLichSu = useCallback((p) => {
     setLoading(true)
     getLichSuVi(p, 20)
       .then(data => {
@@ -26,19 +35,75 @@ export default function ViZeststore() {
         setPage(data.number || 0)
       })
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => { loadSoDu(); loadLichSu(0) }, [loadSoDu, loadLichSu])
+
+  useEffect(() => {
+    const status = searchParams.get('status')
+    if (status === 'pending') {
+      setStatusMsg('Đang xử lý nạp tiền...')
+      let retries = 0
+      const poll = () => {
+        if (retries >= 3) { setStatusMsg(''); return }
+        retries++
+        setTimeout(() => {
+          loadSoDu().then(() => {
+            setStatusMsg('Nạp tiền thành công!')
+            setTimeout(() => setStatusMsg(''), 3000)
+          }).catch(() => { poll() })
+        }, 2000)
+      }
+      poll()
+      window.history.replaceState({}, '', '/vi-zeststore')
+    }
+  }, [searchParams, loadSoDu])
+
+  const handleChipClick = (val) => {
+    setAmount(String(val))
+    setSelectedChip(val)
   }
 
-  useEffect(() => { loadSoDu(); loadLichSu(0) }, [])
+  const handleAmountChange = (e) => {
+    setAmount(e.target.value)
+    setSelectedChip(null)
+  }
+
+  const handleNap = async (phuongThuc) => {
+    const soTien = parseInt(amount)
+    if (!soTien || soTien <= 0) return
+    setNapLoading(true)
+    try {
+      const result = await napTien(soTien, phuongThuc)
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl
+      }
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Lỗi khi tạo yêu cầu nạp tiền')
+    } finally {
+      setNapLoading(false)
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      {statusMsg && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-sm text-center">
+          {statusMsg}
+        </div>
+      )}
+
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white mb-6">
         <div className="flex items-center gap-2 mb-2">
           <Wallet className="h-5 w-5" />
           <span className="font-semibold">Ví ZestStore</span>
         </div>
         <div className="text-3xl font-bold mb-1">{VND(soDu)}</div>
-        <div className="text-blue-200 text-sm">Số dư khả dụng</div>
+        <div className="text-blue-200 text-sm mb-4">Số dư khả dụng</div>
+        <button onClick={() => setShowModal(true)}
+          className="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors flex items-center gap-1.5">
+          <Plus className="h-4 w-4" /> Nạp tiền
+        </button>
       </div>
 
       <div className="flex items-center justify-between mb-4">
@@ -85,6 +150,58 @@ export default function ViZeststore() {
           <span className="text-sm text-gray-500">{page + 1} / {totalPages}</span>
           <button onClick={() => loadLichSu(page + 1)} disabled={page >= totalPages - 1}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Sau</button>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Nạp tiền vào ví</h3>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-sm text-gray-500 mb-1.5 block">Số tiền nạp</label>
+              <div className="relative">
+                <input type="number" value={amount} onChange={handleAmountChange}
+                  placeholder="Nhập số tiền"
+                  className="w-full border rounded-xl px-4 py-3 text-lg font-semibold outline-none focus:ring-2 focus:ring-blue-500" />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₫</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-6">
+              {PRESET_AMOUNTS.map(val => (
+                <button key={val} onClick={() => handleChipClick(val)}
+                  className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${selectedChip === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                  {VND(val)}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500 mb-2">Chọn phương thức thanh toán</p>
+              <button onClick={() => handleNap(4)} disabled={napLoading || !amount}
+                className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+                <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-500">VNPay</div>
+                <span className="font-medium">VNPay</span>
+              </button>
+              <button onClick={() => handleNap(5)} disabled={napLoading || !amount}
+                className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+                <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-pink-500">MoMo</div>
+                <span className="font-medium">Ví MoMo</span>
+              </button>
+              <button onClick={() => handleNap(6)} disabled={napLoading || !amount}
+                className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+                <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-blue-500">Zalo</div>
+                <span className="font-medium">ZaloPay</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
