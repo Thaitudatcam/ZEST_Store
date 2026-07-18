@@ -240,8 +240,16 @@ export default function AdminPOS() {
     setCouponMsg('')
     try {
       setCouponLoading(true)
-      const res = await api.post('/coupons/validate', { maCode: couponCode.trim(), tongTien: total }).then(r => r.data)
-      setCoupon(res)
+      const res = await api.post('/admin/pos/validate-coupon', {
+        maCode: couponCode.trim(),
+        tongTien: total,
+        maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
+      }).then(r => r.data)
+      if (res.hopLe) {
+        setCoupon(res)
+      } else {
+        setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không hợp lệ')
+      }
     } catch (err) {
       setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
     } finally {
@@ -552,7 +560,12 @@ export default function AdminPOS() {
             {coupon && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${coupon.loaiMa === 'VOUCHER' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {coupon.loaiMa === 'VOUCHER' ? 'Ví' : 'Coupon'}
+                    </span>
+                  </div>
                   <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg('') }}
                     className="text-green-500 hover:text-green-700"><X className="h-3.5 w-3.5" /></button>
                 </div>
@@ -567,7 +580,7 @@ export default function AdminPOS() {
             </div>
             {coupon && (
               <div className="flex justify-between text-sm text-green-600">
-                <span>Giảm giá:</span>
+                <span>Giảm giá ({coupon.maCode}):</span>
                 <span>-{VND(coupon.soTienGiam)}</span>
               </div>
             )}

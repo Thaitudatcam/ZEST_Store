@@ -25,6 +25,68 @@ public class POSService {
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PosCartRepository posCartRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
+    private final VoucherNguoiDungRepository voucherNguoiDungRepository;
+
+    public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien) {
+        Optional<PhieuGiamGia> opt = phieuGiamGiaRepository.findByMaCode(maCode);
+        if (opt.isEmpty()) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá không tồn tại");
+        }
+        PhieuGiamGia coupon = opt.get();
+
+        if (!Integer.valueOf(1).equals(coupon.getTrangThai()) || coupon.getNgayXoa() != null) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá đã ngừng hoạt động");
+        }
+        if (coupon.getNgayBatDau() != null && LocalDateTime.now().isBefore(coupon.getNgayBatDau())) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá chưa đến hạn sử dụng");
+        }
+        if (coupon.getNgayKetThuc() != null && LocalDateTime.now().isAfter(coupon.getNgayKetThuc())) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá đã hết hạn");
+        }
+        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá đã hết lượt sử dụng");
+        }
+        if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi",
+                    "Đơn hàng tối thiểu " + coupon.getGiaTriDonToiThieu() + "đ");
+        }
+        if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
+            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã freeship không áp dụng tại quầy");
+        }
+
+        String loaiMa = "COUPON";
+        if (maNguoiDung != null) {
+            Optional<VoucherNguoiDung> vnd = voucherNguoiDungRepository
+                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(maNguoiDung, coupon.getMaPhieuGiamGia());
+            if (vnd.isPresent()) {
+                if (TrangThaiVoucher.DA_DUNG.equals(vnd.get().getTrangThai())) {
+                    return Map.of("hopLe", false, "loaiMa", "VOUCHER", "lyDoTuChoi", "Voucher đã được sử dụng");
+                }
+                loaiMa = "VOUCHER";
+            }
+        }
+
+        BigDecimal soTienGiam;
+        if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
+            soTienGiam = tongTien.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
+        } else {
+            soTienGiam = coupon.getGiaTriGiam();
+        }
+        if (soTienGiam.compareTo(tongTien) > 0) {
+            soTienGiam = tongTien;
+        }
+        if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
+            soTienGiam = coupon.getGiaTriGiamToiDa();
+        }
+
+        return Map.of(
+                "hopLe", true,
+                "loaiMa", loaiMa,
+                "kieuGiamGia", coupon.getKieuGiamGia(),
+                "soTienGiam", soTienGiam,
+                "lyDoTuChoi", null
+        );
+    }
 
     @Transactional
     public Map<String, Object> createPosOrder(PosOrderRequest request, Integer adminUserId) {
@@ -41,8 +103,6 @@ public class POSService {
                 if (variant.getTonKho() < req.getSoLuong()) {
                     throw new BadRequestException("Insufficient stock for " + variant.getSku());
                 }
-                variant.setTonKho(variant.getTonKho() - req.getSoLuong());
-                bienTheRepository.save(variant);
                 BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(req.getSoLuong()));
                 tongTien = tongTien.add(thanhTien);
                 Map<String, Object> itemMap = new LinkedHashMap<>();
@@ -110,13 +170,13 @@ public class POSService {
             if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
                 soTienGiam = coupon.getGiaTriGiamToiDa();
             }
-            if (coupon.getSoLuong() != null) {
-                coupon.setSoLuong(coupon.getSoLuong() - 1);
-                if (coupon.getSoLuong() <= 0) {
-                    coupon.setTrangThai(0);
-                }
-                phieuGiamGiaRepository.save(coupon);
-            }
+        }
+
+        for (Map<String, Object> item : orderItems) {
+            BienTheSanPham variant = (BienTheSanPham) item.get("bienThe");
+            Integer soLuong = (Integer) item.get("soLuong");
+            variant.setTonKho(variant.getTonKho() - soLuong);
+            bienTheRepository.save(variant);
         }
 
         String tenNguoiNhan = customer != null ? customer.getHoTen()
@@ -136,6 +196,8 @@ public class POSService {
                 .trangThaiDon(6)
                 .tenNguoiNhan(tenNguoiNhan)
                 .sdtNguoiNhan(sdtNguoiNhan)
+                .tenKhachTaiQuay(customer == null ? (request.getTenKhachHang() != null ? request.getTenKhachHang() : null) : null)
+                .sdtKhachTaiQuay(customer == null ? (request.getSdtKhachHang() != null ? request.getSdtKhachHang() : null) : null)
                 .diaChiGiaoHang("Tại quầy")
                 .phiVanChuyen(BigDecimal.ZERO)
                 .soTienGiam(soTienGiam)
@@ -144,7 +206,7 @@ public class POSService {
         order = donHangRepository.save(order);
 
         if (coupon != null) {
-            phieuGiamGiaService.logCouponUsage(coupon.getMaCode(),
+            phieuGiamGiaService.useCoupon(coupon.getMaCode(),
                     customer != null ? customer.getMaNguoiDung() : null,
                     order.getMaDonHang(), soTienGiam, "POS");
         }

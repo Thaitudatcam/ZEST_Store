@@ -70,6 +70,12 @@ public class DonHang {
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 
+    @Column(name = "ten_khach_tai_quay", length = 100)
+    private String tenKhachTaiQuay;
+
+    @Column(name = "sdt_khach_tai_quay", length = 15)
+    private String sdtKhachTaiQuay;
+
     @Column(name = "ngay_dat", nullable = false, updatable = false)
     private LocalDateTime ngayDat;
 

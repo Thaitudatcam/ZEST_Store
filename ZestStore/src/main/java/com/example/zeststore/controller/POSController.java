@@ -42,6 +42,18 @@ public class POSController {
     private final PaymentService paymentService;
     private final PaymentConfig paymentConfig;
 
+    @PostMapping("/validate-coupon")
+    public ResponseEntity<?> validateCoupon(@RequestBody Map<String, Object> body) {
+        String maCode = (String) body.get("maCode");
+        BigDecimal tongTien = body.get("tongTien") != null
+                ? BigDecimal.valueOf(((Number) body.get("tongTien")).doubleValue())
+                : BigDecimal.ZERO;
+        Integer maNguoiDung = body.get("maNguoiDung") != null
+                ? Integer.valueOf(body.get("maNguoiDung").toString())
+                : null;
+        return ResponseEntity.ok(posService.validateCoupon(maCode, maNguoiDung, tongTien));
+    }
+
     @PostMapping("/orders")
     public ResponseEntity<?> createOrder(Authentication auth, @Valid @RequestBody PosOrderRequest request) {
         return ResponseEntity.ok(posService.createPosOrder(request, userService.getUserIdFromAuth(auth)));
