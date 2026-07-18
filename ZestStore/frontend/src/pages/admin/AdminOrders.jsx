@@ -24,7 +24,7 @@ function PaymentInfo({ payments }) {
   )
 }
 
-const STATUS_LIST = [
+const ONLINE_STATUS_LIST = [
   { value: 0, label: 'Tất cả' },
   { value: 1, label: 'Chờ xác nhận' },
   { value: 2, label: 'Đã xác nhận' },
@@ -32,7 +32,14 @@ const STATUS_LIST = [
   { value: 4, label: 'Chờ giao hàng' },
   { value: 5, label: 'Đã hủy' },
   { value: 6, label: 'Đã giao hàng' },
-  { value: 9, label: 'Không nhận hàng' },
+  { value: 7, label: 'Trả hàng' },
+]
+
+const POS_STATUS_LIST = [
+  { value: 0, label: 'Tất cả' },
+  { value: 1, label: 'Tạo đơn' },
+  { value: 6, label: 'Hoàn thành' },
+  { value: 5, label: 'Đã hủy' },
 ]
 
 export default function AdminOrders() {
@@ -73,7 +80,7 @@ export default function AdminOrders() {
       <div className="flex items-center gap-4 mb-4 flex-wrap">
         <Filter className="h-4 w-4 text-gray-400" />
         <div className="flex gap-1 flex-wrap">
-          {STATUS_LIST.map((s) => {
+          {(loaiDonHang === 2 ? POS_STATUS_LIST : ONLINE_STATUS_LIST).map((s) => {
             const cls = {
               0: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-blue-300 text-gray-600 bg-white hover:bg-blue-50' },
               1: { active: 'bg-amber-600 text-white border-amber-600', inactive: 'border-amber-300 text-gray-600 bg-white hover:bg-amber-50' },
@@ -82,7 +89,7 @@ export default function AdminOrders() {
               4: { active: 'bg-emerald-600 text-white border-emerald-600', inactive: 'border-emerald-300 text-gray-600 bg-white hover:bg-emerald-50' },
               5: { active: 'bg-rose-600 text-white border-rose-600', inactive: 'border-rose-300 text-gray-600 bg-white hover:bg-rose-50' },
               6: { active: 'bg-teal-600 text-white border-teal-600', inactive: 'border-teal-300 text-gray-600 bg-white hover:bg-teal-50' },
-              9: { active: 'bg-neutral-700 text-white border-neutral-700', inactive: 'border-neutral-300 text-gray-600 bg-white hover:bg-neutral-50' },
+              7: { active: 'bg-orange-600 text-white border-orange-600', inactive: 'border-orange-300 text-gray-600 bg-white hover:bg-orange-50' },
             }[s.value] || { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-gray-300 text-gray-600 bg-white hover:bg-gray-100' }
             return (
             <button key={s.value} onClick={() => setStatusFilter(s.value)}
