@@ -16,7 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Map;
 
 @RestController
@@ -76,8 +76,8 @@ public class DonHangController {
             @RequestParam(required = false) Integer loaiDonHang,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Integer trangThai,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime tuNgay,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime denNgay) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay) {
         return ResponseEntity.ok(donHangService.getAllOrders(page, size, loaiDonHang, q, trangThai, tuNgay, denNgay));
     }
 

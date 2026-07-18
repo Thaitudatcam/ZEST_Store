@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -51,7 +52,7 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang, String q, Integer trangThai,
-                                       LocalDateTime tuNgay, LocalDateTime denNgay) {
+                                       LocalDate tuNgay, LocalDate denNgay) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
         boolean hasSearch = q != null && !q.trim().isEmpty();
         boolean hasLoai = loaiDonHang != null;
@@ -59,20 +60,21 @@ public class DonHangService {
         boolean hasDate = tuNgay != null && denNgay != null;
 
         if (hasDate) {
-            denNgay = denNgay.plusDays(1);
+            LocalDateTime from = tuNgay.atStartOfDay();
+            LocalDateTime to = denNgay.plusDays(1).atStartOfDay();
             if (hasSearch) {
                 if (hasLoai && hasTrangThai) {
-                    return donHangRepository.searchByKeywordAndLoaiAndTrangThaiAndNgayDatBetween(q.trim(), loaiDonHang, trangThai, tuNgay, denNgay, pageable);
+                    return donHangRepository.searchByKeywordAndLoaiAndTrangThaiAndNgayDatBetween(q.trim(), loaiDonHang, trangThai, from, to, pageable);
                 }
                 if (hasLoai) {
-                    return donHangRepository.searchByKeywordAndLoaiAndNgayDatBetween(q.trim(), loaiDonHang, tuNgay, denNgay, pageable);
+                    return donHangRepository.searchByKeywordAndLoaiAndNgayDatBetween(q.trim(), loaiDonHang, from, to, pageable);
                 }
             }
             if (hasLoai && hasTrangThai) {
-                return donHangRepository.findByLoaiDonHangAndTrangThaiDonAndNgayDatBetween(loaiDonHang, trangThai, tuNgay, denNgay, pageable);
+                return donHangRepository.findByLoaiDonHangAndTrangThaiDonAndNgayDatBetween(loaiDonHang, trangThai, from, to, pageable);
             }
             if (hasLoai) {
-                return donHangRepository.findByLoaiDonHangAndNgayDatBetween(loaiDonHang, tuNgay, denNgay, pageable);
+                return donHangRepository.findByLoaiDonHangAndNgayDatBetween(loaiDonHang, from, to, pageable);
             }
         }
 
