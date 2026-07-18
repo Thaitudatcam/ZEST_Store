@@ -227,6 +227,9 @@ public class PhieuGiamGiaService {
         if (coupon.getGiaTriGiamToiDa() != null && giamGia.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
             giamGia = coupon.getGiaTriGiamToiDa();
         }
+        if (giamGia.compareTo(giaTriDon) > 0) {
+            giamGia = giaTriDon;
+        }
 
         return Map.of(
                 "maCode", coupon.getMaCode(),
@@ -308,7 +311,7 @@ public class PhieuGiamGiaService {
     @Transactional
     public void useCoupon(String maCode, Integer maNguoiDung, Integer maDonHang,
                            BigDecimal soTienGiam, String loai) {
-        PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(maCode)
+        PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(maCode)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
         if (coupon.getSoLuong() != null && coupon.getSoLuong() > 0) {
             coupon.setSoLuong(coupon.getSoLuong() - 1);

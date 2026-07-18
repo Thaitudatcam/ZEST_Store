@@ -16,8 +16,11 @@ import java.util.Optional;
 @Repository
 public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Integer> {
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<PhieuGiamGia> findByMaCode(String maCode);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.maCode = :maCode")
+    Optional<PhieuGiamGia> findByMaCodeForUpdate(@Param("maCode") String maCode);
 
     List<PhieuGiamGia> findByTrangThai(Integer trangThai);
 

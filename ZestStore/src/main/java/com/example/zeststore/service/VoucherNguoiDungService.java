@@ -67,7 +67,7 @@ public class VoucherNguoiDungService {
 
     @Transactional
     public Map<String, Object> claimVoucher(Integer userId, String maCode) {
-        PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(maCode)
+        PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(maCode)
                 .orElseThrow(() -> new BadRequestException("Mã voucher không hợp lệ"));
 
         if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {

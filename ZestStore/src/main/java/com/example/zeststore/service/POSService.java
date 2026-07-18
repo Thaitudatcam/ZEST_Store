@@ -139,7 +139,7 @@ public class POSService {
         BigDecimal soTienGiam = BigDecimal.ZERO;
         PhieuGiamGia coupon = null;
         if (request.getMaCode() != null && !request.getMaCode().trim().isEmpty()) {
-            coupon = phieuGiamGiaRepository.findByMaCode(request.getMaCode().trim())
+            coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode().trim())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {

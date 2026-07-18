@@ -149,7 +149,7 @@ public class DonHangService {
         BigDecimal soTienGiam = BigDecimal.ZERO;
         PhieuGiamGia coupon = null;
         if (request.getMaCode() != null && !request.getMaCode().isEmpty()) {
-            coupon = phieuGiamGiaRepository.findByMaCode(request.getMaCode())
+            coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
@@ -189,7 +189,7 @@ public class DonHangService {
 
         PhieuGiamGia freeshipCoupon = null;
         if (request.getMaCodeFreeship() != null && !request.getMaCodeFreeship().isEmpty()) {
-            freeshipCoupon = phieuGiamGiaRepository.findByMaCode(request.getMaCodeFreeship())
+            freeshipCoupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCodeFreeship())
                     .orElseThrow(() -> new BadRequestException("Mã freeship không hợp lệ"));
             if (!Integer.valueOf(3).equals(freeshipCoupon.getKieuGiamGia())) {
                 throw new BadRequestException("Mã này không phải mã freeship");
