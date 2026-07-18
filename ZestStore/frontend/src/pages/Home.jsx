@@ -5,7 +5,7 @@ import { getCategories } from '../api/categories'
 import { getBestSelling, getPopular, getPersonalized } from '../api/recommendations'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
-import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles } from 'lucide-react'
+import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles, Filter, ChevronDown } from 'lucide-react'
 import ZS from '../pictures/ZS.png'
 import PromoBanner from '../components/PromoBanner'
 
@@ -35,6 +35,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('ngayTao')
   const [allProducts, setAllProducts] = useState([])
   const [allLoading, setAllLoading] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -159,24 +160,35 @@ export default function Home() {
 
           {/* Filters */}
           <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-6">
-            <div className="flex flex-wrap gap-3 items-end">
-              <div>
-                <label className="text-xs text-neutral-500 font-medium tracking-wide">Danh mục</label>
-                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                  className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
-                  <option value="">Tất cả danh mục</option>
-                  {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
-                </select>
-              </div>
+            <button onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="relative flex items-center gap-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition">
+              <Filter className="h-4 w-4" />
+              <span>Bộ lọc</span>
+              <ChevronDown className={`h-3.5 w-3.5 transition-all duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
+              {(filterCategory !== '' || sortBy !== 'ngayTao' || sortDir !== 'desc') && (
+                <span className="absolute -top-1 -right-4 w-2 h-2 bg-blue-600 rounded-full" />
+              )}
+            </button>
+            <div className={`overflow-hidden transition-all duration-200 ${isFilterOpen ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
+              <div className="flex flex-wrap gap-3 items-end">
+                <div>
+                  <label className="text-xs text-neutral-500 font-medium tracking-wide">Danh mục</label>
+                  <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
+                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
+                    <option value="">Tất cả danh mục</option>
+                    {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
+                  </select>
+                </div>
 
-              <div>
-                <label className="text-xs text-neutral-500 font-medium tracking-wide">Sắp xếp</label>
-                <select onChange={(e) => handleSortChange(e.target.value)}
-                  className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
-                  <option value="">Mới nhất</option>
-                  <option value="gia-asc">Giá tăng dần</option>
-                  <option value="gia-desc">Giá giảm dần</option>
-                </select>
+                <div>
+                  <label className="text-xs text-neutral-500 font-medium tracking-wide">Sắp xếp</label>
+                  <select onChange={(e) => handleSortChange(e.target.value)}
+                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
+                    <option value="">Mới nhất</option>
+                    <option value="gia-asc">Giá tăng dần</option>
+                    <option value="gia-desc">Giá giảm dần</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>

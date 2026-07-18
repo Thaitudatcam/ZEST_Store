@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { getAllOrders } from '../../api/admin'
 import StatusBadge from '../../components/StatusBadge'
-import { Search, Filter, Eye, Calendar } from 'lucide-react'
+import { Search, Filter, Eye, Calendar, ChevronDown } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { SkeletonTable } from '../../components/Skeleton'
 
@@ -54,17 +54,17 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [tuNgay, setTuNgay] = useState(() => {
-    const d = new Date(); return d.toISOString().split('T')[0]
-  })
-  const [denNgay, setDenNgay] = useState(() => {
-    const d = new Date(); return d.toISOString().split('T')[0]
-  })
+  const todayStr = new Date().toISOString().split('T')[0]
+  const [tuNgay, setTuNgay] = useState(todayStr)
+  const [denNgay, setDenNgay] = useState(todayStr)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const dateError = tuNgay && denNgay && tuNgay > denNgay ? 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' : ''
   const loadOrders = (p, loai, q) => {
+    if (dateError) { setLoading(false); return }
     setLoading(true)
     const l = loai ?? loaiDonHang
     getAllOrders(p, 10, l, q || undefined, statusFilter > 0 ? statusFilter : undefined,
-      loaiDonHang === 2 ? tuNgay : undefined, loaiDonHang === 2 ? denNgay : undefined)
+      tuNgay || undefined, denNgay || undefined)
       .then(data => {
       setOrders(data.content || [])
       setTotalPages(data.totalPages || 0)
@@ -73,7 +73,7 @@ export default function AdminOrders() {
     .finally(() => setLoading(false))
   }
 
-  useEffect(() => { loadOrders(0, loaiDonHang, search) }, [pathname, search, statusFilter, tuNgay, denNgay])
+  useEffect(() => { if (!dateError) loadOrders(0, loaiDonHang, search) }, [pathname, search, statusFilter, tuNgay, denNgay, dateError])
 
   return (
     <div>
@@ -85,38 +85,49 @@ export default function AdminOrders() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <Filter className="h-4 w-4 text-gray-400" />
-        <div className="flex gap-1 flex-wrap">
-          {(loaiDonHang === 2 ? POS_STATUS_LIST : ONLINE_STATUS_LIST).map((s) => {
-            const cls = {
-              0: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-blue-300 text-gray-600 bg-white hover:bg-blue-50' },
-              1: { active: 'bg-amber-600 text-white border-amber-600', inactive: 'border-amber-300 text-gray-600 bg-white hover:bg-amber-50' },
-              2: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-blue-300 text-gray-600 bg-white hover:bg-blue-50' },
-              3: { active: 'bg-purple-600 text-white border-purple-600', inactive: 'border-purple-300 text-gray-600 bg-white hover:bg-purple-50' },
-              4: { active: 'bg-emerald-600 text-white border-emerald-600', inactive: 'border-emerald-300 text-gray-600 bg-white hover:bg-emerald-50' },
-              5: { active: 'bg-rose-600 text-white border-rose-600', inactive: 'border-rose-300 text-gray-600 bg-white hover:bg-rose-50' },
-              6: { active: 'bg-teal-600 text-white border-teal-600', inactive: 'border-teal-300 text-gray-600 bg-white hover:bg-teal-50' },
-              7: { active: 'bg-orange-600 text-white border-orange-600', inactive: 'border-orange-300 text-gray-600 bg-white hover:bg-orange-50' },
-              8: { active: 'bg-gray-700 text-white border-gray-700', inactive: 'border-gray-300 text-gray-600 bg-white hover:bg-gray-50' },
-            }[s.value] || { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-gray-300 text-gray-600 bg-white hover:bg-gray-100' }
-            return (
-            <button key={s.value} onClick={() => setStatusFilter(s.value)}
-              className={`px-3 py-1.5 text-xs rounded-lg border-2 transition font-medium ${statusFilter === s.value ? cls.active : cls.inactive}`}>
-              {s.label}
-            </button>
-          )})}
-        </div>
-        {loaiDonHang === 2 && (
-          <div className="flex items-center gap-2 mt-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <input type="date" value={tuNgay} onChange={e => setTuNgay(e.target.value)}
-              className="border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-            <span className="text-sm text-gray-400">→</span>
-            <input type="date" value={denNgay} onChange={e => setDenNgay(e.target.value)}
-              className="border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+      <div className="mb-4">
+        <button onClick={() => setIsFilterOpen(!isFilterOpen)}
+          className="relative flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 transition">
+          <Filter className="h-4 w-4 text-gray-500" />
+          <span className="text-gray-600">Bộ lọc</span>
+          <ChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-all duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
+          {statusFilter > 0 && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-600 rounded-full" />
+          )}
+        </button>
+        <div className={`overflow-hidden transition-all duration-200 ${isFilterOpen ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex gap-1 flex-wrap">
+              {(loaiDonHang === 2 ? POS_STATUS_LIST : ONLINE_STATUS_LIST).map((s) => {
+                const cls = {
+                  0: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-blue-300 text-gray-600 bg-white hover:bg-blue-50' },
+                  1: { active: 'bg-amber-600 text-white border-amber-600', inactive: 'border-amber-300 text-gray-600 bg-white hover:bg-amber-50' },
+                  2: { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-blue-300 text-gray-600 bg-white hover:bg-blue-50' },
+                  3: { active: 'bg-purple-600 text-white border-purple-600', inactive: 'border-purple-300 text-gray-600 bg-white hover:bg-purple-50' },
+                  4: { active: 'bg-emerald-600 text-white border-emerald-600', inactive: 'border-emerald-300 text-gray-600 bg-white hover:bg-emerald-50' },
+                  5: { active: 'bg-rose-600 text-white border-rose-600', inactive: 'border-rose-300 text-gray-600 bg-white hover:bg-rose-50' },
+                  6: { active: 'bg-teal-600 text-white border-teal-600', inactive: 'border-teal-300 text-gray-600 bg-white hover:bg-teal-50' },
+                  7: { active: 'bg-orange-600 text-white border-orange-600', inactive: 'border-orange-300 text-gray-600 bg-white hover:bg-orange-50' },
+                  8: { active: 'bg-gray-700 text-white border-gray-700', inactive: 'border-gray-300 text-gray-600 bg-white hover:bg-gray-50' },
+                }[s.value] || { active: 'bg-blue-600 text-white border-blue-600', inactive: 'border-gray-300 text-gray-600 bg-white hover:bg-gray-100' }
+                return (
+                <button key={s.value} onClick={() => setStatusFilter(s.value)}
+                  className={`px-3 py-1.5 text-xs rounded-lg border-2 transition font-medium ${statusFilter === s.value ? cls.active : cls.inactive}`}>
+                  {s.label}
+                </button>
+              )})}
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <input type="date" value={tuNgay} onChange={e => setTuNgay(e.target.value)}
+                className="border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              <span className="text-sm text-gray-400">→</span>
+              <input type="date" value={denNgay} onChange={e => setDenNgay(e.target.value)}
+                className="border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
           </div>
-        )}
+          {dateError && <p className="text-red-500 text-xs mt-2">{dateError}</p>}
+        </div>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
