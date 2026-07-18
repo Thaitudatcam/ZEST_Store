@@ -12,9 +12,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
@@ -73,8 +75,10 @@ public class DonHangController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Integer loaiDonHang,
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) Integer trangThai) {
-        return ResponseEntity.ok(donHangService.getAllOrders(page, size, loaiDonHang, q, trangThai));
+            @RequestParam(required = false) Integer trangThai,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime tuNgay,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDateTime denNgay) {
+        return ResponseEntity.ok(donHangService.getAllOrders(page, size, loaiDonHang, q, trangThai, tuNgay, denNgay));
     }
 
     @GetMapping("/admin/detail/{id}")

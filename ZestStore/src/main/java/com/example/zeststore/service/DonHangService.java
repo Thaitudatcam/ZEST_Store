@@ -50,11 +50,31 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang, String q, Integer trangThai) {
+    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang, String q, Integer trangThai,
+                                       LocalDateTime tuNgay, LocalDateTime denNgay) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
         boolean hasSearch = q != null && !q.trim().isEmpty();
         boolean hasLoai = loaiDonHang != null;
         boolean hasTrangThai = trangThai != null;
+        boolean hasDate = tuNgay != null && denNgay != null;
+
+        if (hasDate) {
+            denNgay = denNgay.plusDays(1);
+            if (hasSearch) {
+                if (hasLoai && hasTrangThai) {
+                    return donHangRepository.searchByKeywordAndLoaiAndTrangThaiAndNgayDatBetween(q.trim(), loaiDonHang, trangThai, tuNgay, denNgay, pageable);
+                }
+                if (hasLoai) {
+                    return donHangRepository.searchByKeywordAndLoaiAndNgayDatBetween(q.trim(), loaiDonHang, tuNgay, denNgay, pageable);
+                }
+            }
+            if (hasLoai && hasTrangThai) {
+                return donHangRepository.findByLoaiDonHangAndTrangThaiDonAndNgayDatBetween(loaiDonHang, trangThai, tuNgay, denNgay, pageable);
+            }
+            if (hasLoai) {
+                return donHangRepository.findByLoaiDonHangAndNgayDatBetween(loaiDonHang, tuNgay, denNgay, pageable);
+            }
+        }
 
         if (hasSearch) {
             if (hasLoai && hasTrangThai) {
