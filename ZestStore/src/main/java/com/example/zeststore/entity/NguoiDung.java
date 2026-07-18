@@ -76,7 +76,7 @@ public class NguoiDung {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
-    @Column(name = "so_du", nullable = false, precision = 18, scale = 2)
+    @Column(name = "so_du", nullable = false, precision = 18, scale = 2, columnDefinition = "DECIMAL(18,2) DEFAULT 0")
     @Builder.Default
     private BigDecimal soDu = BigDecimal.ZERO;
 
