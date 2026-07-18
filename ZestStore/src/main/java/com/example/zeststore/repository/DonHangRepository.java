@@ -21,6 +21,10 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
     List<DonHang> findByTrangThaiDon(Integer trangThaiDon);
 
+    Page<DonHang> findByTrangThaiDon(Integer trangThaiDon, Pageable pageable);
+
+    Page<DonHang> findByLoaiDonHangAndTrangThaiDon(Integer loaiDonHang, Integer trangThaiDon, Pageable pageable);
+
     Page<DonHang> findByLoaiDonHang(Integer loaiDonHang, Pageable pageable);
 
     @Query("SELECT d FROM DonHang d WHERE "
@@ -36,6 +40,20 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             + "OR d.nguoiDung.email LIKE %:q% "
             + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
     Page<DonHang> searchByKeywordAndLoai(@Param("q") String q, @Param("loai") Integer loai, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d WHERE d.trangThaiDon = :trangThai AND ("
+            + "CAST(d.maDonHang AS string) LIKE %:q% "
+            + "OR d.nguoiDung.hoTen LIKE %:q% "
+            + "OR d.nguoiDung.email LIKE %:q% "
+            + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
+    Page<DonHang> searchByKeywordAndTrangThai(@Param("q") String q, @Param("trangThai") Integer trangThai, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND d.trangThaiDon = :trangThai AND ("
+            + "CAST(d.maDonHang AS string) LIKE %:q% "
+            + "OR d.nguoiDung.hoTen LIKE %:q% "
+            + "OR d.nguoiDung.email LIKE %:q% "
+            + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
+    Page<DonHang> searchByKeywordAndLoaiAndTrangThai(@Param("q") String q, @Param("loai") Integer loai, @Param("trangThai") Integer trangThai, Pageable pageable);
 
     @Query("SELECT d FROM DonHang d WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay")
     List<DonHang> findByNgayDatBetween(@Param("tuNgay") LocalDateTime tuNgay,

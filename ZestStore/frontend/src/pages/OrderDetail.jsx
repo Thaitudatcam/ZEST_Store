@@ -252,9 +252,7 @@ export default function OrderDetail() {
   const payments = data.payments || []
   const history = data.history || []
 
-  if (import.meta.env.DEV) console.log('[OrderDetail] trangThaiDon:', order.trangThaiDon, typeof order.trangThaiDon, 'field keys:', Object.keys(order).filter(k => k.includes('trangThai') || k.includes('status')))
-
-  const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 4
+  const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
   const canConfirmReceived = order.trangThaiDon === 4 && !hasUnpaidOnline
   const hasRequestedReturn = history?.some(h => h.trangThaiMoi === 7)

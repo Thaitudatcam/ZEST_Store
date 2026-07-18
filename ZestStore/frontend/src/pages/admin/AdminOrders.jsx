@@ -50,7 +50,7 @@ export default function AdminOrders() {
   const loadOrders = (p, loai, q) => {
     setLoading(true)
     const l = loai ?? loaiDonHang
-    getAllOrders(p, 10, l, q || undefined).then(data => {
+    getAllOrders(p, 10, l, q || undefined, statusFilter > 0 ? statusFilter : undefined).then(data => {
       setOrders(data.content || [])
       setTotalPages(data.totalPages || 0)
       setPage(data.number || 0)
@@ -58,7 +58,7 @@ export default function AdminOrders() {
     .finally(() => setLoading(false))
   }
 
-  useEffect(() => { loadOrders(0, loaiDonHang, search) }, [pathname, search])
+  useEffect(() => { loadOrders(0, loaiDonHang, search) }, [pathname, search, statusFilter])
 
   return (
     <div>

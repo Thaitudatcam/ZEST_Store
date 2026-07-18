@@ -50,10 +50,7 @@ export default function Orders() {
   const [hoverStar, setHoverStar] = useState({});
   const load = () =>
     getOrders()
-      .then(list => {
-        if (import.meta.env.DEV && list.length > 0) console.log('[Orders] first order:', list[0].trangThaiDon, typeof list[0].trangThaiDon, 'keys:', Object.keys(list[0]).filter(k => k.includes('trangThai') || k.includes('status')))
-        setOrders(list)
-      })
+      .then(setOrders)
       .finally(() => setLoading(false));
   useEffect(() => {
     load();
@@ -201,7 +198,7 @@ export default function Orders() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {o.trangThaiDon === 1 && (
+                  {(o.trangThaiDon === 1 || o.trangThaiDon === 2 || o.trangThaiDon === 3) && (
                     <button
                       onClick={(e) => {
                         e.preventDefault();

@@ -49,15 +49,31 @@ public class DonHangService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang, String q) {
+    public Page<DonHang> getAllOrders(int page, int size, Integer loaiDonHang, String q, Integer trangThai) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayDat"));
-        if (q != null && !q.trim().isEmpty()) {
-            if (loaiDonHang != null) {
+        boolean hasSearch = q != null && !q.trim().isEmpty();
+        boolean hasLoai = loaiDonHang != null;
+        boolean hasTrangThai = trangThai != null;
+
+        if (hasSearch) {
+            if (hasLoai && hasTrangThai) {
+                return donHangRepository.searchByKeywordAndLoaiAndTrangThai(q.trim(), loaiDonHang, trangThai, pageable);
+            }
+            if (hasTrangThai) {
+                return donHangRepository.searchByKeywordAndTrangThai(q.trim(), trangThai, pageable);
+            }
+            if (hasLoai) {
                 return donHangRepository.searchByKeywordAndLoai(q.trim(), loaiDonHang, pageable);
             }
             return donHangRepository.searchByKeyword(q.trim(), pageable);
         }
-        if (loaiDonHang != null) {
+        if (hasLoai && hasTrangThai) {
+            return donHangRepository.findByLoaiDonHangAndTrangThaiDon(loaiDonHang, trangThai, pageable);
+        }
+        if (hasTrangThai) {
+            return donHangRepository.findByTrangThaiDon(trangThai, pageable);
+        }
+        if (hasLoai) {
             return donHangRepository.findByLoaiDonHang(loaiDonHang, pageable);
         }
         return donHangRepository.findAll(pageable);
@@ -497,7 +513,7 @@ public class DonHangService {
             throw new BadRequestException("Order does not belong to user");
         }
         Integer stt = order.getTrangThaiDon();
-        if (!Integer.valueOf(1).equals(stt) && !Integer.valueOf(2).equals(stt) && !Integer.valueOf(4).equals(stt)) {
+        if (!Integer.valueOf(1).equals(stt) && !Integer.valueOf(2).equals(stt) && !Integer.valueOf(3).equals(stt)) {
             throw new BadRequestException("Chỉ có thể hủy đơn ở trạng thái chờ xác nhận, đã xác nhận hoặc chờ giao hàng");
         }
 
