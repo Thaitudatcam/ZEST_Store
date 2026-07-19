@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,9 +33,11 @@ public class HoaDonService {
         return getInvoiceDetail(invoice.getMaHoaDon());
     }
 
-    public Page<Map<String, Object>> getAllInvoices(int page, int size) {
+    public Page<Map<String, Object>> getAllInvoices(int page, int size, Integer loaiDonHang, LocalDate tuNgay, LocalDate denNgay) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ngayTao"));
-        return hoaDonRepository.findAll(pageable).map(inv -> {
+        LocalDateTime tuNgayDT = tuNgay != null ? tuNgay.atStartOfDay() : null;
+        LocalDateTime denNgayDT = denNgay != null ? denNgay.plusDays(1).atStartOfDay() : null;
+        return hoaDonRepository.findAllFiltered(loaiDonHang, tuNgayDT, denNgayDT, pageable).map(inv -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("maHoaDon", inv.getMaHoaDon());
             m.put("maHoaDonCode", inv.getMaHoaDonCode());

@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react'
 import { getInvoices, getInvoiceDetail } from '../../api/admin'
 import { Search, Printer, X } from 'lucide-react'
 
+const TABS = [
+  { value: null, label: 'Tất cả' },
+  { value: 1, label: 'Online' },
+  { value: 2, label: 'Tại quầy' },
+]
+
 export default function AdminInvoices() {
   const [invoices, setInvoices] = useState([])
   const [page, setPage] = useState(0)
@@ -9,19 +15,23 @@ export default function AdminInvoices() {
   const [search, setSearch] = useState('')
   const [printData, setPrintData] = useState(null)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState(null)
+  const [tuNgay, setTuNgay] = useState('')
+  const [denNgay, setDenNgay] = useState('')
+  const dateError = tuNgay && denNgay && tuNgay > denNgay ? 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' : ''
 
   const load = (p) => {
-    getInvoices(p, 10).then(data => {
+    getInvoices(p, 10, {
+      loaiDonHang: tab,
+      tuNgay: tuNgay || undefined,
+      denNgay: denNgay || undefined,
+    }).then(data => {
       setInvoices(data.content || [])
       setTotalPages(data.totalPages || 0)
       setPage(data.number || 0)
     }).catch(() => setError('Không thể tải hóa đơn'))
   }
-  useEffect(() => { load(0) }, [])
-
-  const filtered = invoices.filter((inv) =>
-    !search || inv.maHoaDonCode?.toLowerCase().includes(search.toLowerCase()) || (inv.khachHang || '').toLowerCase().includes(search.toLowerCase()) || (inv.emailKhachHang || '').toLowerCase().includes(search.toLowerCase()) || String(inv.maDonHang).includes(search)
-  )
+  useEffect(() => { if (!dateError) load(0) }, [tab, tuNgay, denNgay, dateError])
 
   const handlePrint = async (id) => {
     try {
@@ -29,6 +39,10 @@ export default function AdminInvoices() {
       setPrintData(data)
     } catch { setError('Không thể tải chi tiết hóa đơn') }
   }
+
+  const filtered = invoices.filter((inv) =>
+    !search || inv.maHoaDonCode?.toLowerCase().includes(search.toLowerCase()) || (inv.khachHang || '').toLowerCase().includes(search.toLowerCase()) || (inv.emailKhachHang || '').toLowerCase().includes(search.toLowerCase()) || String(inv.maDonHang).includes(search)
+  )
 
   const closePrint = () => setPrintData(null)
 
@@ -43,6 +57,25 @@ export default function AdminInvoices() {
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
+
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          {TABS.map((t) => (
+            <button key={t.value ?? 'all'} onClick={() => setTab(t.value)}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${tab === t.value ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <input type="date" value={tuNgay} onChange={e => setTuNgay(e.target.value)}
+            className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <span className="text-gray-400">→</span>
+          <input type="date" value={denNgay} onChange={e => setDenNgay(e.target.value)}
+            className="border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          {dateError && <p className="text-red-500 text-xs">{dateError}</p>}
+        </div>
+      </div>
 
       <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">

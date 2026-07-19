@@ -2,10 +2,12 @@ package com.example.zeststore.controller;
 
 import com.example.zeststore.service.HoaDonService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 @RestController
@@ -19,8 +21,11 @@ public class HoaDonController {
     @GetMapping
     public ResponseEntity<?> getAllInvoices(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(hoaDonService.getAllInvoices(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Integer loaiDonHang,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate tuNgay,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate denNgay) {
+        return ResponseEntity.ok(hoaDonService.getAllInvoices(page, size, loaiDonHang, tuNgay, denNgay));
     }
 
     @GetMapping("/{id}")
