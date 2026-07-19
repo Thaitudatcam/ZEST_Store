@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers } from '../../api/admin'
+import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
 import { getCategories } from '../../api/categories'
 import { getProducts } from '../../api/products'
 import { grantVoucher } from '../../api/userVoucher'
-import { Plus, Trash2, Filter, X, Tag, Package, Layers, Gift } from 'lucide-react'
+import { Plus, Trash2, Filter, X, Tag, Package, Layers, Gift, PenSquare } from 'lucide-react'
 
 const PAGE_SIZE = 15
 
@@ -26,6 +26,7 @@ export default function AdminCoupons() {
   const [userResults, setUserResults] = useState([])
   const [searchingUser, setSearchingUser] = useState(false)
   const [catTab, setCatTab] = useState('categories')
+  const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({
     maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '',
     ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '',
@@ -281,6 +282,10 @@ export default function AdminCoupons() {
                   </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
+                      <button onClick={() => setEditing(c)} title="Sửa mã giảm giá"
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                        <PenSquare className="h-4 w-4" />
+                      </button>
                       <button onClick={() => setGrantModal(c)} title="Cấp voucher cho người dùng"
                         className="p-1 text-purple-600 hover:bg-purple-50 rounded">
                         <Gift className="h-4 w-4" />
@@ -448,6 +453,99 @@ export default function AdminCoupons() {
               <div className="flex gap-3">
                 <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">Tạo</button>
                 <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditing(null)}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">Sửa mã giảm giá</h2>
+              <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const t = e.target
+              if (t.ngayBatDau.value && t.ngayKetThuc.value && new Date(t.ngayBatDau.value) >= new Date(t.ngayKetThuc.value)) {
+                alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
+              }
+              const payload = {}
+              const v = (name) => t[name]?.value
+              const n = (name) => v(name) !== '' ? Number(v(name)) : null
+              if (v('giaTriGiam') !== '') payload.giaTriGiam = n('giaTriGiam')
+              if (v('giaTriDonToiThieu') !== '') payload.giaTriDonToiThieu = n('giaTriDonToiThieu')
+              if (v('ngayBatDau')) payload.ngayBatDau = v('ngayBatDau') + 'T00:00:00'
+              if (v('ngayKetThuc')) payload.ngayKetThuc = v('ngayKetThuc') + 'T23:59:59'
+              if (v('soLuong') !== '') payload.soLuong = n('soLuong')
+              if (v('giaTriGiamToiDa') !== '') payload.giaTriGiamToiDa = n('giaTriGiamToiDa')
+              payload.congKhai = t.congKhai.checked
+              try {
+                await updateCoupon(editing.maPhieuGiamGia, payload)
+                setEditing(null)
+                load()
+              } catch (err) {
+                alert(err.response?.data?.message || 'Lỗi sửa coupon')
+              }
+            }}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-500">Mã code</label>
+                  <input value={editing.maCode} disabled
+                    className="w-full border rounded-lg px-4 py-2 mt-1 bg-gray-50 text-gray-500 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Kiểu giảm</label>
+                  <input value={editing.kieuGiamGia === 1 ? '%' : editing.kieuGiamGia === 2 ? 'Tiền mặt' : 'Freeship'} disabled
+                    className="w-full border rounded-lg px-4 py-2 mt-1 bg-gray-50 text-gray-500 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Giá trị giảm</label>
+                  <input type="number" name="giaTriGiam" defaultValue={editing.giaTriGiam}
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Đơn tối thiểu</label>
+                  <input type="number" name="giaTriDonToiThieu" defaultValue={editing.giaTriDonToiThieu || ''}
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Ngày bắt đầu</label>
+                  <input type="date" name="ngayBatDau" defaultValue={editing.ngayBatDau ? editing.ngayBatDau.slice(0, 10) : ''}
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Ngày kết thúc</label>
+                  <input type="date" name="ngayKetThuc" defaultValue={editing.ngayKetThuc ? editing.ngayKetThuc.slice(0, 10) : ''}
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Số lượng</label>
+                  <input type="number" name="soLuong" defaultValue={editing.soLuong ?? ''}
+                    placeholder="Để trống = không giới hạn"
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Giảm tối đa</label>
+                  <input type="number" name="giaTriGiamToiDa" defaultValue={editing.giaTriGiamToiDa || ''}
+                    placeholder="Để trống = không giới hạn"
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700 mt-4">
+                <input type="checkbox" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4" />
+                Công khai — hiển thị cho người dùng
+              </label>
+
+              <div className="flex gap-3 mt-6">
+                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">Lưu</button>
+                <button type="button" onClick={() => setEditing(null)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
               </div>
             </form>
           </div>

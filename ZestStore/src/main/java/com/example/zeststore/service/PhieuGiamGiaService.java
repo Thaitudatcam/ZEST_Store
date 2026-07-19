@@ -1,6 +1,7 @@
 package com.example.zeststore.service;
 
 import com.example.zeststore.dto.request.CouponRequest;
+import com.example.zeststore.dto.request.UpdateCouponRequest;
 import com.example.zeststore.dto.response.CouponResponse;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
@@ -430,6 +431,47 @@ public class PhieuGiamGiaService {
                     .collect(Collectors.toList()));
         }
         return b.build();
+    }
+
+    @Transactional
+    public PhieuGiamGia update(Integer id, UpdateCouponRequest request) {
+        PhieuGiamGia coupon = getById(id);
+
+        if (request.getGiaTriGiam() != null) {
+            coupon.setGiaTriGiam(request.getGiaTriGiam());
+        }
+        if (request.getGiaTriDonToiThieu() != null) {
+            coupon.setGiaTriDonToiThieu(request.getGiaTriDonToiThieu());
+        }
+        if (request.getNgayBatDau() != null) {
+            coupon.setNgayBatDau(request.getNgayBatDau());
+        }
+        if (request.getNgayKetThuc() != null) {
+            coupon.setNgayKetThuc(request.getNgayKetThuc());
+        }
+        if (request.getTrangThai() != null) {
+            coupon.setTrangThai(request.getTrangThai());
+        }
+        if (request.getSoLuong() != null) {
+            coupon.setSoLuong(request.getSoLuong());
+        }
+        if (request.getGiaTriGiamToiDa() != null) {
+            coupon.setGiaTriGiamToiDa(request.getGiaTriGiamToiDa());
+        }
+        if (request.getExclusive() != null) {
+            coupon.setExclusive(request.getExclusive());
+        }
+        if (request.getCongKhai() != null) {
+            coupon.setCongKhai(request.getCongKhai());
+        }
+        if (request.getMaDanhMucIds() != null) {
+            coupon.setDanhMucApDung(new HashSet<>(danhMucRepository.findAllById(request.getMaDanhMucIds())));
+        }
+        if (request.getMaSanPhamIds() != null) {
+            coupon.setSanPhamApDung(new HashSet<>(sanPhamRepository.findAllById(request.getMaSanPhamIds())));
+        }
+
+        return phieuGiamGiaRepository.save(coupon);
     }
 
     @Transactional

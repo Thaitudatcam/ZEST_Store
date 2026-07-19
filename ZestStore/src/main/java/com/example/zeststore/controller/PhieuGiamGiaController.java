@@ -2,6 +2,7 @@ package com.example.zeststore.controller;
 
 import com.example.zeststore.dto.request.CouponRequest;
 import com.example.zeststore.dto.request.CouponValidateRequest;
+import com.example.zeststore.dto.request.UpdateCouponRequest;
 import com.example.zeststore.dto.response.CouponResponse;
 import com.example.zeststore.service.PhieuGiamGiaService;
 import com.example.zeststore.service.UserService;
@@ -96,5 +97,12 @@ public class PhieuGiamGiaController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
         return ResponseEntity.ok(phieuGiamGiaService.toggleStatus(id));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> update(@PathVariable Integer id,
+                                     @Valid @RequestBody UpdateCouponRequest request) {
+        return ResponseEntity.ok(phieuGiamGiaService.update(id, request));
     }
 }
