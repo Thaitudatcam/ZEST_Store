@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getInvoices, getInvoiceDetail, generateInvoice } from '../../api/admin'
-import { Search, Printer, FileText, X } from 'lucide-react'
+import { getInvoices, getInvoiceDetail } from '../../api/admin'
+import { Search, Printer, X } from 'lucide-react'
 
 export default function AdminInvoices() {
   const [invoices, setInvoices] = useState([])
@@ -28,16 +28,6 @@ export default function AdminInvoices() {
       const data = await getInvoiceDetail(id)
       setPrintData(data)
     } catch { setError('Không thể tải chi tiết hóa đơn') }
-  }
-
-  const handleGenerate = async (orderId) => {
-    try {
-      await generateInvoice(orderId)
-      setError('')
-      load(page)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Tạo hóa đơn thất bại')
-    }
   }
 
   const closePrint = () => setPrintData(null)
@@ -108,20 +98,6 @@ export default function AdminInvoices() {
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100 disabled:opacity-30">Cuối</button>
         </div>
       )}
-
-      <div className="mt-4 bg-white rounded-2xl shadow-sm border p-4">
-        <h2 className="font-semibold mb-2">Tạo hóa đơn từ đơn hàng</h2>
-        <p className="text-xs text-gray-500 mb-3">Nhập mã đơn hàng để tạo hóa đơn</p>
-        <div className="flex gap-2">
-          <input id="orderIdInput" type="number" placeholder="Mã đơn hàng..." className="border rounded-lg px-4 py-2 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <button onClick={() => {
-            const val = document.getElementById('orderIdInput').value
-            if (val) handleGenerate(Number(val))
-          }} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
-            <FileText className="h-4 w-4" /> Tạo hóa đơn
-          </button>
-        </div>
-      </div>
 
       {printData && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
