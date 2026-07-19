@@ -18,7 +18,7 @@ public class ChuongTrinhQuaTang {
     @Column(name = "ma_chuong_trinh")
     private Integer maChuongTrinh;
 
-    @Column(name = "ten_chuong_trinh", nullable = false, length = 200)
+    @Column(name = "ten_chuong_trinh", nullable = false, length = 200, columnDefinition = "NVARCHAR(200)")
     private String tenChuongTrinh;
 
     @Enumerated(EnumType.ORDINAL)
@@ -42,6 +42,9 @@ public class ChuongTrinhQuaTang {
 
     @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
+
+    @Column(name = "ngay_ket_thuc")
+    private LocalDateTime ngayKetThuc;
 
     @Column(name = "da_chay_xong")
     @Builder.Default

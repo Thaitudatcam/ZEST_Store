@@ -66,6 +66,8 @@ public class AdminCampaignController {
                         ? DieuKienEnum.fromValue(((Number) body.get("dieuKien")).intValue()) : null)
                 .ngayBatDau(body.get("ngayBatDau") != null
                         ? java.time.LocalDateTime.parse((String) body.get("ngayBatDau")) : null)
+                .ngayKetThuc(body.get("ngayKetThuc") != null
+                        ? java.time.LocalDateTime.parse((String) body.get("ngayKetThuc")) : null)
                 .trangThai(1)
                 .build();
         campaign = campaignRepository.save(campaign);
@@ -90,6 +92,55 @@ public class AdminCampaignController {
         }
         campaignRepository.save(c);
         return ResponseEntity.ok(Map.of("message", "OK", "trangThai", c.getTrangThai()));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable Integer id, @RequestBody Map<String, Object> body) {
+        ChuongTrinhQuaTang c = campaignRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+
+        if (body.containsKey("tenChuongTrinh")) {
+            c.setTenChuongTrinh((String) body.get("tenChuongTrinh"));
+        }
+        if (body.containsKey("maPhieuGiamGia")) {
+            PhieuGiamGia coupon = phieuGiamGiaRepository.findById(((Number) body.get("maPhieuGiamGia")).intValue())
+                    .orElseThrow(() -> new RuntimeException("Coupon not found"));
+            c.setPhieuGiamGia(coupon);
+        }
+        if (body.containsKey("soNgayKhongHoatDong")) {
+            c.setSoNgayKhongHoatDong(body.get("soNgayKhongHoatDong") != null
+                    ? ((Number) body.get("soNgayKhongHoatDong")).intValue() : null);
+        }
+        if (body.containsKey("doiTuong")) {
+            c.setDoiTuong(body.get("doiTuong") != null
+                    ? DoiTuongEnum.fromValue(((Number) body.get("doiTuong")).intValue()) : null);
+        }
+        if (body.containsKey("dieuKien")) {
+            c.setDieuKien(body.get("dieuKien") != null
+                    ? DieuKienEnum.fromValue(((Number) body.get("dieuKien")).intValue()) : null);
+        }
+        if (body.containsKey("ngayBatDau")) {
+            c.setNgayBatDau(body.get("ngayBatDau") != null
+                    ? java.time.LocalDateTime.parse((String) body.get("ngayBatDau")) : null);
+        }
+        if (body.containsKey("ngayKetThuc")) {
+            c.setNgayKetThuc(body.get("ngayKetThuc") != null
+                    ? java.time.LocalDateTime.parse((String) body.get("ngayKetThuc")) : null);
+        }
+        if (body.containsKey("trangThai")) {
+            c.setTrangThai(((Number) body.get("trangThai")).intValue());
+        }
+
+        campaignRepository.save(c);
+        return ResponseEntity.ok(toMap(c));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Integer id) {
+        ChuongTrinhQuaTang c = campaignRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+        campaignRepository.delete(c);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa chương trình"));
     }
 
     @PostMapping("/{id}/launch")
@@ -125,6 +176,7 @@ public class AdminCampaignController {
         m.put("doiTuong", c.getDoiTuong() != null ? c.getDoiTuong().getValue() : null);
         m.put("dieuKien", c.getDieuKien() != null ? c.getDieuKien().getValue() : null);
         m.put("ngayBatDau", c.getNgayBatDau() != null ? c.getNgayBatDau().toString() : null);
+        m.put("ngayKetThuc", c.getNgayKetThuc() != null ? c.getNgayKetThuc().toString() : null);
         m.put("daChayXong", c.getDaChayXong());
         m.put("trangThai", c.getTrangThai());
         m.put("ngayTao", c.getNgayTao() != null ? c.getNgayTao().toString() : null);

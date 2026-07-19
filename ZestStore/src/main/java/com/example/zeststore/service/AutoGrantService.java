@@ -104,6 +104,9 @@ public class AutoGrantService {
     // ========== CORE GRANT ==========
 
     private void grantFromCampaign(NguoiDung user, ChuongTrinhQuaTang campaign) {
+        LocalDateTime now = LocalDateTime.now();
+        if (campaign.getNgayBatDau() != null && now.isBefore(campaign.getNgayBatDau())) return;
+        if (campaign.getNgayKetThuc() != null && now.isAfter(campaign.getNgayKetThuc())) return;
         if (voucherNguoiDungRepository.existsByNguoiDung_MaNguoiDungAndChuongTrinhQuaTang_MaChuongTrinh(
                 user.getMaNguoiDung(), campaign.getMaChuongTrinh())) {
             return;

@@ -85,7 +85,7 @@ public class VoucherNguoiDungService {
 
         boolean alreadyClaimed = voucherNguoiDungRepository
                 .findByUserAndCouponAndStatusIn(userId, coupon.getMaPhieuGiamGia(),
-                        List.of(TrangThaiVoucher.CHUA_NHAN, TrangThaiVoucher.DA_NHAN))
+                        List.of(TrangThaiVoucher.CHUA_NHAN, TrangThaiVoucher.DA_NHAN, TrangThaiVoucher.DA_DUNG))
                 .isPresent();
         if (alreadyClaimed) {
             throw new BadRequestException("Bạn đã nhận voucher này rồi");

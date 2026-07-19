@@ -70,3 +70,5 @@ export const getCampaigns = () => api.get('/admin/campaigns').then((r) => r.data
 export const createCampaign = (data) => api.post('/admin/campaigns', data).then((r) => r.data)
 export const toggleCampaignStatus = (id) => api.put(`/admin/campaigns/${id}/toggle-status`).then((r) => r.data)
 export const launchCampaign = (id) => api.post(`/admin/campaigns/${id}/launch`).then((r) => r.data)
+export const updateCampaign = (id, data) => api.put(`/admin/campaigns/${id}`, data).then((r) => r.data)
+export const deleteCampaign = (id) => api.delete(`/admin/campaigns/${id}`).then((r) => r.data)

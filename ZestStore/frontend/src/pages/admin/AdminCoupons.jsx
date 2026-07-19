@@ -232,8 +232,7 @@ export default function AdminCoupons() {
                 <th className="text-center px-3 py-3 font-semibold text-gray-600">SL</th>
                 <th className="text-center px-3 py-3 font-semibold text-gray-600">Giảm tối đa</th>
                 <th className="text-center px-3 py-3 font-semibold text-gray-600">Áp dụng cho</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Ngày BĐ</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Ngày KT</th>
+                <th className="text-center px-3 py-3 font-semibold text-gray-600">Ngày BĐ → KT</th>
                 <th className="text-center px-3 py-3 font-semibold text-gray-600">Trạng thái</th>
                 <th className="text-center px-3 py-3 font-semibold text-gray-600"></th>
               </tr>
@@ -268,8 +267,7 @@ export default function AdminCoupons() {
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-center text-gray-500 text-xs">{fmtDate(c.ngayBatDau)}</td>
-                  <td className="px-3 py-3 text-center text-gray-500 text-xs">{fmtDate(c.ngayKetThuc)}</td>
+                  <td className="px-3 py-3 text-center text-gray-500 text-xs">{fmtDate(c.ngayBatDau)} → {fmtDate(c.ngayKetThuc)}</td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <StaBadge c={c} />
