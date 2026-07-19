@@ -146,10 +146,12 @@ public class ZaloPayService {
         }
 
         String maGiaoDich = appTransId.contains("_") ? appTransId.split("_", 2)[1] : appTransId;
+        boolean isNapTien = maGiaoDich.startsWith("NAPVI");
         Map<String, Object> queryResult = queryOrder(appTransId);
 
         boolean processing = queryResult.get("is_processing") == Boolean.TRUE;
         if (processing) {
+            if (isNapTien) return paymentConfig.getRedirectBaseUrl() + "/vi-zeststore?status=pending";
             Integer orderId = null;
             String[] parts = maGiaoDich.split("-", 3);
             if (parts.length >= 2) try { orderId = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) {}
@@ -171,6 +173,8 @@ public class ZaloPayService {
                 thanhToanService.failPayment(payment.getMaThanhToan());
             }
         }
+
+        if (isNapTien) return paymentConfig.getRedirectBaseUrl() + "/vi-zeststore?status=pending";
 
         Integer orderId = null;
         String[] parts = maGiaoDich.split("-", 3);

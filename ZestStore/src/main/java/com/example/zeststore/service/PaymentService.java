@@ -33,13 +33,16 @@ public class PaymentService {
     public String handleMomoReturn(Map<String, String> rawParams) {
         Map<String, String> result = momoService.buildReturnParams(new HashMap<>(rawParams));
         boolean success = "true".equals(result.get("verified")) && "0".equals(result.get("resultCode"));
-        String base = paymentConfig.getRedirectBaseUrl() + "/payment/result";
+        String redirectBase = paymentConfig.getRedirectBaseUrl();
 
         if (success && result.get("orderId") != null) {
             momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
-            return base + "?success=true&orderId=" + result.get("orderIdInt");
+            if (result.get("orderId").startsWith("NAPVI")) {
+                return redirectBase + "/vi-zeststore?status=pending";
+            }
+            return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderIdInt");
         }
-        String redirect = base + "?success=false";
+        String redirect = redirectBase + "/payment/result?success=false";
         if (result.get("orderIdInt") != null) redirect += "&orderId=" + result.get("orderIdInt");
         return redirect;
     }
@@ -73,13 +76,16 @@ public class PaymentService {
     public String handleVnPayReturn(Map<String, String> params) {
         Map<String, String> result = vnPayService.buildReturnParams(params);
         boolean success = "true".equals(result.get("verified")) && "00".equals(result.get("responseCode"));
-        String base = paymentConfig.getRedirectBaseUrl() + "/payment/result";
+        String redirectBase = paymentConfig.getRedirectBaseUrl();
 
         if (success && result.get("txnRef") != null) {
             vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
-            return base + "?success=true&orderId=" + result.get("orderId");
+            if (result.get("txnRef").startsWith("NAPVI")) {
+                return redirectBase + "/vi-zeststore?status=pending";
+            }
+            return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderId");
         }
-        String redirect = base + "?success=false";
+        String redirect = redirectBase + "/payment/result?success=false";
         if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
         return redirect;
     }

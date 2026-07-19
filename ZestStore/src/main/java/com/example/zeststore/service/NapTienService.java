@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -20,11 +21,15 @@ public class NapTienService {
     private final VnPayService vnPayService;
     private final MomoService momoService;
     private final ZaloPayService zaloPayService;
+    private final VietQrService vietQrService;
 
     @Transactional
     public Map<String, Object> createNapTien(BigDecimal soTien, Integer phuongThuc, Integer maNguoiDung, String ipAddress) {
         if (soTien.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("Số tiền phải lớn hơn 0");
+        }
+        if (soTien.compareTo(new BigDecimal("10000")) < 0) {
+            throw new BadRequestException("Số tiền nạp tối thiểu là 10,000đ");
         }
         if (soTien.compareTo(new BigDecimal("100000000")) > 0) {
             throw new BadRequestException("Số tiền nạp tối đa là 100,000,000đ");
@@ -34,6 +39,7 @@ public class NapTienService {
         if (phuongThuc == 4) nhaCungCap = "VNPay";
         else if (phuongThuc == 5) nhaCungCap = "MoMo";
         else if (phuongThuc == 6) nhaCungCap = "ZaloPay";
+        else if (phuongThuc == 8) nhaCungCap = "VietQR";
         else throw new BadRequestException("Phương thức thanh toán không hợp lệ");
 
         ThanhToan payment = new ThanhToan();
@@ -50,6 +56,10 @@ public class NapTienService {
 
         payment.setMaGiaoDich("NAPVI-" + payment.getMaThanhToan() + "-" + System.currentTimeMillis());
         payment = thanhToanRepository.save(payment);
+
+        if (phuongThuc == 8) {
+            return vietQrService.createQrNapTien(payment);
+        }
 
         String paymentUrl;
         if (phuongThuc == 4) {

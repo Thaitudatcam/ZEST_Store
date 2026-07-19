@@ -35,7 +35,7 @@ public class GiaoDichVi {
     @Column(name = "so_du_sau", nullable = false, precision = 18, scale = 2)
     private BigDecimal soDuSau;
 
-    @Column(name = "mo_ta", length = 500)
+    @Column(name = "mo_ta", length = 500, columnDefinition = "NVARCHAR(500)")
     private String moTa;
 
     @Column(name = "ma_don_hang")

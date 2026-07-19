@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface GiaoDichViRepository extends JpaRepository<GiaoDichVi, Integer> {
 
-    Page<GiaoDichVi> findByNguoiDung_MaNguoiDungOrderByThoiGianDesc(Integer maNguoiDung, Pageable pageable);
+    Page<GiaoDichVi> findByNguoiDung_MaNguoiDung(Integer maNguoiDung, Pageable pageable);
 }

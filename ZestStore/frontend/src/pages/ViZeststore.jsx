@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getSoDu, getLichSuVi, napTien } from '../api/vi'
+import { getSoDu, getLichSuVi, napTien, getPaymentById } from '../api/vi'
+import { confirmVietQrPayment } from '../api/payment'
 import { VND } from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Plus, X, Banknote } from 'lucide-react'
+import { Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Plus, X, Banknote, QrCode, Clock } from 'lucide-react'
 
 const LOAI_LABELS = { 1: 'Nạp tiền', 2: 'Thanh toán' }
 const LOAI_COLORS = { 1: 'text-green-600 bg-green-50', 2: 'text-red-600 bg-red-50' }
@@ -22,6 +23,11 @@ export default function ViZeststore() {
   const [selectedChip, setSelectedChip] = useState(null)
   const [napLoading, setNapLoading] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
+  const [vietQrData, setVietQrData] = useState(null)
+  const [confirmingQr, setConfirmingQr] = useState(false)
+  const qrTimerRef = useRef(null)
+  const qrPollRef = useRef(null)
+  const [qrCountdown, setQrCountdown] = useState(900)
   const [searchParams] = useSearchParams()
 
   const loadSoDu = useCallback(() => getSoDu().then(d => setSoDu(d.soDu || 0)), [])
@@ -38,6 +44,33 @@ export default function ViZeststore() {
   }, [])
 
   useEffect(() => { loadSoDu(); loadLichSu(0) }, [loadSoDu, loadLichSu])
+
+  useEffect(() => {
+    if (!vietQrData) return
+    setQrCountdown(900)
+    qrTimerRef.current = setInterval(() => {
+      setQrCountdown(prev => { if (prev <= 1) { clearInterval(qrTimerRef.current); return 0 }; return prev - 1 })
+    }, 1000)
+    qrPollRef.current = setInterval(async () => {
+      try {
+        const res = await getPaymentById(vietQrData.paymentId)
+        if (res.trangThaiThanhToan === 2) {
+          clearInterval(qrTimerRef.current)
+          clearInterval(qrPollRef.current)
+          setVietQrData(null)
+          setShowModal(false)
+          setStatusMsg('Nạp tiền thành công!')
+          loadSoDu()
+          loadLichSu(0)
+          setTimeout(() => setStatusMsg(''), 3000)
+        }
+      } catch (_) {}
+    }, 5000)
+    return () => {
+      clearInterval(qrTimerRef.current)
+      clearInterval(qrPollRef.current)
+    }
+  }, [vietQrData, loadSoDu, loadLichSu])
 
   useEffect(() => {
     const status = searchParams.get('status')
@@ -75,13 +108,35 @@ export default function ViZeststore() {
     setNapLoading(true)
     try {
       const result = await napTien(soTien, phuongThuc)
-      if (result.paymentUrl) {
+      if (result.qrUrl) {
+        setVietQrData(result)
+      } else if (result.paymentUrl) {
         window.location.href = result.paymentUrl
       }
     } catch (err) {
       alert(err?.response?.data?.message || 'Lỗi khi tạo yêu cầu nạp tiền')
     } finally {
       setNapLoading(false)
+    }
+  }
+
+  const handleConfirmQr = async () => {
+    if (!vietQrData) return
+    setConfirmingQr(true)
+    try {
+      await confirmVietQrPayment(vietQrData.paymentId)
+      clearInterval(qrTimerRef.current)
+      clearInterval(qrPollRef.current)
+      setVietQrData(null)
+      setShowModal(false)
+      setStatusMsg('Nạp tiền thành công!')
+      loadSoDu()
+      loadLichSu(0)
+      setTimeout(() => setStatusMsg(''), 3000)
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Lỗi xác nhận thanh toán')
+    } finally {
+      setConfirmingQr(false)
     }
   }
 
@@ -153,7 +208,7 @@ export default function ViZeststore() {
         </div>
       )}
 
-      {showModal && (
+      {showModal && !vietQrData && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false) }}>
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
@@ -200,7 +255,63 @@ export default function ViZeststore() {
                 <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-blue-500">Zalo</div>
                 <span className="font-medium">ZaloPay</span>
               </button>
+              <button onClick={() => handleNap(8)} disabled={napLoading || !amount}
+                className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+                <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-green-600">
+                  <QrCode className="h-5 w-5" />
+                </div>
+                <span className="font-medium">VietQR</span>
+              </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {vietQrData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) { clearInterval(qrTimerRef.current); clearInterval(qrPollRef.current); setVietQrData(null) } }}>
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Quét mã QR để nạp tiền</h3>
+              <button onClick={() => { clearInterval(qrTimerRef.current); clearInterval(qrPollRef.current); setVietQrData(null) }}
+                className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center mb-4">
+              <img src={vietQrData.qrUrl} alt="VietQR"
+                className="w-64 h-64 border rounded-xl mb-3" />
+              <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                <Clock className="h-4 w-4" />
+                <span>{Math.floor(qrCountdown / 60)}:{(qrCountdown % 60).toString().padStart(2, '0')}</span>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm mb-4">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Ngân hàng</span>
+                <span className="font-medium">{vietQrData.bankName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Số tài khoản</span>
+                <span className="font-medium">{vietQrData.accountNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Chủ tài khoản</span>
+                <span className="font-medium">{vietQrData.accountName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Số tiền</span>
+                <span className="font-semibold text-lg">{VND(vietQrData.amount)}</span>
+              </div>
+            </div>
+
+            <button onClick={handleConfirmQr} disabled={confirmingQr}
+              className="w-full bg-blue-600 text-white rounded-xl py-3 font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors">
+              {confirmingQr ? 'Đang xử lý...' : 'Tôi đã thanh toán'}
+            </button>
+            <p className="text-xs text-gray-400 text-center mt-2">Sau khi chuyển khoản, nhấn "Tôi đã thanh toán" để cộng tiền vào ví</p>
           </div>
         </div>
       )}

@@ -79,6 +79,6 @@ public class ViService {
 
     public Page<GiaoDichVi> getLichSu(Integer userId, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "thoiGian"));
-        return giaoDichViRepository.findByNguoiDung_MaNguoiDungOrderByThoiGianDesc(userId, pageable);
+        return giaoDichViRepository.findByNguoiDung_MaNguoiDung(userId, pageable);
     }
 }

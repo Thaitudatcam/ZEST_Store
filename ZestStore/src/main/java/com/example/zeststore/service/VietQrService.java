@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -21,6 +22,37 @@ public class VietQrService {
     private final PaymentConfig paymentConfig;
     private final ThanhToanRepository thanhToanRepository;
     private final ThanhToanService thanhToanService;
+
+    public Map<String, Object> createQrNapTien(ThanhToan payment) {
+        if (!Integer.valueOf(8).equals(payment.getPhuongThuc())) {
+            throw new IllegalStateException("Payment method is not VietQR");
+        }
+
+        PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();
+        BigDecimal amount = payment.getSoTien();
+
+        String addInfo = "Nap+tien+vi+ZestStore+" + payment.getMaThanhToan();
+        String qrUrl = String.format(
+                "https://img.vietqr.io/image/%s-%s-%s.jpg?amount=%s&addInfo=%s&accountName=%s",
+                config.getBankBin(),
+                config.getBankNumber(),
+                config.getTemplate(),
+                amount.longValue(),
+                addInfo,
+                URLEncoder.encode(config.getBankName(), StandardCharsets.UTF_8)
+        );
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("qrUrl", qrUrl);
+        result.put("bankName", "MB Bank");
+        result.put("accountNumber", config.getBankNumber());
+        result.put("accountName", config.getBankName());
+        result.put("amount", amount);
+        result.put("paymentId", payment.getMaThanhToan());
+        result.put("maThanhToan", payment.getMaThanhToan());
+        result.put("message", "Scan QR to deposit");
+        return result;
+    }
 
     public Map<String, Object> createQrPayment(Integer orderId) {
         ThanhToan payment = thanhToanRepository
@@ -61,7 +93,12 @@ public class VietQrService {
     public void confirmPayment(Integer paymentId) {
         ThanhToan payment = thanhToanRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
-        thanhToanService.completePayment(paymentId, "VIETQR-" + payment.getDonHang().getMaDonHang()
-                + "-" + System.currentTimeMillis());
+        String txId;
+        if (payment.getDonHang() != null) {
+            txId = "VIETQR-" + payment.getDonHang().getMaDonHang() + "-" + System.currentTimeMillis();
+        } else {
+            txId = "VIETQR-NAPVI-" + payment.getMaThanhToan() + "-" + System.currentTimeMillis();
+        }
+        thanhToanService.completePayment(paymentId, txId);
     }
 }
