@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -130,6 +131,16 @@ public class NguoiDung {
         this.ngayTao = LocalDateTime.now();
         if (this.trangThai == null) this.trangThai = 1;
         if (this.soDu == null) this.soDu = BigDecimal.ZERO;
+        if (this.maNguoiDungCode == null) {
+            String prefix = "KH";
+            if (this.vaiTro != null && this.vaiTro.getTenVaiTro() != null) {
+                String role = this.vaiTro.getTenVaiTro();
+                if ("ADMIN".equals(role) || "STAFF".equals(role)) {
+                    prefix = "NV";
+                }
+            }
+            this.maNguoiDungCode = prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
     }
 
     @PreUpdate
