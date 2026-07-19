@@ -26,6 +26,7 @@ public class CouponResponse {
     private Integer soLuong;
     private BigDecimal giaTriGiamToiDa;
     private Boolean exclusive;
+    private Boolean congKhai;
     private List<CategoryInfo> danhMucApDung;
     private List<ProductInfo> sanPhamApDung;
 

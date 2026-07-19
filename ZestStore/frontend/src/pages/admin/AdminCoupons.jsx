@@ -29,7 +29,7 @@ export default function AdminCoupons() {
   const [form, setForm] = useState({
     maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '',
     ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '',
-    maDanhMucIds: [], maSanPhamIds: [],
+    maDanhMucIds: [], maSanPhamIds: [], congKhai: true,
   })
 
   useEffect(() => { getCategories().then(setCategories).catch(() => {}) }, [])
@@ -120,11 +120,12 @@ export default function AdminCoupons() {
 
       maDanhMucIds: form.maDanhMucIds.length > 0 ? form.maDanhMucIds : null,
       maSanPhamIds: form.maSanPhamIds.length > 0 ? form.maSanPhamIds : null,
+      congKhai: form.congKhai,
     }
     try {
       await createCoupon(payload)
       setShowForm(false)
-      setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', maDanhMucIds: [], maSanPhamIds: [] })
+      setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', maDanhMucIds: [], maSanPhamIds: [], congKhai: true })
       load()
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi tạo coupon')
@@ -423,6 +424,12 @@ export default function AdminCoupons() {
                   </div>
                 )}
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={form.congKhai}
+                  onChange={e => setForm({ ...form, congKhai: e.target.checked })} className="h-4 w-4" />
+                Công khai — hiển thị cho người dùng
+              </label>
 
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">

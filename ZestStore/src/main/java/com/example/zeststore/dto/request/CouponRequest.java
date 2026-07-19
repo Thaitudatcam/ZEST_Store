@@ -39,6 +39,8 @@ public class CouponRequest {
 
     private Boolean exclusive;
 
+    private Boolean congKhai;
+
     private List<Integer> maDanhMucIds;
 
     private List<Integer> maSanPhamIds;

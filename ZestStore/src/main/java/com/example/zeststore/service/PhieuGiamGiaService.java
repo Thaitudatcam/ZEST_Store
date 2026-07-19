@@ -96,6 +96,7 @@ public class PhieuGiamGiaService {
         List<PhieuGiamGia> coupons = phieuGiamGiaRepository.findValidCoupons(LocalDateTime.now(), tongTien);
         List<Map<String, Object>> result = new ArrayList<>();
         for (PhieuGiamGia c : coupons) {
+            if (!Boolean.TRUE.equals(c.getCongKhai())) continue;
             if (isCouponApplicableToProducts(c, maSanPhamIds)) {
                 result.add(buildCouponMap(c, tongTien, false));
             }
@@ -376,7 +377,8 @@ public class PhieuGiamGiaService {
                 .trangThai(request.getTrangThai() != null ? request.getTrangThai() : 1)
                 .soLuong(request.getSoLuong())
                 .giaTriGiamToiDa(request.getGiaTriGiamToiDa())
-                .exclusive(request.getExclusive() != null ? request.getExclusive() : false);
+                .exclusive(request.getExclusive() != null ? request.getExclusive() : false)
+                .congKhai(request.getCongKhai() != null ? request.getCongKhai() : false);
 
         if (request.getMaDanhMucIds() != null && !request.getMaDanhMucIds().isEmpty()) {
             builder.danhMucApDung(new HashSet<>(danhMucRepository.findAllById(request.getMaDanhMucIds())));
@@ -415,7 +417,8 @@ public class PhieuGiamGiaService {
                 .trangThaiThucTeText(coupon.getTrangThaiThucTeText())
                 .soLuong(coupon.getSoLuong())
                 .giaTriGiamToiDa(coupon.getGiaTriGiamToiDa())
-                .exclusive(coupon.getExclusive() != null && coupon.getExclusive());
+                .exclusive(coupon.getExclusive() != null && coupon.getExclusive())
+                .congKhai(coupon.getCongKhai() != null && coupon.getCongKhai());
         if (coupon.getDanhMucApDung() != null) {
             b.danhMucApDung(coupon.getDanhMucApDung().stream()
                     .map(dm -> new CouponResponse.CategoryInfo(dm.getMaDanhMuc(), dm.getTenDanhMuc()))

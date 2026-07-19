@@ -65,6 +65,10 @@ public class PhieuGiamGia {
     @Builder.Default
     private Boolean exclusive = false;
 
+    @Column(name = "cong_khai")
+    @Builder.Default
+    private Boolean congKhai = false;
+
     @ManyToMany
     @JoinTable(name = "coupon_danh_muc",
         joinColumns = @JoinColumn(name = "ma_phieu_giam_gia"),
