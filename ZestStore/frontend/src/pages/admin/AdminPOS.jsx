@@ -4,7 +4,7 @@ import api from '../../api/axios'
 import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
 import { getCustomerDiem } from '../../api/vi'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins, RefreshCw, History } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
 
@@ -27,6 +27,7 @@ export default function AdminPOS() {
   const [categories, setCategories] = useState([])
   const [soDiemSuDung, setSoDiemSuDung] = useState(0)
   const [customerDiem, setCustomerDiem] = useState(null)
+  const [apDungDiem, setApDungDiem] = useState(false)
   const [categoryId, setCategoryId] = useState('')
 
   useEffect(() => {
@@ -99,6 +100,7 @@ export default function AdminPOS() {
     setCustomerSearch(c.hoTen + (c.soDienThoai ? ` (${c.soDienThoai})` : ''))
     setShowCustomerDropdown(false)
     setSoDiemSuDung(0)
+    setApDungDiem(false)
     getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem(null))
   }
 
@@ -110,6 +112,7 @@ export default function AdminPOS() {
     setCustomerResults([])
     setCustomerDiem(null)
     setSoDiemSuDung(0)
+    setApDungDiem(false)
   }
 
   useEffect(() => {
@@ -307,7 +310,7 @@ export default function AdminPOS() {
           tenKhachHang: tenKhach.trim() || undefined,
           sdtKhachHang: sdtKhach.trim() || undefined,
           phuongThucThanhToan: 5,
-          soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
+          soDiemSuDung: apDungDiem && soDiemSuDung > 0 ? soDiemSuDung : undefined,
         }).then(r => r.data)
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
         setCart([])
@@ -336,7 +339,7 @@ export default function AdminPOS() {
         tenKhachHang: tenKhach.trim() || undefined,
         sdtKhachHang: sdtKhach.trim() || undefined,
         phuongThucThanhToan: 6,
-        soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
+        soDiemSuDung: apDungDiem && soDiemSuDung > 0 ? soDiemSuDung : undefined,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       setCart([])
@@ -585,22 +588,41 @@ export default function AdminPOS() {
           </div>
           {selectedCustomer && customerDiem !== null && (
             <div className="border-t pt-2 space-y-1">
-              <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                <Coins className="h-3.5 w-3.5 text-amber-500" /> Điểm tích lũy
-              </label>
-              {customerDiem.soDiem > 0 && (
-                <div className="flex gap-2">
-                  <input type="number" min={0} max={customerDiem.soDiem} value={soDiemSuDung}
-                    onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), customerDiem.soDiem))}
-                    placeholder="Số điểm muốn dùng"
-                    className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                  <span className="shrink-0 text-xs text-gray-400 self-center">Còn {customerDiem.soDiem.toLocaleString()}đ</span>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                  <Coins className="h-3.5 w-3.5 text-amber-500" /> Điểm tích lũy
+                </label>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => {})}
+                    className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition" title="Cập nhật số dư">
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
+                  <a href="/tich-diem" target="_blank" rel="noopener noreferrer"
+                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition" title="Lịch sử giao dịch">
+                    <History className="h-3 w-3" />
+                  </a>
                 </div>
-              )}
-              {soDiemSuDung > 0 && (
-                <p className="text-xs text-amber-600">Giảm thêm {VND(soDiemSuDung * 1000)}</p>
-              )}
-              {customerDiem.soDiem === 0 && (
+              </div>
+              {customerDiem.soDiem > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500">Số dư: <strong className="text-amber-700">{customerDiem.soDiem.toLocaleString()} điểm</strong></p>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setSoDiemSuDung(0) }} className="accent-amber-500" />
+                    Có áp dụng điểm
+                  </label>
+                  {apDungDiem && (
+                    <div className="flex gap-2">
+                      <input type="number" min={0} max={customerDiem.soDiem} value={soDiemSuDung}
+                        onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), customerDiem.soDiem))}
+                        placeholder="Số điểm muốn dùng"
+                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    </div>
+                  )}
+                  {apDungDiem && soDiemSuDung > 0 && (
+                    <p className="text-xs text-amber-600">Giảm thêm {VND(soDiemSuDung * 1000)}</p>
+                  )}
+                </div>
+              ) : (
                 <p className="text-xs text-gray-400">Khách chưa có điểm tích lũy</p>
               )}
             </div>

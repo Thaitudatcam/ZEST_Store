@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Heart, User, Menu, X, Store, ChevronDown, Search, Loader, Ticket } from 'lucide-react'
+import { ShoppingCart, Heart, User, Menu, X, Store, ChevronDown, Search, Loader, Ticket, Coins } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import { useVoucher } from '../context/VoucherContext'
 import { useState, useRef, useEffect } from 'react'
 import { searchSuggestions } from '../api/products'
+import { getSoDuDiem } from '../api/vi'
 import { useToast } from '../context/ToastContext'
 import SafeImg from './SafeImg'
 
@@ -28,6 +29,7 @@ export default function Navbar() {
   const dropdownRef = useRef(null)
   const searchRef = useRef(null)
   const debounceRef = useRef(null)
+  const [diemHienCo, setDiemHienCo] = useState(null)
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -67,6 +69,14 @@ export default function Navbar() {
       setSearchQuery('')
     }
   }
+
+  useEffect(() => {
+    if (user) {
+      getSoDuDiem().then(d => setDiemHienCo(d.soDiem ?? null)).catch(() => setDiemHienCo(null))
+    } else {
+      setDiemHienCo(null)
+    }
+  }, [user])
 
   const handleLogout = () => { logout(); navigate('/login') }
 
@@ -158,6 +168,10 @@ export default function Navbar() {
                       <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Tài khoản</Link>
                       <Link to="/orders" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đơn hàng</Link>
                       <Link to="/vi-zeststore" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Ví ZestStore</Link>
+                      <Link to="/tich-diem" onClick={() => setDropdownOpen(false)} className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-amber-50">
+                        <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-amber-500" /> Điểm tích lũy</span>
+                        {diemHienCo !== null && <span className="text-xs font-semibold text-amber-700">{diemHienCo.toLocaleString()}</span>}
+                      </Link>
                       <Link to="/profile?tab=password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Đổi mật khẩu</Link>
                       <hr className="my-1" />
                       {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
@@ -226,6 +240,10 @@ export default function Navbar() {
               <Link to="/cart" onClick={() => setOpen(false)} className="block text-gray-600">Giỏ hàng</Link>
               <Link to="/orders" onClick={() => setOpen(false)} className="block text-gray-600">Đơn hàng</Link>
               <Link to="/vi-zeststore" onClick={() => setOpen(false)} className="block text-gray-600">Ví ZestStore</Link>
+              <Link to="/tich-diem" onClick={() => setOpen(false)} className="flex items-center justify-between text-gray-600">
+                <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-amber-500" /> Điểm tích lũy</span>
+                {diemHienCo !== null && <span className="text-xs font-semibold text-amber-700">{diemHienCo.toLocaleString()}</span>}
+              </Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block text-gray-600">Tài khoản</Link>
               <Link to="/profile?tab=password" onClick={() => setOpen(false)} className="block text-gray-600">Đổi mật khẩu</Link>
               {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (

@@ -3,14 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
-import { getSoDu, getSoDuDiem } from '../api/vi'
+import { getSoDu, getSoDuDiem, getLichSuDiem } from '../api/vi'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet, Coins } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet, Coins, RefreshCw, History } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 
@@ -96,6 +96,10 @@ export default function Checkout() {
   const [vietQrData, setVietQrData] = useState(null)
   const [diemSuDung, setDiemSuDung] = useState(0)
   const [soDiemHienCo, setSoDiemHienCo] = useState(0)
+  const [apDungDiem, setApDungDiem] = useState(false)
+  const [showDiemHistory, setShowDiemHistory] = useState(false)
+  const [diemHistoryData, setDiemHistoryData] = useState([])
+  const [diemHistoryLoading, setDiemHistoryLoading] = useState(false)
   const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
   const [discountMsg, setDiscountMsg] = useState('')
@@ -143,9 +147,22 @@ export default function Checkout() {
   const [addrWards, setAddrWards] = useState([])
   const [addrLoading, setAddrLoading] = useState(false)
 
+  const refreshDiem = () => {
+    getSoDuDiem().then(d => setSoDiemHienCo(d.soDiem || 0)).catch(() => {})
+  }
+
+  const loadDiemHistory = async () => {
+    setDiemHistoryLoading(true)
+    try {
+      const res = await getLichSuDiem(0, 10)
+      setDiemHistoryData(Array.isArray(res.content) ? res.content : [])
+      setShowDiemHistory(true)
+    } catch {} finally { setDiemHistoryLoading(false) }
+  }
+
   useEffect(() => {
     getSoDu().then(d => setSoDuVi(d.soDu || 0)).catch(() => {})
-    getSoDuDiem().then(d => setSoDiemHienCo(d.soDiem || 0)).catch(() => {})
+    refreshDiem()
     Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProvinces()])
       .then(([cartData, addrData, provData]) => {
         if (!selectedItems) setCart(cartData)
@@ -425,7 +442,7 @@ export default function Checkout() {
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
         weight: Math.max(weight, 500),
-        soDiemSuDung: diemSuDung > 0 ? diemSuDung : undefined,
+        soDiemSuDung: apDungDiem && diemSuDung > 0 ? diemSuDung : undefined,
       }
       if (selectedItems) {
         orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
@@ -690,18 +707,38 @@ export default function Checkout() {
                   {freeshipMsg && <p className="text-red-500 text-xs mt-1">{freeshipMsg}</p>}
                 </div>
                 <div className="border-t pt-3">
-                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Coins className="h-4 w-4 text-amber-500" /> Điểm tích lũy</h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="font-semibold flex items-center gap-2 text-sm"><Coins className="h-4 w-4 text-amber-500" /> Điểm tích lũy</h2>
+                    <div className="flex items-center gap-1">
+                      <button onClick={refreshDiem} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Cập nhật số dư">
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={loadDiemHistory} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Lịch sử giao dịch">
+                        <History className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                   {soDiemHienCo > 0 ? (
-                    <div className="space-y-1">
-                      <div className="flex gap-2 items-center">
-                        <input type="number" min={0} max={soDiemHienCo} value={diemSuDung}
-                          onChange={e => setDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), soDiemHienCo))}
-                          placeholder="Số điểm muốn dùng"
-                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                        <span className="shrink-0 text-xs text-gray-400">Còn {soDiemHienCo.toLocaleString()}đ</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Số dư: <strong className="text-amber-700">{soDiemHienCo.toLocaleString()} điểm</strong></span>
                       </div>
-                      {diemSuDung > 0 && (
-                        <p className="text-xs text-amber-600">Giảm {VND(diemSuDung * 1000)}</p>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setDiemSuDung(0) }} className="accent-amber-500" />
+                        Có áp dụng điểm tích lũy
+                      </label>
+                      {apDungDiem && (
+                        <div className="space-y-1">
+                          <div className="flex gap-2 items-center">
+                            <input type="number" min={0} max={soDiemHienCo} value={diemSuDung}
+                              onChange={e => setDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), soDiemHienCo))}
+                              placeholder="Số điểm muốn dùng"
+                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                          </div>
+                          {diemSuDung > 0 && (
+                            <p className="text-xs text-amber-600">Giảm {VND(diemSuDung * 1000)}</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -828,7 +865,55 @@ export default function Checkout() {
           )}
       </div>
     </div>
-    )}
+      )}
+
+      {showDiemHistory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowDiemHistory(false)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 animate-scale-in max-h-[80vh] flex flex-col"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b shrink-0">
+              <h3 className="font-bold flex items-center gap-2"><History className="h-5 w-5 text-blue-600" /> Lịch sử giao dịch điểm</h3>
+              <button onClick={() => setShowDiemHistory(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {diemHistoryLoading ? (
+                <div className="flex items-center justify-center py-8"><Loader className="h-6 w-6 animate-spin text-blue-700" /></div>
+              ) : diemHistoryData.length === 0 ? (
+                <p className="text-center text-gray-400 py-8 text-sm">Chưa có giao dịch nào</p>
+              ) : (
+                diemHistoryData.map(gd => {
+                  const isTich = gd.loaiGiaoDich === 1
+                  const isDung = gd.loaiGiaoDich === 2
+                  const isHetHan = gd.loaiGiaoDich === 3
+                  return (
+                    <div key={gd.maGiaoDich} className={`border rounded-lg px-3 py-2.5 ${isTich ? 'bg-green-50 border-green-200' : isDung ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{isTich ? 'Tích lũy' : isDung ? 'Đã dùng' : 'Hết hạn'}</span>
+                        <span className={`font-semibold text-sm ${isTich ? 'text-green-600' : 'text-red-500'}`}>
+                          {isTich ? '+' : '-'}{gd.soDiem?.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                        <span>{new Date(gd.thoiGian).toLocaleString('vi-VN')}</span>
+                        <span>Số dư: {gd.soDuSau?.toLocaleString()}</span>
+                      </div>
+                      {gd.donHang?.maDonHang && (
+                        <p className="text-xs text-gray-400 mt-0.5">Đơn hàng #{gd.donHang.maDonHang}</p>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            <div className="border-t p-4 shrink-0">
+              <a href="/tich-diem" className="block w-full text-center text-sm text-blue-600 font-medium hover:underline">Xem tất cả lịch sử →</a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddrModal && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
