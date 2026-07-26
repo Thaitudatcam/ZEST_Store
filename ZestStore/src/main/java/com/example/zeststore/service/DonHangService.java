@@ -38,6 +38,7 @@ public class DonHangService {
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final ViService viService;
+    private final DiemService diemService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -230,10 +231,16 @@ public class DonHangService {
                 : freeshipCoupon.getGiaTriGiam().min(phiVanChuyen);
             phiVanChuyen = phiVanChuyen.subtract(giamShip).max(BigDecimal.ZERO);
         }
-        BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
-        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
-            finalTotal = BigDecimal.ZERO;
+        BigDecimal tienGiamDiem = BigDecimal.ZERO;
+        Integer soDiemSuDung = request.getSoDiemSuDung();
+        if (soDiemSuDung != null && soDiemSuDung > 0) {
+            tienGiamDiem = BigDecimal.valueOf(diemService.tinhTienGiam(soDiemSuDung));
+            if (tienGiamDiem.compareTo(finalTotal) > 0) {
+                throw new BadRequestException("Số điểm giảm không được vượt quá tổng tiền thanh toán");
+            }
         }
+        BigDecimal tienSauVoucher = finalTotal;
+        finalTotal = finalTotal.subtract(tienGiamDiem).max(BigDecimal.ZERO);
 
         DonHang order = DonHang.builder()
                 .nguoiDung(user)
@@ -241,7 +248,8 @@ public class DonHangService {
                 .maDonHangCode("ORD-" + System.currentTimeMillis())
                 .soTienGiam(soTienGiam)
                 .phiVanChuyen(phiVanChuyen)
-                .tongTien(finalTotal)
+                .tongTien(tienSauVoucher)
+                .soTienGiamDiem(tienGiamDiem)
                 .trangThaiDon(1)
                 .tenNguoiNhan(request.getTenNguoiNhan())
                 .sdtNguoiNhan(request.getSdtNguoiNhan())
@@ -249,6 +257,10 @@ public class DonHangService {
                 .ghiChu(request.getGhiChu())
                 .build();
         order = donHangRepository.save(order);
+
+        if (soDiemSuDung != null && soDiemSuDung > 0) {
+            diemService.truDiem(userId, soDiemSuDung, order.getMaDonHang());
+        }
 
         for (Map<String, Object> item : orderItems) {
             BienTheSanPham variant = (BienTheSanPham) item.get("bienThe");
@@ -393,6 +405,10 @@ public class DonHangService {
         order.setTrangThaiDon(status);
         order = donHangRepository.save(order);
 
+        if (Integer.valueOf(6).equals(status) && order.getNguoiDung() != null) {
+            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien());
+        }
+
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
         lichSuDonHangRepository.save(LichSuDonHang.builder()
@@ -436,6 +452,10 @@ public class DonHangService {
                 });
 
         donHangRepository.save(order);
+
+        if (order.getNguoiDung() != null) {
+            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien());
+        }
 
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));

@@ -43,6 +43,11 @@ public class DonHang {
     @Builder.Default
     private BigDecimal phiVanChuyen = BigDecimal.ZERO;
 
+    @PositiveOrZero
+    @Column(name = "so_tien_giam_diem", precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal soTienGiamDiem = BigDecimal.ZERO;
+
     @NotNull @PositiveOrZero
     @Column(name = "tong_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal tongTien;
@@ -115,6 +120,7 @@ public class DonHang {
         if (this.trangThaiDon == null) this.trangThaiDon = 1;
         if (this.soTienGiam == null) this.soTienGiam = BigDecimal.ZERO;
         if (this.phiVanChuyen == null) this.phiVanChuyen = BigDecimal.ZERO;
+        if (this.soTienGiamDiem == null) this.soTienGiamDiem = BigDecimal.ZERO;
     }
 
     @PreUpdate

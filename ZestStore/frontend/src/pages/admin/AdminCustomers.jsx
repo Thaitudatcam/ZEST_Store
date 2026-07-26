@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getCustomers, toggleCustomerStatus } from '../../api/admin'
-import { Search, Eye, Lock, Unlock, Filter } from 'lucide-react'
+import { getCustomerDiem } from '../../api/vi'
+import { Search, Eye, Lock, Unlock, Filter, Coins } from 'lucide-react'
 
 const PAGE_SIZE = 20
 
@@ -10,6 +11,7 @@ export default function AdminCustomers() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [error, setError] = useState('')
   const [detail, setDetail] = useState(null)
+  const [detailDiem, setDetailDiem] = useState(null)
   const [page, setPage] = useState(0)
   const [confirmToggle, setConfirmToggle] = useState(null)
 
@@ -85,7 +87,7 @@ export default function AdminCustomers() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
-                      <button onClick={() => setDetail(c)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="h-4 w-4" /></button>
+                      <button onClick={() => { setDetail(c); getCustomerDiem(c.maNguoiDung).then(setDetailDiem).catch(() => setDetailDiem(null)) }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="h-4 w-4" /></button>
                       <button onClick={() => setConfirmToggle(c.maNguoiDung)} className={`p-1.5 rounded-lg ${c.trangThai === 1 ? 'text-red-500 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}>
                         {c.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                       </button>
@@ -126,7 +128,20 @@ export default function AdminCustomers() {
                 </span>
               </div>
             </div>
-            <button onClick={() => setDetail(null)} className="mt-6 w-full border rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Đóng</button>
+            {detailDiem && (
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <Coins className="h-4 w-4 text-amber-600" />
+                  <span className="font-medium text-amber-800">Điểm tích lũy:</span>
+                  <span className="text-lg font-bold text-amber-900">{detailDiem.soDiem?.toLocaleString()}</span>
+                </div>
+                <div className="flex gap-4 mt-1 text-xs text-amber-600">
+                  <span>Đã tích: {detailDiem.tongTichLuy?.toLocaleString()}</span>
+                  <span>Đã dùng: {detailDiem.tongSuDung?.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+            <button onClick={() => setDetail(null)} className="mt-3 w-full border rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Đóng</button>
           </div>
         </div>
       )}

@@ -17,6 +17,7 @@ import UserVouchers from './pages/UserVouchers'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
 import ViZeststore from './pages/ViZeststore'
+import LoyaltyPoints from './pages/LoyaltyPoints'
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -35,6 +36,7 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
+import AdminCouponBatches from './pages/admin/AdminCouponBatches'
 import AdminThongKe from './pages/admin/AdminThongKe'
 import AdminChangePassword from './pages/admin/AdminChangePassword'
 import AiChat from './components/AiChat'
@@ -71,6 +73,7 @@ export default function App() {
         <Route path="customers" element={<AdminUsers />} />
         <Route path="employees" element={<AdminUsers />} />
         <Route path="pos" element={<AdminPOS />} />
+        <Route path="coupon-batches" element={<AdminCouponBatches />} />
         <Route path="change-password" element={<AdminChangePassword />} />
       </Route>
 
@@ -93,6 +96,7 @@ export default function App() {
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><ErrorBoundary><OrderDetail /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/vi-zeststore" element={<ProtectedRoute><ViZeststore /></ProtectedRoute>} />
+              <Route path="/tich-diem" element={<ProtectedRoute><LoyaltyPoints /></ProtectedRoute>} />
               <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
           </main>

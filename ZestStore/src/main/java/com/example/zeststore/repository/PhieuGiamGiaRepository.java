@@ -48,4 +48,6 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             @Param("giaTriGiam") BigDecimal giaTriGiam
     );
     long countByNgayXoaIsNull();
+
+    List<PhieuGiamGia> findByDotPhatHanh_MaDot(Integer maDot);
 }

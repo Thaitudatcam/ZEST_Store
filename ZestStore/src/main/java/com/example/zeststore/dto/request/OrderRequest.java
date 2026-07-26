@@ -44,4 +44,6 @@ public class OrderRequest {
     private Integer weight;
 
     private List<Integer> maBienTheList;
+
+    private Integer soDiemSuDung;
 }

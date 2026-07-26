@@ -81,6 +81,10 @@ public class NguoiDung {
     @Builder.Default
     private BigDecimal soDu = BigDecimal.ZERO;
 
+    @Column(name = "nguon_tao", length = 20)
+    @Builder.Default
+    private String nguonTao = "SELF_REGISTER";
+
     @OneToMany(mappedBy = "nguoiDung", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore

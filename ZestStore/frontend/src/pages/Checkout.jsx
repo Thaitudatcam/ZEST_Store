@@ -3,14 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
-import { getSoDu } from '../api/vi'
+import { getSoDu, getSoDuDiem } from '../api/vi'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet, Coins } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 
@@ -94,6 +94,8 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [soDuVi, setSoDuVi] = useState(0)
   const [vietQrData, setVietQrData] = useState(null)
+  const [diemSuDung, setDiemSuDung] = useState(0)
+  const [soDiemHienCo, setSoDiemHienCo] = useState(0)
   const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
   const [discountMsg, setDiscountMsg] = useState('')
@@ -143,6 +145,7 @@ export default function Checkout() {
 
   useEffect(() => {
     getSoDu().then(d => setSoDuVi(d.soDu || 0)).catch(() => {})
+    getSoDuDiem().then(d => setSoDiemHienCo(d.soDiem || 0)).catch(() => {})
     Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProvinces()])
       .then(([cartData, addrData, provData]) => {
         if (!selectedItems) setCart(cartData)
@@ -390,7 +393,8 @@ export default function Checkout() {
     ? (freeshipVoucher.giaTriGiam === 0 ? shippingFee : Math.min(freeshipVoucher.giaTriGiam, shippingFee))
     : 0
   const effectiveShippingFee = shippingFee - freeshipDiscount
-  const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee)
+  const tienGiamDiem = diemSuDung * 1000
+  const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee - tienGiamDiem)
 
   const goToStep = (s) => {
     if (s === 'payment' || s === 'review') {
@@ -421,6 +425,7 @@ export default function Checkout() {
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
         weight: Math.max(weight, 500),
+        soDiemSuDung: diemSuDung > 0 ? diemSuDung : undefined,
       }
       if (selectedItems) {
         orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
@@ -684,6 +689,25 @@ export default function Checkout() {
                   )}
                   {freeshipMsg && <p className="text-red-500 text-xs mt-1">{freeshipMsg}</p>}
                 </div>
+                <div className="border-t pt-3">
+                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Coins className="h-4 w-4 text-amber-500" /> Điểm tích lũy</h2>
+                  {soDiemHienCo > 0 ? (
+                    <div className="space-y-1">
+                      <div className="flex gap-2 items-center">
+                        <input type="number" min={0} max={soDiemHienCo} value={diemSuDung}
+                          onChange={e => setDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), soDiemHienCo))}
+                          placeholder="Số điểm muốn dùng"
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                        <span className="shrink-0 text-xs text-gray-400">Còn {soDiemHienCo.toLocaleString()}đ</span>
+                      </div>
+                      {diemSuDung > 0 && (
+                        <p className="text-xs text-amber-600">Giảm {VND(diemSuDung * 1000)}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400">Bạn chưa có điểm tích lũy. <a href="/tich-diem" className="text-blue-600 underline">Xem chi tiết</a></p>
+                  )}
+                </div>
               </div>
 
               {ghnError && <p className="text-red-500 text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
@@ -731,6 +755,12 @@ export default function Checkout() {
                 <div className="flex justify-between text-green-600">
                   <span>Miễn phí vận chuyển</span>
                   <span>-{VND(freeshipDiscount)}</span>
+                </div>
+              )}
+              {tienGiamDiem > 0 && (
+                <div className="flex justify-between text-amber-600">
+                  <span>Giảm điểm</span>
+                  <span>-{VND(tienGiamDiem)}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600">

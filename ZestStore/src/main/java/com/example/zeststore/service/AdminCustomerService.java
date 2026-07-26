@@ -90,6 +90,11 @@ public class AdminCustomerService {
         VaiTro role = vaiTroRepository.findByTenVaiTro("CUSTOMER")
                 .orElseThrow(() -> new RuntimeException("Role CUSTOMER not found"));
 
+        String nguonTao = body.get("nguonTao");
+        if (nguonTao == null || nguonTao.trim().isEmpty()) {
+            nguonTao = "SELF_REGISTER";
+        }
+
         NguoiDung customer = NguoiDung.builder()
                 .hoTen(body.get("hoTen").trim())
                 .email(email.trim())
@@ -99,6 +104,7 @@ public class AdminCustomerService {
                                 ? body.get("matKhau").trim() : "customer123"))
                 .vaiTro(role)
                 .trangThai(1)
+                .nguonTao(nguonTao.trim())
                 .build();
         customer = nguoiDungRepository.save(customer);
 

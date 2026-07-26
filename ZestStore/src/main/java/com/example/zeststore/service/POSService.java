@@ -26,6 +26,7 @@ public class POSService {
     private final PosCartRepository posCartRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
+    private final DiemService diemService;
 
     public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien) {
         Optional<PhieuGiamGia> opt = phieuGiamGiaRepository.findByMaCode(maCode);
@@ -188,11 +189,22 @@ public class POSService {
 
         BigDecimal thanhToanTong = tongTien.subtract(soTienGiam).max(BigDecimal.ZERO);
 
+        BigDecimal tienGiamDiem = BigDecimal.ZERO;
+        Integer soDiemSuDung = request.getSoDiemSuDung();
+        if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
+            tienGiamDiem = BigDecimal.valueOf(diemService.tinhTienGiam(soDiemSuDung));
+            if (tienGiamDiem.compareTo(thanhToanTong) > 0) {
+                throw new BadRequestException("Số điểm giảm không được vượt quá tổng tiền thanh toán");
+            }
+            thanhToanTong = thanhToanTong.subtract(tienGiamDiem);
+        }
+
         DonHang order = DonHang.builder()
                 .nguoiDung(customer)
                 .loaiDonHang(2)
                 .maDonHangCode(code)
-                .tongTien(thanhToanTong)
+                .tongTien(thanhToanTong.add(tienGiamDiem))
+                .soTienGiamDiem(tienGiamDiem)
                 .trangThaiDon(6)
                 .tenNguoiNhan(tenNguoiNhan)
                 .sdtNguoiNhan(sdtNguoiNhan)
@@ -204,6 +216,13 @@ public class POSService {
                 .phieuGiamGia(coupon)
                 .build();
         order = donHangRepository.save(order);
+
+        if (customer != null) {
+            diemService.tichDiem(customer.getMaNguoiDung(), order.getMaDonHang(), thanhToanTong.add(tienGiamDiem));
+        }
+        if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
+            diemService.truDiem(customer.getMaNguoiDung(), soDiemSuDung, order.getMaDonHang());
+        }
 
         if (coupon != null) {
             phieuGiamGiaService.useCoupon(coupon.getMaCode(),

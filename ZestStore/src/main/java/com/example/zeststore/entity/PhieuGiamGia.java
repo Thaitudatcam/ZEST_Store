@@ -69,6 +69,15 @@ public class PhieuGiamGia {
     @Builder.Default
     private Boolean congKhai = false;
 
+    @Column(name = "loai_phat_hanh", nullable = false, columnDefinition = "TINYINT")
+    @Builder.Default
+    private Integer loaiPhatHanh = 1;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_dot")
+    @ToString.Exclude
+    private DotPhatHanh dotPhatHanh;
+
     @ManyToMany
     @JoinTable(name = "coupon_danh_muc",
         joinColumns = @JoinColumn(name = "ma_phieu_giam_gia"),

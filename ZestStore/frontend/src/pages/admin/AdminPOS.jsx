@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
+import { getCustomerDiem } from '../../api/vi'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
 
@@ -24,6 +25,8 @@ export default function AdminPOS() {
   const [sizes, setSizes] = useState([])
   const [colors, setColors] = useState([])
   const [categories, setCategories] = useState([])
+  const [soDiemSuDung, setSoDiemSuDung] = useState(0)
+  const [customerDiem, setCustomerDiem] = useState(null)
   const [categoryId, setCategoryId] = useState('')
 
   useEffect(() => {
@@ -95,6 +98,8 @@ export default function AdminPOS() {
     setSdtKhach(c.soDienThoai || '')
     setCustomerSearch(c.hoTen + (c.soDienThoai ? ` (${c.soDienThoai})` : ''))
     setShowCustomerDropdown(false)
+    setSoDiemSuDung(0)
+    getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem(null))
   }
 
   const clearCustomer = () => {
@@ -103,6 +108,8 @@ export default function AdminPOS() {
     setSdtKhach('')
     setCustomerSearch('')
     setCustomerResults([])
+    setCustomerDiem(null)
+    setSoDiemSuDung(0)
   }
 
   useEffect(() => {
@@ -269,6 +276,7 @@ export default function AdminPOS() {
         soDienThoai: quickForm.soDienThoai.trim() || undefined,
         email: quickForm.email.trim() || undefined,
         matKhau: quickForm.matKhau.trim() || undefined,
+        nguonTao: 'POS_QUICK',
       })
       selectCustomer(res)
       setQuickAddOpen(false)
@@ -299,6 +307,7 @@ export default function AdminPOS() {
           tenKhachHang: tenKhach.trim() || undefined,
           sdtKhachHang: sdtKhach.trim() || undefined,
           phuongThucThanhToan: 5,
+          soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         }).then(r => r.data)
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
         setCart([])
@@ -327,6 +336,7 @@ export default function AdminPOS() {
         tenKhachHang: tenKhach.trim() || undefined,
         sdtKhachHang: sdtKhach.trim() || undefined,
         phuongThucThanhToan: 6,
+        soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       setCart([])
@@ -573,6 +583,28 @@ export default function AdminPOS() {
               </div>
             )}
           </div>
+          {selectedCustomer && customerDiem !== null && (
+            <div className="border-t pt-2 space-y-1">
+              <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                <Coins className="h-3.5 w-3.5 text-amber-500" /> Điểm tích lũy
+              </label>
+              {customerDiem.soDiem > 0 && (
+                <div className="flex gap-2">
+                  <input type="number" min={0} max={customerDiem.soDiem} value={soDiemSuDung}
+                    onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), customerDiem.soDiem))}
+                    placeholder="Số điểm muốn dùng"
+                    className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                  <span className="shrink-0 text-xs text-gray-400 self-center">Còn {customerDiem.soDiem.toLocaleString()}đ</span>
+                </div>
+              )}
+              {soDiemSuDung > 0 && (
+                <p className="text-xs text-amber-600">Giảm thêm {VND(soDiemSuDung * 1000)}</p>
+              )}
+              {customerDiem.soDiem === 0 && (
+                <p className="text-xs text-gray-400">Khách chưa có điểm tích lũy</p>
+              )}
+            </div>
+          )}
           <div className="space-y-1">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Tạm tính:</span>
@@ -584,9 +616,15 @@ export default function AdminPOS() {
                 <span>-{VND(coupon.soTienGiam)}</span>
               </div>
             )}
+            {soDiemSuDung > 0 && (
+              <div className="flex justify-between text-sm text-amber-600">
+                <span>Giảm điểm:</span>
+                <span>-{VND(soDiemSuDung * 1000)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-1 border-t">
               <span className="font-semibold">Phải thanh toán:</span>
-              <span className="text-lg font-bold text-blue-700">{VND(Math.max(0, total - (coupon?.soTienGiam || 0)))}</span>
+              <span className="text-lg font-bold text-blue-700">{VND(Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * 1000))}</span>
             </div>
           </div>
           <div className="flex gap-2">

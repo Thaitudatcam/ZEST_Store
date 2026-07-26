@@ -72,3 +72,7 @@ export const toggleCampaignStatus = (id) => api.put(`/admin/campaigns/${id}/togg
 export const launchCampaign = (id) => api.post(`/admin/campaigns/${id}/launch`).then((r) => r.data)
 export const updateCampaign = (id, data) => api.put(`/admin/campaigns/${id}`, data).then((r) => r.data)
 export const deleteCampaign = (id) => api.delete(`/admin/campaigns/${id}`).then((r) => r.data)
+
+export const getCouponBatches = () => api.get('/admin/coupon-batches').then((r) => r.data)
+export const createCouponBatch = (data) => api.post('/admin/coupon-batches', data).then((r) => r.data)
+export const getCouponBatchVouchers = (id) => api.get(`/admin/coupon-batches/${id}/vouchers`).then((r) => r.data)

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -479,5 +480,42 @@ public class PhieuGiamGiaService {
         PhieuGiamGia coupon = getById(id);
         coupon.setTrangThai(coupon.getTrangThai() == 1 ? 0 : 1);
         return phieuGiamGiaRepository.save(coupon);
+    }
+
+    @Transactional
+    public List<String> generateBatchVouchers(DotPhatHanh dotPhatHanh) {
+        List<String> codes = new ArrayList<>();
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        Random random = new SecureRandom();
+
+        while (codes.size() < dotPhatHanh.getSoLuong()) {
+            String code = random.ints(8, 0, chars.length())
+                    .mapToObj(chars::charAt)
+                    .map(String::valueOf)
+                    .collect(Collectors.joining());
+
+            if (phieuGiamGiaRepository.findByMaCode(code).isPresent()) continue;
+            if (codes.contains(code)) continue;
+
+            PhieuGiamGia voucher = PhieuGiamGia.builder()
+                    .maCode(code)
+                    .kieuGiamGia(dotPhatHanh.getKieuGiamGia())
+                    .giaTriGiam(dotPhatHanh.getGiaTriGiam())
+                    .giaTriDonToiThieu(dotPhatHanh.getGiaTriDonToiThieu())
+                    .giaTriGiamToiDa(dotPhatHanh.getGiaTriGiamToiDa())
+                    .ngayBatDau(dotPhatHanh.getNgayBatDau())
+                    .ngayKetThuc(dotPhatHanh.getNgayKetThuc())
+                    .soLuong(1)
+                    .loaiPhatHanh(2)
+                    .dotPhatHanh(dotPhatHanh)
+                    .trangThai(1)
+                    .congKhai(false)
+                    .build();
+
+            phieuGiamGiaRepository.save(voucher);
+            codes.add(code);
+        }
+
+        return codes;
     }
 }
