@@ -11,7 +11,7 @@ export default function Profile() {
   const [profile, setProfile] = useState(null)
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ hoTen: '' })
+  const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '' })
   const [pwd, setPwd] = useState({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhauMoi: '' })
   const [showPwd, setShowPwd] = useState({ cu: false, moi: false, xacNhan: false })
   const [pwdMsg, setPwdMsg] = useState('')
@@ -28,7 +28,7 @@ export default function Profile() {
   const load = async () => {
     try {
       const [p, a, prov] = await Promise.all([getProfile(), getAddresses(), getProvinces()])
-      setProfile(p); setAddresses(a); setForm({ hoTen: p.hoTen || '' }); setProvinces(prov || [])
+      setProfile(p); setAddresses(a); setForm({ hoTen: p.hoTen || '', email: p.email || '', soDienThoai: p.soDienThoai || '' }); setProvinces(prov || [])
     } catch {} finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -47,7 +47,12 @@ export default function Profile() {
 
   const handleUpdate = async (e) => {
     e.preventDefault(); setMsg('')
-    try { await updateProfile({ hoTen: form.hoTen }); setMsg('Cập nhật thành công') } catch { setMsg('Lỗi cập nhật') }
+    try {
+      await updateProfile({ hoTen: form.hoTen, email: form.email, soDienThoai: form.soDienThoai })
+      setMsg('Cập nhật thành công')
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Lỗi cập nhật')
+    }
   }
 
   const handlePwd = async (e) => {
@@ -110,9 +115,9 @@ export default function Profile() {
 
       {tab === 'profile' && (
         <form onSubmit={handleUpdate} className="bg-white rounded-xl border p-6 space-y-4">
-          <div><label className="text-sm text-gray-500">Email</label><p className="font-semibold">{profile?.email}</p></div>
-          <div><label className="text-sm text-gray-500">Số điện thoại</label><p className="font-semibold">{profile?.soDienThoai || 'Chưa cập nhật'}</p></div>
-          <div><label className="text-sm text-gray-500">Họ tên</label><input value={form.hoTen} onChange={(e) => setForm({ hoTen: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
+          <div><label className="text-sm text-gray-500">Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
+          <div><label className="text-sm text-gray-500">Số điện thoại</label><input type="tel" value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
+          <div><label className="text-sm text-gray-500">Họ tên</label><input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
           <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800">Lưu</button>
         </form>
       )}

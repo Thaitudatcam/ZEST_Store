@@ -50,12 +50,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<?> handleUsernameNotFound(UsernameNotFoundException ex) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không đúng");
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Email/SĐT hoặc mật khẩu không đúng");
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<?> handleBadCredentials(BadCredentialsException ex) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không đúng");
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Email/SĐT hoặc mật khẩu không đúng");
     }
 
     @ExceptionHandler(DisabledException.class)

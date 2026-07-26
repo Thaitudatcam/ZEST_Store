@@ -7,6 +7,7 @@ import com.example.zeststore.entity.DiaChiNguoiDung;
 import com.example.zeststore.entity.NguoiDung;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
+import com.example.zeststore.exception.DuplicateResourceException;
 import com.example.zeststore.repository.DiaChiNguoiDungRepository;
 import com.example.zeststore.repository.NguoiDungRepository;
 import lombok.RequiredArgsConstructor;
@@ -61,12 +62,23 @@ public class UserService {
     public Map<String, Object> updateProfile(Integer userId, UserUpdateRequest request) {
         NguoiDung user = getUserById(userId);
         if (request.getHoTen() != null) user.setHoTen(request.getHoTen());
-        if (request.getSoDienThoai() != null) user.setSoDienThoai(request.getSoDienThoai());
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (nguoiDungRepository.existsByEmail(request.getEmail())) {
+                throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
+            }
+            user.setEmail(request.getEmail());
+        }
+        if (request.getSoDienThoai() != null && !request.getSoDienThoai().equals(user.getSoDienThoai())) {
+            if (nguoiDungRepository.existsBySoDienThoai(request.getSoDienThoai())) {
+                throw new DuplicateResourceException("Số điện thoại đã được sử dụng bởi tài khoản khác");
+            }
+            user.setSoDienThoai(request.getSoDienThoai());
+        }
         if (request.getAnhDaiDien() != null) user.setAnhDaiDien(request.getAnhDaiDien());
         if (request.getGioiTinh() != null) user.setGioiTinh(request.getGioiTinh());
         if (request.getNgaySinh() != null) user.setNgaySinh(request.getNgaySinh());
         NguoiDung saved = nguoiDungRepository.save(user);
-        return Map.of("message", "Profile updated", "user", saved);
+        return Map.of("message", "Cập nhật thông tin thành công");
     }
 
     @Transactional

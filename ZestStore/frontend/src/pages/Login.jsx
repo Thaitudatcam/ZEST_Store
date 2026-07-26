@@ -34,7 +34,7 @@ export default function Login() {
         </div>
         {err && <p className="text-red-500 text-sm mb-4 text-center">{err}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email hoặc số điện thoại" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <input type="password" value={matKhau} onChange={(e) => setMatKhau(e.target.value)} placeholder="Mật khẩu" required className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <button type="submit" disabled={sub} className="w-full bg-blue-700 text-white font-semibold py-3 rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
             {sub ? 'Đang đăng nhập...' : 'Đăng nhập'}

@@ -21,9 +21,18 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(username).orElse(null);
+        if (nguoiDung == null) {
+            String normalized = username.replaceAll("[^0-9]", "");
+            if (normalized.startsWith("84") && normalized.length() > 9) {
+                normalized = "0" + normalized.substring(2);
+            }
+            nguoiDung = nguoiDungRepository.findBySoDienThoai(normalized).orElse(null);
+        }
+        if (nguoiDung == null) {
+            throw new UsernameNotFoundException("Không tìm thấy tài khoản với email hoặc số điện thoại: " + username);
+        }
 
         return new User(
                 nguoiDung.getEmail(),

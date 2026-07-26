@@ -49,8 +49,9 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getMatKhau()));
 
-        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        String userEmail = authentication.getName();
+        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
         LocalDateTime lastLogin = nguoiDung.getNgayDangNhapCuoi();
         nguoiDung.setNgayDangNhapCuoi(LocalDateTime.now());

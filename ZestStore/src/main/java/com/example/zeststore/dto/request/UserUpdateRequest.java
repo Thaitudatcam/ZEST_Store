@@ -1,5 +1,6 @@
 package com.example.zeststore.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import java.time.LocalDate;
@@ -12,6 +13,10 @@ import java.time.LocalDate;
 public class UserUpdateRequest {
     @Size(max = 100)
     private String hoTen;
+
+    @Size(max = 150)
+    @Email
+    private String email;
 
     @Size(max = 15)
     private String soDienThoai;
