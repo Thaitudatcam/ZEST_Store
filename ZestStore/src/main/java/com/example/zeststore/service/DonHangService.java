@@ -231,6 +231,11 @@ public class DonHangService {
                 : freeshipCoupon.getGiaTriGiam().min(phiVanChuyen);
             phiVanChuyen = phiVanChuyen.subtract(giamShip).max(BigDecimal.ZERO);
         }
+        BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
+
         BigDecimal tienGiamDiem = BigDecimal.ZERO;
         Integer soDiemSuDung = request.getSoDiemSuDung();
         if (soDiemSuDung != null && soDiemSuDung > 0) {
