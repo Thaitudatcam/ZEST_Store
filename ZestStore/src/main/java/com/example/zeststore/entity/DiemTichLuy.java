@@ -1,8 +1,8 @@
 package com.example.zeststore.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -23,15 +23,17 @@ public class DiemTichLuy {
     @ToString.Exclude
     private NguoiDung nguoiDung;
 
-    @Column(name = "so_diem", nullable = false)
+    @Column(name = "so_diem_hien_tai", nullable = false)
     @Builder.Default
-    private Integer soDiem = 0;
+    private Integer soDiemHienTai = 0;
 
-    @Column(name = "tong_tich_luy", nullable = false)
+    @Column(name = "ngay_cap_nhat", nullable = false)
     @Builder.Default
-    private Integer tongTichLuy = 0;
+    private LocalDateTime ngayCapNhat = LocalDateTime.now();
 
-    @Column(name = "tong_su_dung", nullable = false)
-    @Builder.Default
-    private Integer tongSuDung = 0;
+    @PrePersist
+    @PreUpdate
+    protected void onUpdate() {
+        this.ngayCapNhat = LocalDateTime.now();
+    }
 }

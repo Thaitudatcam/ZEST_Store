@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +35,7 @@ public class DiemService {
     private final DonHangRepository donHangRepository;
 
     @Transactional
-    public void tichDiem(Integer maNguoiDung, Integer maDonHang, BigDecimal tongTien) {
+    public void tichDiem(Integer maNguoiDung, Integer maDonHang, BigDecimal tongTien, String maKenh) {
         if (maNguoiDung == null || tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) return;
 
         int diemTich = tongTien.divide(BigDecimal.valueOf(TI_LE_TICH), RoundingMode.DOWN).intValue();
@@ -44,31 +44,30 @@ public class DiemService {
         NguoiDung nguoiDung = nguoiDungRepository.findById(maNguoiDung)
                 .orElseThrow(() -> new ResourceNotFoundException("User", maNguoiDung));
 
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElse(null);
+        DonHang donHang = maDonHang != null ? donHangRepository.findById(maDonHang).orElse(null) : null;
 
         DiemTichLuy viDiem = diemTichLuyRepository.findByIdWithLock(maNguoiDung)
                 .orElseGet(() -> diemTichLuyRepository.save(DiemTichLuy.builder()
                         .nguoiDung(nguoiDung)
-                        .soDiem(0)
-                        .tongTichLuy(0)
-                        .tongSuDung(0)
+                        .soDiemHienTai(0)
                         .build()));
 
-        int soDuMoi = viDiem.getSoDiem() + diemTich;
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime ngayHetHan = now.plusMonths(THOI_HAN_THANG);
 
         lichSuDiemRepository.save(LichSuDiem.builder()
                 .nguoiDung(nguoiDung)
-                .loaiGiaoDich(1)
+                .loaiGiaoDich("TICH_LUY")
                 .soDiem(diemTich)
-                .soDuSau(soDuMoi)
-                .ngayHetHan(LocalDate.now().plusMonths(THOI_HAN_THANG))
+                .soDiemConLai(diemTich)
                 .donHang(donHang)
-                .thoiGian(LocalDateTime.now())
+                .maKenh(maKenh)
+                .ngayTich(now)
+                .ngayHetHan(ngayHetHan)
+                .thoiGian(now)
                 .build());
 
-        viDiem.setSoDiem(soDuMoi);
-        viDiem.setTongTichLuy(viDiem.getTongTichLuy() + diemTich);
+        viDiem.setSoDiemHienTai(viDiem.getSoDiemHienTai() + diemTich);
         diemTichLuyRepository.save(viDiem);
     }
 
@@ -76,14 +75,22 @@ public class DiemService {
         return diemTichLuyRepository.findByNguoiDung_MaNguoiDung(maNguoiDung)
                 .orElse(DiemTichLuy.builder()
                         .maNguoiDung(maNguoiDung)
-                        .soDiem(0)
-                        .tongTichLuy(0)
-                        .tongSuDung(0)
+                        .soDiemHienTai(0)
                         .build());
     }
 
     public Page<LichSuDiem> getLichSuDiem(Integer maNguoiDung, Pageable pageable) {
         return lichSuDiemRepository.findByNguoiDung_MaNguoiDungOrderByThoiGianDesc(maNguoiDung, pageable);
+    }
+
+    public int getTongTichLuy(Integer maNguoiDung) {
+        Integer sum = lichSuDiemRepository.sumTichLuy(maNguoiDung);
+        return sum != null ? sum : 0;
+    }
+
+    public int getTongSuDung(Integer maNguoiDung) {
+        Integer sum = lichSuDiemRepository.sumSuDung(maNguoiDung);
+        return sum != null ? Math.abs(sum) : 0;
     }
 
     public int tinhTienGiam(Integer soDiem) {
@@ -92,14 +99,14 @@ public class DiemService {
     }
 
     @Transactional
-    public void truDiem(Integer maNguoiDung, Integer diemDung, Integer maDonHang) {
+    public void truDiem(Integer maNguoiDung, Integer diemDung, Integer maDonHang, String maKenh) {
         if (maNguoiDung == null || diemDung == null || diemDung <= 0) return;
 
         DiemTichLuy viDiem = diemTichLuyRepository.findByIdWithLock(maNguoiDung)
                 .orElseThrow(() -> new BadRequestException("Tài khoản chưa có điểm tích lũy"));
 
-        if (viDiem.getSoDiem() < diemDung) {
-            throw new BadRequestException("Số điểm không đủ. Bạn có " + viDiem.getSoDiem() + " điểm");
+        if (viDiem.getSoDiemHienTai() < diemDung) {
+            throw new BadRequestException("Số điểm không đủ. Bạn có " + viDiem.getSoDiemHienTai() + " điểm");
         }
 
         NguoiDung nguoiDung = nguoiDungRepository.findById(maNguoiDung)
@@ -107,19 +114,34 @@ public class DiemService {
 
         DonHang donHang = maDonHang != null ? donHangRepository.findById(maDonHang).orElse(null) : null;
 
-        int soDuMoi = viDiem.getSoDiem() - diemDung;
+        LocalDateTime now = LocalDateTime.now();
 
-        lichSuDiemRepository.save(LichSuDiem.builder()
-                .nguoiDung(nguoiDung)
-                .loaiGiaoDich(2)
-                .soDiem(diemDung)
-                .soDuSau(soDuMoi)
-                .donHang(donHang)
-                .thoiGian(LocalDateTime.now())
-                .build());
+        List<LichSuDiem> batches = lichSuDiemRepository.findAvailableBatchesFifo(maNguoiDung);
 
-        viDiem.setSoDiem(soDuMoi);
-        viDiem.setTongSuDung(viDiem.getTongSuDung() + diemDung);
+        int conPhaiTru = diemDung;
+        for (LichSuDiem batch : batches) {
+            if (conPhaiTru <= 0) break;
+            if (batch.getSoDiemConLai() == null || batch.getSoDiemConLai() <= 0) continue;
+
+            int truTuLo = Math.min(conPhaiTru, batch.getSoDiemConLai());
+
+            lichSuDiemRepository.save(LichSuDiem.builder()
+                    .nguoiDung(nguoiDung)
+                    .loaiGiaoDich("SU_DUNG")
+                    .soDiem(-truTuLo)
+                    .lichSuGoc(batch)
+                    .donHang(donHang)
+                    .maKenh(maKenh)
+                    .thoiGian(now)
+                    .build());
+
+            batch.setSoDiemConLai(batch.getSoDiemConLai() - truTuLo);
+            lichSuDiemRepository.save(batch);
+
+            conPhaiTru -= truTuLo;
+        }
+
+        viDiem.setSoDiemHienTai(viDiem.getSoDiemHienTai() - diemDung);
         diemTichLuyRepository.save(viDiem);
     }
 }

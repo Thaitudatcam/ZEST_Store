@@ -36,7 +36,6 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
-import AdminCouponBatches from './pages/admin/AdminCouponBatches'
 import AdminThongKe from './pages/admin/AdminThongKe'
 import AdminChangePassword from './pages/admin/AdminChangePassword'
 import AiChat from './components/AiChat'
@@ -73,7 +72,6 @@ export default function App() {
         <Route path="customers" element={<AdminUsers />} />
         <Route path="employees" element={<AdminUsers />} />
         <Route path="pos" element={<AdminPOS />} />
-        <Route path="coupon-batches" element={<AdminCouponBatches />} />
         <Route path="change-password" element={<AdminChangePassword />} />
       </Route>
 

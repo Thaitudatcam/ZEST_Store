@@ -11,7 +11,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +30,8 @@ public class DiemExpiryJob {
     public void expirePoints() {
         log.info("Starting point expiry job...");
 
-        LocalDate today = LocalDate.now();
-        List<LichSuDiem> expiredBatches = lichSuDiemRepository.findExpiredBatches(today);
+        LocalDateTime now = LocalDateTime.now();
+        List<LichSuDiem> expiredBatches = lichSuDiemRepository.findExpiredBatches(now);
 
         if (expiredBatches.isEmpty()) {
             log.info("No expired point batches found.");
@@ -47,8 +46,8 @@ public class DiemExpiryJob {
             List<LichSuDiem> batches = entry.getValue();
 
             int totalExpired = batches.stream()
-                    .filter(l -> l.getSoDuSau() > 0)
-                    .mapToInt(LichSuDiem::getSoDuSau)
+                    .filter(l -> l.getSoDiemConLai() != null && l.getSoDiemConLai() > 0)
+                    .mapToInt(LichSuDiem::getSoDiemConLai)
                     .sum();
 
             if (totalExpired <= 0) continue;
@@ -56,20 +55,31 @@ public class DiemExpiryJob {
             DiemTichLuy viDiem = diemTichLuyRepository.findByIdWithLock(maNguoiDung).orElse(null);
             if (viDiem == null) continue;
 
-            int thucTeExpired = Math.min(totalExpired, viDiem.getSoDiem());
+            int thucTeExpired = Math.min(totalExpired, viDiem.getSoDiemHienTai());
             if (thucTeExpired <= 0) continue;
 
-            int soDuMoi = viDiem.getSoDiem() - thucTeExpired;
+            int conHetHan = thucTeExpired;
+            for (LichSuDiem batch : batches) {
+                if (conHetHan <= 0) break;
+                if (batch.getSoDiemConLai() == null || batch.getSoDiemConLai() <= 0) continue;
 
-            lichSuDiemRepository.save(LichSuDiem.builder()
-                    .nguoiDung(nguoiDungRepository.findById(maNguoiDung).orElse(null))
-                    .loaiGiaoDich(3)
-                    .soDiem(thucTeExpired)
-                    .soDuSau(soDuMoi)
-                    .thoiGian(LocalDateTime.now())
-                    .build());
+                int hetHanTuLo = Math.min(conHetHan, batch.getSoDiemConLai());
 
-            viDiem.setSoDiem(soDuMoi);
+                lichSuDiemRepository.save(LichSuDiem.builder()
+                        .nguoiDung(nguoiDungRepository.findById(maNguoiDung).orElse(null))
+                        .loaiGiaoDich("HET_HAN")
+                        .soDiem(-hetHanTuLo)
+                        .lichSuGoc(batch)
+                        .thoiGian(LocalDateTime.now())
+                        .build());
+
+                batch.setSoDiemConLai(batch.getSoDiemConLai() - hetHanTuLo);
+                lichSuDiemRepository.save(batch);
+
+                conHetHan -= hetHanTuLo;
+            }
+
+            viDiem.setSoDiemHienTai(viDiem.getSoDiemHienTai() - thucTeExpired);
             diemTichLuyRepository.save(viDiem);
 
             log.info("Expired {} points for user {}", thucTeExpired, maNguoiDung);

@@ -6,9 +6,9 @@ import { Coins, Plus, Minus, Clock, Info, AlertTriangle, History } from 'lucide-
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
 const LOAI = {
-  1: { label: 'Tích lũy', icon: Plus, cls: 'text-green-600 bg-green-50 border-green-200' },
-  2: { label: 'Đã dùng', icon: Minus, cls: 'text-blue-600 bg-blue-50 border-blue-200' },
-  3: { label: 'Hết hạn', icon: AlertTriangle, cls: 'text-red-500 bg-red-50 border-red-200' },
+  TICH_LUY: { label: 'Tích lũy', icon: Plus, cls: 'text-green-600 bg-green-50 border-green-200' },
+  SU_DUNG: { label: 'Đã dùng', icon: Minus, cls: 'text-blue-600 bg-blue-50 border-blue-200' },
+  HET_HAN: { label: 'Hết hạn', icon: AlertTriangle, cls: 'text-red-500 bg-red-50 border-red-200' },
 }
 
 export default function LoyaltyPoints() {
@@ -77,8 +77,9 @@ export default function LoyaltyPoints() {
           {lichSu.map((gd) => {
             const loai = LOAI[gd.loaiGiaoDich] || {}
             const Icon = loai.icon || Info
+            const isTich = gd.loaiGiaoDich === 'TICH_LUY'
             return (
-              <div key={gd.maGiaoDich} className={`border rounded-lg px-4 py-3 ${loai.cls || ''}`}>
+              <div key={gd.maLichSu} className={`border rounded-lg px-4 py-3 ${loai.cls || ''}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4" />
@@ -87,11 +88,13 @@ export default function LoyaltyPoints() {
                       <span className="text-xs text-gray-500">#Đơn {gd.donHang.maDonHang}</span>
                     )}
                   </div>
-                  <span className="font-semibold text-sm">{gd.loaiGiaoDich === 1 ? '+' : '-'}{gd.soDiem?.toLocaleString()}</span>
+                  <span className="font-semibold text-sm">
+                    {isTich ? '+' : ''}{gd.soDiem?.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between mt-1 text-xs text-gray-500">
                   <span>{new Date(gd.thoiGian).toLocaleString('vi-VN')}</span>
-                  <span>Số dư sau: {gd.soDuSau?.toLocaleString()}</span>
+                  {gd.maKenh && <span>{gd.maKenh}</span>}
                 </div>
                 {gd.ngayHetHan && (
                   <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">

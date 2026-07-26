@@ -49,5 +49,4 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     );
     long countByNgayXoaIsNull();
 
-    List<PhieuGiamGia> findByDotPhatHanh_MaDot(Integer maDot);
 }

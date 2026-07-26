@@ -218,10 +218,10 @@ public class POSService {
         order = donHangRepository.save(order);
 
         if (customer != null) {
-            diemService.tichDiem(customer.getMaNguoiDung(), order.getMaDonHang(), thanhToanTong.add(tienGiamDiem));
+            diemService.tichDiem(customer.getMaNguoiDung(), order.getMaDonHang(), thanhToanTong.add(tienGiamDiem), "POS");
         }
         if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
-            diemService.truDiem(customer.getMaNguoiDung(), soDiemSuDung, order.getMaDonHang());
+            diemService.truDiem(customer.getMaNguoiDung(), soDiemSuDung, order.getMaDonHang(), "POS");
         }
 
         if (coupon != null) {

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -18,9 +18,15 @@ public interface LichSuDiemRepository extends JpaRepository<LichSuDiem, Integer>
 
     List<LichSuDiem> findByNguoiDung_MaNguoiDungOrderByThoiGianDesc(Integer maNguoiDung);
 
-    @Query("SELECT l FROM LichSuDiem l WHERE l.ngayHetHan < :date AND l.loaiGiaoDich = 1 AND l.soDuSau > 0 ORDER BY l.ngayHetHan ASC")
-    List<LichSuDiem> findExpiredBatches(@Param("date") LocalDate date);
+    @Query("SELECT l FROM LichSuDiem l WHERE l.loaiGiaoDich = 'TICH_LUY' AND l.soDiemConLai > 0 AND l.ngayHetHan <= :now ORDER BY l.ngayHetHan ASC")
+    List<LichSuDiem> findExpiredBatches(@Param("now") LocalDateTime now);
 
-    @Query("SELECT COALESCE(SUM(l.soDiem), 0) FROM LichSuDiem l WHERE l.nguoiDung.maNguoiDung = :maNguoiDung AND l.loaiGiaoDich = 1 AND (l.ngayHetHan IS NULL OR l.ngayHetHan >= :today)")
-    Integer getTotalTichLuyConHan(@Param("maNguoiDung") Integer maNguoiDung, @Param("today") LocalDate today);
+    @Query("SELECT l FROM LichSuDiem l WHERE l.nguoiDung.maNguoiDung = :maNguoiDung AND l.loaiGiaoDich = 'TICH_LUY' AND l.soDiemConLai > 0 ORDER BY l.ngayTich ASC")
+    List<LichSuDiem> findAvailableBatchesFifo(@Param("maNguoiDung") Integer maNguoiDung);
+
+    @Query("SELECT COALESCE(SUM(l.soDiem), 0) FROM LichSuDiem l WHERE l.nguoiDung.maNguoiDung = :maNguoiDung AND l.loaiGiaoDich = 'TICH_LUY'")
+    Integer sumTichLuy(@Param("maNguoiDung") Integer maNguoiDung);
+
+    @Query("SELECT COALESCE(SUM(l.soDiem), 0) FROM LichSuDiem l WHERE l.nguoiDung.maNguoiDung = :maNguoiDung AND l.loaiGiaoDich IN ('SU_DUNG', 'HET_HAN')")
+    Integer sumSuDung(@Param("maNguoiDung") Integer maNguoiDung);
 }

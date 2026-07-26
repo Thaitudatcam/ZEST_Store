@@ -26,9 +26,9 @@ public class DiemController {
         Integer userId = userService.getUserIdFromAuth(auth);
         DiemTichLuy viDiem = diemService.getSoDiem(userId);
         return ResponseEntity.ok(Map.of(
-                "soDiem", viDiem.getSoDiem(),
-                "tongTichLuy", viDiem.getTongTichLuy(),
-                "tongSuDung", viDiem.getTongSuDung()
+                "soDiem", viDiem.getSoDiemHienTai(),
+                "tongTichLuy", diemService.getTongTichLuy(userId),
+                "tongSuDung", diemService.getTongSuDung(userId)
         ));
     }
 
@@ -50,9 +50,9 @@ public class DiemController {
     public ResponseEntity<?> getSoDiemCuaNguoiDung(@PathVariable Integer maNguoiDung) {
         DiemTichLuy viDiem = diemService.getSoDiem(maNguoiDung);
         return ResponseEntity.ok(Map.of(
-                "soDiem", viDiem.getSoDiem(),
-                "tongTichLuy", viDiem.getTongTichLuy(),
-                "tongSuDung", viDiem.getTongSuDung()
+                "soDiem", viDiem.getSoDiemHienTai(),
+                "tongTichLuy", diemService.getTongTichLuy(maNguoiDung),
+                "tongSuDung", diemService.getTongSuDung(maNguoiDung)
         ));
     }
 

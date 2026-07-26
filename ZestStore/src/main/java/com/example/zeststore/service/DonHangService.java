@@ -264,7 +264,7 @@ public class DonHangService {
         order = donHangRepository.save(order);
 
         if (soDiemSuDung != null && soDiemSuDung > 0) {
-            diemService.truDiem(userId, soDiemSuDung, order.getMaDonHang());
+            diemService.truDiem(userId, soDiemSuDung, order.getMaDonHang(), "ONLINE");
         }
 
         for (Map<String, Object> item : orderItems) {
@@ -411,7 +411,7 @@ public class DonHangService {
         order = donHangRepository.save(order);
 
         if (Integer.valueOf(6).equals(status) && order.getNguoiDung() != null) {
-            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien());
+            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien(), "ONLINE");
         }
 
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
@@ -459,7 +459,7 @@ public class DonHangService {
         donHangRepository.save(order);
 
         if (order.getNguoiDung() != null) {
-            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien());
+            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien(), "ONLINE");
         }
 
         NguoiDung user = nguoiDungRepository.findById(userId)
