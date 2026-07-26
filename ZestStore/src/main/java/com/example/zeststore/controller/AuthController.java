@@ -3,6 +3,9 @@ package com.example.zeststore.controller;
 import com.example.zeststore.dto.request.LoginRequest;
 import com.example.zeststore.dto.request.RefreshTokenRequest;
 import com.example.zeststore.dto.request.RegisterRequest;
+import com.example.zeststore.dto.request.QuenMatKhauRequest;
+import com.example.zeststore.dto.request.DatLaiMatKhauRequest;
+import com.example.zeststore.dto.request.XacThucEmailRequest;
 import com.example.zeststore.dto.response.AuthResponse;
 import com.example.zeststore.entity.GioHang;
 import com.example.zeststore.entity.DanhSachYeuThich;
@@ -14,6 +17,7 @@ import com.example.zeststore.repository.DanhSachYeuThichRepository;
 import com.example.zeststore.repository.VaiTroRepository;
 import com.example.zeststore.security.JwtTokenProvider;
 import com.example.zeststore.service.AutoGrantService;
+import com.example.zeststore.service.AuthService;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +47,7 @@ public class AuthController {
     private final DanhSachYeuThichRepository danhSachYeuThichRepository;
     private final PasswordEncoder passwordEncoder;
     private final AutoGrantService autoGrantService;
+    private final AuthService authService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
@@ -139,6 +144,29 @@ public class AuthController {
                         .vaiTro(nguoiDung.getVaiTro().getTenVaiTro())
                         .choPhepBanHang(nguoiDung.getChoPhepBanHang())
                         .build());
+    }
+
+    @PostMapping("/gui-ma-xac-thuc")
+    public ResponseEntity<?> guiMaXacThuc(Authentication auth) {
+        String email = auth.getName();
+        return ResponseEntity.ok(authService.guiOtp(email));
+    }
+
+    @PostMapping("/xac-thuc-email")
+    public ResponseEntity<?> xacThucEmail(Authentication auth,
+                                           @Valid @RequestBody XacThucEmailRequest request) {
+        String email = auth.getName();
+        return ResponseEntity.ok(authService.xacThucOtp(email, request.getMaXacThuc()));
+    }
+
+    @PostMapping("/quen-mat-khau")
+    public ResponseEntity<?> quenMatKhau(@Valid @RequestBody QuenMatKhauRequest request) {
+        return ResponseEntity.ok(authService.guiOtpQuenMatKhau(request.getEmail()));
+    }
+
+    @PostMapping("/dat-lai-mat-khau")
+    public ResponseEntity<?> datLaiMatKhau(@Valid @RequestBody DatLaiMatKhauRequest request) {
+        return ResponseEntity.ok(authService.datLaiMatKhau(request.getEmail(), request.getMaXacThuc(), request.getMatKhauMoi()));
     }
 
     @PostMapping("/refresh")

@@ -1,0 +1,178 @@
+package com.example.zeststore.service;
+
+import com.example.zeststore.entity.NguoiDung;
+import com.example.zeststore.exception.BadRequestException;
+import com.example.zeststore.exception.ResourceNotFoundException;
+import com.example.zeststore.repository.NguoiDungRepository;
+import jakarta.mail.MessagingException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final NguoiDungRepository nguoiDungRepository;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
+
+    private static final Duration RATE_LIMIT = Duration.ofSeconds(60);
+    private static final Duration OTP_EXPIRY = Duration.ofMinutes(10);
+    private static final int MAX_ATTEMPTS = 5;
+
+    public String taoOtp() {
+        SecureRandom random = new SecureRandom();
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
+    }
+
+    public String hashOtp(String otp) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(otp.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> guiOtp(String email) {
+        NguoiDung user = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        if (user.getLanGuiCuoi() != null) {
+            long secondsSinceLast = Duration.between(user.getLanGuiCuoi(), LocalDateTime.now()).getSeconds();
+            if (secondsSinceLast < RATE_LIMIT.getSeconds()) {
+                long wait = RATE_LIMIT.getSeconds() - secondsSinceLast;
+                throw new BadRequestException("Vui lòng đợi " + wait + " giây trước khi yêu cầu mã mới");
+            }
+        }
+
+        String otp = taoOtp();
+        String hash = hashOtp(otp);
+        user.setMaXacThucHash(hash);
+        user.setMaXacThucHetHan(LocalDateTime.now().plus(OTP_EXPIRY));
+        user.setLanGuiCuoi(LocalDateTime.now());
+        user.setSoLanThuSai(0);
+        nguoiDungRepository.save(user);
+
+        try {
+            emailService.sendOtpEmail(email, otp);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Không thể gửi email xác thực", e);
+        }
+
+        return Map.of("message", "Mã xác thực đã được gửi đến email của bạn");
+    }
+
+    @Transactional
+    public Map<String, Object> xacThucOtp(String email, String otp) {
+        NguoiDung user = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        if (user.getMaXacThucHash() == null) {
+            throw new BadRequestException("Chưa có mã xác thực nào được gửi");
+        }
+
+        if (user.getMaXacThucHetHan() == null || user.getMaXacThucHetHan().isBefore(LocalDateTime.now())) {
+            user.setMaXacThucHash(null);
+            user.setMaXacThucHetHan(null);
+            user.setSoLanThuSai(0);
+            nguoiDungRepository.save(user);
+            throw new BadRequestException("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới");
+        }
+
+        if (user.getSoLanThuSai() >= MAX_ATTEMPTS) {
+            user.setMaXacThucHash(null);
+            user.setMaXacThucHetHan(null);
+            user.setSoLanThuSai(0);
+            nguoiDungRepository.save(user);
+            throw new BadRequestException("Bạn đã nhập sai quá " + MAX_ATTEMPTS + " lần. Vui lòng yêu cầu mã mới");
+        }
+
+        String inputHash = hashOtp(otp);
+        if (!inputHash.equals(user.getMaXacThucHash())) {
+            user.setSoLanThuSai(user.getSoLanThuSai() + 1);
+            nguoiDungRepository.save(user);
+            int remaining = MAX_ATTEMPTS - user.getSoLanThuSai();
+            throw new BadRequestException("Mã xác thực không đúng. Còn " + remaining + " lần thử");
+        }
+
+        user.setMaXacThucHash(null);
+        user.setMaXacThucHetHan(null);
+        user.setLanGuiCuoi(null);
+        user.setSoLanThuSai(0);
+        nguoiDungRepository.save(user);
+
+        return Map.of("message", "Xác thực thành công");
+    }
+
+    @Transactional
+    public Map<String, Object> guiOtpQuenMatKhau(String email) {
+        NguoiDung user = nguoiDungRepository.findByEmail(email).orElse(null);
+
+        if (user == null || !Boolean.TRUE.equals(user.getEmailDaXacThuc())) {
+            return Map.of("message", "Nếu email hợp lệ và đã được xác thực, mã OTP sẽ được gửi đến email của bạn");
+        }
+
+        return guiOtp(email);
+    }
+
+    @Transactional
+    public Map<String, Object> datLaiMatKhau(String email, String otp, String matKhauMoi) {
+        NguoiDung user = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        if (user.getMaXacThucHash() == null) {
+            throw new BadRequestException("Chưa có mã xác thực nào được gửi");
+        }
+
+        if (user.getMaXacThucHetHan() == null || user.getMaXacThucHetHan().isBefore(LocalDateTime.now())) {
+            user.setMaXacThucHash(null);
+            user.setMaXacThucHetHan(null);
+            user.setSoLanThuSai(0);
+            nguoiDungRepository.save(user);
+            throw new BadRequestException("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới");
+        }
+
+        if (user.getSoLanThuSai() >= MAX_ATTEMPTS) {
+            user.setMaXacThucHash(null);
+            user.setMaXacThucHetHan(null);
+            user.setSoLanThuSai(0);
+            nguoiDungRepository.save(user);
+            throw new BadRequestException("Bạn đã nhập sai quá " + MAX_ATTEMPTS + " lần. Vui lòng yêu cầu mã mới");
+        }
+
+        String inputHash = hashOtp(otp);
+        if (!inputHash.equals(user.getMaXacThucHash())) {
+            user.setSoLanThuSai(user.getSoLanThuSai() + 1);
+            nguoiDungRepository.save(user);
+            int remaining = MAX_ATTEMPTS - user.getSoLanThuSai();
+            throw new BadRequestException("Mã xác thực không đúng. Còn " + remaining + " lần thử");
+        }
+
+        user.setMatKhauMaHoa(passwordEncoder.encode(matKhauMoi));
+        user.setMaXacThucHash(null);
+        user.setMaXacThucHetHan(null);
+        user.setLanGuiCuoi(null);
+        user.setSoLanThuSai(0);
+        nguoiDungRepository.save(user);
+
+        return Map.of("message", "Mật khẩu đã được đặt lại thành công");
+    }
+}

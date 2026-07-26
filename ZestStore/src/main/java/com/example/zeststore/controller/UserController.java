@@ -3,6 +3,9 @@ package com.example.zeststore.controller;
 import com.example.zeststore.dto.request.ChangePasswordRequest;
 import com.example.zeststore.dto.request.DiaChiRequest;
 import com.example.zeststore.dto.request.UserUpdateRequest;
+import com.example.zeststore.dto.request.GuiMaXacThucRequest;
+import com.example.zeststore.dto.request.XacThucEmailRequest;
+import com.example.zeststore.service.AuthService;
 import com.example.zeststore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(Authentication auth) {
@@ -57,6 +61,20 @@ public class UserController {
     @DeleteMapping("/addresses/{id}")
     public ResponseEntity<?> deleteAddress(Authentication auth, @PathVariable Integer id) {
         return ResponseEntity.ok(userService.deleteAddress(userService.getUserIdFromAuth(auth), id));
+    }
+
+    @PostMapping("/gui-ma-xac-thuc-email-moi")
+    public ResponseEntity<?> guiMaXacThucEmailMoi(Authentication auth,
+                                                   @Valid @RequestBody GuiMaXacThucRequest request) {
+        Integer userId = userService.getUserIdFromAuth(auth);
+        return ResponseEntity.ok(userService.guiOtpEmailMoi(userId, request.getEmailMoi()));
+    }
+
+    @PostMapping("/xac-nhan-email-moi")
+    public ResponseEntity<?> xacNhanEmailMoi(Authentication auth,
+                                              @Valid @RequestBody XacThucEmailRequest request) {
+        Integer userId = userService.getUserIdFromAuth(auth);
+        return ResponseEntity.ok(userService.xacNhanEmailMoi(userId, request.getMaXacThuc()));
     }
 
     @PutMapping("/addresses/{id}/default")

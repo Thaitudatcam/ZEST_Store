@@ -10,6 +10,7 @@ import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.exception.DuplicateResourceException;
 import com.example.zeststore.repository.DiaChiNguoiDungRepository;
 import com.example.zeststore.repository.NguoiDungRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +28,7 @@ public class UserService {
     private final NguoiDungRepository nguoiDungRepository;
     private final DiaChiNguoiDungRepository diaChiRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
     @Transactional(readOnly = true)
     public NguoiDung getUserById(Integer id) {
@@ -55,6 +57,8 @@ public class UserService {
         result.put("gioiTinh", user.getGioiTinh());
         result.put("ngaySinh", user.getNgaySinh() != null ? user.getNgaySinh().toString() : null);
         result.put("vaiTro", user.getVaiTro() != null ? user.getVaiTro().getTenVaiTro() : null);
+        result.put("emailDaXacThuc", user.getEmailDaXacThuc());
+        result.put("emailMoiChoXacThuc", user.getEmailMoiChoXacThuc());
         return result;
     }
 
@@ -67,6 +71,11 @@ public class UserService {
                 throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
             }
             user.setEmail(request.getEmail());
+            user.setEmailDaXacThuc(false);
+            user.setEmailMoiChoXacThuc(null);
+            user.setMaXacThucHash(null);
+            user.setMaXacThucHetHan(null);
+            user.setSoLanThuSai(0);
         }
         if (request.getSoDienThoai() != null && !request.getSoDienThoai().equals(user.getSoDienThoai())) {
             if (nguoiDungRepository.existsBySoDienThoai(request.getSoDienThoai())) {
@@ -157,6 +166,38 @@ public class UserService {
         NguoiDung user = getUserById(userId);
         user.setAnhDaiDien(url);
         nguoiDungRepository.save(user);
+    }
+
+    @Transactional
+    public Map<String, Object> guiOtpEmailMoi(Integer userId, String emailMoi) {
+        if (emailMoi == null || emailMoi.isBlank()) {
+            throw new BadRequestException("Email mới không được để trống");
+        }
+        NguoiDung user = getUserById(userId);
+        if (emailMoi.equals(user.getEmail())) {
+            throw new BadRequestException("Email mới trùng với email hiện tại");
+        }
+        if (nguoiDungRepository.existsByEmail(emailMoi)) {
+            throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
+        }
+        user.setEmailMoiChoXacThuc(emailMoi);
+        nguoiDungRepository.save(user);
+        return authService.guiOtp(emailMoi);
+    }
+
+    @Transactional
+    public Map<String, Object> xacNhanEmailMoi(Integer userId, String maXacThuc) {
+        NguoiDung user = getUserById(userId);
+        String emailMoi = user.getEmailMoiChoXacThuc();
+        if (emailMoi == null) {
+            throw new BadRequestException("Chưa có yêu cầu đổi email nào");
+        }
+        Map<String, Object> result = authService.xacThucOtp(emailMoi, maXacThuc);
+        user.setEmail(emailMoi);
+        user.setEmailDaXacThuc(true);
+        user.setEmailMoiChoXacThuc(null);
+        nguoiDungRepository.save(user);
+        return Map.of("message", "Đổi email thành công");
     }
 
     @Transactional

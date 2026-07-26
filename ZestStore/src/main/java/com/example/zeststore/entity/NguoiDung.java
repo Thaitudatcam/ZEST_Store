@@ -85,6 +85,26 @@ public class NguoiDung {
     @Builder.Default
     private String nguonTao = "SELF_REGISTER";
 
+    @Column(name = "email_da_xac_thuc")
+    @Builder.Default
+    private Boolean emailDaXacThuc = false;
+
+    @Column(name = "email_moi_cho_xac_thuc", length = 150)
+    private String emailMoiChoXacThuc;
+
+    @Column(name = "ma_xac_thuc_hash", length = 64)
+    private String maXacThucHash;
+
+    @Column(name = "ma_xac_thuc_het_han")
+    private LocalDateTime maXacThucHetHan;
+
+    @Column(name = "lan_gui_cuoi")
+    private LocalDateTime lanGuiCuoi;
+
+    @Column(name = "so_lan_thu_sai")
+    @Builder.Default
+    private Integer soLanThuSai = 0;
+
     @OneToMany(mappedBy = "nguoiDung", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore

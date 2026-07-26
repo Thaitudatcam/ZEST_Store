@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.scheduling.annotation.Async;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -28,6 +30,16 @@ public class EmailService {
         helper.addAttachment("thong-ke.xlsx", new ByteArrayResource(excelData));
         mailSender.send(msg);
     }
+    @Async
+    public void sendOtpEmail(String to, String otp) throws MessagingException {
+        MimeMessage msg = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(msg, false, "UTF-8");
+        helper.setTo(to);
+        helper.setSubject("Mã xác thực ZestStore");
+        helper.setText("Mã xác thực của bạn là: " + otp + "\n\nMã có hiệu lực trong 10 phút.\n\nVui lòng không chia sẻ mã này với bất kỳ ai.");
+        mailSender.send(msg);
+    }
+
     public void sendStatReport(String tuNgay, String denNgay,
                                Map<String, Object> orderStats,
                                List<Map<String, Object>> revenueDay,

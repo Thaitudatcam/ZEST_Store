@@ -40,6 +40,9 @@ export default function Login() {
             {sub ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
+        <p className="text-sm text-center mt-2">
+          <a href="/quen-mat-khau" className="text-blue-700 hover:underline">Quên mật khẩu?</a>
+        </p>
         <p className="text-sm text-center mt-4 text-gray-500">
           Chưa có tài khoản? <a href="/register" className="text-blue-700 hover:underline">Đăng ký</a>
         </p>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress } from '../api/users'
+import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress, guiMaXacThucEmailMoi, xacNhanEmailMoi } from '../api/users'
+import { guiMaXacThuc, xacThucEmail } from '../api/auth'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff } from 'lucide-react'
+import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { getProvinces, getDistricts, getWards } from '../api/ghn'
 
 export default function Profile() {
@@ -24,6 +25,11 @@ export default function Profile() {
   const [provinceId, setProvinceId] = useState(0)
   const [districtId, setDistrictId] = useState(0)
   const [wardCode, setWardCode] = useState('')
+  const [emailOtp, setEmailOtp] = useState('')
+  const [emailOtpStep, setEmailOtpStep] = useState(null) // 'verify' | 'change'
+  const [emailOtpErr, setEmailOtpErr] = useState('')
+  const [emailOtpSub, setEmailOtpSub] = useState(false)
+  const [emailNew, setEmailNew] = useState('')
 
   const load = async () => {
     try {
@@ -47,12 +53,62 @@ export default function Profile() {
 
   const handleUpdate = async (e) => {
     e.preventDefault(); setMsg('')
+    const emailChanged = form.email !== profile.email
     try {
       await updateProfile({ hoTen: form.hoTen, email: form.email, soDienThoai: form.soDienThoai })
-      setMsg('Cập nhật thành công')
+      if (emailChanged) {
+        setMsg('Email đã được cập nhật. Vui lòng xác thực email mới.')
+        setEmailNew('')
+        load()
+      } else {
+        setMsg('Cập nhật thành công')
+        load()
+      }
     } catch (err) {
       setMsg(err.response?.data?.message || 'Lỗi cập nhật')
     }
+  }
+
+  const handleGuiOtp = async () => {
+    setEmailOtpErr(''); setEmailOtp(''); setEmailOtpSub(true)
+    try {
+      await guiMaXacThuc()
+      setEmailOtpStep('verify')
+    } catch (err) {
+      setEmailOtpErr(err.response?.data?.message || 'Lỗi gửi mã')
+    } finally { setEmailOtpSub(false) }
+  }
+
+  const handleXacThucOtp = async () => {
+    setEmailOtpErr(''); setEmailOtpSub(true)
+    try {
+      await xacThucEmail({ maXacThuc: emailOtp })
+      setMsg('Xác thực email thành công')
+      setEmailOtpStep(null); setEmailOtp(''); load()
+    } catch (err) {
+      setEmailOtpErr(err.response?.data?.message || 'Mã không đúng')
+    } finally { setEmailOtpSub(false) }
+  }
+
+  const handleGuiOtpEmailMoi = async () => {
+    setEmailOtpErr(''); setEmailOtp(''); setEmailOtpSub(true)
+    try {
+      await guiMaXacThucEmailMoi({ emailMoi: emailNew })
+      setEmailOtpStep('change')
+    } catch (err) {
+      setEmailOtpErr(err.response?.data?.message || 'Lỗi gửi mã')
+    } finally { setEmailOtpSub(false) }
+  }
+
+  const handleXacNhanEmailMoi = async () => {
+    setEmailOtpErr(''); setEmailOtpSub(true)
+    try {
+      await xacNhanEmailMoi({ maXacThuc: emailOtp })
+      setMsg('Đổi email thành công')
+      setEmailOtpStep(null); setEmailOtp(''); setEmailNew(''); load()
+    } catch (err) {
+      setEmailOtpErr(err.response?.data?.message || 'Mã không đúng')
+    } finally { setEmailOtpSub(false) }
   }
 
   const handlePwd = async (e) => {
@@ -115,7 +171,52 @@ export default function Profile() {
 
       {tab === 'profile' && (
         <form onSubmit={handleUpdate} className="bg-white rounded-xl border p-6 space-y-4">
-          <div><label className="text-sm text-gray-500">Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
+          <div>
+            <label className="text-sm text-gray-500">Email</label>
+            <div className="flex items-center gap-2 mt-1">
+              <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setEmailNew(e.target.value) }} className="flex-1 border rounded-lg px-4 py-2" />
+              {profile?.emailDaXacThuc
+                ? <span className="flex items-center gap-1 text-green-600 text-sm whitespace-nowrap"><ShieldCheck className="h-4 w-4" /> Đã xác thực</span>
+                : <span className="flex items-center gap-1 text-amber-600 text-sm whitespace-nowrap"><ShieldAlert className="h-4 w-4" /> Chưa xác thực</span>
+              }
+            </div>
+            {!profile?.emailDaXacThuc && form.email === profile?.email && (
+              <div className="mt-2">
+                {emailOtpStep === 'verify' ? (
+                  <div className="flex items-center gap-2">
+                    <input type="text" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)}
+                      placeholder="Nhập mã OTP" maxLength={6} className="w-32 border rounded-lg px-3 py-1.5 text-sm text-center tracking-widest" />
+                    <button type="button" onClick={handleXacThucOtp} disabled={emailOtpSub || emailOtp.length !== 6}
+                      className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-800 disabled:opacity-50">
+                      {emailOtpSub ? '...' : 'Xác nhận'}
+                    </button>
+                    <button type="button" onClick={() => setEmailOtpStep(null)} className="text-gray-500 text-sm">Hủy</button>
+                    {emailOtpErr && <span className="text-red-500 text-xs">{emailOtpErr}</span>}
+                  </div>
+                ) : (
+                  <button type="button" onClick={handleGuiOtp} disabled={emailOtpSub}
+                    className="text-blue-700 text-sm hover:underline">
+                    {emailOtpSub ? 'Đang gửi...' : 'Xác thực email ngay'}
+                  </button>
+                )}
+              </div>
+            )}
+            {form.email !== profile?.email && emailOtpStep === 'change' && (
+              <div className="mt-2">
+                <p className="text-xs text-gray-500 mb-1">Mã OTP đã gửi đến <strong>{emailNew}</strong></p>
+                <div className="flex items-center gap-2">
+                  <input type="text" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)}
+                    placeholder="Nhập mã OTP" maxLength={6} className="w-32 border rounded-lg px-3 py-1.5 text-sm text-center tracking-widest" />
+                  <button type="button" onClick={handleXacNhanEmailMoi} disabled={emailOtpSub || emailOtp.length !== 6}
+                    className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-800 disabled:opacity-50">
+                    {emailOtpSub ? '...' : 'Xác nhận'}
+                  </button>
+                  <button type="button" onClick={() => setEmailOtpStep(null)} className="text-gray-500 text-sm">Hủy</button>
+                  {emailOtpErr && <span className="text-red-500 text-xs">{emailOtpErr}</span>}
+                </div>
+              </div>
+            )}
+          </div>
           <div><label className="text-sm text-gray-500">Số điện thoại</label><input type="tel" value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
           <div><label className="text-sm text-gray-500">Họ tên</label><input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
           <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800">Lưu</button>
