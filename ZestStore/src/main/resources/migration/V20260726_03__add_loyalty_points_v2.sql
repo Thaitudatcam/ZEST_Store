@@ -1,4 +1,10 @@
+SET QUOTED_IDENTIFIER ON;
+GO
+
 -- Batch 1
+IF OBJECT_ID('lich_su_diem', 'U') IS NOT NULL DROP TABLE lich_su_diem;
+IF OBJECT_ID('diem_tich_luy', 'U') IS NOT NULL DROP TABLE diem_tich_luy;
+
 CREATE TABLE diem_tich_luy (
     ma_nguoi_dung INT PRIMARY KEY REFERENCES nguoi_dung(ma_nguoi_dung),
     so_diem_hien_tai INT NOT NULL DEFAULT 0,
