@@ -36,8 +36,9 @@ public class PhieuGiamGiaController {
     public ResponseEntity<?> getAvailable(
             @RequestParam(defaultValue = "0") BigDecimal tongTien,
             @RequestParam(required = false) List<Integer> maSanPhamIds,
+            @RequestParam(required = false) Integer maNguoiDung,
             Authentication auth) {
-        Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
+        Integer userId = maNguoiDung != null ? maNguoiDung : (auth != null ? userService.getUserIdFromAuth(auth) : null);
         return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien, userId, maSanPhamIds));
     }
 

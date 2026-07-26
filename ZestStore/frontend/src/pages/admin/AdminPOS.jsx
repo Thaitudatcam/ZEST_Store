@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
 import { getCustomerDiem } from '../../api/vi'
+import { getAvailableCoupons } from '../../api/coupons'
 import { VND } from '../../components/ProductCard'
 import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins, RefreshCw, History } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
@@ -54,6 +55,10 @@ export default function AdminPOS() {
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
+  const [availableCoupons, setAvailableCoupons] = useState([])
+  const [showCouponDropdown, setShowCouponDropdown] = useState(false)
+  const [couponDropdownLoading, setCouponDropdownLoading] = useState(false)
+  const couponRef = useRef(null)
 
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
@@ -86,12 +91,25 @@ export default function AdminPOS() {
       if (customerRef.current && !customerRef.current.contains(e.target)) {
         setShowCustomerDropdown(false)
       }
+      if (couponRef.current && !couponRef.current.contains(e.target)) {
+        setShowCouponDropdown(false)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
 
+  const fetchAvailableCoupons = useCallback(async (maNguoiDung) => {
+    if (!maNguoiDung) { setAvailableCoupons([]); return }
+    setCouponDropdownLoading(true)
+    try {
+      const res = await getAvailableCoupons(total, [], maNguoiDung)
+      setAvailableCoupons(res || [])
+    } catch { setAvailableCoupons([]) }
+    setCouponDropdownLoading(false)
+  }, [total])
 
   const selectCustomer = (c) => {
     setSelectedCustomer(c)
@@ -101,7 +119,9 @@ export default function AdminPOS() {
     setShowCustomerDropdown(false)
     setSoDiemSuDung(0)
     setApDungDiem(false)
+    setCoupon(null); setCouponCode(''); setCouponMsg('')
     getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem(null))
+    fetchAvailableCoupons(c.maNguoiDung)
   }
 
   const clearCustomer = () => {
@@ -113,6 +133,8 @@ export default function AdminPOS() {
     setCustomerDiem(null)
     setSoDiemSuDung(0)
     setApDungDiem(false)
+    setAvailableCoupons([])
+    setCoupon(null); setCouponCode(''); setCouponMsg('')
   }
 
   useEffect(() => {
@@ -125,6 +147,12 @@ export default function AdminPOS() {
       .catch(() => { if (reqCounter.current === myReq) setMsg({ type: 'error', text: 'Không thể tải sản phẩm' }) })
       .finally(() => { if (reqCounter.current === myReq) setLoading(false) })
   }, [categoryId])
+
+  useEffect(() => {
+    if (!selectedCustomer) return
+    const timer = setTimeout(() => fetchAvailableCoupons(selectedCustomer.maNguoiDung), 500)
+    return () => clearTimeout(timer)
+  }, [total])
 
   const searchRef = useRef(null)
   const reqCounter = useRef(0)
@@ -242,16 +270,14 @@ export default function AdminPOS() {
 
   const removeItem = (idx) => setCart(prev => prev.filter((_, i) => i !== idx))
 
-  const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return
+  const applyCouponCode = async (code) => {
+    if (!code?.trim()) return
     setCoupon(null)
     setCouponMsg('')
     try {
       setCouponLoading(true)
       const res = await api.post('/admin/pos/validate-coupon', {
-        maCode: couponCode.trim(),
+        maCode: code.trim(),
         tongTien: total,
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       }).then(r => r.data)
@@ -266,6 +292,8 @@ export default function AdminPOS() {
       setCouponLoading(false)
     }
   }
+
+  const handleApplyCoupon = () => applyCouponCode(couponCode)
 
   const handleQuickAdd = async () => {
     if (!quickForm.hoTen.trim()) {
@@ -558,17 +586,57 @@ export default function AdminPOS() {
           <input value={sdtKhach} onChange={e => { setSdtKhach(e.target.value); setSelectedCustomer(null) }}
             placeholder="SĐT (không bắt buộc)"
             className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <div className="border-t pt-2 space-y-2">
+          <div className="border-t pt-2 space-y-2" ref={couponRef}>
             <label className="text-xs font-medium text-gray-500">Mã giảm giá</label>
-            <div className="flex gap-2">
-              <input value={couponCode} onChange={e => setCouponCode(e.target.value)}
-                placeholder="Nhập hoặc quét mã..."
-                className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="flex gap-2 relative">
+              <div className="flex-1 relative">
+                <input value={couponCode} onChange={e => { setCouponCode(e.target.value); setShowCouponDropdown(true) }}
+                  onFocus={() => { if (availableCoupons.length > 0 || couponDropdownLoading) setShowCouponDropdown(true) }}
+                  placeholder="Nhập hoặc quét mã..."
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-20" />
+                {(availableCoupons.length > 0 || couponDropdownLoading) && (
+                  <button onClick={() => setShowCouponDropdown(prev => !prev)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                    Gợi ý {!couponDropdownLoading && `(${availableCoupons.length})`}
+                  </button>
+                )}
+              </div>
               <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}
                 className="px-3 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
                 {couponLoading ? '...' : 'Áp dụng'}
               </button>
             </div>
+            {showCouponDropdown && (
+              <div className="bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {couponDropdownLoading ? (
+                  <div className="p-3 text-center text-sm text-gray-400">
+                    <div className="h-4 w-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin inline-block mr-2" />
+                    Đang tải...
+                  </div>
+                ) : availableCoupons.length === 0 ? (
+                  <div className="p-3 text-center text-sm text-gray-400">Không có mã giảm giá khả dụng</div>
+                ) : (
+                  availableCoupons.map((v, i) => (
+                    <button key={i} onClick={() => { setCouponCode(v.maCode); setShowCouponDropdown(false); applyCouponCode(v.maCode) }}
+                      className="w-full text-left px-3 py-2.5 hover:bg-blue-50 border-b last:border-0 flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium">{v.maCode}</span>
+                        <span className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${v.isPersonal ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {v.isPersonal ? 'Ví' : 'Coupon'}
+                        </span>
+                        <p className="text-xs text-green-600 mt-0.5">
+                          {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
+                          {v.giaTriDonToiThieu > 0 && ` - Đơn tối thiểu ${VND(v.giaTriDonToiThieu)}`}
+                        </p>
+                      </div>
+                      <div className="text-right text-xs text-gray-400">
+                        {v.ngayKetThuc && <p>HSD: {v.ngayKetThuc.slice(0, 10)}</p>}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
             {couponMsg && <p className="text-xs text-red-500">{couponMsg}</p>}
             {coupon && (
               <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
