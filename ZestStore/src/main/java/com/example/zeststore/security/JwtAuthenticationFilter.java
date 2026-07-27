@@ -43,16 +43,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = jwtTokenProvider.getEmailFromToken(token);
             log.debug("Token valid, email: {}", email);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-            log.debug("User loaded: {}, authorities: {}", email, userDetails.getAuthorities());
+            try {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                log.debug("User loaded: {}, authorities: {}", email, userDetails.getAuthorities());
 
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            log.debug("Authentication set for: {}", email);
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                log.debug("Authentication set for: {}", email);
+            } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+                // Token hợp lệ về mặt chữ ký nhưng không còn khớp với user hiện tại
+                // (ví dụ: email đã được đổi/xóa). Xóa context để request được xử lý
+                // là chưa đăng nhập (401) thay vì ném lỗi 500.
+                log.debug("User không còn tồn tại với email trong token (có thể do đổi email): {}", email);
+                SecurityContextHolder.clearContext();
+                // Xóa cookie JWT để trình duyệt không tiếp tục gửi token vô hiệu
+                jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("jwtToken", null);
+                cookie.setPath("/");
+                cookie.setMaxAge(0);
+                response.addCookie(cookie);
+            }
         } else if (StringUtils.hasText(token)) {
             log.debug("Token validation failed");
         }

@@ -173,7 +173,7 @@ public class UserService {
         }
         user.setEmailMoiChoXacThuc(emailMoi);
         nguoiDungRepository.save(user);
-        return authService.guiOtp(emailMoi);
+        return authService.guiOtp(user, emailMoi);
     }
 
     @Transactional
@@ -183,9 +183,8 @@ public class UserService {
         if (emailMoi == null) {
             throw new BadRequestException("Chưa có yêu cầu đổi email nào");
         }
-        Map<String, Object> result = authService.xacThucOtp(emailMoi, maXacThuc);
+        Map<String, Object> result = authService.xacThucOtp(user, maXacThuc);
         user.setEmail(emailMoi);
-        user.setEmailDaXacThuc(true);
         user.setEmailMoiChoXacThuc(null);
         nguoiDungRepository.save(user);
         return Map.of("message", "Đổi email thành công");

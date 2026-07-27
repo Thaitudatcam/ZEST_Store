@@ -54,7 +54,11 @@ public class AuthService {
     public Map<String, Object> guiOtp(String email) {
         NguoiDung user = nguoiDungRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return guiOtp(user, email);
+    }
 
+    @Transactional
+    public Map<String, Object> guiOtp(NguoiDung user, String recipientEmail) {
         if (user.getLanGuiCuoi() != null) {
             long secondsSinceLast = Duration.between(user.getLanGuiCuoi(), LocalDateTime.now()).getSeconds();
             if (secondsSinceLast < RATE_LIMIT.getSeconds()) {
@@ -72,7 +76,7 @@ public class AuthService {
         nguoiDungRepository.save(user);
 
         try {
-            emailService.sendOtpEmail(email, otp);
+            emailService.sendOtpEmail(recipientEmail, otp);
         } catch (MessagingException e) {
             throw new RuntimeException("Không thể gửi email xác thực", e);
         }
@@ -84,7 +88,30 @@ public class AuthService {
     public Map<String, Object> xacThucOtp(String email, String otp) {
         NguoiDung user = nguoiDungRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return xacThucOtp(user, otp, true);
+    }
 
+    @Transactional
+    public Map<String, Object> xacThucOtp(NguoiDung user, String otp) {
+        return xacThucOtp(user, otp, true);
+    }
+
+    private Map<String, Object> xacThucOtp(NguoiDung user, String otp, boolean markEmailVerified) {
+        verifyOtpInternal(user, otp);
+
+        user.setMaXacThucHash(null);
+        user.setMaXacThucHetHan(null);
+        user.setLanGuiCuoi(null);
+        user.setSoLanThuSai(0);
+        if (markEmailVerified) {
+            user.setEmailDaXacThuc(true);
+        }
+        nguoiDungRepository.save(user);
+
+        return Map.of("message", "Xác thực thành công");
+    }
+
+    private void verifyOtpInternal(NguoiDung user, String otp) {
         if (user.getMaXacThucHash() == null) {
             throw new BadRequestException("Chưa có mã xác thực nào được gửi");
         }
@@ -112,14 +139,6 @@ public class AuthService {
             int remaining = MAX_ATTEMPTS - user.getSoLanThuSai();
             throw new BadRequestException("Mã xác thực không đúng. Còn " + remaining + " lần thử");
         }
-
-        user.setMaXacThucHash(null);
-        user.setMaXacThucHetHan(null);
-        user.setLanGuiCuoi(null);
-        user.setSoLanThuSai(0);
-        nguoiDungRepository.save(user);
-
-        return Map.of("message", "Xác thực thành công");
     }
 
     @Transactional
@@ -138,33 +157,7 @@ public class AuthService {
         NguoiDung user = nguoiDungRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
-        if (user.getMaXacThucHash() == null) {
-            throw new BadRequestException("Chưa có mã xác thực nào được gửi");
-        }
-
-        if (user.getMaXacThucHetHan() == null || user.getMaXacThucHetHan().isBefore(LocalDateTime.now())) {
-            user.setMaXacThucHash(null);
-            user.setMaXacThucHetHan(null);
-            user.setSoLanThuSai(0);
-            nguoiDungRepository.save(user);
-            throw new BadRequestException("Mã xác thực đã hết hạn. Vui lòng yêu cầu mã mới");
-        }
-
-        if (user.getSoLanThuSai() >= MAX_ATTEMPTS) {
-            user.setMaXacThucHash(null);
-            user.setMaXacThucHetHan(null);
-            user.setSoLanThuSai(0);
-            nguoiDungRepository.save(user);
-            throw new BadRequestException("Bạn đã nhập sai quá " + MAX_ATTEMPTS + " lần. Vui lòng yêu cầu mã mới");
-        }
-
-        String inputHash = hashOtp(otp);
-        if (!inputHash.equals(user.getMaXacThucHash())) {
-            user.setSoLanThuSai(user.getSoLanThuSai() + 1);
-            nguoiDungRepository.save(user);
-            int remaining = MAX_ATTEMPTS - user.getSoLanThuSai();
-            throw new BadRequestException("Mã xác thực không đúng. Còn " + remaining + " lần thử");
-        }
+        verifyOtpInternal(user, otp);
 
         user.setMatKhauMaHoa(passwordEncoder.encode(matKhauMoi));
         user.setMaXacThucHash(null);

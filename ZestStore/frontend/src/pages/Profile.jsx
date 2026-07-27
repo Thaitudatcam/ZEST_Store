@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress, guiMaXacThucEmailMoi, xacNhanEmailMoi } from '../api/users'
 import { guiMaXacThuc, xacThucEmail } from '../api/auth'
+import { useAuth } from '../context/AuthContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { getProvinces, getDistricts, getWards } from '../api/ghn'
 
 export default function Profile() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { logout } = useAuth()
   const [tab, setTab] = useState(searchParams.get('tab') === 'password' ? 'password' : 'profile')
   const [profile, setProfile] = useState(null)
   const [addresses, setAddresses] = useState([])
@@ -53,6 +56,7 @@ export default function Profile() {
 
   const handleUpdate = async (e) => {
     e.preventDefault(); setMsg(''); setEmailOtpErr('')
+    if (!profile) { setMsg('Không tải được thông tin tài khoản'); return }
     const emailChanged = form.email !== profile.email
     // Luôn lưu họ tên/SĐT. Nếu đổi email thì KHÔNG gửi email vào updateProfile
     // (backend đã bỏ đổi email trực tiếp) mà chuyển sang luồng OTP riêng.
@@ -110,9 +114,11 @@ export default function Profile() {
     setEmailOtpErr(''); setEmailOtpSub(true)
     try {
       await xacNhanEmailMoi({ maXacThuc: emailOtp })
-      setMsg('Đổi email thành công')
+      // Email mới đã được áp dụng trong DB -> token hiện tại (chứa email cũ) không còn hợp lệ.
+      // Đăng xuất và yêu cầu đăng nhập lại bằng email mới.
       setEmailOtpStep(null); setEmailOtp(''); setEmailNew('')
-      load()
+      logout()
+      navigate('/login', { state: { message: 'Đổi email thành công. Vui lòng đăng nhập lại bằng email mới.' } })
     } catch (err) {
       setEmailOtpErr(err.response?.data?.message || 'Mã không đúng')
     } finally { setEmailOtpSub(false) }

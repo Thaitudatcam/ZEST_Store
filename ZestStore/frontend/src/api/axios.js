@@ -23,6 +23,15 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config
+    const hasToken = !!localStorage.getItem('token')
+    // 401: thử refresh token. 403 + có token: token đã invalid (vd: đổi email)
+    // -> không refresh được nữa, đăng xuất về login.
+    if (err.response?.status === 403 && hasToken && !originalRequest.url?.includes('/auth/')) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+      return Promise.reject(err)
+    }
     if (err.response?.status === 401 && !originalRequest.url?.includes('/auth/refresh')) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
