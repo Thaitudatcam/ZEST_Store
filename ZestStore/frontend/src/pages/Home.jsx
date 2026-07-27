@@ -11,6 +11,8 @@ import PromoBanner from '../components/PromoBanner'
 import Aurora from '../components/ui/Aurora'
 import RotatingText from '../components/ui/RotatingText'
 import SpotlightCard from '../components/ui/SpotlightCard'
+import GradientText from '../components/ui/GradientText'
+import FadeContent from '../components/ui/FadeContent'
 
 const rawStrip = Object.entries(import.meta.glob('../pictures/strip/*.{png,jpg,jpeg,webp}', { eager: true, query: '?url', import: 'default' }))
 const stripData = rawStrip
@@ -136,7 +138,7 @@ export default function Home() {
       {/* ──────── PRODUCT LISTING WITH FILTERS ──────── */}
       <section ref={productRef} id="all-products" className="py-14">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-7 text-neutral-900">Tất cả sản phẩm</h2>
+          <h2 className="text-2xl font-bold mb-7"><GradientText from="#1e40af" to="#7c3aed">Tất cả sản phẩm</GradientText></h2>
 
           {/* Filters */}
           <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-6">
@@ -175,6 +177,7 @@ export default function Home() {
 
           {/* Products Grid */}
           {allLoading ? (
+            <FadeContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="rounded-xl overflow-hidden border border-neutral-200 bg-white">
@@ -186,9 +189,11 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            </FadeContent>
           ) : allProducts.length === 0 ? (
-            <p className="text-center py-12 text-neutral-400">Không tìm thấy sản phẩm</p>
+            <FadeContent><p className="text-center py-12 text-neutral-400">Không tìm thấy sản phẩm</p></FadeContent>
           ) : (
+            <FadeContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {allProducts.map((p, i) => (
                 <div key={p.maSanPham} className="animate-fade-in">
@@ -198,6 +203,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            </FadeContent>
           )}
         </div>
       </section>

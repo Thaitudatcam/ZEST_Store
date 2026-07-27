@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { addWishlist, removeWishlist } from '../api/wishlist'
 import { useState } from 'react'
 import SafeImg from './SafeImg'
+import ShinyText from './ui/ShinyText'
 
 const VND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n)
 
@@ -37,7 +38,7 @@ export default function ProductCard({ product, showRating = true }) {
             <Heart className={`h-4 w-4 ${wished ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
           </button>
         )}
-        {discount && !isOutOfStock && <span className="absolute bottom-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">-{discount}%</span>}
+        {discount && !isOutOfStock && <span className="absolute bottom-2 left-2 bg-red-500 rounded-full px-2 py-0.5"><ShinyText text={`-${discount}%`} className="text-[10px] font-bold leading-none" color="#fff" shineColor="#ffdddd" speed={1.5} spread={80} /></span>}
         {isOutOfStock && (
           <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-lg z-10">
             Hết hàng

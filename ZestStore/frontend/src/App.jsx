@@ -40,6 +40,7 @@ import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
 import AdminChangePassword from './pages/admin/AdminChangePassword'
 import AiChat from './components/AiChat'
+import ScrollProgress from './components/ui/ScrollProgress'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -50,6 +51,7 @@ function ScrollToTop() {
 export default function App() {
   return (
     <ToastProvider>
+      <ScrollProgress />
       <ScrollToTop />
       <Routes>
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
