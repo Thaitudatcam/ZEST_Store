@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap, ChevronDown, ThumbsUp, BadgeCheck, Filter, ArrowUpDown } from 'lucide-react'
+import TiltedCard from '../components/ui/TiltedCard'
 import { VND } from '../components/ProductCard'
 import Toast from '../components/Toast'
 import VariantModal from '../components/VariantModal'
@@ -200,7 +201,12 @@ export default function ProductDetail() {
       <div className="grid md:grid-cols-2 gap-8">
         <div className="max-w-lg mx-auto md:mx-0">
           <div className="group relative aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3 shadow-lg">
-            <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center transition duration-500 group-hover:scale-105" />
+            <div className="hidden md:block w-full h-full">
+              <TiltedCard imageSrc={mainImg} altText={product.tenSanPham} containerHeight="100%" containerWidth="100%" imageHeight="100%" imageWidth="100%" rotateAmplitude={10} scaleOnHover={1.03} />
+            </div>
+            <div className="block md:hidden w-full h-full">
+              <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
+            </div>
           </div>
           {allImages.length > 1 && (
             <div className="relative">

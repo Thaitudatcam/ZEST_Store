@@ -8,6 +8,9 @@ import ProductCard from '../components/ProductCard'
 import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles, Filter, ChevronDown } from 'lucide-react'
 import ZS from '../pictures/ZS.png'
 import PromoBanner from '../components/PromoBanner'
+import Aurora from '../components/ui/Aurora'
+import RotatingText from '../components/ui/RotatingText'
+import SpotlightCard from '../components/ui/SpotlightCard'
 
 const rawStrip = Object.entries(import.meta.glob('../pictures/strip/*.{png,jpg,jpeg,webp}', { eager: true, query: '?url', import: 'default' }))
 const stripData = rawStrip
@@ -84,60 +87,37 @@ export default function Home() {
     <div className="animate-fade-in">
 
       {/* ──────── HERO ──────── */}
-      <section className="relative bg-gradient-to-br from-slate-800 via-blue-900 to-slate-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_#ffffff20_0%,_transparent_50%),radial-gradient(ellipse_at_bottom_right,_#ffffff08_0%,_transparent_50%)]" />
-        <div className="relative max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col md:flex-row items-center gap-6">
+      <section className="relative bg-slate-900 text-white overflow-hidden min-h-[90vh] flex items-center">
+        <Aurora colorStops={['#00d4ff', '#3b82f6', '#5227FF']} amplitude={0.8} blend={0.6} />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col md:flex-row items-center gap-6 w-full">
           <div className="flex-1 text-center md:text-left">
             <span className="inline-block bg-white/15 text-white text-xs font-medium tracking-widest px-4 py-1.5 rounded-full mb-5 border border-white/25 backdrop-blur-sm">BỘ SƯU TẬP MỚI 2026</span>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-                  Khẳng Định <br />
-                  <span >Phong Cách Của Bạn</span>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight min-h-[1.2em]">
+                  <RotatingText texts={['Khẳng Định Phong Cách', 'Tự Tin Tỏa Sáng', 'Chất Riêng Của Bạn']} mainClassName="text-white" rotationInterval={3000} splitBy="characters" staggerDuration={0.02} />
               </h2>
               <p className="text-base md:text-lg text-blue-100 mb-8 max-w-lg leading-relaxed">
                   Mỗi chiếc áo polo tại ZestStore được thiết kế để mang đến sự thoải mái,
                   lịch lãm và tự tin, đồng hành cùng bạn trong mọi phong cách sống.
-              </p><div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <a
-                    href="#products"
-                    onClick={scrollToProducts}
-                    className="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold px-7 py-3.5 rounded-full shadow-xl transition-all duration-300 hover:bg-yellow-300 hover:text-slate-900 hover:-translate-y-1 hover:shadow-2xl active:scale-95 cursor-pointer"
-                >
-                    <ShoppingBag className="h-5 w-5" />
-                    Mua ngay
-                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </a>
-                {/*<div className="flex gap-8 mt-10 text-center md:text-left">*/}
-                {/*    <div>*/}
-                {/*        <h3 className="text-3xl font-bold text-yellow-300">500+</h3>*/}
-                {/*        <p className="text-blue-100 text-sm">Sản phẩm</p>*/}
-                {/*    </div>*/}
-
-                {/*    <div>*/}
-                {/*        <h3 className="text-3xl font-bold text-yellow-300">10K+</h3>*/}
-                {/*        <p className="text-blue-100 text-sm">Khách hàng</p>*/}
-                {/*    </div>*/}
-
-                {/*    <div>*/}
-                {/*        <h3 className="text-3xl font-bold text-yellow-300">4.9★</h3>*/}
-                {/*        <p className="text-blue-100 text-sm">Đánh giá</p>*/}
-                {/*    </div>*/}
-                {/*</div>*/}
+              </p>
+            <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8">
+              <a href="#products" onClick={scrollToProducts}
+                className="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold px-7 py-3.5 rounded-full shadow-xl transition-all duration-300 hover:bg-yellow-300 hover:text-slate-900 hover:-translate-y-1 hover:shadow-2xl active:scale-95 cursor-pointer">
+                <ShoppingBag className="h-5 w-5" /> Mua ngay <ArrowRight className="h-4 w-4" /></a>
             </div>
-            <div className="flex flex-wrap gap-6 mt-8 text-sm justify-center md:justify-start">
+            <div className="flex flex-wrap gap-6 text-sm justify-center md:justify-start">
               {[
                 { icon: Truck, label: 'Miễn phí vận chuyển' },
                 { icon: RefreshCw, label: 'Đổi trả 30 ngày' },
                 { icon: Shield, label: 'Chính hãng 100%' },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-center gap-2 text-blue-200">
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
+                  <Icon className="h-4 w-4" /> <span>{label}</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="flex-1 flex justify-center">
-            <div className="relative w-52 h-52 md:w-72 md:h-72">
+            <div className="relative w-52 h-52 md:w-80 md:h-80">
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-full animate-pulse" />
               <div className="relative w-full h-full rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/20">
                 <img src={ZS} alt="Polo Nam" className="w-full h-full object-cover" />
@@ -212,7 +192,9 @@ export default function Home() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {allProducts.map((p, i) => (
                 <div key={p.maSanPham} className="animate-fade-in">
-                  <ProductCard product={p} showRating={false} />
+                  <SpotlightCard spotlightColor="rgba(59, 130, 246, 0.15)" className="h-full">
+                    <ProductCard product={p} showRating={false} />
+                  </SpotlightCard>
                 </div>
               ))}
             </div>

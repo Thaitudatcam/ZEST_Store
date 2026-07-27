@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getStats, getOrderStats, getRevenueByDay } from '../../api/admin'
 import { Package, DollarSign, Users, Star } from 'lucide-react'
+import CountUp from '../../components/ui/CountUp'
 
 const robotGreetings = [
   ['Chào buổi sáng! ☕', 'Ngày mới tốt lành! 🌻', 'Sáng nay có đơn mới không? ✨', 'Cà phê sáng chưa admin? ☕'],
@@ -127,14 +128,14 @@ export default function Dashboard() {
     replyTimer.current = setTimeout(() => { setRobotReply(null); replyTimer.current = null }, 12000)
   }, [stats, mergedOrders, todayRevenue, orderStats])
 
-  const getValue = (key) => {
-    if (loading) return '...'
+  const getRawValue = (key) => {
+    if (loading) return null
     switch (key) {
-      case 'orders':   return fmt(stats?.totalOrders ?? 0)
-      case 'revenue':  return fmt(stats?.monthlyRevenue ?? 0)
-      case 'users':    return fmt(stats?.totalUsers ?? 0)
-      case 'products': return fmt(stats?.totalProducts ?? 0)
-      default:         return '0'
+      case 'orders':   return stats?.totalOrders ?? 0
+      case 'revenue':  return stats?.monthlyRevenue ?? 0
+      case 'users':    return stats?.totalUsers ?? 0
+      case 'products': return stats?.totalProducts ?? 0
+      default:         return 0
     }
   }
 
@@ -170,7 +171,13 @@ export default function Dashboard() {
                 <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.grad} flex items-center justify-center shadow-lg ${s.shadow} group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300`}>
                   <Icon className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-gray-800 leading-tight mt-1.5">{getValue(s.key)}</span>
+                {s.key === 'orders' && getRawValue('orders') !== null ? (
+                  <CountUp to={getRawValue('orders')} duration={1.5} className="text-xl font-bold text-gray-800 leading-tight mt-1.5" separator="." />
+                ) : s.key === 'orders' ? (
+                  <span className="text-xl font-bold text-gray-800 leading-tight mt-1.5">...</span>
+                ) : (
+                  <span className="text-xl font-bold text-gray-800 leading-tight mt-1.5">{fmt(getRawValue(s.key) ?? 0)}</span>
+                )}
                 <span className="text-[10px] text-gray-400 font-medium">{s.label}</span>
               </button>
             )
