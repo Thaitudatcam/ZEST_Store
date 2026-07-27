@@ -52,14 +52,19 @@ export default function Profile() {
   }, [districtId])
 
   const handleUpdate = async (e) => {
-    e.preventDefault(); setMsg('')
+    e.preventDefault(); setMsg(''); setEmailOtpErr('')
     const emailChanged = form.email !== profile.email
+    // Luôn lưu họ tên/SĐT. Nếu đổi email thì KHÔNG gửi email vào updateProfile
+    // (backend đã bỏ đổi email trực tiếp) mà chuyển sang luồng OTP riêng.
     try {
-      await updateProfile({ hoTen: form.hoTen, email: form.email, soDienThoai: form.soDienThoai })
+      await updateProfile({ hoTen: form.hoTen, soDienThoai: form.soDienThoai })
       if (emailChanged) {
-        setMsg('Email đã được cập nhật. Vui lòng xác thực email mới.')
-        setEmailNew('')
-        load()
+        // Bắt đầu luồng xác thực email mới (không load lại để giữ form.email = email mới)
+        await guiMaXacThucEmailMoi({ emailMoi: form.email })
+        setEmailNew(form.email)
+        setEmailOtpStep('change')
+        setEmailOtp('')
+        setMsg(`Đã gửi mã OTP đến ${form.email}. Vui lòng nhập mã để xác thực email mới.`)
       } else {
         setMsg('Cập nhật thành công')
         load()
@@ -95,6 +100,7 @@ export default function Profile() {
     try {
       await guiMaXacThucEmailMoi({ emailMoi: emailNew })
       setEmailOtpStep('change')
+      setMsg(`Đã gửi lại mã OTP đến ${emailNew}`)
     } catch (err) {
       setEmailOtpErr(err.response?.data?.message || 'Lỗi gửi mã')
     } finally { setEmailOtpSub(false) }
@@ -105,7 +111,8 @@ export default function Profile() {
     try {
       await xacNhanEmailMoi({ maXacThuc: emailOtp })
       setMsg('Đổi email thành công')
-      setEmailOtpStep(null); setEmailOtp(''); setEmailNew(''); load()
+      setEmailOtpStep(null); setEmailOtp(''); setEmailNew('')
+      load()
     } catch (err) {
       setEmailOtpErr(err.response?.data?.message || 'Mã không đúng')
     } finally { setEmailOtpSub(false) }
@@ -201,7 +208,7 @@ export default function Profile() {
                 )}
               </div>
             )}
-            {form.email !== profile?.email && emailOtpStep === 'change' && (
+            {emailOtpStep === 'change' && (
               <div className="mt-2">
                 <p className="text-xs text-gray-500 mb-1">Mã OTP đã gửi đến <strong>{emailNew}</strong></p>
                 <div className="flex items-center gap-2">
@@ -211,7 +218,11 @@ export default function Profile() {
                     className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-800 disabled:opacity-50">
                     {emailOtpSub ? '...' : 'Xác nhận'}
                   </button>
-                  <button type="button" onClick={() => setEmailOtpStep(null)} className="text-gray-500 text-sm">Hủy</button>
+                  <button type="button" onClick={handleGuiOtpEmailMoi} disabled={emailOtpSub}
+                    className="text-blue-700 text-sm hover:underline">
+                    {emailOtpSub ? 'Đang gửi...' : 'Gửi lại mã'}
+                  </button>
+                  <button type="button" onClick={() => { setEmailOtpStep(null); setEmailOtp(''); setEmailOtpErr(''); setForm({ ...form, email: profile?.email || '' }) }} className="text-gray-500 text-sm">Hủy</button>
                   {emailOtpErr && <span className="text-red-500 text-xs">{emailOtpErr}</span>}
                 </div>
               </div>
