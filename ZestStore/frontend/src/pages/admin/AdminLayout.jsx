@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw, Gift } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
 import AiChat from '../../components/AiChat'
 
@@ -12,6 +12,18 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navOpen, setNavOpen] = useState({ 'Bán hàng': true })
   const [pendingReturns, setPendingReturns] = useState(0)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (accountRef.current && !accountRef.current.contains(e.target)) {
+        setAccountOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   useEffect(() => {
     if (!user || user.vaiTro === 'STAFF') return
@@ -141,25 +153,31 @@ export default function AdminLayout() {
             )
           })}
         </nav>
-        <div className="shrink-0 border-t border-gold/10 px-3 py-2.5">
-          <Link to="/" className="flex items-center gap-2 px-3 py-2 text-xs text-stone-light/50 hover:text-gold hover:bg-ivory/5 rounded-lg transition-all duration-200">
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Về trang chủ
-          </Link>
-        </div>
-        <div className="shrink-0 border-t border-gold/10 px-3 py-3">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ivory/5 transition-all duration-200 group cursor-default">
+        <div className="shrink-0 border-t border-gold/10 px-3 py-3" ref={accountRef}>
+          <button onClick={() => setAccountOpen(!accountOpen)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ivory/5 transition-all duration-200 group cursor-pointer">
             <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center text-noir text-xs font-bold shadow-gold shrink-0">
               {user?.hoTen?.charAt(0) || 'A'}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-ivory truncate">{user?.hoTen || 'Admin'}</p>
               <p className="text-[10px] text-stone-light/60 truncate">{isStaff ? 'Nhân viên' : 'Admin'}</p>
             </div>
-            <button onClick={(e) => { e.stopPropagation(); handleLogout() }}
-              className="text-stone-light/40 hover:text-bordeaux transition-colors shrink-0 p-1 rounded-lg hover:bg-bordeaux/10">
-              <LogOut className="h-4 w-4" />
-            </button>
+            <ChevronDown className={`h-4 w-4 text-stone-light/40 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <div className={`overflow-hidden transition-all duration-200 ${accountOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className="pt-1 pb-1 space-y-0.5">
+              <Link to="/" onClick={() => { setAccountOpen(false); setSidebarOpen(false) }}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-light/60 hover:text-gold hover:bg-ivory/5 transition-all duration-200">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Về trang chủ
+              </Link>
+              <button onClick={(e) => { e.stopPropagation(); setAccountOpen(false); handleLogout() }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-light/60 hover:text-bordeaux hover:bg-bordeaux/10 transition-all duration-200">
+                <LogOut className="h-4 w-4" />
+                Đăng xuất
+              </button>
+            </div>
           </div>
         </div>
       </aside>
