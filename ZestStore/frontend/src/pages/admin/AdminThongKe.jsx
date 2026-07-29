@@ -164,8 +164,8 @@ export default function AdminThongKe() {
       {/* ──────── HEADER ──────── */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-dark-text">{greeting}, {user?.hoTen?.split(' ').pop() || 'Admin'}!</h1>
-          <p className="text-dark-muted text-sm mt-0.5">Đây là tổng quan hoạt động của ZestStore hôm nay</p>
+          <h1 className="text-2xl font-bold text-ink">{greeting}, {user?.hoTen?.split(' ').pop() || 'Admin'}!</h1>
+          <p className="text-stone text-sm mt-0.5">Đây là tổng quan hoạt động của ZestStore hôm nay</p>
         </div>
         <AdminCard className="px-6 py-3 min-w-[200px]">
           <RealtimeClock />
