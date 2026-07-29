@@ -147,22 +147,27 @@ export default function AdminLayout() {
             Về trang chủ
           </Link>
         </div>
+        <div className="shrink-0 border-t border-gold/10 px-3 py-3">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-ivory/5 transition-all duration-200 group cursor-default">
+            <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center text-noir text-xs font-bold shadow-gold shrink-0">
+              {user?.hoTen?.charAt(0) || 'A'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ivory truncate">{user?.hoTen || 'Admin'}</p>
+              <p className="text-[10px] text-stone-light/60 truncate">{isStaff ? 'Nhân viên' : 'Admin'}</p>
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); handleLogout() }}
+              className="text-stone-light/40 hover:text-bordeaux transition-colors shrink-0 p-1 rounded-lg hover:bg-bordeaux/10">
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         <header className="bg-ivory border-b border-gold/15 h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           <button className="lg:hidden text-ink-soft" onClick={() => setSidebarOpen(true)}><Menu className="h-6 w-6" /></button>
           <div />
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-noir text-gold rounded-full flex items-center justify-center text-xs font-bold ring-1 ring-gold/30">
-              {user?.hoTen?.charAt(0) || 'A'}
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-sm font-medium text-ink">{user?.hoTen}</p>
-              <p className="text-xs text-stone">{isStaff ? 'Nhân viên' : 'Admin'}</p>
-            </div>
-            <button onClick={handleLogout} className="ml-2 text-stone hover:text-bordeaux transition-colors"><LogOut className="h-5 w-5" /></button>
-          </div>
         </header>
         <main className="flex-1 p-4 lg:p-6">
           <Outlet />
