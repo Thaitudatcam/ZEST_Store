@@ -25,44 +25,44 @@ export default function AdminChangePassword() {
       <h1 className="text-2xl font-bold mb-6">Đổi mật khẩu</h1>
       <div className="max-w-lg">
         {msg.text && (
-          <p className={`text-sm mb-4 ${msg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{msg.text}</p>
+          <p className={`text-sm mb-4 ${msg.type === 'success' ? 'text-emerald-deep' : 'text-bordeaux'}`}>{msg.text}</p>
         )}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-ivory rounded-2xl shadow-sm border p-6 space-y-4">
           <div className="relative">
-            <label className="text-xs text-gray-500 mb-1 block">Mật khẩu cũ</label>
+            <label className="text-xs text-stone mb-1 block">Mật khẩu cũ</label>
             <input type={showPwd.cu ? 'text' : 'password'} value={pwd.matKhauCu}
               onChange={(e) => setPwd({ ...pwd, matKhauCu: e.target.value })}
               placeholder="Nhập mật khẩu cũ" required
-              className="w-full border rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
             <button type="button" onClick={() => setShowPwd({ ...showPwd, cu: !showPwd.cu })}
-              className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600">
+              className="absolute right-3 top-[34px] text-stone hover:text-stone">
               {showPwd.cu ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           <div className="relative">
-            <label className="text-xs text-gray-500 mb-1 block">Mật khẩu mới</label>
+            <label className="text-xs text-stone mb-1 block">Mật khẩu mới</label>
             <input type={showPwd.moi ? 'text' : 'password'} value={pwd.matKhauMoi}
               onChange={(e) => setPwd({ ...pwd, matKhauMoi: e.target.value })}
               placeholder="Nhập mật khẩu mới" required minLength={6}
-              className="w-full border rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
             <button type="button" onClick={() => setShowPwd({ ...showPwd, moi: !showPwd.moi })}
-              className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600">
+              className="absolute right-3 top-[34px] text-stone hover:text-stone">
               {showPwd.moi ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           <div className="relative">
-            <label className="text-xs text-gray-500 mb-1 block">Xác nhận mật khẩu mới</label>
+            <label className="text-xs text-stone mb-1 block">Xác nhận mật khẩu mới</label>
             <input type={showPwd.xacNhan ? 'text' : 'password'} value={pwd.xacNhanMatKhauMoi}
               onChange={(e) => setPwd({ ...pwd, xacNhanMatKhauMoi: e.target.value })}
               placeholder="Nhập lại mật khẩu mới" required
-              className="w-full border rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border rounded-lg px-4 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
             <button type="button" onClick={() => setShowPwd({ ...showPwd, xacNhan: !showPwd.xacNhan })}
-              className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600">
+              className="absolute right-3 top-[34px] text-stone hover:text-stone">
               {showPwd.xacNhan ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           <button type="submit"
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+            className="bg-gold text-noir px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
             <Lock className="h-4 w-4" /> Đổi mật khẩu
           </button>
         </form>

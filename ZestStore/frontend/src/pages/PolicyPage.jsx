@@ -48,26 +48,26 @@ export default function PolicyPage() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
         <h1 className="text-2xl font-bold mb-4">Không tìm thấy trang</h1>
-        <Link to="/" className="text-blue-700 hover:underline">Quay lại trang chủ</Link>
+        <Link to="/" className="text-gold hover:underline">Quay lại trang chủ</Link>
       </div>
     )
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <nav className="flex items-center gap-1 text-sm text-gray-500 mb-6">
-        <Link to="/" className="hover:text-blue-700">Trang chủ</Link>
+      <nav className="flex items-center gap-1 text-sm text-stone mb-6">
+        <Link to="/" className="hover:text-gold">Trang chủ</Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-gray-800 font-semibold">{policy.title}</span>
+        <span className="text-ink font-semibold">{policy.title}</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">{policy.title}</h1>
+      <h1 className="text-2xl font-bold text-ink mb-8">{policy.title}</h1>
 
       <div className="space-y-6">
         {policy.content.map((section, idx) => (
-          <div key={idx} className="bg-white border rounded-xl p-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-2">{section.h}</h2>
-            <p className="text-gray-600 leading-relaxed text-sm">{section.p}</p>
+          <div key={idx} className="bg-ivory border rounded-xl p-6">
+            <h2 className="text-lg font-bold text-ink mb-2">{section.h}</h2>
+            <p className="text-stone leading-relaxed text-sm">{section.p}</p>
           </div>
         ))}
       </div>

@@ -146,7 +146,7 @@ export default function Home() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl border border-gold/15 p-4 mb-6 shadow-lux">
+          <div className="bg-ivory rounded-xl border border-gold/15 p-4 mb-6 shadow-lux">
             <button onClick={() => setIsFilterOpen(!isFilterOpen)}
               className="relative flex items-center gap-1.5 text-sm text-ink-soft hover:text-gold-dark transition">
               <Filter className="h-4 w-4" />
@@ -185,7 +185,7 @@ export default function Home() {
             <FadeContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-xl overflow-hidden border border-gold/15 bg-white">
+                <div key={i} className="rounded-xl overflow-hidden border border-gold/15 bg-ivory">
                   <div className="aspect-square skeleton" />
                   <div className="p-3 space-y-2">
                     <div className="h-3 w-3/4 skeleton" />

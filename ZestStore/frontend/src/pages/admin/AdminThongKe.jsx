@@ -20,9 +20,9 @@ const statCards = [
 
 const cardColorMap = {
   gold: { iconBg: 'bg-gold/15', iconColor: 'text-gold', line: 'bg-gold' },
-  emerald: { iconBg: 'bg-emerald-500/15', iconColor: 'text-emerald-400', line: 'bg-emerald-500' },
-  blue: { iconBg: 'bg-blue-500/15', iconColor: 'text-blue-400', line: 'bg-blue-500' },
-  purple: { iconBg: 'bg-purple-500/15', iconColor: 'text-purple-400', line: 'bg-purple-500' },
+  emerald: { iconBg: 'bg-emerald-deep/100/15', iconColor: 'text-emerald-deep', line: 'bg-emerald-deep/100' },
+  blue: { iconBg: 'bg-gold/15', iconColor: 'text-gold', line: 'bg-gold' },
+  purple: { iconBg: 'bg-royal/15', iconColor: 'text-royal', line: 'bg-royal' },
 }
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -202,20 +202,20 @@ export default function AdminThongKe() {
       {/* ──────── STAT ROW 2 ──────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-dark-700/50 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-400 tabular-nums">{mergedOrders?.completed ?? 0}</p>
-          <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><CheckCircle className="h-3 w-3 text-emerald-400" /> Đơn hoàn thành</p>
+          <p className="text-2xl font-bold text-emerald-deep tabular-nums">{mergedOrders?.completed ?? 0}</p>
+          <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><CheckCircle className="h-3 w-3 text-emerald-deep" /> Đơn hoàn thành</p>
         </div>
         <div className="bg-dark-700/50 rounded-xl border border-dark-border p-4 text-center">
           <p className="text-2xl font-bold text-gold tabular-nums">{mergedOrders?.pending ?? 0}</p>
           <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><Package className="h-3 w-3 text-gold" /> Đang xử lý</p>
         </div>
         <div className="bg-dark-700/50 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-red-400 tabular-nums">{mergedOrders?.cancelled ?? 0}</p>
-          <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><AlertCircle className="h-3 w-3 text-red-400" /> Đã hủy</p>
+          <p className="text-2xl font-bold text-bordeaux tabular-nums">{mergedOrders?.cancelled ?? 0}</p>
+          <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><AlertCircle className="h-3 w-3 text-bordeaux" /> Đã hủy</p>
         </div>
         <div className="bg-dark-700/50 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-blue-400 tabular-nums">{todayRevenue != null ? VND(todayRevenue) : '0'}</p>
-          <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><TrendingUp className="h-3 w-3 text-blue-400" /> Doanh thu hôm nay</p>
+          <p className="text-2xl font-bold text-gold tabular-nums">{todayRevenue != null ? VND(todayRevenue) : '0'}</p>
+          <p className="text-xs text-dark-muted mt-0.5 flex items-center justify-center gap-1"><TrendingUp className="h-3 w-3 text-gold" /> Doanh thu hôm nay</p>
         </div>
       </div>
 

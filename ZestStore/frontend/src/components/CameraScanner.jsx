@@ -104,8 +104,8 @@ export default function CameraScanner({ onScan, onClose }) {
       {loading && <div className="absolute inset-0 flex items-center justify-center z-10"><div className="h-8 w-8 border-2 border-white border-t-transparent rounded-full animate-spin" /></div>}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
-          <p className="text-red-400 text-sm mb-3">{error}</p>
-          <button onClick={onClose} className="px-4 py-2 bg-white/10 text-white rounded-lg text-sm hover:bg-white/20">Đóng</button>
+          <p className="text-bordeaux text-sm mb-3">{error}</p>
+          <button onClick={onClose} className="px-4 py-2 bg-ivory/10 text-white rounded-lg text-sm hover:bg-ivory/20">Đóng</button>
         </div>
       )}
       <video ref={videoRef} autoPlay playsInline muted className="w-full" style={{ height: '16rem', objectFit: 'cover' }} />
@@ -113,7 +113,7 @@ export default function CameraScanner({ onScan, onClose }) {
       {!loading && !error && (
         <>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-3/4 h-0.5 bg-red-500 opacity-80 animate-pulse rounded" />
+            <div className="w-3/4 h-0.5 bg-bordeaux/100 opacity-80 animate-pulse rounded" />
           </div>
           <p className="absolute bottom-3 left-0 right-0 text-center text-white text-xs bg-black/50 py-1 mx-4 rounded">
             {mode === 'jsQR' ? 'QR scan (jsQR) — đưa QR vào vùng đỏ' : 'Đưa QR code vào vùng đỏ'}

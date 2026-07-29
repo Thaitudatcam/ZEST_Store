@@ -2,10 +2,10 @@ import { createContext, useContext, useState, useCallback, useMemo, useRef, useE
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 
 const typeMap = {
-  success: { bg: 'bg-green-50 border-green-300', icon: CheckCircle, color: 'text-green-600', bar: 'bg-green-500' },
-  error: { bg: 'bg-red-50 border-red-300', icon: XCircle, color: 'text-red-600', bar: 'bg-red-500' },
-  info: { bg: 'bg-blue-50 border-blue-300', icon: Info, color: 'text-blue-600', bar: 'bg-blue-500' },
-  warning: { bg: 'bg-amber-50 border-amber-300', icon: AlertTriangle, color: 'text-amber-600', bar: 'bg-amber-500' },
+  success: { bg: 'bg-emerald-deep/10 border-emerald-deep/20', icon: CheckCircle, color: 'text-emerald-deep', bar: 'bg-emerald-deep' },
+  error: { bg: 'bg-bordeaux/10 border-bordeaux/20', icon: XCircle, color: 'text-bordeaux', bar: 'bg-bordeaux' },
+  info: { bg: 'bg-gold/10 border-gold/20', icon: Info, color: 'text-gold', bar: 'bg-gold' },
+  warning: { bg: 'bg-gold/10 border-gold/20', icon: AlertTriangle, color: 'text-gold', bar: 'bg-gold' },
 }
 
 const MAX_TOASTS = 3
@@ -35,7 +35,7 @@ function ProgressBar({ duration, leaving }) {
   }, [duration, leaving])
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 rounded-b-xl overflow-hidden">
+    <div className="absolute bottom-0 left-0 right-0 h-1 bg-ivory-100 rounded-b-xl overflow-hidden">
       <div className={`h-full transition-all duration-100 ease-linear rounded-b-xl ${width > 0 ? '' : ''}`}
         style={{ width: `${width}%`, backgroundColor: 'currentColor' }} />
     </div>
@@ -78,8 +78,8 @@ export function ToastProvider({ children }) {
             <div key={t.id} className={`pointer-events-auto transition-all duration-300 ${t.leaving ? 'translate-x-10 opacity-0' : 'translate-x-0 opacity-100'}`}>
               <div className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${cfg.bg} min-w-[280px] max-w-sm overflow-hidden`}>
                 <Icon className={`h-5 w-5 shrink-0 ${cfg.color}`} />
-                <span className="text-sm text-gray-800 flex-1">{t.message}</span>
-                <button onClick={() => removeToast(t.id)} className="text-gray-400 hover:text-gray-600 shrink-0">
+                <span className="text-sm text-ink flex-1">{t.message}</span>
+                <button onClick={() => removeToast(t.id)} className="text-stone hover:text-ink-soft shrink-0">
                   <X className="h-4 w-4" />
                 </button>
                 <div className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl overflow-hidden`}>

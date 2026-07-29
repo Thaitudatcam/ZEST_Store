@@ -23,16 +23,16 @@ function OrderMiniStepper({ status }) {
         const isCurrent = !isSpecial && i === currentIdx;
         return (
           <div key={s} className="flex items-center">
-            {i > 0 && <div className={`w-3 sm:w-5 h-0.5 ${filled ? 'bg-blue-500' : 'bg-gray-200'}`} />}
+            {i > 0 && <div className={`w-3 sm:w-5 h-0.5 ${filled ? 'bg-gold/100' : 'bg-ivory-100'}`} />}
             <div className={`flex items-center justify-center w-5 h-5 rounded-full transition-all duration-300
-              ${isCurrent ? 'bg-blue-600 text-white ring-2 ring-blue-300' : filled ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-300'}`}>
+              ${isCurrent ? 'bg-gold text-noir ring-2 ring-blue-300' : filled ? 'bg-gold text-noir' : 'bg-ivory-100 text-stone'}`}>
               <Icon className="h-3 w-3" />
             </div>
           </div>
         );
       })}
       {isSpecial && (
-        <span className="ml-2 text-xs font-semibold text-red-600">{status === 5 ? 'Đã hủy' : status === 7 ? 'Trả hàng' : 'Đã trả hàng'}</span>
+        <span className="ml-2 text-xs font-semibold text-bordeaux">{status === 5 ? 'Đã hủy' : status === 7 ? 'Trả hàng' : 'Đã trả hàng'}</span>
       )}
     </div>
   );
@@ -83,7 +83,7 @@ export default function Orders() {
       toast.success(
         <div className="flex items-center gap-2">
           <span>Đã thêm {count} sản phẩm vào giỏ hàng!</span>
-          <button onClick={() => navigate('/cart')} className="text-blue-700 font-semibold underline whitespace-nowrap">Xem giỏ</button>
+          <button onClick={() => navigate('/cart')} className="text-gold font-semibold underline whitespace-nowrap">Xem giỏ</button>
         </div>
       );
     } catch {
@@ -160,12 +160,12 @@ export default function Orders() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Đơn hàng của tôi</h1>
       {orders.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+        <div className="text-center py-20 text-stone">
+          <Package className="h-16 w-16 mx-auto mb-4 text-stone" />
           <p className="mb-4">Chưa có đơn hàng</p>
           <Link
             to="/products"
-            className="text-blue-700 font-semibold hover:underline"
+            className="text-gold font-semibold hover:underline"
           >
             Mua sắm ngay
           </Link>
@@ -176,20 +176,20 @@ export default function Orders() {
             <Link
               to={`/orders/${o.maDonHang}`}
               key={o.maDonHang}
-              className="bg-white rounded-xl border p-4 block hover:shadow-md transition"
+              className="bg-ivory rounded-xl border p-4 block hover:shadow-md transition"
             >
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-stone">
                     Đơn hàng #{o.maDonHang}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-stone">
                     {o.ngayDat
                       ? new Date(o.ngayDat).toLocaleDateString("vi-VN")
                       : ""}
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-blue-600 px-2 py-0.5 rounded-full bg-blue-50">
+                <span className="text-xs font-semibold text-gold px-2 py-0.5 rounded-full bg-gold/10">
                   {VND(o.tongTien || 0)}
                 </span>
               </div>
@@ -204,7 +204,7 @@ export default function Orders() {
                         e.preventDefault();
                         if (confirm("Hủy đơn hàng này?")) handleCancel(o.maDonHang);
                       }}
-                      className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                      className="text-xs text-bordeaux hover:underline flex items-center gap-1"
                     >
                       <XCircle className="h-3.5 w-3.5" /> Hủy đơn
                     </button>
@@ -214,7 +214,7 @@ export default function Orders() {
                       <button
                         onClick={(e) => handleBuyAgain(o.maDonHang, e)}
                         disabled={buyingOrders.has(o.maDonHang)}
-                        className="text-xs text-blue-700 hover:underline flex items-center gap-1 disabled:opacity-50"
+                        className="text-xs text-gold hover:underline flex items-center gap-1 disabled:opacity-50"
                       >
                         {buyingOrders.has(o.maDonHang) ? (
                           <Loader className="h-3.5 w-3.5 animate-spin" />
@@ -225,7 +225,7 @@ export default function Orders() {
                       </button>
                       <button
                         onClick={(e) => openReview(o.maDonHang, e)}
-                        className="text-xs text-orange-600 hover:underline flex items-center gap-1"
+                        className="text-xs text-gold hover:underline flex items-center gap-1"
                       >
                         <Star className="h-3.5 w-3.5" />
                         Đánh giá
@@ -233,7 +233,7 @@ export default function Orders() {
                     </>
                   )}
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-300" />
+                <ChevronRight className="h-5 w-5 text-stone" />
               </div>
             </Link>
           ))}
@@ -242,19 +242,19 @@ export default function Orders() {
 
       {reviewModal.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={closeReview}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b shrink-0">
               <h3 className="font-bold text-lg">Đánh giá sản phẩm</h3>
-              <button onClick={closeReview} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+              <button onClick={closeReview} className="text-stone hover:text-stone text-xl leading-none">&times;</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {reviewModal.loading ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader className="h-6 w-6 animate-spin text-blue-700" />
+                  <Loader className="h-6 w-6 animate-spin text-gold" />
                 </div>
               ) : reviewModal.items.length === 0 ? (
-                <p className="text-center text-gray-500 py-10">Không có sản phẩm nào để đánh giá</p>
+                <p className="text-center text-stone py-10">Không có sản phẩm nào để đánh giá</p>
               ) : (
                 reviewModal.items.map((item) => {
                   const key = item.maMucDonHang;
@@ -265,15 +265,15 @@ export default function Orders() {
                   const currentStar = hoverStar[key] || data.soSao;
                   const starLabels = ['', 'Tệ', 'Không hài lòng', 'Bình thường', 'Hài lòng', 'Tuyệt vời'];
                   return (
-                    <div key={key} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all duration-200">
+                    <div key={key} className="bg-ivory rounded-xl border border-stone/10 shadow-sm p-4 hover:shadow-md transition-all duration-200">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-14 h-14 bg-gray-50 rounded-xl overflow-hidden shrink-0 ring-1 ring-gray-100">
+                        <div className="w-14 h-14 bg-ivory-100 rounded-xl overflow-hidden shrink-0 ring-1 ring-gray-100">
                           <img src={anh} alt="" className="w-full h-full object-cover"
                             onError={(e) => { e.target.src = 'https://placehold.co/100x100/e2e8f0/475569?text=Polo' }} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-sm text-gray-900 truncate">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="font-semibold text-sm text-ink truncate">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
+                          <p className="text-xs text-stone mt-0.5">
                             {[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}
                           </p>
                         </div>
@@ -289,8 +289,8 @@ export default function Orders() {
                               className={`transition-all duration-150 ${star <= currentStar ? 'scale-110' : 'scale-100 hover:scale-110'}`}>
                               <Star className={`h-6 w-6 transition-all duration-150 ${
                                 star <= currentStar
-                                  ? 'fill-amber-400 text-amber-400 drop-shadow-sm'
-                                  : 'text-gray-200 hover:text-amber-300'
+                                  ? 'fill-amber-400 text-gold drop-shadow-sm'
+                                  : 'text-stone hover:text-gold/30'
                               }`} />
                             </button>
                           ))}
@@ -305,8 +305,8 @@ export default function Orders() {
                           if (e.target.value.length <= 1000) setReviewComment(key, e.target.value);
                         }}
                           placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pr-14 text-sm min-h-[72px] focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-300 focus:bg-white resize-none transition-all duration-200 placeholder:text-gray-300" />
-                        <span className="absolute bottom-2 right-3 text-[10px] text-gray-300 select-none">{data.binhLuan.length}/1000</span>
+                          className="w-full bg-ivory-100 border border-stone/20 rounded-xl p-3 pr-14 text-sm min-h-[72px] focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-gold/30 focus:bg-ivory resize-none transition-all duration-200 placeholder:text-stone" />
+                        <span className="absolute bottom-2 right-3 text-[10px] text-stone select-none">{data.binhLuan.length}/1000</span>
                       </div>
                     </div>
                   );
@@ -315,11 +315,11 @@ export default function Orders() {
             </div>
 
             <div className="flex items-center gap-3 p-5 border-t shrink-0">
-              <button onClick={closeReview} className="flex-1 border rounded-xl py-2.5 text-sm font-medium hover:bg-gray-50 transition">
+              <button onClick={closeReview} className="flex-1 border rounded-xl py-2.5 text-sm font-medium hover:bg-ivory-100 transition">
                 Hủy
               </button>
               <button onClick={handleSubmitReviews} disabled={submittingReview || reviewModal.items.length === 0}
-                className="flex-1 bg-orange-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-1">
+                className="flex-1 bg-gold text-noir rounded-xl py-2.5 text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-1">
                 {submittingReview ? <Loader className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
                 {submittingReview ? 'Đang gửi...' : 'Gửi đánh giá'}
               </button>

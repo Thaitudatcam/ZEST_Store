@@ -31,8 +31,8 @@ export default function Products() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Tìm sản phẩm..." className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <button type="submit" className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800"><Search className="h-5 w-5" /></button>
+          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Tìm sản phẩm..." className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
+          <button type="submit" className="bg-gold text-noir px-4 py-2 rounded-lg hover:bg-gold-hover"><Search className="h-5 w-5" /></button>
         </form>
         <select value={catId} onChange={(e) => { setCatId(e.target.value); setPage(0) }} className="border rounded-lg px-4 py-2">
           <option value="">Tất cả danh mục</option>
@@ -45,10 +45,10 @@ export default function Products() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map((p) => <ProductCard key={p.maSanPham} product={p} />)}
           </div>
-          {products.length === 0 && <p className="text-center text-gray-500 py-12">Không tìm thấy sản phẩm</p>}
+          {products.length === 0 && <p className="text-center text-stone py-12">Không tìm thấy sản phẩm</p>}
           <div className="flex justify-center gap-2 mt-8">
-            {page > 0 && <button onClick={() => setPage(page - 1)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">Trước</button>}
-            <button onClick={() => setPage(page + 1)} className="px-4 py-2 border rounded-lg hover:bg-gray-100">Sau</button>
+            {page > 0 && <button onClick={() => setPage(page - 1)} className="px-4 py-2 border rounded-lg hover:bg-ivory-100">Trước</button>}
+            <button onClick={() => setPage(page + 1)} className="px-4 py-2 border rounded-lg hover:bg-ivory-100">Sau</button>
           </div>
         </>
       )}

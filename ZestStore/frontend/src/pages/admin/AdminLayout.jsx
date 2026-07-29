@@ -90,7 +90,7 @@ export default function AdminLayout() {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                       childActive
                         ? 'bg-gradient-to-r from-gold/15 to-transparent text-ivory border-l-2 border-gold'
-                        : 'text-stone-light/60 hover:bg-white/5 hover:text-ivory border-l-2 border-transparent'
+                        : 'text-stone-light/60 hover:bg-ivory/5 hover:text-ivory border-l-2 border-transparent'
                     }`}>
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
                       childActive ? 'bg-gold/20 text-gold' : 'text-stone-light/50 group-hover:text-stone-light/80'
@@ -110,7 +110,7 @@ export default function AdminLayout() {
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                               childActive
                                 ? 'bg-gold/10 text-gold'
-                                : 'text-stone-light/60 hover:bg-white/5 hover:text-stone-light/90'
+                                : 'text-stone-light/60 hover:bg-ivory/5 hover:text-stone-light/90'
                             }`}>
                             <span className="w-1 h-1 rounded-full bg-current opacity-40 shrink-0" />
                             {child.label}
@@ -128,7 +128,7 @@ export default function AdminLayout() {
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                   active
                     ? 'bg-gradient-to-r from-gold/15 to-transparent text-ivory border-l-2 border-gold'
-                    : 'text-stone-light/60 hover:bg-white/5 hover:text-ivory border-l-2 border-transparent'
+                    : 'text-stone-light/60 hover:bg-ivory/5 hover:text-ivory border-l-2 border-transparent'
                 }`}>
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
                   active ? 'bg-gold/20 text-gold' : 'text-stone-light/50 group-hover:text-stone-light/80'
@@ -136,13 +136,13 @@ export default function AdminLayout() {
                   <item.icon className="h-4 w-4" />
                 </div>
                 <span className="truncate">{item.label}</span>
-                {item.badge > 0 && <span className="ml-auto bg-bordeaux text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge > 99 ? '99+' : item.badge}</span>}
+                {item.badge > 0 && <span className="ml-auto bg-bordeaux text-noir text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge > 99 ? '99+' : item.badge}</span>}
               </Link>
             )
           })}
         </nav>
         <div className="shrink-0 border-t border-gold/10 px-3 py-2.5">
-          <Link to="/" className="flex items-center gap-2 px-3 py-2 text-xs text-stone-light/50 hover:text-gold hover:bg-white/5 rounded-lg transition-all duration-200">
+          <Link to="/" className="flex items-center gap-2 px-3 py-2 text-xs text-stone-light/50 hover:text-gold hover:bg-ivory/5 rounded-lg transition-all duration-200">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Về trang chủ
           </Link>

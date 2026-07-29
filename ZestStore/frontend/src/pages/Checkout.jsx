@@ -67,13 +67,13 @@ function CheckoutStepper({ currentStep }) {
           <div key={s.key} className="flex items-center">
             <div className="flex items-center gap-2">
               <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shrink-0
-                ${isDone ? 'bg-blue-700 text-white' : isCurrent ? 'ring-2 ring-blue-700 bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'}`}>
+                ${isDone ? 'bg-gold text-noir' : isCurrent ? 'ring-2 ring-blue-700 bg-gold/20 text-gold' : 'bg-ivory-100 text-stone'}`}>
                 {isDone ? <Check className="h-4 w-4" /> : i + 1}
               </span>
-              <span className={`text-sm font-medium hidden sm:inline ${isCurrent ? 'text-blue-700' : isDone ? 'text-blue-600' : 'text-gray-400'}`}>{s.label}</span>
+              <span className={`text-sm font-medium hidden sm:inline ${isCurrent ? 'text-gold' : isDone ? 'text-gold' : 'text-stone'}`}>{s.label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-12 sm:w-20 h-0.5 mx-2 ${i < stepIndex ? 'bg-blue-700' : 'bg-gray-200'}`} />
+              <div className={`w-12 sm:w-20 h-0.5 mx-2 ${i < stepIndex ? 'bg-gold' : 'bg-ivory-100'}`} />
             )}
           </div>
         )
@@ -493,15 +493,15 @@ export default function Checkout() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8 text-center">
         <h1 className="text-2xl font-bold mb-4">Thanh toán</h1>
-        <p className="text-gray-500">Giỏ hàng trống</p>
-        <button onClick={() => navigate('/')} className="mt-4 text-blue-700 font-semibold hover:underline">Tiếp tục mua sắm</button>
+        <p className="text-stone">Giỏ hàng trống</p>
+        <button onClick={() => navigate('/')} className="mt-4 text-gold font-semibold hover:underline">Tiếp tục mua sắm</button>
       </div>
     )
   }
 
   return (
     <><div className="max-w-6xl mx-auto px-4 py-8">
-      <button onClick={() => navigate('/cart')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+      <button onClick={() => navigate('/cart')} className="flex items-center gap-1 text-sm text-stone hover:text-ink-soft mb-4">
         <ArrowLeft className="h-4 w-4" /> Quay lại giỏ hàng
       </button>
       <h1 className="text-2xl font-bold mb-6">Thanh toán</h1>
@@ -512,8 +512,8 @@ export default function Checkout() {
         <div className="lg:col-span-3 space-y-6">
 
           {step === 'delivery' && (
-            <div className="border-l-4 border-blue-600 bg-white rounded-xl shadow-sm p-6">
-              <h2 className="font-semibold mb-4 flex items-center gap-2"><MapPin className="h-5 w-5 text-blue-700" /> Thông tin giao hàng</h2>
+            <div className="border-l-4 border-gold bg-ivory rounded-xl shadow-sm p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2"><MapPin className="h-5 w-5 text-gold" /> Thông tin giao hàng</h2>
 
               {addresses.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -521,13 +521,13 @@ export default function Checkout() {
                     <div key={a.maDiaChi}
                       onClick={() => selectAddress(a)}
                       className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
-                        ${form.maDiaChi === a.maDiaChi ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        ${form.maDiaChi === a.maDiaChi ? 'border-gold ring-2 ring-blue-200 bg-gold/10/50' : 'border-stone/20 hover:border-stone/30'}`}>
                       <div className="flex items-start gap-2">
                         <input type="radio" name="address" checked={form.maDiaChi === a.maDiaChi} readOnly className="mt-1 accent-blue-700" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm">{a.tenNguoiNhan} — {a.soDienThoai}</p>
-                          <p className="text-sm text-gray-500 truncate">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
-                          {a.laMacDinh && <span className="text-[10px] text-blue-600 font-semibold bg-blue-100 px-2 py-0.5 rounded-full mt-1 inline-block">Mặc định</span>}
+                          <p className="text-sm text-stone truncate">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
+                          {a.laMacDinh && <span className="text-[10px] text-gold font-semibold bg-gold/20 px-2 py-0.5 rounded-full mt-1 inline-block">Mặc định</span>}
                         </div>
                       </div>
                     </div>
@@ -535,37 +535,37 @@ export default function Checkout() {
                 </div>
               )}
 
-              <button onClick={() => setShowAddrModal(true)} className="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 px-4 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center gap-2 mb-4">
+              <button onClick={() => setShowAddrModal(true)} className="w-full border-2 border-dashed border-stone/30 rounded-xl py-3 px-4 text-sm text-stone hover:border-gold hover:text-gold transition flex items-center justify-center gap-2 mb-4">
                 <Plus className="h-4 w-4" /> Thêm địa chỉ mới
               </button>
 
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <input value={form.tenNguoiNhan} onChange={(e) => setForm((f) => ({ ...f, tenNguoiNhan: e.target.value }))} placeholder="Tên người nhận" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input value={form.sdtNguoiNhan} onChange={(e) => setForm((f) => ({ ...f, sdtNguoiNhan: e.target.value }))} placeholder="Số điện thoại" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input value={form.tenNguoiNhan} onChange={(e) => setForm((f) => ({ ...f, tenNguoiNhan: e.target.value }))} placeholder="Tên người nhận" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
+                  <input value={form.sdtNguoiNhan} onChange={(e) => setForm((f) => ({ ...f, sdtNguoiNhan: e.target.value }))} placeholder="Số điện thoại" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
                 <select value={selectedProvinceId} onChange={(e) => { const id = Number(e.target.value); setSelectedProvinceId(id); setSelectedDistrictId(0); setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, tinhThanhPho: name })) }}
-                  className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
                   <option value={0}>-- Chọn Tỉnh/Thành phố --</option>
                   {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
                 </select>
                 <div className="grid grid-cols-2 gap-3">
                   <select value={selectedDistrictId} onChange={(e) => { setSelectedDistrictId(Number(e.target.value)); setSelectedWardCode(''); setWards([]); setGhnFee(null); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, quanHuyen: name })) }}
-                    disabled={!selectedProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    disabled={!selectedProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
                     <option value={0}>-- Chọn Quận/Huyện --</option>
                     {districts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
                   </select>
                   <select value={selectedWardCode} onChange={(e) => { setSelectedWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, phuongXa: name })) }}
-                    disabled={!selectedDistrictId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    disabled={!selectedDistrictId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
                     <option value="">-- Chọn Phường/Xã --</option>
                     {wards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
                   </select>
                 </div>
-                <input value={form.diaChiGiaoHang} onChange={(e) => setForm((f) => ({ ...f, diaChiGiaoHang: e.target.value }))} placeholder="Địa chỉ chi tiết (số nhà, đường)" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <textarea value={form.ghiChu} onChange={(e) => setForm((f) => ({ ...f, ghiChu: e.target.value }))} placeholder="Ghi chú (không bắt buộc)" rows={2} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input value={form.diaChiGiaoHang} onChange={(e) => setForm((f) => ({ ...f, diaChiGiaoHang: e.target.value }))} placeholder="Địa chỉ chi tiết (số nhà, đường)" className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
+                <textarea value={form.ghiChu} onChange={(e) => setForm((f) => ({ ...f, ghiChu: e.target.value }))} placeholder="Ghi chú (không bắt buộc)" rows={2} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
 
                 <button onClick={() => goToStep('payment')} disabled={!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang}
-                  className="w-full bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="w-full bg-gold text-noir py-3 rounded-xl font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                   Tiếp tục <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -573,8 +573,8 @@ export default function Checkout() {
           )}
 
           {step === 'payment' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-700" /> Phương thức thanh toán</h2>
+            <div className="bg-ivory rounded-xl shadow-sm p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-gold" /> Phương thức thanh toán</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {PAYMENT_CARDS.map((pm) => {
                   const Icon = pm.icon
@@ -582,54 +582,54 @@ export default function Checkout() {
                     <div key={pm.value}
                       onClick={() => setForm((f) => ({ ...f, phuongThucThanhToan: pm.value }))}
                       className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
-                        ${form.phuongThucThanhToan === pm.value ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50/50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        ${form.phuongThucThanhToan === pm.value ? 'border-gold ring-2 ring-blue-200 bg-gold/10/50' : 'border-stone/20 hover:border-stone/30'}`}>
                       <div className="flex items-start gap-3">
                         <input type="radio" name="payment" checked={form.phuongThucThanhToan === pm.value} readOnly className="mt-1 accent-blue-700 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-sm">{pm.label}</p>
-                            {pm.badge && <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{pm.badge}</span>}
+                            {pm.badge && <span className="text-[10px] font-semibold bg-gold/20 text-gold px-2 py-0.5 rounded-full">{pm.badge}</span>}
                           </div>
-                          <p className="text-xs text-gray-400">{pm.value === 7 ? `Số dư: ${VND(soDuVi)}` : pm.desc}</p>
+                          <p className="text-xs text-stone">{pm.value === 7 ? `Số dư: ${VND(soDuVi)}` : pm.desc}</p>
                         </div>
-                        <Icon className={`h-6 w-6 shrink-0 ${form.phuongThucThanhToan === pm.value ? 'text-blue-700' : 'text-gray-300'}`} />
+                        <Icon className={`h-6 w-6 shrink-0 ${form.phuongThucThanhToan === pm.value ? 'text-gold' : 'text-stone'}`} />
                       </div>
                     </div>
                   )
                 })}
               </div>
               <div className="mt-6 flex gap-3">
-                <button onClick={() => goToStep('delivery')} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">Quay lại</button>
-                <button onClick={() => goToStep('review')} className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition">Tiếp tục</button>
+                <button onClick={() => goToStep('delivery')} className="flex-1 border-2 border-stone/20 text-ink-soft py-3 rounded-xl font-semibold hover:bg-ivory-100 transition">Quay lại</button>
+                <button onClick={() => goToStep('review')} className="flex-1 bg-gold text-noir py-3 rounded-xl font-semibold hover:bg-gold-hover transition">Tiếp tục</button>
               </div>
             </div>
           )}
 
           {step === 'review' && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="font-semibold mb-4 flex items-center gap-2"><MapPin className="h-5 w-5 text-blue-700" /> Thông tin giao hàng</h2>
-              <div className="text-sm space-y-1 mb-4 p-3 bg-gray-50 rounded-lg">
-                <p><span className="text-gray-500">Người nhận:</span> {form.tenNguoiNhan} — {form.sdtNguoiNhan}</p>
-                <p><span className="text-gray-500">Địa chỉ:</span> {form.diaChiGiaoHang}</p>
-                {form.ghiChu && <p><span className="text-gray-500">Ghi chú:</span> {form.ghiChu}</p>}
+            <div className="bg-ivory rounded-xl shadow-sm p-6">
+              <h2 className="font-semibold mb-4 flex items-center gap-2"><MapPin className="h-5 w-5 text-gold" /> Thông tin giao hàng</h2>
+              <div className="text-sm space-y-1 mb-4 p-3 bg-ivory-100 rounded-lg">
+                <p><span className="text-stone">Người nhận:</span> {form.tenNguoiNhan} — {form.sdtNguoiNhan}</p>
+                <p><span className="text-stone">Địa chỉ:</span> {form.diaChiGiaoHang}</p>
+                {form.ghiChu && <p><span className="text-stone">Ghi chú:</span> {form.ghiChu}</p>}
               </div>
 
-              <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-blue-700" /> Phương thức thanh toán</h2>
-              <div className="text-sm p-3 bg-gray-50 rounded-lg mb-4">
+              <h2 className="font-semibold mb-4 flex items-center gap-2"><CreditCard className="h-5 w-5 text-gold" /> Phương thức thanh toán</h2>
+              <div className="text-sm p-3 bg-ivory-100 rounded-lg mb-4">
                 <p>{PAYMENT_CARDS.find(p => p.value === form.phuongThucThanhToan)?.label}</p>
                 {form.phuongThucThanhToan === 7 && soDuVi < finalTotal && (
-                  <p className="text-xs text-red-500 mt-1">⚠ Số dư ví không đủ ({VND(soDuVi)}) để thanh toán ({VND(finalTotal)})</p>
+                  <p className="text-xs text-bordeaux mt-1">⚠ Số dư ví không đủ ({VND(soDuVi)}) để thanh toán ({VND(finalTotal)})</p>
                 )}
               </div>
 
               <div className="border-t pt-4 mb-4 space-y-4">
                 <div>
-                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Tag className="h-4 w-4 text-blue-700" /> Mã giảm giá (Coupon)</h2>
-                  <p className="text-xs text-gray-400 mb-2">Nhập mã giảm giá công khai</p>
+                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Tag className="h-4 w-4 text-gold" /> Mã giảm giá (Coupon)</h2>
+                  <p className="text-xs text-stone mb-2">Nhập mã giảm giá công khai</p>
                   {discountCoupon ? (
-                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm">
-                      <span className="text-green-700 font-medium">{discountCoupon.maCode} — Giảm {VND(discount)}</span>
-                      <button onClick={() => { setDiscountCoupon(null); setDiscountMsg(''); setDiscountCode('') }} className="text-green-600 hover:text-green-800">
+                    <div className="inline-flex items-center gap-2 bg-emerald-deep/10 border border-emerald-deep/20 px-3 py-1.5 rounded-full text-sm">
+                      <span className="text-emerald-deep font-medium">{discountCoupon.maCode} — Giảm {VND(discount)}</span>
+                      <button onClick={() => { setDiscountCoupon(null); setDiscountMsg(''); setDiscountCode('') }} className="text-emerald-deep hover:text-emerald-deep">
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -638,26 +638,26 @@ export default function Checkout() {
                       <div className="flex gap-2">
                         <input value={discountCode} onChange={e => setDiscountCode(e.target.value)}
                           placeholder="Nhập mã..."
-                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                         <button onClick={handleApplyDiscount} disabled={discountLoading || !discountCode.trim()}
-                          className="px-3 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
+                          className="px-3 py-2 bg-gold text-noir text-sm font-medium rounded-lg hover:bg-gold-hover transition disabled:opacity-50">
                           {discountLoading ? '...' : 'Áp dụng'}
                         </button>
                       </div>
                       {userVouchers.filter(v => v.kieuGiamGia !== 3).length > 0 && (
                         <div className="relative mt-2">
                           <button onClick={() => setDiscountVouchersOpen(!discountVouchersOpen)} type="button"
-                            className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-white hover:border-blue-400 transition">
-                            <span className="text-gray-500">Chọn mã từ ví của bạn...</span>
-                            <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${discountVouchersOpen ? 'rotate-90' : ''}`} />
+                            className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-ivory hover:border-gold transition">
+                            <span className="text-stone">Chọn mã từ ví của bạn...</span>
+                            <ChevronRight className={`h-4 w-4 text-stone transition-transform ${discountVouchersOpen ? 'rotate-90' : ''}`} />
                           </button>
                           {discountVouchersOpen && (
-                            <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                               {userVouchers.filter(v => v.kieuGiamGia !== 3).map(v => (
                                 <button key={v.maVoucherNguoiDung} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
-                                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 border-b last:border-b-0 transition flex items-center justify-between">
+                                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-gold/10 border-b last:border-b-0 transition flex items-center justify-between">
                                   <span className="font-medium">{v.maCode}</span>
-                                  <span className="text-green-600 text-xs font-medium">
+                                  <span className="text-emerald-deep text-xs font-medium">
                                     {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
                                   </span>
                                 </button>
@@ -668,35 +668,35 @@ export default function Checkout() {
                       )}
                     </>
                   )}
-                  {discountMsg && <p className="text-red-500 text-xs mt-1">{discountMsg}</p>}
+                  {discountMsg && <p className="text-bordeaux text-xs mt-1">{discountMsg}</p>}
                 </div>
                 <div className="border-t pt-3">
-                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Truck className="h-4 w-4 text-green-700" /> Miễn phí vận chuyển (Voucher)</h2>
-                  <p className="text-xs text-gray-400 mb-2">Chọn voucher cá nhân của bạn</p>
+                  <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Truck className="h-4 w-4 text-emerald-deep" /> Miễn phí vận chuyển (Voucher)</h2>
+                  <p className="text-xs text-stone mb-2">Chọn voucher cá nhân của bạn</p>
                   {freeshipVoucher ? (
-                    <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full text-sm">
-                      <span className="text-green-700 font-medium">{freeshipVoucher.maCode} — Miễn phí vận chuyển</span>
-                      <button onClick={() => { setFreeshipVoucher(null); setFreeshipMsg('') }} className="text-green-600 hover:text-green-800">
+                    <div className="inline-flex items-center gap-2 bg-emerald-deep/10 border border-emerald-deep/20 px-3 py-1.5 rounded-full text-sm">
+                      <span className="text-emerald-deep font-medium">{freeshipVoucher.maCode} — Miễn phí vận chuyển</span>
+                      <button onClick={() => { setFreeshipVoucher(null); setFreeshipMsg('') }} className="text-emerald-deep hover:text-emerald-deep">
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ) : (
                     <div className="relative">
                       <button onClick={() => setVouchersOpen(!vouchersOpen)} type="button"
-                        className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-white hover:border-blue-400 transition">
-                        <span className="text-gray-500">Chọn voucher freeship...</span>
-                        <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform ${vouchersOpen ? 'rotate-90' : ''}`} />
+                        className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-ivory hover:border-gold transition">
+                        <span className="text-stone">Chọn voucher freeship...</span>
+                        <ChevronRight className={`h-4 w-4 text-stone transition-transform ${vouchersOpen ? 'rotate-90' : ''}`} />
                       </button>
                       {vouchersOpen && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <div className="absolute z-10 mt-1 w-full bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {userVouchers.length === 0 ? (
-                            <p className="text-center text-gray-400 py-4 text-sm">Không có voucher khả dụng</p>
+                            <p className="text-center text-stone py-4 text-sm">Không có voucher khả dụng</p>
                           ) : (
                             userVouchers.filter(v => v.kieuGiamGia === 3).map(v => (
                               <button key={v.maVoucherNguoiDung} onClick={() => handleSelectFreeship(v)}
-                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 border-b last:border-b-0 transition">
+                                className="w-full text-left px-3 py-2.5 text-sm hover:bg-gold/10 border-b last:border-b-0 transition">
                                 <span className="font-medium">{v.maCode}</span>
-                                {v.ngayHetHan && <span className="text-xs text-gray-400 ml-2">HSD: {new Date(v.ngayHetHan).toLocaleDateString('vi-VN')}</span>}
+                                {v.ngayHetHan && <span className="text-xs text-stone ml-2">HSD: {new Date(v.ngayHetHan).toLocaleDateString('vi-VN')}</span>}
                               </button>
                             ))
                           )}
@@ -704,24 +704,24 @@ export default function Checkout() {
                       )}
                     </div>
                   )}
-                  {freeshipMsg && <p className="text-red-500 text-xs mt-1">{freeshipMsg}</p>}
+                  {freeshipMsg && <p className="text-bordeaux text-xs mt-1">{freeshipMsg}</p>}
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="font-semibold flex items-center gap-2 text-sm"><Coins className="h-4 w-4 text-amber-500" /> Điểm tích lũy</h2>
+                    <h2 className="font-semibold flex items-center gap-2 text-sm"><Coins className="h-4 w-4 text-gold" /> Điểm tích lũy</h2>
                     <div className="flex items-center gap-1">
-                      <button onClick={refreshDiem} className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition" title="Cập nhật số dư">
+                      <button onClick={refreshDiem} className="p-1.5 text-stone hover:text-gold hover:bg-gold/10 rounded-lg transition" title="Cập nhật số dư">
                         <RefreshCw className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={loadDiemHistory} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Lịch sử giao dịch">
+                      <button onClick={loadDiemHistory} className="p-1.5 text-stone hover:text-gold hover:bg-gold/10 rounded-lg transition" title="Lịch sử giao dịch">
                         <History className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
                   {soDiemHienCo > 0 ? (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Số dư: <strong className="text-amber-700">{soDiemHienCo.toLocaleString()} điểm</strong></span>
+                      <div className="flex items-center justify-between text-xs text-stone">
+                        <span>Số dư: <strong className="text-gold-hover">{soDiemHienCo.toLocaleString()} điểm</strong></span>
                       </div>
                       <label className="flex items-center gap-2 text-sm">
                         <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setDiemSuDung(0) }} className="accent-amber-500" />
@@ -736,22 +736,22 @@ export default function Checkout() {
                               className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
                           </div>
                           {diemSuDung > 0 && (
-                            <p className="text-xs text-amber-600">Giảm {VND(diemSuDung * 1000)}</p>
+                            <p className="text-xs text-gold">Giảm {VND(diemSuDung * 1000)}</p>
                           )}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">Bạn chưa có điểm tích lũy. <a href="/tich-diem" className="text-blue-600 underline">Xem chi tiết</a></p>
+                    <p className="text-xs text-stone">Bạn chưa có điểm tích lũy. <a href="/tich-diem" className="text-gold underline">Xem chi tiết</a></p>
                   )}
                 </div>
               </div>
 
-              {ghnError && <p className="text-red-500 text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
+              {ghnError && <p className="text-bordeaux text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
               <div className="flex gap-3">
-                <button onClick={() => goToStep('payment')} className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">Quay lại</button>
+                <button onClick={() => goToStep('payment')} className="flex-1 border-2 border-stone/20 text-ink-soft py-3 rounded-xl font-semibold hover:bg-ivory-100 transition">Quay lại</button>
                 <button onClick={handlePlaceOrder} disabled={placing || ghnError}
-                  className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 bg-gold text-noir py-3 rounded-xl font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                   {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : 'Đặt hàng ngay'}
                 </button>
               </div>
@@ -760,17 +760,17 @@ export default function Checkout() {
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border p-6 sticky top-4">
+          <div className="bg-ivory rounded-xl shadow-sm border p-6 sticky top-4">
             <h2 className="font-semibold mb-4">Tóm tắt đơn hàng {selectedItems ? `(${cart.length})` : ''}</h2>
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
               {cart.map((i) => (
                 <div key={i.maBienThe} className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                  <div className="w-12 h-12 bg-ivory-100 rounded-lg overflow-hidden shrink-0">
                     <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{i.tenSanPham}</p>
-                    <p className="text-xs text-gray-500">x{i.soLuong}</p>
+                    <p className="text-xs text-stone">x{i.soLuong}</p>
                   </div>
                   <p className="text-sm font-semibold">{VND(i.donGia * i.soLuong)}</p>
                 </div>
@@ -778,38 +778,38 @@ export default function Checkout() {
             </div>
             <hr className="border-t" />
             <div className="pt-3 space-y-2 text-sm">
-              <div className="flex justify-between text-gray-600">
+              <div className="flex justify-between text-stone">
                 <span>Tạm tính</span>
                 <span>{VND(rawTotal)}</span>
               </div>
               {discount > 0 && (
-                <div className="flex justify-between text-green-600">
+                <div className="flex justify-between text-emerald-deep">
                   <span>Giảm giá</span>
                   <span>-{VND(discount)}</span>
                 </div>
               )}
               {freeshipDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
+                <div className="flex justify-between text-emerald-deep">
                   <span>Miễn phí vận chuyển</span>
                   <span>-{VND(freeshipDiscount)}</span>
                 </div>
               )}
               {tienGiamDiem > 0 && (
-                <div className="flex justify-between text-amber-600">
+                <div className="flex justify-between text-gold">
                   <span>Giảm điểm</span>
                   <span>-{VND(tienGiamDiem)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-gray-600">
+              <div className="flex justify-between text-stone">
                 <span>Phí vận chuyển</span>
-                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-red-500 text-xs">Lỗi</span> : ghnFee !== null ? VND(effectiveShippingFee) : '---'}</span>
+                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-bordeaux text-xs">Lỗi</span> : ghnFee !== null ? VND(effectiveShippingFee) : '---'}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>Tổng cộng</span>
-                <span className="text-blue-700">{VND(finalTotal)}</span>
+                <span className="text-gold">{VND(finalTotal)}</span>
               </div>
             </div>
-            <p className="text-xs text-gray-400 text-center mt-3">🔒 Thanh toán an toàn & bảo mật</p>
+            <p className="text-xs text-stone text-center mt-3">🔒 Thanh toán an toàn & bảo mật</p>
           </div>
         </div>
       </div>
@@ -818,47 +818,47 @@ export default function Checkout() {
       {vietQrData && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
         onClick={() => { clearInterval(qrPollRef.current); clearInterval(qrTimerRef.current); setVietQrData(null) }}>
-        <div className="bg-white rounded-3xl max-w-md w-full mx-4 p-6 animate-scale-in text-center"
+        <div className="bg-ivory rounded-3xl max-w-md w-full mx-4 p-6 animate-scale-in text-center"
           onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg">Quét mã QR để thanh toán</h3>
-            <button onClick={() => { clearInterval(qrPollRef.current); clearInterval(qrTimerRef.current); setVietQrData(null) }} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => { clearInterval(qrPollRef.current); clearInterval(qrTimerRef.current); setVietQrData(null) }} className="text-stone hover:text-stone">
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="bg-white rounded-xl p-4 border-2 border-blue-100 mb-4 inline-block">
+          <div className="bg-ivory rounded-xl p-4 border-2 border-gold/10 mb-4 inline-block">
             <img src={vietQrData.qrUrl} alt="VietQR" className="w-64 h-64 mx-auto" />
           </div>
 
           <div className="flex justify-center gap-4 mb-4 text-sm">
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-700">{Math.floor(qrTimer / 60)}:{String(qrTimer % 60).padStart(2, '0')}</p>
-              <p className="text-xs text-gray-400">Thời gian còn lại</p>
+              <p className="text-2xl font-bold text-gold">{Math.floor(qrTimer / 60)}:{String(qrTimer % 60).padStart(2, '0')}</p>
+              <p className="text-xs text-stone">Thời gian còn lại</p>
             </div>
           </div>
 
-          <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
-            <div className="bg-blue-700 h-2 rounded-full transition-all duration-1000" style={{ width: `${(qrTimer / 900) * 100}%` }} />
+          <div className="w-full bg-ivory-100 rounded-full h-2 mb-4">
+            <div className="bg-gold h-2 rounded-full transition-all duration-1000" style={{ width: `${(qrTimer / 900) * 100}%` }} />
           </div>
 
           <div className="text-left space-y-2 text-sm mb-4">
-            <p><span className="text-gray-500">Ngân hàng:</span> <span className="font-medium">{vietQrData.bankName}</span></p>
-            <p><span className="text-gray-500">Số tài khoản:</span> <span className="font-medium">{vietQrData.accountNumber}</span></p>
-            <p><span className="text-gray-500">Chủ tài khoản:</span> <span className="font-medium">{vietQrData.accountName}</span></p>
-            <p><span className="text-gray-500">Số tiền:</span> <span className="font-medium text-blue-700">{VND(vietQrData.amount)}</span></p>
+            <p><span className="text-stone">Ngân hàng:</span> <span className="font-medium">{vietQrData.bankName}</span></p>
+            <p><span className="text-stone">Số tài khoản:</span> <span className="font-medium">{vietQrData.accountNumber}</span></p>
+            <p><span className="text-stone">Chủ tài khoản:</span> <span className="font-medium">{vietQrData.accountName}</span></p>
+            <p><span className="text-stone">Số tiền:</span> <span className="font-medium text-gold">{VND(vietQrData.amount)}</span></p>
           </div>
 
-          <p className="text-xs text-gray-400 mb-4">Sử dụng ứng dụng ngân hàng để quét mã QR và thanh toán</p>
+          <p className="text-xs text-stone mb-4">Sử dụng ứng dụng ngân hàng để quét mã QR và thanh toán</p>
 
           {qrTimer === 0 ? (
             <button onClick={() => { clearInterval(qrPollRef.current); clearInterval(qrTimerRef.current); setVietQrData(null); setVietQrData({ ...vietQrData }) }}
-              className="w-full bg-amber-500 text-white font-semibold py-3 rounded-xl hover:bg-amber-600 flex items-center justify-center gap-2">
+              className="w-full bg-gold/100 text-white font-semibold py-3 rounded-xl hover:bg-gold flex items-center justify-center gap-2">
               Tạo lại mã QR
             </button>
           ) : (
             <button onClick={handleConfirmQr} disabled={confirmingQr}
-              className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 disabled:opacity-50 flex items-center justify-center gap-2">
+              className="w-full bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover disabled:opacity-50 flex items-center justify-center gap-2">
               {confirmingQr ? <Loader className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
               {confirmingQr ? 'Đang xử lý...' : 'Tôi đã thanh toán'}
             </button>
@@ -870,38 +870,38 @@ export default function Checkout() {
       {showDiemHistory && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
           onClick={() => setShowDiemHistory(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 animate-scale-in max-h-[80vh] flex flex-col"
+          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 animate-scale-in max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b shrink-0">
-              <h3 className="font-bold flex items-center gap-2"><History className="h-5 w-5 text-blue-600" /> Lịch sử giao dịch điểm</h3>
-              <button onClick={() => setShowDiemHistory(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="font-bold flex items-center gap-2"><History className="h-5 w-5 text-gold" /> Lịch sử giao dịch điểm</h3>
+              <button onClick={() => setShowDiemHistory(false)} className="text-stone hover:text-stone">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {diemHistoryLoading ? (
-                <div className="flex items-center justify-center py-8"><Loader className="h-6 w-6 animate-spin text-blue-700" /></div>
+                <div className="flex items-center justify-center py-8"><Loader className="h-6 w-6 animate-spin text-gold" /></div>
               ) : diemHistoryData.length === 0 ? (
-                <p className="text-center text-gray-400 py-8 text-sm">Chưa có giao dịch nào</p>
+                <p className="text-center text-stone py-8 text-sm">Chưa có giao dịch nào</p>
               ) : (
                 diemHistoryData.map(gd => {
                   const isTich = gd.loaiGiaoDich === 1
                   const isDung = gd.loaiGiaoDich === 2
                   const isHetHan = gd.loaiGiaoDich === 3
                   return (
-                    <div key={gd.maGiaoDich} className={`border rounded-lg px-3 py-2.5 ${isTich ? 'bg-green-50 border-green-200' : isDung ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                    <div key={gd.maGiaoDich} className={`border rounded-lg px-3 py-2.5 ${isTich ? 'bg-emerald-deep/10 border-emerald-deep/20' : isDung ? 'bg-gold/10 border-gold/20' : 'bg-bordeaux/10 border-bordeaux/20'}`}>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">{isTich ? 'Tích lũy' : isDung ? 'Đã dùng' : 'Hết hạn'}</span>
-                        <span className={`font-semibold text-sm ${isTich ? 'text-green-600' : 'text-red-500'}`}>
+                        <span className={`font-semibold text-sm ${isTich ? 'text-emerald-deep' : 'text-bordeaux'}`}>
                           {isTich ? '+' : '-'}{gd.soDiem?.toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                      <div className="flex justify-between text-xs text-stone mt-0.5">
                         <span>{new Date(gd.thoiGian).toLocaleString('vi-VN')}</span>
                         <span>Số dư: {gd.soDuSau?.toLocaleString()}</span>
                       </div>
                       {gd.donHang?.maDonHang && (
-                        <p className="text-xs text-gray-400 mt-0.5">Đơn hàng #{gd.donHang.maDonHang}</p>
+                        <p className="text-xs text-stone mt-0.5">Đơn hàng #{gd.donHang.maDonHang}</p>
                       )}
                     </div>
                   )
@@ -909,7 +909,7 @@ export default function Checkout() {
               )}
             </div>
             <div className="border-t p-4 shrink-0">
-              <a href="/tich-diem" className="block w-full text-center text-sm text-blue-600 font-medium hover:underline">Xem tất cả lịch sử →</a>
+              <a href="/tich-diem" className="block w-full text-center text-sm text-gold font-medium hover:underline">Xem tất cả lịch sử →</a>
             </div>
           </div>
         </div>
@@ -918,11 +918,11 @@ export default function Checkout() {
       {showAddrModal && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
         onClick={() => setShowAddrModal(false)}>
-        <div className="bg-white rounded-3xl max-w-lg w-full mx-4 p-6 animate-scale-in max-h-[90vh] overflow-y-auto"
+        <div className="bg-ivory rounded-3xl max-w-lg w-full mx-4 p-6 animate-scale-in max-h-[90vh] overflow-y-auto"
           onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg">Thêm địa chỉ mới</h3>
-            <button onClick={() => setShowAddrModal(false)} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => setShowAddrModal(false)} className="text-stone hover:text-stone">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -930,40 +930,40 @@ export default function Checkout() {
           <form onSubmit={handleAddAddress} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })} placeholder="Tên người nhận" required
-                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
               <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })} placeholder="Số điện thoại" required
-                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
             <select value={addrProvinceId} onChange={(e) => { const id = Number(e.target.value); setAddrProvinceId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, tinhThanhPho: name, provinceId: id || null }) }}
-              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
               <option value={0}>-- Chọn Tỉnh/Thành phố --</option>
               {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
               <select value={addrDistrictId} onChange={(e) => { const id = Number(e.target.value); setAddrDistrictId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, quanHuyen: name, districtId: id || null }) }}
-                disabled={!addrProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                disabled={!addrProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
                 <option value={0}>-- Chọn Quận/Huyện --</option>
                 {addrDistricts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
               </select>
               <select value={addrWardCode} onChange={(e) => { setAddrWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, phuongXa: name, wardCode: e.target.value || '' }) }}
-                disabled={!addrDistrictId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                disabled={!addrDistrictId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
                 <option value="">-- Chọn Phường/Xã --</option>
                 {addrWards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
               </select>
             </div>
             <input value={addrForm.chiTietDiaChi} onChange={(e) => setAddrForm({ ...addrForm, chiTietDiaChi: e.target.value })} placeholder="Địa chỉ chi tiết (số nhà, đường)" required
-              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={addrForm.laMacDinh} onChange={(e) => setAddrForm({ ...addrForm, laMacDinh: e.target.checked })} className="accent-blue-700" />
               Đặt làm mặc định
             </label>
             <div className="flex gap-2 pt-2">
               <button type="button" onClick={() => setShowAddrModal(false)}
-                className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition text-sm">
+                className="flex-1 border-2 border-stone/20 text-ink-soft py-3 rounded-xl font-semibold hover:bg-ivory-100 transition text-sm">
                 Hủy
               </button>
               <button type="submit" disabled={addrLoading}
-                className="flex-1 bg-blue-700 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
+                className="flex-1 bg-gold text-noir py-3 rounded-xl font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
                 {addrLoading ? <><Loader className="h-4 w-4 animate-spin" /> Đang lưu...</> : 'Thêm địa chỉ'}
               </button>
             </div>

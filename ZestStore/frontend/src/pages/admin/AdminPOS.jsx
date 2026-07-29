@@ -427,28 +427,28 @@ export default function AdminPOS() {
   return (
     <div className="flex gap-4 h-[calc(100vh-6rem)]">
       {msg && (
-        <div className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${msg.type === 'success' ? 'bg-green-50 border border-green-300 text-green-700' : 'bg-red-50 border border-red-300 text-red-700'}`}>
+        <div className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${msg.type === 'success' ? 'bg-emerald-deep/10 border border-emerald-deep/20 text-emerald-deep' : 'bg-bordeaux/10 border border-bordeaux/20 text-bordeaux'}`}>
           <span className="text-sm">{msg.text}</span>
           <button onClick={() => setMsg(null)}><X className="h-4 w-4" /></button>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col bg-white rounded-xl border">
+      <div className="flex-1 flex flex-col bg-ivory rounded-xl border">
         <div className="p-4 border-b space-y-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone" />
             <input value={search} onChange={e => doSearch(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && search.trim()) { handleScannedSku(search); setSearch('') } }}
               placeholder="Tìm sản phẩm hoặc nhập mã SKU..."
-              className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           </div>
           <button onClick={() => setCameraOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-green-400 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 transition">
+            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gold text-gold rounded-lg text-sm font-medium hover:bg-gold/10 transition">
             <ScanBarcode className="h-5 w-5" /> Quét mã bằng camera
           </button>
           <div className="flex gap-2">
             <select value={categoryId} onChange={e => { setCategoryId(e.target.value); setSearch('') }}
-              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold">
               <option value="">Tất cả danh mục</option>
               {categories.map(c => (
                 <option key={c.maDanhMuc} value={c.maDanhMuc}>
@@ -461,9 +461,9 @@ export default function AdminPOS() {
 
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center py-12 text-gray-400">Đang tải...</div>
+            <div className="text-center py-12 text-stone">Đang tải...</div>
           ) : products.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">Không tìm thấy sản phẩm</div>
+            <div className="text-center py-12 text-stone">Không tìm thấy sản phẩm</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {products.map(p => {
@@ -471,8 +471,8 @@ export default function AdminPOS() {
                 const price = p.giaThapNhat ?? p.giaTrungBinh ?? 0
                 return (
                   <button key={p.maSanPham} onClick={() => openVariant(p)}
-                    className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative text-left">
-                    <div className="aspect-square bg-gray-100 overflow-hidden relative">
+                    className="group bg-ivory rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative text-left">
+                    <div className="aspect-square bg-ivory-100 overflow-hidden relative">
                       <SafeImg src={p.urlAnhDaiDien} alt={p.tenSanPham}
                         className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
                         fallback="https://placehold.co/200x200/e2e8f0/475569?text=Polo" />
@@ -480,8 +480,8 @@ export default function AdminPOS() {
                         <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-sm z-10">Hết hàng</span>}
                     </div>
                     <div className="p-3">
-                      <h3 className="font-semibold text-sm text-gray-800 truncate">{p.tenSanPham}</h3>
-                      <p className="text-blue-700 font-bold text-sm mt-1.5">{VND(price)}</p>
+                      <h3 className="font-semibold text-sm text-ink truncate">{p.tenSanPham}</h3>
+                      <p className="text-gold font-bold text-sm mt-1.5">{VND(price)}</p>
                     </div>
                   </button>
                 )
@@ -491,40 +491,40 @@ export default function AdminPOS() {
         </div>
       </div>
 
-      <div className="w-80 bg-white rounded-xl border flex flex-col">
+      <div className="w-80 bg-ivory rounded-xl border flex flex-col">
         <div className="p-4 border-b flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5 text-blue-700" />
+          <ShoppingCart className="h-5 w-5 text-gold" />
           <span className="font-semibold">Giỏ hàng</span>
-          <span className="ml-auto text-sm text-gray-500">{cart.length} món</span>
+          <span className="ml-auto text-sm text-stone">{cart.length} món</span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {cart.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">Chưa có sản phẩm</div>
+            <div className="text-center py-8 text-stone text-sm">Chưa có sản phẩm</div>
           ) : (
             cart.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-lg p-2.5">
-                  <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden shrink-0">
+              <div key={i} className="flex items-start gap-3 bg-ivory-100 rounded-lg p-2.5">
+                  <div className="w-10 h-10 bg-ivory-100 rounded overflow-hidden shrink-0">
                     <SafeImg src={c.urlAnh} alt="" className="w-full h-full object-cover"
                       fallback="https://placehold.co/100x100/e2e8f0/475569?text=P" />
                   </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{c.tenSanPham}</p>
-                  <p className="text-xs text-gray-500">{[c.mauSac, c.kichCo].filter(Boolean).join(' - ') || '—'}</p>
-                  <p className="text-xs text-blue-700 font-semibold">{VND(c.gia)}</p>
+                  <p className="text-xs text-stone">{[c.mauSac, c.kichCo].filter(Boolean).join(' - ') || '—'}</p>
+                  <p className="text-xs text-gold font-semibold">{VND(c.gia)}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => updateQty(i, -1)}
-                    className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-xs">
+                    className="w-6 h-6 flex items-center justify-center rounded bg-ivory-100 hover:bg-ivory-100 text-xs">
                     <Minus className="h-3 w-3" />
                   </button>
                   <span className="w-6 text-center text-xs font-medium">{c.soLuong}</span>
                   <button onClick={() => updateQty(i, 1)}
-                    className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 text-xs">
+                    className="w-6 h-6 flex items-center justify-center rounded bg-ivory-100 hover:bg-ivory-100 text-xs">
                     <Plus className="h-3 w-3" />
                   </button>
                   <button onClick={() => removeItem(i)}
-                    className="w-6 h-6 flex items-center justify-center rounded text-red-400 hover:text-red-600 text-xs">
+                    className="w-6 h-6 flex items-center justify-center rounded text-bordeaux hover:text-bordeaux text-xs">
                     <Trash2 className="h-3 w-3" />
                   </button>
                 </div>
@@ -536,11 +536,11 @@ export default function AdminPOS() {
         <div className="border-t p-4 space-y-2">
           <div className="relative" ref={customerRef}>
             <div className="flex items-center gap-1 mb-1">
-              <User className="h-4 w-4 text-gray-500" />
-              <span className="text-xs font-medium text-gray-600">Khách hàng</span>
+              <User className="h-4 w-4 text-stone" />
+              <span className="text-xs font-medium text-stone">Khách hàng</span>
               {selectedCustomer && (
                 <button onClick={clearCustomer}
-                  className="ml-auto text-xs text-red-500 hover:text-red-700">Bỏ chọn</button>
+                  className="ml-auto text-xs text-bordeaux hover:text-bordeaux">Bỏ chọn</button>
               )}
             </div>
             <div className="relative flex gap-1">
@@ -549,87 +549,87 @@ export default function AdminPOS() {
                 if (selectedCustomer) clearCustomer()
               }} onFocus={() => customerResults.length > 0 && setShowCustomerDropdown(true)}
                 placeholder="Tìm tên hoặc SĐT khách..."
-                className="flex-1 border rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="flex-1 border rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
               <button onClick={() => { setQuickAddOpen(true); setQuickForm({ hoTen: '', soDienThoai: '', email: '', matKhau: '' }) }}
-                className="shrink-0 w-9 flex items-center justify-center border border-dashed border-blue-400 text-blue-600 rounded-lg hover:bg-blue-50 transition"
+                className="shrink-0 w-9 flex items-center justify-center border border-dashed border-gold text-gold rounded-lg hover:bg-gold/10 transition"
                 title="Thêm khách hàng nhanh">
                 <UserPlus className="h-4 w-4" />
               </button>
               {searchingCustomer ? (
                 <div className="absolute right-12 top-1/2 -translate-y-1/2">
-                  <div className="h-4 w-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
+                  <div className="h-4 w-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : (
-                <ChevronDown className="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <ChevronDown className="absolute right-12 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
               )}
             </div>
             {showCustomerDropdown && customerResults.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {customerResults.map(c => (
                   <button key={c.maNguoiDung} onClick={() => selectCustomer(c)}
-                    className="w-full text-left px-3 py-2.5 hover:bg-blue-50 border-b last:border-0">
+                    className="w-full text-left px-3 py-2.5 hover:bg-gold/10 border-b last:border-0">
                     <p className="text-sm font-medium">{c.hoTen}</p>
-                    <p className="text-xs text-gray-500">{c.email}{c.soDienThoai ? ` - ${c.soDienThoai}` : ''}</p>
+                    <p className="text-xs text-stone">{c.email}{c.soDienThoai ? ` - ${c.soDienThoai}` : ''}</p>
                   </button>
                 ))}
               </div>
             )}
             {showCustomerDropdown && customerResults.length === 0 && customerSearch.trim() && !searchingCustomer && (
-              <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg p-3 text-center text-sm text-gray-400">
+              <div className="absolute z-50 w-full mt-1 bg-ivory border rounded-lg shadow-lg p-3 text-center text-sm text-stone">
                 Không tìm thấy khách hàng
               </div>
             )}
           </div>
           <input value={tenKhach} onChange={e => { setTenKhach(e.target.value); setSelectedCustomer(null) }}
             placeholder="Tên khách (không bắt buộc)"
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           <input value={sdtKhach} onChange={e => { setSdtKhach(e.target.value); setSelectedCustomer(null) }}
             placeholder="SĐT (không bắt buộc)"
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           <div className="border-t pt-2 space-y-2" ref={couponRef}>
-            <label className="text-xs font-medium text-gray-500">Mã giảm giá</label>
+            <label className="text-xs font-medium text-stone">Mã giảm giá</label>
             <div className="flex gap-2 relative">
               <div className="flex-1 relative">
                 <input value={couponCode} onChange={e => { setCouponCode(e.target.value); setShowCouponDropdown(true) }}
                   onFocus={() => { if (availableCoupons.length > 0 || couponDropdownLoading) setShowCouponDropdown(true) }}
                   placeholder="Nhập hoặc quét mã..."
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-20" />
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold pr-20" />
                 {(availableCoupons.length > 0 || couponDropdownLoading) && (
                   <button onClick={() => setShowCouponDropdown(prev => !prev)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gold hover:text-gold-hover font-medium">
                     Gợi ý {!couponDropdownLoading && `(${availableCoupons.length})`}
                   </button>
                 )}
               </div>
               <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}
-                className="px-3 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition disabled:opacity-50">
+                className="px-3 py-2 bg-gold text-noir text-sm font-medium rounded-lg hover:bg-gold-hover transition disabled:opacity-50">
                 {couponLoading ? '...' : 'Áp dụng'}
               </button>
             </div>
             {showCouponDropdown && (
-              <div className="bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              <div className="bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {couponDropdownLoading ? (
-                  <div className="p-3 text-center text-sm text-gray-400">
-                    <div className="h-4 w-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin inline-block mr-2" />
+                  <div className="p-3 text-center text-sm text-stone">
+                    <div className="h-4 w-4 border-2 border-gold border-t-transparent rounded-full animate-spin inline-block mr-2" />
                     Đang tải...
                   </div>
                 ) : availableCoupons.length === 0 ? (
-                  <div className="p-3 text-center text-sm text-gray-400">Không có mã giảm giá khả dụng</div>
+                  <div className="p-3 text-center text-sm text-stone">Không có mã giảm giá khả dụng</div>
                 ) : (
                   availableCoupons.map((v, i) => (
                     <button key={i} onClick={() => { setCouponCode(v.maCode); setShowCouponDropdown(false); applyCouponCode(v.maCode) }}
-                      className="w-full text-left px-3 py-2.5 hover:bg-blue-50 border-b last:border-0 flex items-center justify-between">
+                      className="w-full text-left px-3 py-2.5 hover:bg-gold/10 border-b last:border-0 flex items-center justify-between">
                       <div>
                         <span className="text-sm font-medium">{v.maCode}</span>
-                        <span className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${v.isPersonal ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                        <span className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${v.isPersonal ? 'bg-royal/20 text-royal' : 'bg-gold/20 text-gold'}`}>
                           {v.isPersonal ? 'Ví' : 'Coupon'}
                         </span>
-                        <p className="text-xs text-green-600 mt-0.5">
+                        <p className="text-xs text-emerald-deep mt-0.5">
                           {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
                           {v.giaTriDonToiThieu > 0 && ` - Đơn tối thiểu ${VND(v.giaTriDonToiThieu)}`}
                         </p>
                       </div>
-                      <div className="text-right text-xs text-gray-400">
+                      <div className="text-right text-xs text-stone">
                         {v.ngayKetThuc && <p>HSD: {v.ngayKetThuc.slice(0, 10)}</p>}
                       </div>
                     </button>
@@ -637,43 +637,43 @@ export default function AdminPOS() {
                 )}
               </div>
             )}
-            {couponMsg && <p className="text-xs text-red-500">{couponMsg}</p>}
+            {couponMsg && <p className="text-xs text-bordeaux">{couponMsg}</p>}
             {coupon && (
-              <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <div className="bg-emerald-deep/10 border border-emerald-deep/20 rounded-lg px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-green-700">{coupon.maCode}</span>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${coupon.loaiMa === 'VOUCHER' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                    <span className="text-sm font-medium text-emerald-deep">{coupon.maCode}</span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${coupon.loaiMa === 'VOUCHER' ? 'bg-royal/20 text-royal' : 'bg-gold/20 text-gold'}`}>
                       {coupon.loaiMa === 'VOUCHER' ? 'Ví' : 'Coupon'}
                     </span>
                   </div>
                   <button onClick={() => { setCoupon(null); setCouponCode(''); setCouponMsg('') }}
-                    className="text-green-500 hover:text-green-700"><X className="h-3.5 w-3.5" /></button>
+                    className="text-emerald-deep hover:text-emerald-deep"><X className="h-3.5 w-3.5" /></button>
                 </div>
-                <p className="text-xs text-green-600">Giảm {VND(coupon.soTienGiam)}</p>
+                <p className="text-xs text-emerald-deep">Giảm {VND(coupon.soTienGiam)}</p>
               </div>
             )}
           </div>
           {selectedCustomer && customerDiem !== null && (
             <div className="border-t pt-2 space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                  <Coins className="h-3.5 w-3.5 text-amber-500" /> Điểm tích lũy
+                <label className="text-xs font-medium text-stone flex items-center gap-1">
+                  <Coins className="h-3.5 w-3.5 text-gold" /> Điểm tích lũy
                 </label>
                 <div className="flex items-center gap-1">
                   <button onClick={() => getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => {})}
-                    className="p-1 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition" title="Cập nhật số dư">
+                    className="p-1 text-stone hover:text-gold hover:bg-gold/10 rounded transition" title="Cập nhật số dư">
                     <RefreshCw className="h-3 w-3" />
                   </button>
                   <a href="/tich-diem" target="_blank" rel="noopener noreferrer"
-                    className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition" title="Lịch sử giao dịch">
+                    className="p-1 text-stone hover:text-gold hover:bg-gold/10 rounded transition" title="Lịch sử giao dịch">
                     <History className="h-3 w-3" />
                   </a>
                 </div>
               </div>
               {customerDiem.soDiem > 0 ? (
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-500">Số dư: <strong className="text-amber-700">{customerDiem.soDiem.toLocaleString()} điểm</strong></p>
+                  <p className="text-xs text-stone">Số dư: <strong className="text-gold-hover">{customerDiem.soDiem.toLocaleString()} điểm</strong></p>
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setSoDiemSuDung(0) }} className="accent-amber-500" />
                     Có áp dụng điểm
@@ -687,44 +687,44 @@ export default function AdminPOS() {
                     </div>
                   )}
                   {apDungDiem && soDiemSuDung > 0 && (
-                    <p className="text-xs text-amber-600">Giảm thêm {VND(soDiemSuDung * 1000)}</p>
+                    <p className="text-xs text-gold">Giảm thêm {VND(soDiemSuDung * 1000)}</p>
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400">Khách chưa có điểm tích lũy</p>
+                <p className="text-xs text-stone">Khách chưa có điểm tích lũy</p>
               )}
             </div>
           )}
           <div className="space-y-1">
-            <div className="flex justify-between text-sm text-gray-600">
+            <div className="flex justify-between text-sm text-stone">
               <span>Tạm tính:</span>
               <span>{VND(total)}</span>
             </div>
             {coupon && (
-              <div className="flex justify-between text-sm text-green-600">
+              <div className="flex justify-between text-sm text-emerald-deep">
                 <span>Giảm giá ({coupon.maCode}):</span>
                 <span>-{VND(coupon.soTienGiam)}</span>
               </div>
             )}
             {soDiemSuDung > 0 && (
-              <div className="flex justify-between text-sm text-amber-600">
+              <div className="flex justify-between text-sm text-gold">
                 <span>Giảm điểm:</span>
                 <span>-{VND(soDiemSuDung * 1000)}</span>
               </div>
             )}
             <div className="flex justify-between items-center pt-1 border-t">
               <span className="font-semibold">Phải thanh toán:</span>
-              <span className="text-lg font-bold text-blue-700">{VND(Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * 1000))}</span>
+              <span className="text-lg font-bold text-gold">{VND(Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * 1000))}</span>
             </div>
           </div>
           <div className="flex gap-2">
             <select value={paymentMethod} onChange={e => setPaymentMethod(Number(e.target.value))}
-              className="border rounded-xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="border rounded-xl px-3 py-3 text-sm bg-ivory focus:outline-none focus:ring-2 focus:ring-gold">
               <option value={5}>💵 Tiền mặt</option>
               <option value={6}>🏦 VietQR</option>
             </select>
             <button onClick={handlePlace} disabled={cart.length === 0 || placing}
-              className="flex-1 bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
               {placing ? 'Đang xử lý...' : 'Thanh toán'}
             </button>
           </div>
@@ -734,31 +734,31 @@ export default function AdminPOS() {
       {quickAddOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
           onClick={() => !quickSaving && setQuickAddOpen(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in"
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 animate-scale-in"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-bold text-lg">Thêm khách hàng nhanh</h3>
-              <button onClick={() => setQuickAddOpen(false)} className="text-gray-400 hover:text-gray-600" disabled={quickSaving}>
+              <button onClick={() => setQuickAddOpen(false)} className="text-stone hover:text-stone" disabled={quickSaving}>
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-4 space-y-3">
               <input value={quickForm.hoTen} onChange={e => setQuickForm(f => ({ ...f, hoTen: e.target.value }))}
                 placeholder="Họ tên *"
-                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
               <input value={quickForm.soDienThoai} onChange={e => setQuickForm(f => ({ ...f, soDienThoai: e.target.value }))}
                 placeholder="Số điện thoại"
-                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
               <input value={quickForm.email} onChange={e => setQuickForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="Email (tự động nếu để trống)"
-                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
               <input value={quickForm.matKhau} onChange={e => setQuickForm(f => ({ ...f, matKhau: e.target.value }))}
                 type="text" placeholder="Mật khẩu (mặc định: customer123)"
-                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
             <div className="border-t p-4">
               <button onClick={handleQuickAdd} disabled={quickSaving || !quickForm.hoTen.trim()}
-                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                className="w-full bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                 {quickSaving ? 'Đang lưu...' : 'Thêm khách hàng'}
               </button>
             </div>
@@ -768,24 +768,24 @@ export default function AdminPOS() {
 
       {payResult && !printInvoice && !bankInfo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
             <div className="text-center p-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              <div className="w-16 h-16 bg-emerald-deep/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-emerald-deep" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               </div>
               <h3 className="font-bold text-lg">Thanh toán thành công</h3>
-              <p className="text-sm text-gray-500 mt-1">Đơn hàng #{payResult.maDonHang}</p>
-              <p className="text-lg font-bold text-blue-700 mt-2">{VND(payResult.thanhToan)}</p>
+              <p className="text-sm text-stone mt-1">Đơn hàng #{payResult.maDonHang}</p>
+              <p className="text-lg font-bold text-gold mt-2">{VND(payResult.thanhToan)}</p>
             </div>
             <div className="border-t p-4">
-              <p className="text-sm text-center text-gray-600 mb-4">Bạn có muốn in hóa đơn không?</p>
+              <p className="text-sm text-center text-stone mb-4">Bạn có muốn in hóa đơn không?</p>
               <div className="flex gap-3">
                 <button onClick={closeResult}
-                  className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                  className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100 transition">
                   Không
                 </button>
                 <button onClick={handlePrintInvoice}
-                  className="flex-1 px-4 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold hover:bg-blue-800 transition">
+                  className="flex-1 px-4 py-2.5 bg-gold text-noir rounded-xl text-sm font-semibold hover:bg-gold-hover transition">
                   Có
                 </button>
               </div>
@@ -796,40 +796,40 @@ export default function AdminPOS() {
 
       {payResult && !printInvoice && bankInfo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 animate-scale-in">
             <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <QrCode className="h-8 w-8 text-blue-600" />
+              <div className="w-16 h-16 bg-gold/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <QrCode className="h-8 w-8 text-gold" />
               </div>
               <h3 className="font-bold text-lg">Quét mã VietQR</h3>
               {qrDataUrl && <img src={qrDataUrl} alt="VietQR" className="mx-auto my-3 w-64 h-64" />}
-              <div className="bg-gray-50 rounded-xl p-3 text-left space-y-1 text-sm">
+              <div className="bg-ivory-100 rounded-xl p-3 text-left space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Ngân hàng:</span>
+                  <span className="text-stone">Ngân hàng:</span>
                   <span className="font-medium">{bankInfo.bankName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Số tài khoản:</span>
+                  <span className="text-stone">Số tài khoản:</span>
                   <span className="font-medium">{bankInfo.accountNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Chủ tài khoản:</span>
+                  <span className="text-stone">Chủ tài khoản:</span>
                   <span className="font-medium">{bankInfo.accountName}</span>
                 </div>
                 <div className="flex justify-between border-t pt-1 mt-1">
-                  <span className="text-gray-500">Số tiền:</span>
-                  <span className="font-bold text-blue-700">{VND(payResult.thanhToan)}</span>
+                  <span className="text-stone">Số tiền:</span>
+                  <span className="font-bold text-gold">{VND(payResult.thanhToan)}</span>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-3">Khách quét mã bằng ứng dụng ngân hàng để thanh toán</p>
+              <p className="text-xs text-stone mt-3">Khách quét mã bằng ứng dụng ngân hàng để thanh toán</p>
             </div>
             <div className="border-t p-4 flex gap-3">
               <button onClick={closeResult}
-                className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100 transition">
                 Hủy
               </button>
               <button onClick={handleConfirmReceived}
-                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition flex items-center justify-center gap-1.5">
+                className="flex-1 px-4 py-2.5 bg-gold text-noir rounded-xl text-sm font-semibold hover:bg-gold-hover transition flex items-center justify-center gap-1.5">
                 Đã nhận được tiền
               </button>
             </div>
@@ -839,21 +839,21 @@ export default function AdminPOS() {
 
       {printInvoice === 'loading' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="h-8 w-8 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
+          <div className="h-8 w-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {printInvoice && printInvoice !== 'loading' && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
+          <div className="bg-ivory rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-ivory">
               <h2 className="font-bold text-lg">Hóa đơn {printInvoice.maHoaDonCode}</h2>
-              <button onClick={goToOrders} className="p-2 text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+              <button onClick={goToOrders} className="p-2 text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
             <div id="invoice-print" className="p-6 space-y-6">
               <div className="text-center border-b pb-4">
                 <h3 className="text-2xl font-bold">ZEST STORE</h3>
-                <p className="text-sm text-gray-500">HÓA ĐƠN BÁN HÀNG</p>
+                <p className="text-sm text-stone">HÓA ĐƠN BÁN HÀNG</p>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -872,7 +872,7 @@ export default function AdminPOS() {
               </div>
               <table className="w-full text-sm border-t">
                 <thead>
-                  <tr className="border-b bg-gray-50">
+                  <tr className="border-b bg-ivory-100">
                     <th className="text-left px-3 py-2">Sản phẩm</th>
                     <th className="text-center px-3 py-2">SL</th>
                     <th className="text-right px-3 py-2">Đơn giá</th>
@@ -884,7 +884,7 @@ export default function AdminPOS() {
                     <tr key={i} className="border-b">
                       <td className="px-3 py-2">
                         <p>{item.tenSanPham}</p>
-                        {item.thongTinBienThe && <p className="text-xs text-gray-400">{item.thongTinBienThe}</p>}
+                        {item.thongTinBienThe && <p className="text-xs text-stone">{item.thongTinBienThe}</p>}
                       </td>
                       <td className="text-center px-3 py-2">{item.soLuong}</td>
                       <td className="text-right px-3 py-2">{VND(item.donGia)}</td>
@@ -898,9 +898,9 @@ export default function AdminPOS() {
                 const g = printInvoice.donHang.soTienGiam || 0
                 return (
                   <div className="text-right space-y-1 text-sm">
-                    <p><span className="text-gray-500">Tổng:</span> <span className="font-semibold">{VND(Number(t) + Number(g))}</span></p>
-                    {Number(g) > 0 && <p><span className="text-green-600">Giảm giá:</span> <span className="font-semibold text-green-600">-{VND(g)}</span></p>}
-                    <p className="text-lg font-bold text-blue-700">Phải thanh toán: {VND(t)}</p>
+                    <p><span className="text-stone">Tổng:</span> <span className="font-semibold">{VND(Number(t) + Number(g))}</span></p>
+                    {Number(g) > 0 && <p><span className="text-emerald-deep">Giảm giá:</span> <span className="font-semibold text-emerald-deep">-{VND(g)}</span></p>}
+                    <p className="text-lg font-bold text-gold">Phải thanh toán: {VND(t)}</p>
                   </div>
                 )
               })()}
@@ -918,10 +918,10 @@ export default function AdminPOS() {
 
       {cameraOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 animate-fade-in" onClick={() => setCameraOpen(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-bold text-lg">Quét mã vạch</h3>
-              <button onClick={() => setCameraOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setCameraOpen(false)} className="text-stone hover:text-stone">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -932,10 +932,10 @@ export default function AdminPOS() {
       {variantModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
           onClick={() => setVariantModal(null)}>
-          <div className="bg-white rounded-2xl max-w-md w-full mx-4 animate-scale-in"
+          <div className="bg-ivory rounded-2xl max-w-md w-full mx-4 animate-scale-in"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-start p-4 border-b gap-4">
-              <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0">
+              <div className="w-20 h-20 bg-ivory-100 rounded-xl overflow-hidden shrink-0">
                 <SafeImg src={variantModal.product?.urlAnhDaiDien} alt="" className="w-full h-full object-cover object-center"
                   fallback="https://placehold.co/200x200/e2e8f0/475569?text=Polo" />
               </div>
@@ -943,10 +943,10 @@ export default function AdminPOS() {
                 <h3 className="font-bold">{variantModal.product?.tenSanPham || 'Sản phẩm'}</h3>
                 {(() => {
                   const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)
-                  return v ? <p className="text-blue-700 font-bold text-lg">{VND(v.gia)}</p> : null
+                  return v ? <p className="text-gold font-bold text-lg">{VND(v.gia)}</p> : null
                 })()}
               </div>
-              <button onClick={() => setVariantModal(null)} className="text-gray-400 hover:text-gray-600 shrink-0">
+              <button onClick={() => setVariantModal(null)} className="text-stone hover:text-stone shrink-0">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -964,7 +964,7 @@ export default function AdminPOS() {
                           setSelectedSize(s); setSelectedColor(avail ? avail.mauSac?.mauSac : (colors[0] || null)); setVQty(1)
                         }}
                           disabled={availVariants.length === 0}
-                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedSize === s ? 'border-blue-700 bg-blue-50 text-blue-700' : availVariants.length > 0 ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
+                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedSize === s ? 'border-gold bg-gold/10 text-gold' : availVariants.length > 0 ? 'hover:border-stone/40' : 'opacity-30 cursor-not-allowed'}`}>
                           {s}
                         </button>
                       )
@@ -981,7 +981,7 @@ export default function AdminPOS() {
                       return (
                         <button key={c} onClick={() => { setSelectedColor(c); setVQty(1) }}
                           disabled={availVariants.length === 0}
-                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedColor === c ? 'border-blue-700 bg-blue-50 text-blue-700' : availVariants.length > 0 ? 'hover:border-gray-400' : 'opacity-30 cursor-not-allowed'}`}>
+                          className={`px-4 py-2 text-sm border rounded-lg font-medium transition ${selectedColor === c ? 'border-gold bg-gold/10 text-gold' : availVariants.length > 0 ? 'hover:border-stone/40' : 'opacity-30 cursor-not-allowed'}`}>
                           {c}
                         </button>
                       )
@@ -993,16 +993,16 @@ export default function AdminPOS() {
                 <span className="text-sm font-semibold">Số lượng:</span>
                 <div className="flex border rounded-lg">
                   <button onClick={() => setVQty(Math.max(1, vQty - 1))}
-                    className="px-3 py-1.5 hover:bg-gray-100">-</button>
+                    className="px-3 py-1.5 hover:bg-ivory-100">-</button>
                   <span className="px-4 py-1.5 border-x min-w-[2.5rem] text-center text-sm">{vQty}</span>
                   <button onClick={() => setVQty(prev => { const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor); const max = (v?.tonKho || 0) - getQtyInCart(v?.maBienThe); return prev < max ? prev + 1 : prev })}
-                    className="px-3 py-1.5 hover:bg-gray-100">+</button>
+                    className="px-3 py-1.5 hover:bg-ivory-100">+</button>
                 </div>
                 {(() => {
                   const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)
                   if (!v) return null
                   const avail = (v.tonKho || 0) - getQtyInCart(v.maBienThe)
-                  return <span className="text-xs text-gray-400">Kho: {v.tonKho ?? 0} (còn {Math.max(0, avail)})</span>
+                  return <span className="text-xs text-stone">Kho: {v.tonKho ?? 0} (còn {Math.max(0, avail)})</span>
                 })()}
               </div>
             </div>
@@ -1010,7 +1010,7 @@ export default function AdminPOS() {
             <div className="border-t p-4">
               <button onClick={addToCart}
                 disabled={!selectedSize || !selectedColor || !variantModal.variants?.some(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)}
-                className="w-full bg-blue-700 text-white font-semibold py-3 rounded-xl hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                className="w-full bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                 <Plus className="h-5 w-5" /> Thêm vào giỏ hàng
               </button>
             </div>

@@ -9,7 +9,7 @@ export default function AdminRoute({ children }) {
   
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full" />
+      <div className="animate-spin h-10 w-10 border-4 border-gold border-t-transparent rounded-full" />
     </div>
   )
 

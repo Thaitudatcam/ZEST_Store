@@ -175,22 +175,22 @@ export default function Profile() {
       <h1 className="text-2xl font-bold mb-6">Tài khoản</h1>
       <div className="flex gap-2 mb-6 border-b pb-2">
         {['profile', 'password', 'addresses'].map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-t-lg text-sm font-medium ${tab === t ? 'bg-white border border-b-white -mb-[3px] text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-t-lg text-sm font-medium ${tab === t ? 'bg-ivory border border-b-white -mb-[3px] text-gold' : 'text-stone hover:text-ink-soft'}`}>
             {t === 'profile' ? 'Thông tin' : t === 'password' ? 'Mật khẩu' : 'Địa chỉ'}
           </button>
         ))}
       </div>
-      {msg && <p className="text-sm text-green-600 mb-4">{msg}</p>}
+      {msg && <p className="text-sm text-emerald-deep mb-4">{msg}</p>}
 
       {tab === 'profile' && (
-        <form onSubmit={handleUpdate} className="bg-white rounded-xl border p-6 space-y-4">
+        <form onSubmit={handleUpdate} className="bg-ivory rounded-xl border p-6 space-y-4">
           <div>
-            <label className="text-sm text-gray-500">Email</label>
+            <label className="text-sm text-stone">Email</label>
             <div className="flex items-center gap-2 mt-1">
               <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setEmailNew(e.target.value) }} className="flex-1 border rounded-lg px-4 py-2" />
               {profile?.emailDaXacThuc
-                ? <span className="flex items-center gap-1 text-green-600 text-sm whitespace-nowrap"><ShieldCheck className="h-4 w-4" /> Đã xác thực</span>
-                : <span className="flex items-center gap-1 text-amber-600 text-sm whitespace-nowrap"><ShieldAlert className="h-4 w-4" /> Chưa xác thực</span>
+                ? <span className="flex items-center gap-1 text-emerald-deep text-sm whitespace-nowrap"><ShieldCheck className="h-4 w-4" /> Đã xác thực</span>
+                : <span className="flex items-center gap-1 text-gold text-sm whitespace-nowrap"><ShieldAlert className="h-4 w-4" /> Chưa xác thực</span>
               }
             </div>
             {!profile?.emailDaXacThuc && form.email === profile?.email && (
@@ -200,15 +200,15 @@ export default function Profile() {
                     <input type="text" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)}
                       placeholder="Nhập mã OTP" maxLength={6} className="w-32 border rounded-lg px-3 py-1.5 text-sm text-center tracking-widest" />
                     <button type="button" onClick={handleXacThucOtp} disabled={emailOtpSub || emailOtp.length !== 6}
-                      className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-800 disabled:opacity-50">
+                      className="bg-emerald-deep text-white px-3 py-1.5 rounded-lg text-sm hover:bg-emerald-deep disabled:opacity-50">
                       {emailOtpSub ? '...' : 'Xác nhận'}
                     </button>
-                    <button type="button" onClick={() => setEmailOtpStep(null)} className="text-gray-500 text-sm">Hủy</button>
-                    {emailOtpErr && <span className="text-red-500 text-xs">{emailOtpErr}</span>}
+                    <button type="button" onClick={() => setEmailOtpStep(null)} className="text-stone text-sm">Hủy</button>
+                    {emailOtpErr && <span className="text-bordeaux text-xs">{emailOtpErr}</span>}
                   </div>
                 ) : (
                   <button type="button" onClick={handleGuiOtp} disabled={emailOtpSub}
-                    className="text-blue-700 text-sm hover:underline">
+                    className="text-gold text-sm hover:underline">
                     {emailOtpSub ? 'Đang gửi...' : 'Xác thực email ngay'}
                   </button>
                 )}
@@ -216,39 +216,39 @@ export default function Profile() {
             )}
             {emailOtpStep === 'change' && (
               <div className="mt-2">
-                <p className="text-xs text-gray-500 mb-1">Mã OTP đã gửi đến <strong>{emailNew}</strong></p>
+                <p className="text-xs text-stone mb-1">Mã OTP đã gửi đến <strong>{emailNew}</strong></p>
                 <div className="flex items-center gap-2">
                   <input type="text" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)}
                     placeholder="Nhập mã OTP" maxLength={6} className="w-32 border rounded-lg px-3 py-1.5 text-sm text-center tracking-widest" />
                   <button type="button" onClick={handleXacNhanEmailMoi} disabled={emailOtpSub || emailOtp.length !== 6}
-                    className="bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-green-800 disabled:opacity-50">
+                    className="bg-emerald-deep text-white px-3 py-1.5 rounded-lg text-sm hover:bg-emerald-deep disabled:opacity-50">
                     {emailOtpSub ? '...' : 'Xác nhận'}
                   </button>
                   <button type="button" onClick={handleGuiOtpEmailMoi} disabled={emailOtpSub}
-                    className="text-blue-700 text-sm hover:underline">
+                    className="text-gold text-sm hover:underline">
                     {emailOtpSub ? 'Đang gửi...' : 'Gửi lại mã'}
                   </button>
-                  <button type="button" onClick={() => { setEmailOtpStep(null); setEmailOtp(''); setEmailOtpErr(''); setForm({ ...form, email: profile?.email || '' }) }} className="text-gray-500 text-sm">Hủy</button>
-                  {emailOtpErr && <span className="text-red-500 text-xs">{emailOtpErr}</span>}
+                  <button type="button" onClick={() => { setEmailOtpStep(null); setEmailOtp(''); setEmailOtpErr(''); setForm({ ...form, email: profile?.email || '' }) }} className="text-stone text-sm">Hủy</button>
+                  {emailOtpErr && <span className="text-bordeaux text-xs">{emailOtpErr}</span>}
                 </div>
               </div>
             )}
           </div>
-          <div><label className="text-sm text-gray-500">Số điện thoại</label><input type="tel" value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
-          <div><label className="text-sm text-gray-500">Họ tên</label><input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
-          <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800">Lưu</button>
+          <div><label className="text-sm text-stone">Số điện thoại</label><input type="tel" value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
+          <div><label className="text-sm text-stone">Họ tên</label><input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
+          <button type="submit" className="bg-gold text-noir px-6 py-2 rounded-lg hover:bg-gold-hover">Lưu</button>
         </form>
       )}
 
       {tab === 'password' && (
-        <form onSubmit={handlePwd} className="bg-white rounded-xl border p-6 space-y-4">
-          {pwdMsg && <p className={`text-sm ${pwdMsg === 'Đổi mật khẩu thành công' ? 'text-green-600' : 'text-red-600'}`}>{pwdMsg}</p>}
+        <form onSubmit={handlePwd} className="bg-ivory rounded-xl border p-6 space-y-4">
+          {pwdMsg && <p className={`text-sm ${pwdMsg === 'Đổi mật khẩu thành công' ? 'text-emerald-deep' : 'text-bordeaux'}`}>{pwdMsg}</p>}
           <div className="relative">
             <input type={showPwd.cu ? 'text' : 'password'} value={pwd.matKhauCu}
               onChange={(e) => setPwd({ ...pwd, matKhauCu: e.target.value })} placeholder="Mật khẩu cũ"
               required className="w-full border rounded-lg px-4 py-2 pr-10" />
             <button type="button" onClick={() => setShowPwd({ ...showPwd, cu: !showPwd.cu })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-stone">
               {showPwd.cu ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -257,7 +257,7 @@ export default function Profile() {
               onChange={(e) => setPwd({ ...pwd, matKhauMoi: e.target.value })} placeholder="Mật khẩu mới"
               required minLength={6} className="w-full border rounded-lg px-4 py-2 pr-10" />
             <button type="button" onClick={() => setShowPwd({ ...showPwd, moi: !showPwd.moi })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-stone">
               {showPwd.moi ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
@@ -266,31 +266,31 @@ export default function Profile() {
               onChange={(e) => setPwd({ ...pwd, xacNhanMatKhauMoi: e.target.value })} placeholder="Xác nhận mật khẩu mới"
               required className="w-full border rounded-lg px-4 py-2 pr-10" />
             <button type="button" onClick={() => setShowPwd({ ...showPwd, xacNhan: !showPwd.xacNhan })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-stone">
               {showPwd.xacNhan ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800">Đổi mật khẩu</button>
+          <button type="submit" className="bg-gold text-noir px-6 py-2 rounded-lg hover:bg-gold-hover">Đổi mật khẩu</button>
         </form>
       )}
 
       {tab === 'addresses' && (
         <div className="space-y-4">
           {addresses.map((a) => (
-            <div key={a.maDiaChi} className="bg-white rounded-xl border p-4 flex justify-between items-start">
+            <div key={a.maDiaChi} className="bg-ivory rounded-xl border p-4 flex justify-between items-start">
               <div>
-                <p className="font-semibold">{a.tenNguoiNhan} <span className="font-normal text-gray-500">- {a.soDienThoai}</span></p>
-                <p className="text-sm text-gray-600">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
-                {a.laMacDinh && <span className="inline-block text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded mt-1">Mặc định</span>}
+                <p className="font-semibold">{a.tenNguoiNhan} <span className="font-normal text-stone">- {a.soDienThoai}</span></p>
+                <p className="text-sm text-stone">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
+                {a.laMacDinh && <span className="inline-block text-xs bg-gold/20 text-gold px-2 py-0.5 rounded mt-1">Mặc định</span>}
               </div>
               <div className="flex gap-2">
-                <button onClick={() => handleEditAddr(a)} className="text-blue-600 hover:underline text-sm"><Pencil className="h-4 w-4 inline" /></button>
-                {!a.laMacDinh && <button onClick={() => handleSetDefault(a.maDiaChi)} className="text-blue-600 hover:underline text-sm"><Star className="h-4 w-4 inline" /></button>}
-                <button onClick={() => handleDelAddr(a.maDiaChi)} className="text-red-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={() => handleEditAddr(a)} className="text-gold hover:underline text-sm"><Pencil className="h-4 w-4 inline" /></button>
+                {!a.laMacDinh && <button onClick={() => handleSetDefault(a.maDiaChi)} className="text-gold hover:underline text-sm"><Star className="h-4 w-4 inline" /></button>}
+                <button onClick={() => handleDelAddr(a.maDiaChi)} className="text-bordeaux hover:text-bordeaux"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}
-          <form onSubmit={handleAddr} className="bg-white rounded-xl border p-4 space-y-3">
+          <form onSubmit={handleAddr} className="bg-ivory rounded-xl border p-4 space-y-3">
             <h3 className="font-semibold">{editAddr ? 'Sửa địa chỉ' : 'Thêm địa chỉ'}</h3>
             <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })} placeholder="Tên người nhận" required className="w-full border rounded-lg px-3 py-2 text-sm" />
             <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })} placeholder="Số điện thoại" required className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -314,8 +314,8 @@ export default function Profile() {
             <input value={addrForm.chiTietDiaChi} onChange={(e) => setAddrForm({ ...addrForm, chiTietDiaChi: e.target.value })} placeholder="Địa chỉ chi tiết (số nhà, đường)" required className="w-full border rounded-lg px-3 py-2 text-sm" />
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={addrForm.laMacDinh} onChange={(e) => setAddrForm({ ...addrForm, laMacDinh: e.target.checked })} /> Đặt làm mặc định</label>
             <div className="flex gap-2">
-              <button type="submit" className="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800"><Plus className="h-4 w-4 inline" /> {editAddr ? 'Cập nhật' : 'Thêm'}</button>
-              {editAddr && <button type="button" onClick={() => { setEditAddr(null); setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false }); setProvinceId(0); setDistrictId(0); setWardCode('') }} className="border px-4 py-2 rounded-lg text-sm hover:bg-gray-50">Hủy</button>}
+              <button type="submit" className="bg-gold text-noir px-4 py-2 rounded-lg text-sm hover:bg-gold-hover"><Plus className="h-4 w-4 inline" /> {editAddr ? 'Cập nhật' : 'Thêm'}</button>
+              {editAddr && <button type="button" onClick={() => { setEditAddr(null); setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false }); setProvinceId(0); setDistrictId(0); setWardCode('') }} className="border px-4 py-2 rounded-lg text-sm hover:bg-ivory-100">Hủy</button>}
             </div>
           </form>
         </div>

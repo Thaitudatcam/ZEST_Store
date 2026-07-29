@@ -86,12 +86,12 @@ export default function PaymentResult() {
   if (loading) {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center">
-        <Loader className="h-16 w-16 mx-auto text-blue-500 animate-spin mb-4" />
+        <Loader className="h-16 w-16 mx-auto text-gold animate-spin mb-4" />
         <h1 className="text-xl font-bold mb-2">Đang xử lý thanh toán...</h1>
-        <p className="text-gray-500 mb-6">Vui lòng chờ trong giây lát</p>
-        <p className="text-xs text-gray-400 mb-4">Nếu bạn đã thanh toán xong, hãy nhấn "Kiểm tra"</p>
+        <p className="text-stone mb-6">Vui lòng chờ trong giây lát</p>
+        <p className="text-xs text-stone mb-4">Nếu bạn đã thanh toán xong, hãy nhấn "Kiểm tra"</p>
         <button onClick={checkOrderStatus} disabled={manualCheckLoading}
-          className="inline-flex items-center gap-2 bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50">
+          className="inline-flex items-center gap-2 bg-gold text-noir px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
           {manualCheckLoading ? <Loader className="h-4 w-4 animate-spin" /> : null}
           Kiểm tra
         </button>
@@ -102,14 +102,14 @@ export default function PaymentResult() {
   return (
     <div className="max-w-md mx-auto px-4 py-16 text-center">
       {success ? (
-        <CheckCircle className="h-20 w-20 mx-auto text-green-500 mb-4" />
+        <CheckCircle className="h-20 w-20 mx-auto text-emerald-deep mb-4" />
       ) : (
-        <XCircle className="h-20 w-20 mx-auto text-red-500 mb-4" />
+        <XCircle className="h-20 w-20 mx-auto text-bordeaux mb-4" />
       )}
       <h1 className="text-2xl font-bold mb-2">
         {success ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
       </h1>
-      <p className="text-gray-500 mb-6">
+      <p className="text-stone mb-6">
         {success
           ? 'Cảm ơn bạn! Đơn hàng đã được xác nhận.'
           : 'Đã có lỗi xảy ra trong quá trình thanh toán.'}
@@ -117,13 +117,13 @@ export default function PaymentResult() {
       {orderId && (
         <Link
           to={`/orders/${orderId}`}
-          className="text-blue-700 font-semibold hover:underline inline-block"
+          className="text-gold font-semibold hover:underline inline-block"
         >
           Xem chi tiết đơn hàng
         </Link>
       )}
       <div className="mt-4">
-        <Link to="/" className="text-gray-500 hover:underline text-sm">
+        <Link to="/" className="text-stone hover:underline text-sm">
           Tiếp tục mua sắm
         </Link>
       </div>

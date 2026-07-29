@@ -470,48 +470,48 @@ export default function AdminProductForm() {
   }
 
   if (loading) {
-    return <div className="animate-pulse space-y-6"><div className="h-8 w-48 bg-gray-200 rounded-lg" /><div className="h-96 bg-gray-100 rounded-2xl" /></div>
+    return <div className="animate-pulse space-y-6"><div className="h-8 w-48 bg-ivory-100 rounded-lg" /><div className="h-96 bg-ivory-100 rounded-2xl" /></div>
   }
 
   return (
     <div>
       
 
-      <form onSubmit={handleSaveProduct} className="bg-white rounded-2xl border p-6 space-y-6">
+      <form onSubmit={handleSaveProduct} className="bg-ivory rounded-2xl border p-6 space-y-6">
         <div className="grid grid-cols-[1fr_400px] gap-6">
           <div>
             <h2 className="font-semibold text-lg">Thông tin sản phẩm</h2>
             <div>
-              <label className="text-sm text-gray-500 font-medium">Tên sản phẩm *</label>
+              <label className="text-sm text-stone font-medium">Tên sản phẩm *</label>
               <input value={product.tenSanPham} onChange={(e) => setProduct(p => ({ ...p, tenSanPham: e.target.value }))}
                 placeholder="Nhập tên sản phẩm" required
-                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-500 font-medium">Danh mục *</label>
+                  <label className="text-sm text-stone font-medium">Danh mục *</label>
                   <button type="button" onClick={() => { setQuickAddName(''); setShowCatModal(true) }}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Thêm danh mục mới">
+                    className="p-1 text-gold hover:bg-gold/10 rounded" title="Thêm danh mục mới">
                     <FolderPlus className="h-4 w-4" />
                   </button>
                 </div>
                 <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
-                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
                   <option value="">-- Chọn danh mục --</option>
                   {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
                 </select>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-500 font-medium">Thương hiệu *</label>
+                  <label className="text-sm text-stone font-medium">Thương hiệu *</label>
                   <button type="button" onClick={() => { setQuickAddName(''); setShowBrandModal(true) }}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Thêm thương hiệu mới">
+                    className="p-1 text-gold hover:bg-gold/10 rounded" title="Thêm thương hiệu mới">
                     <Tag className="h-4 w-4" />
                   </button>
                 </div>
                 <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
-                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
                   <option value="">-- Chọn thương hiệu --</option>
                   {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
                 </select>
@@ -519,7 +519,7 @@ export default function AdminProductForm() {
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <label className="text-sm text-gray-500 font-medium">Mô tả</label>
+                <label className="text-sm text-stone font-medium">Mô tả</label>
                 <button type="button" onClick={async () => {
                   if (!product.tenSanPham) { toast.warning('Vui lòng nhập tên sản phẩm trước'); return }
                   setGeneratingDesc(true)
@@ -534,22 +534,22 @@ export default function AdminProductForm() {
                   } catch { toast.error('Tạo mô tả thất bại') }
                   finally { setGeneratingDesc(false) }
                 }} disabled={generatingDesc}
-                  className="flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800 font-medium disabled:opacity-50">
+                  className="flex items-center gap-1 text-xs text-gold hover:text-gold-hover font-medium disabled:opacity-50">
                   <Sparkles className="h-3.5 w-3.5" />
                   {generatingDesc ? 'Đang tạo...' : 'Tạo bằng AI'}
                 </button>
               </div>
               <textarea value={product.moTa} onChange={(e) => setProduct(p => ({ ...p, moTa: e.target.value }))}
                 placeholder="Mô tả sản phẩm" rows={4}
-                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-500 font-medium">Trạng thái</label>
+              <label className="text-sm text-stone font-medium">Trạng thái</label>
               <button type="button" onClick={() => setProduct(p => ({ ...p, trangThai: p.trangThai === 1 ? 0 : 1 }))}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${product.trangThai === 1 ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${product.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${product.trangThai === 1 ? 'bg-gold' : 'bg-ivory-100'}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-ivory transition ${product.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
-              <span className="text-sm text-gray-600">{product.trangThai === 1 ? 'Hoạt động' : 'Ẩn'}</span>
+              <span className="text-sm text-stone">{product.trangThai === 1 ? 'Hoạt động' : 'Ẩn'}</span>
             </div>
           </div>
 
@@ -558,22 +558,22 @@ export default function AdminProductForm() {
             {uploadedImages.length > 0 ? (
               <div className="grid grid-cols-4 gap-2">
                 {uploadedImages.map((img) => (
-                  <div key={img.fileId} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border">
+                  <div key={img.fileId} className="relative group aspect-square bg-ivory-100 rounded-xl overflow-hidden border">
                     <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
                     {img.maMauSac ? (
                       <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/60 text-white px-1.5 py-0.5 rounded">{getColorName(img.maMauSac) || 'Ảnh biến thể'}</span>
                     ) : null}
                     <button type="button" onClick={() => handleRemoveImage(img.fileId)}
-                      className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition opacity-0 group-hover:opacity-100">
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      className="absolute top-2 right-2 p-1.5 bg-ivory/80 rounded-full hover:bg-ivory transition opacity-0 group-hover:opacity-100">
+                      <Trash2 className="h-4 w-4 text-bordeaux" />
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
               <div onClick={() => document.getElementById('imgUpload').click()}
-                className="border-2 border-dashed border-gray-300 rounded-xl aspect-square flex items-center justify-center hover:border-blue-400 transition cursor-pointer max-w-[160px]">
-                {uploadingImg ? <Loader className="h-5 w-5 animate-spin text-blue-600" /> : <Plus className="h-6 w-6 text-gray-300" />}
+                className="border-2 border-dashed border-stone/30 rounded-xl aspect-square flex items-center justify-center hover:border-gold transition cursor-pointer max-w-[160px]">
+                {uploadingImg ? <Loader className="h-5 w-5 animate-spin text-gold" /> : <Plus className="h-6 w-6 text-stone" />}
               </div>
             )}
             <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />
@@ -588,14 +588,14 @@ export default function AdminProductForm() {
             <h2 className="font-semibold text-lg">Biến thể</h2>
           </div>
 
-          <div className="bg-gray-50 rounded-xl border p-4 mb-6">
+          <div className="bg-ivory-100 rounded-xl border p-4 mb-6">
             
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <label className="text-xs text-gray-500 font-medium">Màu sắc</label>
+                  <label className="text-xs text-stone font-medium">Màu sắc</label>
                   <button type="button" onClick={() => { setQuickColorName(''); setQuickColorHex('#000000'); setShowColorModal(true) }}
-                    className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Thêm màu mới">
+                    className="p-0.5 text-gold hover:bg-gold/10 rounded" title="Thêm màu mới">
                     <Palette className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -605,12 +605,12 @@ export default function AdminProductForm() {
                     return (
                       <div key={c.maMauSac} className="relative group">
                         <button type="button" onClick={() => toggleColorId(c.maMauSac)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-gold text-noir border-gold' : 'bg-ivory text-stone border-stone/20 hover:border-stone/30'}`}>
                           {c.maMauHex && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.maMauHex }} />}
                           {c.mauSac}
                         </button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDeleteColor({ maMauSac: c.maMauSac, mauSac: c.mauSac }) }}
-                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] leading-none flex items-center justify-center hover:bg-red-600 shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-bordeaux/100 text-white rounded-full text-[10px] leading-none flex items-center justify-center hover:bg-bordeaux shadow opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Xóa tất cả biến thể màu này">
                           ×
                         </button>
@@ -621,9 +621,9 @@ export default function AdminProductForm() {
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <label className="text-xs text-gray-500 font-medium">Kích cỡ</label>
+                  <label className="text-xs text-stone font-medium">Kích cỡ</label>
                   <button type="button" onClick={() => { setQuickSizeName(''); setShowSizeModal(true) }}
-                    className="p-0.5 text-blue-600 hover:bg-blue-50 rounded" title="Thêm kích cỡ mới">
+                    className="p-0.5 text-gold hover:bg-gold/10 rounded" title="Thêm kích cỡ mới">
                     <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -632,7 +632,7 @@ export default function AdminProductForm() {
                     const selected = selectedSizeIds.includes(s.maKichCo)
                     return (
                       <button key={s.maKichCo} type="button" onClick={() => toggleSizeId(s.maKichCo)}
-                        className={`px-3 py-1.5 rounded-lg text-xs border font-medium transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}`}>
+                        className={`px-3 py-1.5 rounded-lg text-xs border font-medium transition ${selected ? 'bg-gold text-noir border-gold' : 'bg-ivory text-stone border-stone/20 hover:border-stone/30'}`}>
                         {s.kichCo}
                       </button>
                     )
@@ -641,7 +641,7 @@ export default function AdminProductForm() {
               </div>
             </div>
             <button type="button" onClick={handleGenerateVariants}
-              className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-700 flex items-center gap-1">
+              className="bg-gold text-noir px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-gold-hover flex items-center gap-1">
               <Plus className="h-3.5 w-3.5" /> Tạo biến thể
             </button>
           </div>
@@ -653,12 +653,12 @@ export default function AdminProductForm() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead><tr className="border-b bg-gray-50">
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Màu & Ảnh</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Size</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Giá</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Tồn</th>
-                  <th className="text-center px-3 py-2 font-semibold text-gray-600">Hành động</th>
+                <thead><tr className="border-b bg-ivory-100">
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Màu & Ảnh</th>
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Size</th>
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Giá</th>
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Tồn</th>
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Hành động</th>
                 </tr></thead>
                 {(() => {
                   const colorGroups = variants.reduce((acc, v) => {
@@ -671,10 +671,10 @@ export default function AdminProductForm() {
                   return (
                     <tbody className="divide-y">
                       {showForm && (
-                        <tr className="bg-blue-50/50">
+                        <tr className="bg-gold/10/50">
                           <td className="px-3 py-2">
                             <select value={vform.maMauSac} onChange={(e) => setVform(p => ({ ...p, maMauSac: e.target.value }))}
-                              className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gold">
                               <option value="">-- Màu --</option>
                               {colors.map(c => (
                                 <option key={c.maMauSac} value={c.maMauSac}>
@@ -685,25 +685,25 @@ export default function AdminProductForm() {
                           </td>
                           <td className="px-3 py-2">
                             <select value={vform.maKichCo} onChange={(e) => setVform(p => ({ ...p, maKichCo: e.target.value }))}
-                              className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gold">
                               <option value="">-- Size --</option>
                               {sizes.map(s => <option key={s.maKichCo} value={s.maKichCo}>{s.kichCo}</option>)}
                             </select>
                           </td>
                           <td className="px-3 py-2">
                             <input type="text" inputMode="numeric" value={vform.gia ? Number(vform.gia).toLocaleString('vi-VN') : ''} onChange={(e) => setVform(p => ({ ...p, gia: e.target.value.replace(/[^0-9]/g, '') }))}
-                              placeholder="Giá" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              placeholder="Giá" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gold" />
                           </td>
                           <td className="px-3 py-2">
                             <input type="number" min="0" value={vform.tonKho} onChange={(e) => setVform(p => ({ ...p, tonKho: e.target.value }))}
-                              className="w-full border rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              className="w-full border rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-gold" />
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex justify-center gap-1">
                               <button type="button" onClick={handleSaveVariant} disabled={savingVar}
-                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check className="h-4 w-4" /></button>
+                                className="p-1.5 text-emerald-deep hover:bg-emerald-deep/10 rounded-lg"><Check className="h-4 w-4" /></button>
                               <button type="button" onClick={() => setConfirmDelete(editIdx)}
-                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                                className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                             </div>
                           </td>
                         </tr>
@@ -717,7 +717,7 @@ export default function AdminProductForm() {
                             {colorVariants.map((v, vi) => {
                               const idx = variants.indexOf(v)
                               return (
-                                <tr key={v.maBienThe || v._tempId || `${colorId}_${vi}`} className={vi === 0 ? 'border-t-2 border-gray-200' : ''}>
+                                <tr key={v.maBienThe || v._tempId || `${colorId}_${vi}`} className={vi === 0 ? 'border-t-2 border-stone/20' : ''}>
                                   {vi === 0 && (
                                     <td className="px-3 py-2 align-middle" rowSpan={colorVariants.length}>
                                       <div className="flex flex-col items-start gap-2">
@@ -726,17 +726,17 @@ export default function AdminProductForm() {
                                           <span className="font-medium text-sm">{colorObj?.mauSac || getColorName(colorId)}</span>
                                         </div>
                                         <button type="button" onClick={() => document.getElementById(`colorImgInput_${colorId}`).click()}
-                                          className="flex items-center gap-1 px-2.5 py-1 text-xs border border-gray-200 rounded-lg hover:bg-gray-100 transition">
+                                          className="flex items-center gap-1 px-2.5 py-1 text-xs border border-stone/20 rounded-lg hover:bg-ivory-100 transition">
                                           {uploadingColorId === Number(colorId) ? <Loader className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
                                           Upload ảnh
                                         </button>
                                         <input id={`colorImgInput_${colorId}`} type="file" accept="image/*" hidden
                                           onChange={(e) => { handleUploadColorImage(colorId, e.target.files); e.target.value = '' }} />
                                         {sharedImage ? (
-                                          <SafeImg src={sharedImage} className="w-14 h-14 rounded-lg object-cover bg-gray-100 border shrink-0"
+                                          <SafeImg src={sharedImage} className="w-14 h-14 rounded-lg object-cover bg-ivory-100 border shrink-0"
                                             fallback="https://placehold.co/56x56/e2e8f0/475569?text=?" />
                                         ) : (
-                                          <span className="text-xs text-gray-300">—</span>
+                                          <span className="text-xs text-stone">—</span>
                                         )}
                                       </div>
                                     </td>
@@ -745,16 +745,16 @@ export default function AdminProductForm() {
                                   <td className="px-3 py-2">
                                     <input type="text" inputMode="numeric" value={v.gia ? Number(v.gia).toLocaleString('vi-VN') : ''}
                                       onChange={e => handleVariantFieldChange(idx, 'gia', e.target.value.replace(/[^0-9]/g, ''))}
-                                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                      className="w-full border border-stone/20 rounded-lg px-2 py-1.5 text-xs text-center font-semibold focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent" />
                                   </td>
                                   <td className="px-3 py-2">
                                     <input type="number" min="0" value={v.tonKho}
                                       onChange={e => handleVariantFieldChange(idx, 'tonKho', e.target.value)}
-                                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                                      className="w-full border border-stone/20 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent" />
                                   </td>
                                   <td className="px-3 py-2 text-center">
                                     <button type="button" onClick={() => setConfirmDelete(idx)}
-                                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
+                                      className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
                                   </td>
                                 </tr>
                               )
@@ -773,7 +773,7 @@ export default function AdminProductForm() {
         </div>
 
         <button type="submit" disabled={saving}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+          className="w-full bg-gold text-noir py-2.5 rounded-lg text-sm font-semibold hover:bg-gold-hover disabled:opacity-50 flex items-center justify-center gap-2">
           {saving ? <Loader className="h-4 w-4 animate-spin" /> : null}
           {isEdit ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm'}
         </button>
@@ -781,15 +781,15 @@ export default function AdminProductForm() {
 
       {showCatModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCatModal(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Thêm danh mục mới</h3>
             <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
               placeholder="Nhập tên danh mục" autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-gold"
               onKeyDown={e => e.key === 'Enter' && handleQuickAddCategory()} />
             <div className="flex gap-3">
-              <button onClick={() => setShowCatModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddCategory} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+              <button onClick={() => setShowCatModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={handleQuickAddCategory} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Thêm</button>
             </div>
           </div>
         </div>
@@ -797,15 +797,15 @@ export default function AdminProductForm() {
 
       {showBrandModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowBrandModal(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Thêm thương hiệu mới</h3>
             <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
               placeholder="Nhập tên thương hiệu" autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-gold"
               onKeyDown={e => e.key === 'Enter' && handleQuickAddBrand()} />
             <div className="flex gap-3">
-              <button onClick={() => setShowBrandModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddBrand} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+              <button onClick={() => setShowBrandModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={handleQuickAddBrand} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Thêm</button>
             </div>
           </div>
         </div>
@@ -813,7 +813,7 @@ export default function AdminProductForm() {
 
       {showColorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowColorModal(false)}>
-          <div className="bg-white rounded-2xl max-w-xl w-full mx-4 p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-xl w-full mx-4 p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-base mb-4">Thêm màu sắc mới</h3>
             <div className="flex gap-6">
               <div className="overflow-x-auto flex-1 min-w-0 -mx-1 px-1">
@@ -834,16 +834,16 @@ export default function AdminProductForm() {
                   return (<>
                     <div className="flex gap-1 mb-1.5 ml-14">
                       {levels.map(lvl => (
-                        <div key={lvl} className="w-7 shrink-0 text-center text-[10px] font-semibold text-gray-400 tracking-wide">{lvl}</div>
+                        <div key={lvl} className="w-7 shrink-0 text-center text-[10px] font-semibold text-stone tracking-wide">{lvl}</div>
                       ))}
                     </div>
                     {families.map((f, fi) => (
                       <div key={fi} className="flex gap-1 mb-1 items-center">
-                        <div className="w-12 shrink-0 text-[11px] font-medium text-gray-500 text-right pr-1 truncate">{f.name}</div>
+                        <div className="w-12 shrink-0 text-[11px] font-medium text-stone text-right pr-1 truncate">{f.name}</div>
                         {f.shades.map((hex, si) => (
                           <button key={hex} type="button"
                             onClick={() => { setQuickColorHex(hex); setQuickColorName(f.name) }}
-                            className={`w-7 h-7 rounded-full border transition-all duration-150 ${quickColorHex === hex ? 'border-blue-600 ring-2 ring-blue-300 ring-offset-1 scale-110 z-10 shadow-sm' : (lightHexes.has(hex) ? 'border-gray-300 hover:border-gray-500' : 'border-gray-200 hover:border-gray-400')}`}
+                            className={`w-7 h-7 rounded-full border transition-all duration-150 ${quickColorHex === hex ? 'border-gold ring-2 ring-blue-300 ring-offset-1 scale-110 z-10 shadow-sm' : (lightHexes.has(hex) ? 'border-stone/30 hover:border-stone/50' : 'border-stone/20 hover:border-stone/40')}`}
                             style={{ backgroundColor: hex }}
                             title={`${f.name} ${levels[si]} (${hex})`} />
                         ))}
@@ -851,7 +851,7 @@ export default function AdminProductForm() {
                     ))}
                   </>)
                 })()}
-                <div className="flex gap-1 mt-3 pt-2.5 border-t border-gray-200">
+                <div className="flex gap-1 mt-3 pt-2.5 border-t border-stone/20">
                   {[
                     { hex: '#FFFFFF', name: 'Trắng' },
                     { hex: '#000000', name: 'Đen' },
@@ -866,21 +866,21 @@ export default function AdminProductForm() {
                   ].map(c => (
                     <button key={c.hex} type="button"
                       onClick={() => { setQuickColorHex(c.hex); setQuickColorName(c.name) }}
-                      className={`w-7 h-7 rounded-full border transition-all duration-150 ${quickColorHex === c.hex ? 'border-blue-600 ring-2 ring-blue-300 ring-offset-1 scale-110 z-10 shadow-sm' : (c.hex === '#FFFFFF' ? 'border-gray-300 hover:border-gray-500' : 'border-gray-200 hover:border-gray-400')}`}
+                      className={`w-7 h-7 rounded-full border transition-all duration-150 ${quickColorHex === c.hex ? 'border-gold ring-2 ring-blue-300 ring-offset-1 scale-110 z-10 shadow-sm' : (c.hex === '#FFFFFF' ? 'border-stone/30 hover:border-stone/50' : 'border-stone/20 hover:border-stone/40')}`}
                       style={{ backgroundColor: c.hex }}
                       title={`${c.name} (${c.hex})`} />
                   ))}
                 </div>
               </div>
               <div className="flex flex-col items-center gap-3 shrink-0 w-32 pt-2">
-                <div className="w-14 h-14 rounded-full border-2 border-gray-200 shadow-md" style={{ backgroundColor: quickColorHex }} />
-                <span className="text-[11px] font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200">{quickColorHex}</span>
+                <div className="w-14 h-14 rounded-full border-2 border-stone/20 shadow-md" style={{ backgroundColor: quickColorHex }} />
+                <span className="text-[11px] font-mono text-stone bg-ivory-100 px-2 py-0.5 rounded-md border border-stone/20">{quickColorHex}</span>
                 <input value={quickColorName} onChange={e => setQuickColorName(e.target.value)}
                   placeholder="Nhập tên màu" autoFocus
-                  className="w-full border rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow" />
+                  className="w-full border rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-shadow" />
                 <div className="flex gap-2 w-full mt-1">
-                  <button onClick={() => setShowColorModal(false)} className="flex-1 py-2 border rounded-xl text-sm font-medium hover:bg-gray-100 transition-colors">Hủy</button>
-                  <button onClick={handleQuickAddColor} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors">Thêm</button>
+                  <button onClick={() => setShowColorModal(false)} className="flex-1 py-2 border rounded-xl text-sm font-medium hover:bg-ivory-100 transition-colors">Hủy</button>
+                  <button onClick={handleQuickAddColor} className="flex-1 py-2 bg-gold text-noir rounded-xl text-sm font-semibold hover:bg-gold-hover active:bg-gold-hover transition-colors">Thêm</button>
                 </div>
               </div>
             </div>
@@ -890,15 +890,15 @@ export default function AdminProductForm() {
 
       {showSizeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSizeModal(false)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Thêm kích cỡ mới</h3>
             <input value={quickSizeName} onChange={e => setQuickSizeName(e.target.value)}
               placeholder="Nhập tên kích cỡ (VD: M, L, XL)" autoFocus
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-gold"
               onKeyDown={e => e.key === 'Enter' && handleQuickAddSize()} />
             <div className="flex gap-3">
-              <button onClick={() => setShowSizeModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleQuickAddSize} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Thêm</button>
+              <button onClick={() => setShowSizeModal(false)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={handleQuickAddSize} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Thêm</button>
             </div>
           </div>
         </div>
@@ -906,12 +906,12 @@ export default function AdminProductForm() {
 
       {confirmDelete !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-gray-600 mb-4">Bạn chắc chắn muốn xóa biến thể này?</p>
+            <p className="text-sm text-stone mb-4">Bạn chắc chắn muốn xóa biến thể này?</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={() => handleDeleteVariant(confirmDelete)} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={() => handleDeleteVariant(confirmDelete)} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
             </div>
           </div>
         </div>
@@ -919,12 +919,12 @@ export default function AdminProductForm() {
 
       {confirmDeleteColor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDeleteColor(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-gray-600 mb-4">Xóa tất cả biến thể màu <strong>{confirmDeleteColor.mauSac}</strong>?</p>
+            <p className="text-sm text-stone mb-4">Xóa tất cả biến thể màu <strong>{confirmDeleteColor.mauSac}</strong>?</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDeleteColor(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={() => handleDeleteVariantsByColor(confirmDeleteColor.maMauSac)} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+              <button onClick={() => setConfirmDeleteColor(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={() => handleDeleteVariantsByColor(confirmDeleteColor.maMauSac)} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
             </div>
           </div>
         </div>

@@ -1,10 +1,10 @@
 const colorMap = {
   gold: 'bg-gold/15 text-gold border-gold/20',
-  green: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
-  blue: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
-  purple: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
-  red: 'bg-red-500/15 text-red-400 border-red-500/20',
-  gray: 'bg-gray-500/15 text-dark-muted border-dark-border',
+  green: 'bg-emerald-deep/15 text-emerald-deep border-emerald-deep/20',
+  blue: 'bg-gold/15 text-gold border-gold/20',
+  purple: 'bg-royal/15 text-royal border-royal/20',
+  red: 'bg-bordeaux/15 text-bordeaux border-bordeaux/20',
+  gray: 'bg-stone/15 text-stone border-stone/20',
 }
 
 export default function AdminBadge({ color = 'gray', children }) {

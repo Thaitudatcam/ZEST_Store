@@ -130,13 +130,13 @@ export default function AdminUsers() {
         <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
         <div className="flex gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder={`Tìm ${tab === 'customers' ? 'khách hàng' : 'nhân viên'}...`}
-              className="pl-9 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="pl-9 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gold" />
           </div>
           {tab === 'employees' && (
-            <button onClick={openCreate} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+            <button onClick={openCreate} className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
               <Plus className="h-4 w-4" /> Thêm nhân viên
             </button>
           )}
@@ -144,7 +144,7 @@ export default function AdminUsers() {
       </div>
 
       <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <Filter className="h-4 w-4 text-gray-400" />
+        <Filter className="h-4 w-4 text-stone" />
         {tab === 'employees' && (
           <div className="flex gap-1">
             {[
@@ -153,7 +153,7 @@ export default function AdminUsers() {
               { value: 'STAFF', label: 'Nhân viên' },
             ].map((s) => (
               <button key={s.value} onClick={() => setRoleFilter(s.value)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition ${roleFilter === s.value ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>
+                className={`px-3 py-1.5 text-xs rounded-lg border transition ${roleFilter === s.value ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>
                 {s.label}
               </button>
             ))}
@@ -166,13 +166,13 @@ export default function AdminUsers() {
             { value: 'locked', label: 'Đã khóa' },
           ].map((s) => (
             <button key={s.value} onClick={() => setStatusFilter(s.value)}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>
+              className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>
               {s.label}
             </button>
           ))}
         </div>}
         {tab === 'employees' && <>
-          <div className="w-px h-6 bg-gray-200" />
+          <div className="w-px h-6 bg-ivory-100" />
           <div className="flex gap-1">
             {[
               { value: 'all', label: 'Tất cả' },
@@ -180,7 +180,7 @@ export default function AdminUsers() {
               { value: 'locked', label: 'Đã khóa' },
             ].map((s) => (
               <button key={s.value} onClick={() => setStatusFilter(s.value)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>
+                className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>
                 {s.label}
               </button>
             ))}
@@ -189,21 +189,21 @@ export default function AdminUsers() {
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="bg-white rounded-2xl border p-4 flex items-center gap-3">
-          <div className="p-2.5 bg-blue-100 rounded-xl"><Users className="h-5 w-5 text-blue-700" /></div>
-          <div><p className="text-xs text-gray-500">Tổng {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</p><p className="text-xl font-bold">{tab === 'customers' ? customers.length : employees.length}</p></div>
+        <div className="bg-ivory rounded-2xl border p-4 flex items-center gap-3">
+          <div className="p-2.5 bg-gold/20 rounded-xl"><Users className="h-5 w-5 text-gold" /></div>
+          <div><p className="text-xs text-stone">Tổng {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</p><p className="text-xl font-bold">{tab === 'customers' ? customers.length : employees.length}</p></div>
         </div>
-        <div className="bg-white rounded-2xl border p-4 flex items-center gap-3">
-          <div className="p-2.5 bg-emerald-100 rounded-xl"><UserCheck className="h-5 w-5 text-emerald-700" /></div>
-          <div><p className="text-xs text-gray-500">Hoạt động</p><p className="text-xl font-bold">{(tab === 'customers' ? customers : employees).filter(x => x.trangThai === 1).length}</p></div>
+        <div className="bg-ivory rounded-2xl border p-4 flex items-center gap-3">
+          <div className="p-2.5 bg-emerald-deep/20 rounded-xl"><UserCheck className="h-5 w-5 text-emerald-deep" /></div>
+          <div><p className="text-xs text-stone">Hoạt động</p><p className="text-xl font-bold">{(tab === 'customers' ? customers : employees).filter(x => x.trangThai === 1).length}</p></div>
         </div>
-        <div className="bg-white rounded-2xl border p-4 flex items-center gap-3">
-          <div className="p-2.5 bg-red-100 rounded-xl"><UserX className="h-5 w-5 text-red-700" /></div>
-          <div><p className="text-xs text-gray-500">Đã khóa</p><p className="text-xl font-bold">{(tab === 'customers' ? customers : employees).filter(x => x.trangThai !== 1).length}</p></div>
+        <div className="bg-ivory rounded-2xl border p-4 flex items-center gap-3">
+          <div className="p-2.5 bg-bordeaux/20 rounded-xl"><UserX className="h-5 w-5 text-bordeaux" /></div>
+          <div><p className="text-xs text-stone">Đã khóa</p><p className="text-xl font-bold">{(tab === 'customers' ? customers : employees).filter(x => x.trangThai !== 1).length}</p></div>
         </div>
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
+      {error && <div className="bg-bordeaux/10 border border-bordeaux/20 text-bordeaux text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
 
       {selectedIds.length > 0 && (() => {
         const currentList = tab === 'customers' ? customers : employees
@@ -214,14 +214,14 @@ export default function AdminUsers() {
         const bulkAction = hasLocked ? 'unlock' : 'lock'
         const bulkLabel = bulkAction === 'lock' ? 'Khóa' : 'Mở khóa'
         return (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
-            <span className="text-sm text-blue-800 font-medium">Đã chọn {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</span>
+          <div className="bg-gold/10 border border-gold/20 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
+            <span className="text-sm text-gold-hover font-medium">Đã chọn {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</span>
             <div className="flex items-center gap-2">
               <button onClick={() => setConfirmBulk(bulkAction)}
-                className={`text-xs text-white px-3 py-1.5 rounded-lg font-semibold ${bulkAction === 'lock' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+                className={`text-xs text-white px-3 py-1.5 rounded-lg font-semibold ${bulkAction === 'lock' ? 'bg-bordeaux hover:bg-bordeaux' : 'bg-emerald-deep hover:bg-emerald-deep'}`}>
                 {bulkLabel}
               </button>
-              <button onClick={() => setSelectedIds([])} className="text-xs text-gray-500 hover:text-gray-700 font-medium">Bỏ chọn</button>
+              <button onClick={() => setSelectedIds([])} className="text-xs text-stone hover:text-ink-soft font-medium">Bỏ chọn</button>
             </div>
           </div>
         )
@@ -229,25 +229,25 @@ export default function AdminUsers() {
 
       {confirmBulk && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmBulk(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-gray-600 mb-4">{confirmBulk === 'lock' ? 'Khóa' : 'Mở khóa'} {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}?</p>
+            <p className="text-sm text-stone mb-4">{confirmBulk === 'lock' ? 'Khóa' : 'Mở khóa'} {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}?</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmBulk(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={() => handleBulkToggle(confirmBulk)} className="flex-1 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-medium hover:bg-blue-800">Xác nhận</button>
+              <button onClick={() => setConfirmBulk(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={() => handleBulkToggle(confirmBulk)} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Xác nhận</button>
             </div>
           </div>
         </div>
       )}
 
       {tab === 'customers' && (
-        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+        <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-ivory-100 border-b">
                 <tr>
                   <th className="w-10 px-2 py-3 text-center">
-                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300 cursor-pointer" checked={selectedIds.length === pagedCustomers.length && pagedCustomers.length > 0} onChange={() => toggleSelectAll(pagedCustomers.map(c => c.maNguoiDung))} />
+                    <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.length === pagedCustomers.length && pagedCustomers.length > 0} onChange={() => toggleSelectAll(pagedCustomers.map(c => c.maNguoiDung))} />
                   </th>
                   {[
                     { key: 'hoTen', label: 'Khách hàng', align: 'text-left' },
@@ -255,33 +255,33 @@ export default function AdminUsers() {
                     { key: 'soDienThoai', label: 'SĐT', align: 'text-left' },
                     { key: 'ngayTao', label: 'Ngày tạo', align: 'text-center' },
                   ].map(({ key, label, align }) => (
-                    <th key={key} className={`${align} px-4 py-3 font-semibold text-gray-600 cursor-pointer hover:text-gray-900 select-none`} onClick={() => toggleSort(key)}>
-                      <span className="inline-flex items-center gap-1">{label} {sortField === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-gray-300" />}</span>
+                    <th key={key} className={`${align} px-4 py-3 font-semibold text-stone cursor-pointer hover:text-ink select-none`} onClick={() => toggleSort(key)}>
+                      <span className="inline-flex items-center gap-1">{label} {sortField === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-stone" />}</span>
                     </th>
                   ))}
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
+                  <th className="text-center px-4 py-3 font-semibold text-stone">Trạng thái</th>
+                  <th className="text-center px-4 py-3 font-semibold text-stone">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {pagedCustomers.map((c) => (
-                  <tr key={c.maNguoiDung} className={`hover:bg-gray-50 ${selectedIds.includes(c.maNguoiDung) ? 'bg-blue-50/50' : ''}`}>
+                  <tr key={c.maNguoiDung} className={`hover:bg-ivory-100 ${selectedIds.includes(c.maNguoiDung) ? 'bg-gold/10/50' : ''}`}>
                     <td className="w-10 px-2 py-3 text-center">
-                      <input type="checkbox" className="h-4 w-4 rounded border-gray-300 cursor-pointer" checked={selectedIds.includes(c.maNguoiDung)} onChange={() => toggleSelect(c.maNguoiDung)} />
+                      <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.includes(c.maNguoiDung)} onChange={() => toggleSelect(c.maNguoiDung)} />
                     </td>
                     <td className="px-4 py-3 font-medium">{c.hoTen}</td>
-                    <td className="px-4 py-3 text-gray-500">{c.email}</td>
+                    <td className="px-4 py-3 text-stone">{c.email}</td>
                     <td className="px-4 py-3">{c.soDienThoai || '-'}</td>
                     <td className="px-4 py-3 text-center">{c.ngayTao ? new Date(c.ngayTao).toLocaleDateString('vi-VN') : '-'}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.trangThai === 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.trangThai === 1 ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-bordeaux/20 text-bordeaux'}`}>
                         {c.trangThai === 1 ? 'Hoạt động' : 'Đã khóa'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-1">
-                        <button onClick={() => setDetail(c)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="h-4 w-4" /></button>
-                        <button onClick={() => setConfirmToggle(c.maNguoiDung)} className={`p-1.5 rounded-lg ${c.trangThai === 1 ? 'text-red-500 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}>
+                        <button onClick={() => setDetail(c)} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Eye className="h-4 w-4" /></button>
+                        <button onClick={() => setConfirmToggle(c.maNguoiDung)} className={`p-1.5 rounded-lg ${c.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
                           {c.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </button>
                       </div>
@@ -291,71 +291,71 @@ export default function AdminUsers() {
               </tbody>
             </table>
           </div>
-          {pagedCustomers.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có khách hàng</p>}
+          {pagedCustomers.length === 0 && <p className="text-center text-stone py-8">Chưa có khách hàng</p>}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 p-4 border-t">
-              <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Trước</button>
+              <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Trước</button>
               {Array.from({ length: totalPages }, (_, i) => (
-                <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{i + 1}</button>
+                <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{i + 1}</button>
               ))}
-              <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Sau</button>
+              <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Sau</button>
             </div>
           )}
         </div>
       )}
 
       {tab === 'employees' && (
-        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+        <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-ivory-100 border-b">
                 <tr>
                   <th className="w-10 px-2 py-3 text-center">
-                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300 cursor-pointer" checked={selectedIds.length === pagedEmployees.length && pagedEmployees.length > 0} onChange={() => toggleSelectAll(pagedEmployees.map(e => e.maNguoiDung))} />
+                    <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.length === pagedEmployees.length && pagedEmployees.length > 0} onChange={() => toggleSelectAll(pagedEmployees.map(e => e.maNguoiDung))} />
                   </th>
                   {[
                     { key: 'hoTen', label: 'Nhân viên', align: 'text-left' },
                     { key: 'email', label: 'Email', align: 'text-left' },
                     { key: 'soDienThoai', label: 'SĐT', align: 'text-left' },
                   ].map(({ key, label, align }) => (
-                    <th key={key} className={`${align} px-4 py-3 font-semibold text-gray-600 cursor-pointer hover:text-gray-900 select-none`} onClick={() => toggleSort(key)}>
-                      <span className="inline-flex items-center gap-1">{label} {sortField === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-gray-300" />}</span>
+                    <th key={key} className={`${align} px-4 py-3 font-semibold text-stone cursor-pointer hover:text-ink select-none`} onClick={() => toggleSort(key)}>
+                      <span className="inline-flex items-center gap-1">{label} {sortField === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-stone" />}</span>
                     </th>
                   ))}
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Vai trò</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Bán tại quầy</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Trạng thái</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Hành động</th>
+                  <th className="text-center px-4 py-3 font-semibold text-stone">Vai trò</th>
+                  <th className="text-center px-4 py-3 font-semibold text-stone">Bán tại quầy</th>
+                  <th className="text-center px-4 py-3 font-semibold text-stone">Trạng thái</th>
+                  <th className="text-center px-4 py-3 font-semibold text-stone">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {pagedEmployees.map((e) => (
-                  <tr key={e.maNguoiDung} className={`hover:bg-gray-50 ${selectedIds.includes(e.maNguoiDung) ? 'bg-blue-50/50' : ''}`}>
+                  <tr key={e.maNguoiDung} className={`hover:bg-ivory-100 ${selectedIds.includes(e.maNguoiDung) ? 'bg-gold/10/50' : ''}`}>
                     <td className="w-10 px-2 py-3 text-center">
-                      <input type="checkbox" className="h-4 w-4 rounded border-gray-300 cursor-pointer" checked={selectedIds.includes(e.maNguoiDung)} onChange={() => toggleSelect(e.maNguoiDung)} />
+                      <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.includes(e.maNguoiDung)} onChange={() => toggleSelect(e.maNguoiDung)} />
                     </td>
                     <td className="px-4 py-3 font-medium">{e.hoTen}</td>
-                    <td className="px-4 py-3 text-gray-500">{e.email}</td>
+                    <td className="px-4 py-3 text-stone">{e.email}</td>
                     <td className="px-4 py-3">{e.soDienThoai || '-'}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.vaiTro === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.vaiTro === 'ADMIN' ? 'bg-royal/20 text-royal' : 'bg-gold/20 text-gold-hover'}`}>
                         {e.vaiTro === 'ADMIN' ? 'Quản trị' : 'Nhân viên'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.choPhepBanHang ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.choPhepBanHang ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-ivory-100 text-stone'}`}>
                         {e.choPhepBanHang ? 'Có' : 'Không'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.trangThai === 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.trangThai === 1 ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-bordeaux/20 text-bordeaux'}`}>
                         {e.trangThai === 1 ? 'Hoạt động' : 'Đã khóa'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-1">
-                        <button onClick={() => openEdit(e)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => handleToggleEmployee(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-red-500 hover:bg-red-50' : 'text-emerald-600 hover:bg-emerald-50'}`}>
+                        <button onClick={() => openEdit(e)} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Pencil className="h-4 w-4" /></button>
+                        <button onClick={() => handleToggleEmployee(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
                           {e.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </button>
                       </div>
@@ -365,14 +365,14 @@ export default function AdminUsers() {
               </tbody>
             </table>
           </div>
-          {pagedEmployees.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có nhân viên</p>}
+          {pagedEmployees.length === 0 && <p className="text-center text-stone py-8">Chưa có nhân viên</p>}
           {empTotalPages > 1 && (
             <div className="flex items-center justify-center gap-2 p-4 border-t">
-              <button disabled={empPage === 0} onClick={() => setEmpPage(empPage - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Trước</button>
+              <button disabled={empPage === 0} onClick={() => setEmpPage(empPage - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Trước</button>
               {Array.from({ length: empTotalPages }, (_, i) => (
-                <button key={i} onClick={() => setEmpPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === empPage ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{i + 1}</button>
+                <button key={i} onClick={() => setEmpPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === empPage ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{i + 1}</button>
               ))}
-              <button disabled={empPage >= empTotalPages - 1} onClick={() => setEmpPage(empPage + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Sau</button>
+              <button disabled={empPage >= empTotalPages - 1} onClick={() => setEmpPage(empPage + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Sau</button>
             </div>
           )}
         </div>
@@ -380,7 +380,7 @@ export default function AdminUsers() {
 
       {detail && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetail(null)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-bold text-lg mb-4">Chi tiết khách hàng</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between border-b pb-2"><span className="font-medium">Họ tên:</span><span>{detail.hoTen}</span></div>
@@ -390,24 +390,24 @@ export default function AdminUsers() {
               <div className="flex justify-between border-b pb-2"><span className="font-medium">Ngày sinh:</span><span>{detail.ngaySinh ? new Date(detail.ngaySinh).toLocaleDateString('vi-VN') : '-'}</span></div>
               <div className="flex justify-between border-b pb-2"><span className="font-medium">Ngày tạo:</span><span>{detail.ngayTao ? new Date(detail.ngayTao).toLocaleDateString('vi-VN') : '-'}</span></div>
               <div className="flex justify-between pb-2"><span className="font-medium">Trạng thái:</span>
-                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${detail.trangThai === 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${detail.trangThai === 1 ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-bordeaux/20 text-bordeaux'}`}>
                   {detail.trangThai === 1 ? 'Hoạt động' : 'Đã khóa'}
                 </span>
               </div>
             </div>
-            <button onClick={() => setDetail(null)} className="mt-6 w-full border rounded-lg py-2 text-sm font-semibold hover:bg-gray-50">Đóng</button>
+            <button onClick={() => setDetail(null)} className="mt-6 w-full border rounded-lg py-2 text-sm font-semibold hover:bg-ivory-100">Đóng</button>
           </div>
         </div>
       )}
 
       {confirmToggle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmToggle(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-gray-600 mb-4">Thay đổi trạng thái khách hàng này?</p>
+            <p className="text-sm text-stone mb-4">Thay đổi trạng thái khách hàng này?</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmToggle(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleToggleCustomer} className="flex-1 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-medium hover:bg-blue-800">Xác nhận</button>
+              <button onClick={() => setConfirmToggle(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={handleToggleCustomer} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Xác nhận</button>
             </div>
           </div>
         </div>
@@ -415,47 +415,47 @@ export default function AdminUsers() {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">{editing ? 'Sửa nhân viên' : 'Thêm nhân viên'}</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+              <button onClick={() => setShowForm(false)} className="text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Họ tên</label>
-                <input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-sm font-medium text-ink-soft">Họ tên</label>
+                <input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Email</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-sm font-medium text-ink-soft">Email</label>
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Số điện thoại</label>
-                <input value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-sm font-medium text-ink-soft">Số điện thoại</label>
+                <input value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
-                <input type="password" value={form.matKhau} onChange={(e) => setForm({ ...form, matKhau: e.target.value })} required={!editing} placeholder={editing ? 'Để trống nếu không đổi' : ''} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="text-sm font-medium text-ink-soft">Mật khẩu</label>
+                <input type="password" value={form.matKhau} onChange={(e) => setForm({ ...form, matKhau: e.target.value })} required={!editing} placeholder={editing ? 'Để trống nếu không đổi' : ''} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
               </div>
               <div className="flex items-center gap-3">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" checked={form.choPhepBanHang} onChange={(e) => setForm({ ...form, choPhepBanHang: e.target.checked })} />
-                  <div className="w-10 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-10 h-5 bg-ivory-100 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-ivory after:border-stone/30 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold"></div>
                 </label>
-                <span className="text-sm font-medium text-gray-700">Cho phép bán tại quầy</span>
+                <span className="text-sm font-medium text-ink-soft">Cho phép bán tại quầy</span>
               </div>
               {editing && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Vai trò</label>
-                  <select value={form.vaiTro} onChange={(e) => setForm({ ...form, vaiTro: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <label className="text-sm font-medium text-ink-soft">Vai trò</label>
+                  <select value={form.vaiTro} onChange={(e) => setForm({ ...form, vaiTro: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
                     <option value="STAFF">Nhân viên</option>
                     <option value="ADMIN">Quản trị viên</option>
                   </select>
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">{editing ? 'Cập nhật' : 'Tạo'}</button>
-                <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+                <button type="submit" className="bg-gold text-noir px-6 py-2 rounded-lg font-semibold hover:bg-gold-hover">{editing ? 'Cập nhật' : 'Tạo'}</button>
+                <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-ivory-100">Hủy</button>
               </div>
             </form>
           </div>

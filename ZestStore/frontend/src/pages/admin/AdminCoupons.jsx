@@ -8,7 +8,7 @@ import { Plus, Trash2, Filter, X, Tag, Package, Layers, Gift, PenSquare } from '
 const PAGE_SIZE = 15
 
 const STA_LABELS = { 0: 'Đã huỷ', 1: 'Chưa BĐ', 2: 'Đang HĐ', 3: 'Hết lượt', 4: 'Hết hạn', 5: 'Đã xoá' }
-const STA_COLORS = { 0: 'bg-red-100 text-red-700', 1: 'bg-yellow-100 text-yellow-700', 2: 'bg-emerald-100 text-emerald-700', 3: 'bg-orange-100 text-orange-700', 4: 'bg-gray-100 text-gray-500', 5: 'bg-gray-100 text-gray-400' }
+const STA_COLORS = { 0: 'bg-bordeaux/20 text-bordeaux', 1: 'bg-yellow-100 text-yellow-700', 2: 'bg-emerald-deep/20 text-emerald-deep', 3: 'bg-gold/20 text-gold-hover', 4: 'bg-ivory-100 text-stone', 5: 'bg-ivory-100 text-stone' }
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([])
@@ -161,7 +161,7 @@ export default function AdminCoupons() {
   const StaBadge = ({ c }) => {
     const st = c.trangThaiThucTe ?? c.trangThai
     const label = STA_LABELS[st] ?? 'Không xác định'
-    const color = STA_COLORS[st] ?? 'bg-gray-100 text-gray-500'
+    const color = STA_COLORS[st] ?? 'bg-ivory-100 text-stone'
     return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
   }
 
@@ -170,32 +170,32 @@ export default function AdminCoupons() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Mã giảm giá</h1>
         <button onClick={() => { if (coupons.length >= 70) { alert('Đã đạt giới hạn 70 mã giảm giá'); return }; setShowForm(true) }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+          className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
           <Plus className="h-4 w-4" /> Thêm mã
         </button>
       </div>
 
       {/* Filter */}
-      <div className="bg-white rounded-2xl shadow-sm border p-4 mb-6">
+      <div className="bg-ivory rounded-2xl shadow-sm border p-4 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <span className="font-semibold text-sm text-gray-700">Bộ lọc</span>
+          <Filter className="h-4 w-4 text-stone" />
+          <span className="font-semibold text-sm text-ink-soft">Bộ lọc</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label className="text-xs text-gray-500">Ngày bắt đầu</label>
+            <label className="text-xs text-stone">Ngày bắt đầu</label>
             <input type="date" value={filter.ngayBatDau} onChange={e => setFilter({ ...filter, ngayBatDau: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           </div>
           <div>
-            <label className="text-xs text-gray-500">Ngày kết thúc</label>
+            <label className="text-xs text-stone">Ngày kết thúc</label>
             <input type="date" value={filter.ngayKetThuc} onChange={e => setFilter({ ...filter, ngayKetThuc: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           </div>
           <div>
-            <label className="text-xs text-gray-500">Kiểu giảm</label>
+            <label className="text-xs text-stone">Kiểu giảm</label>
             <select value={filter.kieuGiamGia} onChange={e => setFilter({ ...filter, kieuGiamGia: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold">
               <option value="">Tất cả</option>
               <option value="1">Giảm theo %</option>
               <option value="2">Giảm tiền mặt</option>
@@ -203,18 +203,18 @@ export default function AdminCoupons() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500">Giá trị giảm</label>
+            <label className="text-xs text-stone">Giá trị giảm</label>
             <input type="number" value={filter.giaTriGiam} onChange={e => setFilter({ ...filter, giaTriGiam: e.target.value })}
               placeholder="Nhập giá trị..."
-              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           </div>
         </div>
         <div className="flex gap-2 mt-3">
-          <button onClick={handleFilter} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+          <button onClick={handleFilter} className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
             <Filter className="h-4 w-4" /> Lọc
           </button>
           {hasFilter && (
-            <button onClick={handleResetFilter} className="border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 flex items-center gap-2 text-gray-600">
+            <button onClick={handleResetFilter} className="border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ivory-100 flex items-center gap-2 text-stone">
               <X className="h-4 w-4" /> Xóa lọc
             </button>
           )}
@@ -222,26 +222,26 @@ export default function AdminCoupons() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+      <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-ivory-100 border-b">
               <tr>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">Mã</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Giảm</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">SL</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Giảm tối đa</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Áp dụng cho</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Ngày BĐ → KT</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600">Trạng thái</th>
-                <th className="text-center px-3 py-3 font-semibold text-gray-600"></th>
+                <th className="text-left px-3 py-3 font-semibold text-stone">Mã</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">Giảm</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">SL</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">Giảm tối đa</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">Áp dụng cho</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">Ngày BĐ → KT</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">Trạng thái</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone"></th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {paged.map((c) => (
                 <tr key={c.maPhieuGiamGia}
-                  className={`hover:bg-gray-50 ${c.kieuGiamGia === 3 ? 'bg-green-50/40' : [0, 4, 5].includes(c.trangThaiThucTe ?? c.trangThai) ? 'bg-red-50' : ''}`}>
-                  <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-green-700' : 'text-blue-700'}`}>
+                  className={`hover:bg-ivory-100 ${c.kieuGiamGia === 3 ? 'bg-emerald-deep/10/40' : [0, 4, 5].includes(c.trangThaiThucTe ?? c.trangThai) ? 'bg-bordeaux/10' : ''}`}>
+                  <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-emerald-deep' : 'text-gold'}`}>
                     {c.maCode}
 
                   </td>
@@ -258,37 +258,37 @@ export default function AdminCoupons() {
                         </span>
                       ))}
                       {c.sanPhamApDung?.length > 0 && (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-0.5 text-[9px] bg-gold/10 text-gold-hover px-1.5 py-0.5 rounded-full">
                           <Package className="h-2.5 w-2.5" />{c.sanPhamApDung.length} SP
                         </span>
                       )}
                       {(!c.danhMucApDung || c.danhMucApDung.length === 0) && (!c.sanPhamApDung || c.sanPhamApDung.length === 0) && (
-                        <span className="text-[10px] text-gray-400">Tất cả</span>
+                        <span className="text-[10px] text-stone">Tất cả</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-center text-gray-500 text-xs">{fmtDate(c.ngayBatDau)} → {fmtDate(c.ngayKetThuc)}</td>
+                  <td className="px-3 py-3 text-center text-stone text-xs">{fmtDate(c.ngayBatDau)} → {fmtDate(c.ngayKetThuc)}</td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <StaBadge c={c} />
                       <button type="button" onClick={() => handleToggleStatus(c.maPhieuGiamGia)}
                         disabled={c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date()}
-                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition ${c.trangThai === 1 ? 'bg-emerald-500' : 'bg-gray-300'} ${c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition ${c.trangThai === 1 ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition ${c.trangThai === 1 ? 'bg-emerald-deep/100' : 'bg-ivory-100'} ${c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <span className={`inline-block h-3 w-3 transform rounded-full bg-ivory transition ${c.trangThai === 1 ? 'translate-x-4' : 'translate-x-0.5'}`} />
                       </button>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button onClick={() => setEditing(c)} title="Sửa mã giảm giá"
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                        className="p-1 text-gold hover:bg-gold/10 rounded">
                         <PenSquare className="h-4 w-4" />
                       </button>
                       <button onClick={() => setGrantModal(c)} title="Cấp voucher cho người dùng"
-                        className="p-1 text-purple-600 hover:bg-purple-50 rounded">
+                        className="p-1 text-royal hover:bg-royal/10 rounded">
                         <Gift className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setConfirmDelete(c.maPhieuGiamGia)} className="p-1 text-red-500 hover:bg-red-50 rounded">
+                      <button onClick={() => setConfirmDelete(c.maPhieuGiamGia)} className="p-1 text-bordeaux hover:bg-bordeaux/10 rounded">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
@@ -298,14 +298,14 @@ export default function AdminCoupons() {
             </tbody>
           </table>
         </div>
-        {coupons.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có mã giảm giá</p>}
+        {coupons.length === 0 && <p className="text-center text-stone py-8">Chưa có mã giảm giá</p>}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 p-4 border-t">
-            <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Trước</button>
+            <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Trước</button>
             {Array.from({ length: totalPages }, (_, i) => (
-              <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-100'}`}>{i + 1}</button>
+              <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{i + 1}</button>
             ))}
-            <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-100 disabled:opacity-40">Sau</button>
+            <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Sau</button>
           </div>
         )}
       </div>
@@ -313,27 +313,27 @@ export default function AdminCoupons() {
       {/* Create Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Thêm mã giảm giá</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowForm(false)} className="text-stone hover:text-stone">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input value={form.maCode} onChange={e => setForm({ ...form, maCode: e.target.value.toUpperCase() })}
                 placeholder="Mã code" required
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
 
               {/* Type selector */}
               <div className="flex gap-2">
                 <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 1, giaTriGiam: '' })}
-                  className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${form.kieuGiamGia !== 3 ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-blue-300'}`}>
+                  className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${form.kieuGiamGia !== 3 ? 'border-gold bg-gold/10 text-gold' : 'border-stone/20 text-stone hover:border-stone/30'}`}>
                   <span className="block text-base">Giảm sản phẩm</span>
                   <span className="block text-[10px] font-normal mt-0.5 opacity-70">Trừ vào tiền sản phẩm</span>
                 </button>
                 <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 3, giaTriGiam: '0' })}
-                  className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${form.kieuGiamGia === 3 ? 'border-green-700 bg-green-50 text-green-700' : 'border-gray-200 text-gray-500 hover:border-green-300'}`}>
+                  className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition ${form.kieuGiamGia === 3 ? 'border-emerald-deep bg-emerald-deep/10 text-emerald-deep' : 'border-stone/20 text-stone hover:border-emerald-deep/30'}`}>
                   <span className="block text-base">Freeship</span>
                   <span className="block text-[10px] font-normal mt-0.5 opacity-70">Trừ vào phí vận chuyển</span>
                 </button>
@@ -342,16 +342,16 @@ export default function AdminCoupons() {
               {/* Discount value */}
               {form.kieuGiamGia === 3 ? (
                 <div>
-                  <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-xs text-emerald-deep bg-emerald-deep/10 rounded-lg px-3 py-2 mb-3">
                     Mã freeship sẽ giảm trực tiếp vào <strong>phí vận chuyển</strong>.
                   </p>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giảm tối đa cho phí vận chuyển</label>
+                  <label className="block text-sm font-medium text-ink-soft mb-1">Giảm tối đa cho phí vận chuyển</label>
                   <input type="number" value={form.giaTriGiam === '0' ? '' : form.giaTriGiam}
                     onChange={e => setForm({ ...form, giaTriGiam: e.target.value })}
                     placeholder="Nhập số tiền giảm tối đa (₫)"
                     className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                     disabled={form.giaTriGiam === '0'} />
-                  <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                  <label className="flex items-center gap-2 text-sm text-stone mt-2">
                     <input type="checkbox" checked={form.giaTriGiam === '0'}
                       onChange={e => setForm({ ...form, giaTriGiam: e.target.checked ? '0' : '' })} className="h-4 w-4" />
                     Miễn phí vận chuyển hoàn toàn
@@ -361,74 +361,74 @@ export default function AdminCoupons() {
                 <div>
                   <div className="flex gap-2 mb-3">
                     <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 1, giaTriGiam: '' })}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition ${form.kieuGiamGia === 1 ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition ${form.kieuGiamGia === 1 ? 'border-gold bg-gold/10 text-gold' : 'border-stone/20 text-stone'}`}>
                       % Theo phần trăm
                     </button>
                     <button type="button" onClick={() => setForm({ ...form, kieuGiamGia: 2, giaTriGiam: '' })}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition ${form.kieuGiamGia === 2 ? 'border-blue-700 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition ${form.kieuGiamGia === 2 ? 'border-gold bg-gold/10 text-gold' : 'border-stone/20 text-stone'}`}>
                       ₫ Giảm tiền mặt
                     </button>
                   </div>
                   <input type="number" value={form.giaTriGiam}
                     onChange={e => setForm({ ...form, giaTriGiam: e.target.value })}
                     placeholder={form.kieuGiamGia === 1 ? 'Phần trăm giảm (vd: 10)' : 'Số tiền giảm'} required
-                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
               )}
 
               <input type="number" value={form.giaTriDonToiThieu} onChange={e => setForm({ ...form, giaTriDonToiThieu: e.target.value })}
-                placeholder="Giá trị đơn tối thiểu" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                placeholder="Giá trị đơn tối thiểu" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
               <input type="number" value={form.soLuong} onChange={e => setForm({ ...form, soLuong: e.target.value })}
-                placeholder="Số lượng mã (để trống = không giới hạn)" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                placeholder="Số lượng mã (để trống = không giới hạn)" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
 
               {form.kieuGiamGia === 1 && (
                 <input type="number" value={form.giaTriGiamToiDa} onChange={e => setForm({ ...form, giaTriGiamToiDa: e.target.value })}
-                  placeholder="Giá trị giảm tối đa (để trống = không giới hạn)" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  placeholder="Giá trị giảm tối đa (để trống = không giới hạn)" className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
               )}
 
               {/* Category/Product selection */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Giới hạn áp dụng (không chọn = áp dụng cho tất cả)</label>
+                <label className="text-sm font-medium text-ink-soft mb-1 block">Giới hạn áp dụng (không chọn = áp dụng cho tất cả)</label>
                 <div className="flex gap-1 mb-2">
                   <button type="button" onClick={() => setCatTab('categories')}
-                    className={`px-3 py-1.5 text-xs rounded-lg font-medium border transition ${catTab === 'categories' ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium border transition ${catTab === 'categories' ? 'bg-gold/10 border-stone/30 text-gold' : 'border-stone/20 text-stone'}`}>
                     <Layers className="h-3 w-3 inline mr-1" />Danh mục
                   </button>
                   <button type="button" onClick={() => setCatTab('products')}
-                    className={`px-3 py-1.5 text-xs rounded-lg font-medium border transition ${catTab === 'products' ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-200 text-gray-500'}`}>
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium border transition ${catTab === 'products' ? 'bg-gold/10 border-stone/30 text-gold' : 'border-stone/20 text-stone'}`}>
                     <Package className="h-3 w-3 inline mr-1" />Sản phẩm
                   </button>
                 </div>
                 {catTab === 'categories' ? (
                   <div className="max-h-32 overflow-y-auto border rounded-lg p-2 space-y-1">
                     {categories.map(dm => (
-                      <label key={dm.maDanhMuc} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                      <label key={dm.maDanhMuc} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-ivory-100 px-2 py-1 rounded">
                         <input type="checkbox" checked={form.maDanhMucIds.includes(dm.maDanhMuc)}
                           onChange={() => toggleCategory(dm.maDanhMuc)} className="h-4 w-4" />
                         {dm.tenDanhMuc}
                       </label>
                     ))}
-                    {categories.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Không có danh mục</p>}
+                    {categories.length === 0 && <p className="text-xs text-stone text-center py-2">Không có danh mục</p>}
                   </div>
                 ) : (
                   <div>
                     <input type="text" value={prodSearch} onChange={e => setProdSearch(e.target.value)}
-                      placeholder="Tìm sản phẩm..." className="w-full border rounded-lg px-3 py-1.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      placeholder="Tìm sản phẩm..." className="w-full border rounded-lg px-3 py-1.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-gold" />
                     <div className="max-h-32 overflow-y-auto border rounded-lg p-2 space-y-1">
                       {products.map(sp => (
-                        <label key={sp.maSanPham} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+                        <label key={sp.maSanPham} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-ivory-100 px-2 py-1 rounded">
                           <input type="checkbox" checked={form.maSanPhamIds.includes(sp.maSanPham)}
                             onChange={() => toggleProduct(sp.maSanPham)} className="h-4 w-4" />
                           <span className="truncate">{sp.tenSanPham}</span>
                         </label>
                       ))}
-                      {products.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Không tìm thấy sản phẩm</p>}
+                      {products.length === 0 && <p className="text-xs text-stone text-center py-2">Không tìm thấy sản phẩm</p>}
                     </div>
                   </div>
                 )}
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-ink-soft">
                 <input type="checkbox" checked={form.congKhai}
                   onChange={e => setForm({ ...form, congKhai: e.target.checked })} className="h-4 w-4" />
                 Công khai — hiển thị cho người dùng
@@ -437,20 +437,20 @@ export default function AdminCoupons() {
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500">Ngày bắt đầu</label>
+                  <label className="text-xs text-stone">Ngày bắt đầu</label>
                   <input type="date" value={form.ngayBatDau} onChange={e => setForm({ ...form, ngayBatDau: e.target.value })}
                     className="w-full border rounded-lg px-4 py-2 mt-1" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Ngày kết thúc</label>
+                  <label className="text-xs text-stone">Ngày kết thúc</label>
                   <input type="date" value={form.ngayKetThuc} onChange={e => setForm({ ...form, ngayKetThuc: e.target.value })}
                     className="w-full border rounded-lg px-4 py-2 mt-1" />
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">Tạo</button>
-                <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+                <button type="submit" className="bg-gold text-noir px-6 py-2 rounded-lg font-semibold hover:bg-gold-hover">Tạo</button>
+                <button type="button" onClick={() => setShowForm(false)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-ivory-100">Hủy</button>
               </div>
             </form>
           </div>
@@ -460,10 +460,10 @@ export default function AdminCoupons() {
       {/* Edit Modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditing(null)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Sửa mã giảm giá</h2>
-              <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setEditing(null)} className="text-stone hover:text-stone">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -493,57 +493,57 @@ export default function AdminCoupons() {
             }}>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500">Mã code</label>
+                  <label className="text-xs text-stone">Mã code</label>
                   <input value={editing.maCode} disabled
-                    className="w-full border rounded-lg px-4 py-2 mt-1 bg-gray-50 text-gray-500 text-sm" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 bg-ivory-100 text-stone text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Kiểu giảm</label>
+                  <label className="text-xs text-stone">Kiểu giảm</label>
                   <input value={editing.kieuGiamGia === 1 ? '%' : editing.kieuGiamGia === 2 ? 'Tiền mặt' : 'Freeship'} disabled
-                    className="w-full border rounded-lg px-4 py-2 mt-1 bg-gray-50 text-gray-500 text-sm" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 bg-ivory-100 text-stone text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Giá trị giảm</label>
+                  <label className="text-xs text-stone">Giá trị giảm</label>
                   <input type="number" name="giaTriGiam" defaultValue={editing.giaTriGiam}
-                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Đơn tối thiểu</label>
+                  <label className="text-xs text-stone">Đơn tối thiểu</label>
                   <input type="number" name="giaTriDonToiThieu" defaultValue={editing.giaTriDonToiThieu || ''}
-                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Ngày bắt đầu</label>
+                  <label className="text-xs text-stone">Ngày bắt đầu</label>
                   <input type="date" name="ngayBatDau" defaultValue={editing.ngayBatDau ? editing.ngayBatDau.slice(0, 10) : ''}
-                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Ngày kết thúc</label>
+                  <label className="text-xs text-stone">Ngày kết thúc</label>
                   <input type="date" name="ngayKetThuc" defaultValue={editing.ngayKetThuc ? editing.ngayKetThuc.slice(0, 10) : ''}
-                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Số lượng</label>
+                  <label className="text-xs text-stone">Số lượng</label>
                   <input type="number" name="soLuong" defaultValue={editing.soLuong ?? ''}
                     placeholder="Để trống = không giới hạn"
-                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Giảm tối đa</label>
+                  <label className="text-xs text-stone">Giảm tối đa</label>
                   <input type="number" name="giaTriGiamToiDa" defaultValue={editing.giaTriGiamToiDa || ''}
                     placeholder="Để trống = không giới hạn"
-                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="w-full border rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
                 </div>
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-gray-700 mt-4">
+              <label className="flex items-center gap-2 text-sm text-ink-soft mt-4">
                 <input type="checkbox" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4" />
                 Công khai — hiển thị cho người dùng
               </label>
 
               <div className="flex gap-3 mt-6">
-                <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700">Lưu</button>
-                <button type="button" onClick={() => setEditing(null)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+                <button type="submit" className="bg-gold text-noir px-6 py-2 rounded-lg font-semibold hover:bg-gold-hover">Lưu</button>
+                <button type="button" onClick={() => setEditing(null)} className="border px-6 py-2 rounded-lg font-semibold hover:bg-ivory-100">Hủy</button>
               </div>
             </form>
           </div>
@@ -553,14 +553,14 @@ export default function AdminCoupons() {
       {/* Grant modal */}
       {grantModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setGrantModal(null); setUserResults([]); setUserSearch(''); setGrantMsg('') }}>
-          <div className="bg-white rounded-2xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">Cấp voucher</h3>
-              <button onClick={() => { setGrantModal(null); setUserResults([]); setUserSearch(''); setGrantMsg('') }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => { setGrantModal(null); setUserResults([]); setUserSearch(''); setGrantMsg('') }} className="text-stone hover:text-stone">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-3">Mã: <span className="font-mono font-semibold text-blue-700">{grantModal.maCode}</span></p>
+            <p className="text-sm text-stone mb-3">Mã: <span className="font-mono font-semibold text-gold">{grantModal.maCode}</span></p>
             <input type="text" value={userSearch} onChange={async e => {
               const q = e.target.value; setUserSearch(q)
               if (q.trim().length < 2) { setUserResults([]); return }
@@ -570,15 +570,15 @@ export default function AdminCoupons() {
                 setUserResults(Array.isArray(res) ? res : [])
               } catch { setUserResults([]) } finally { setSearchingUser(false) }
             }} placeholder="Tìm người dùng (tên, email)..."
-              className="w-full border rounded-lg px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            {searchingUser && <p className="text-xs text-gray-400 mb-2">Đang tìm...</p>}
+              className="w-full border rounded-lg px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-gold" />
+            {searchingUser && <p className="text-xs text-stone mb-2">Đang tìm...</p>}
             {userResults.length > 0 && (
               <div className="max-h-48 overflow-y-auto border rounded-lg mb-3 divide-y">
                 {userResults.map(u => (
-                  <div key={u.maNguoiDung} className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-50">
+                  <div key={u.maNguoiDung} className="flex items-center justify-between px-3 py-2.5 hover:bg-ivory-100">
                     <div>
                       <p className="text-sm font-medium">{u.hoTen}</p>
-                      <p className="text-xs text-gray-500">{u.email}</p>
+                      <p className="text-xs text-stone">{u.email}</p>
                     </div>
                     <button disabled={granting} onClick={async () => {
                       setGranting(true); setGrantMsg('')
@@ -590,7 +590,7 @@ export default function AdminCoupons() {
                       } catch (err) {
                         setGrantMsg({ type: 'error', text: err.response?.data?.message || 'Lỗi cấp voucher' })
                       } finally { setGranting(false) }
-                    }} className="shrink-0 bg-purple-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-purple-700 transition disabled:opacity-50">
+                    }} className="shrink-0 bg-royal text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-royal transition disabled:opacity-50">
                       Cấp
                     </button>
                   </div>
@@ -598,10 +598,10 @@ export default function AdminCoupons() {
               </div>
             )}
             {userResults.length === 0 && userSearch.trim().length >= 2 && !searchingUser && (
-              <p className="text-xs text-gray-400 mb-3">Không tìm thấy người dùng</p>
+              <p className="text-xs text-stone mb-3">Không tìm thấy người dùng</p>
             )}
             {grantMsg && (
-              <p className={`text-sm ${grantMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{grantMsg.text}</p>
+              <p className={`text-sm ${grantMsg.type === 'success' ? 'text-emerald-deep' : 'text-bordeaux'}`}>{grantMsg.text}</p>
             )}
           </div>
         </div>
@@ -610,12 +610,12 @@ export default function AdminCoupons() {
       {/* Delete confirm */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-white rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-gray-600 mb-4">Xóa mã giảm giá này?</p>
+            <p className="text-sm text-stone mb-4">Xóa mã giảm giá này?</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-gray-50">Hủy</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700">Xóa</button>
+              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
             </div>
           </div>
         </div>

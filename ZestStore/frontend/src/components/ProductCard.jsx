@@ -30,11 +30,11 @@ export default function ProductCard({ product, showRating = true }) {
   }
 
   return (
-    <Link to={`/products/${slug}`} className="group bg-white rounded-2xl shadow-lux overflow-hidden hover:-translate-y-1 hover:shadow-gold transition-all duration-300 relative border border-noir-600/5">
+    <Link to={`/products/${slug}`} className="group bg-ivory rounded-2xl shadow-lux overflow-hidden hover:-translate-y-1 hover:shadow-gold transition-all duration-300 relative border border-noir-600/5">
       <div className="aspect-square bg-ivory-100 overflow-hidden relative">
         <SafeImg src={product.urlAnhDaiDien} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} />
         {user && (
-          <button onClick={toggleWish} className="absolute top-2.5 right-2.5 p-1.5 bg-white/85 backdrop-blur-sm rounded-full hover:bg-white transition z-10 shadow-sm" disabled={isOutOfStock} aria-label="Yêu thích">
+          <button onClick={toggleWish} className="absolute top-2.5 right-2.5 p-1.5 bg-ivory/85 backdrop-blur-sm rounded-full hover:bg-ivory transition z-10 shadow-sm" disabled={isOutOfStock} aria-label="Yêu thích">
             <Heart className={`h-4 w-4 transition-colors ${wished ? 'fill-bordeaux text-bordeaux' : 'text-ink-soft'}`} />
           </button>
         )}

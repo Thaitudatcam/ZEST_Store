@@ -137,21 +137,21 @@ export default function ProductDetail() {
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="aspect-square bg-gray-100 rounded-2xl skeleton" />
+        <div className="aspect-square bg-ivory-100 rounded-2xl skeleton" />
         <div className="space-y-4">
-          <div className="h-6 bg-gray-100 rounded-lg w-1/4 skeleton" />
-          <div className="h-10 bg-gray-100 rounded-lg w-3/4 skeleton" />
-          <div className="h-10 bg-gray-100 rounded-lg w-1/3 skeleton" />
-          <div className="h-4 bg-gray-100 rounded-lg w-full skeleton" />
-          <div className="h-4 bg-gray-100 rounded-lg w-2/3 skeleton" />
-          <div className="h-12 bg-gray-100 rounded-xl w-full mt-6 skeleton" />
-          <div className="h-14 bg-gray-100 rounded-xl w-full skeleton" />
+          <div className="h-6 bg-ivory-100 rounded-lg w-1/4 skeleton" />
+          <div className="h-10 bg-ivory-100 rounded-lg w-3/4 skeleton" />
+          <div className="h-10 bg-ivory-100 rounded-lg w-1/3 skeleton" />
+          <div className="h-4 bg-ivory-100 rounded-lg w-full skeleton" />
+          <div className="h-4 bg-ivory-100 rounded-lg w-2/3 skeleton" />
+          <div className="h-12 bg-ivory-100 rounded-xl w-full mt-6 skeleton" />
+          <div className="h-14 bg-ivory-100 rounded-xl w-full skeleton" />
         </div>
       </div>
     </div>
   )
 
-  if (!product) return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm</div>
+  if (!product) return <div className="text-center py-20 text-stone">Không tìm thấy sản phẩm</div>
 
   const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
   const filteredImages = images
@@ -190,17 +190,17 @@ export default function ProductDetail() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <nav className="flex items-center gap-1.5 text-sm text-gray-400 mb-6">
-        <Link to="/" className="hover:text-blue-700 transition-colors">Trang chủ</Link>
-        <ChevronRight className="h-3 w-3 text-gray-300" />
-        <Link to="/products" className="hover:text-blue-700 transition-colors">Sản phẩm</Link>
-        <ChevronRight className="h-3 w-3 text-gray-300" />
-        <span className="text-gray-900 font-semibold truncate max-w-[200px]">{product.tenSanPham}</span>
+      <nav className="flex items-center gap-1.5 text-sm text-stone mb-6">
+        <Link to="/" className="hover:text-gold transition-colors">Trang chủ</Link>
+        <ChevronRight className="h-3 w-3 text-stone" />
+        <Link to="/products" className="hover:text-gold transition-colors">Sản phẩm</Link>
+        <ChevronRight className="h-3 w-3 text-stone" />
+        <span className="text-ink font-semibold truncate max-w-[200px]">{product.tenSanPham}</span>
       </nav>
 
       <div className="grid md:grid-cols-2 gap-8">
         <div className="max-w-lg mx-auto md:mx-0">
-          <div className="group relative aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3 shadow-lg">
+          <div className="group relative aspect-square bg-ivory-100 rounded-2xl overflow-hidden mb-3 shadow-lg">
             <div className="hidden md:block w-full h-full">
               <TiltedCard imageSrc={mainImg} altText={product.tenSanPham} containerHeight="100%" containerWidth="100%" imageHeight="100%" imageWidth="100%" rotateAmplitude={10} scaleOnHover={1.03} />
             </div>
@@ -221,8 +221,8 @@ export default function ProductDetail() {
                         }}
                         className={`w-20 h-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 ${
                             idx === previewIdx
-                                ? 'border-blue-600 ring-2 ring-blue-200 shadow-md'
-                                : 'border-gray-200 hover:border-blue-300  hover:shadow-sm'
+                                ? 'border-gold ring-2 ring-blue-200 shadow-md'
+                                : 'border-stone/20 hover:border-stone/30  hover:shadow-sm'
                         }`}
                     >
                         <SafeImg
@@ -239,11 +239,11 @@ export default function ProductDetail() {
 
         <div>
           {product.danhMuc?.tenDanhMuc && (
-            <span className="inline-block text-[11px] font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full mb-2">
+            <span className="inline-block text-[11px] font-semibold text-gold bg-gold/10 px-2.5 py-1 rounded-full mb-2">
               {product.danhMuc.tenDanhMuc}
             </span>
           )}
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">{product.tenSanPham}</h1>
+          <h1 className="text-3xl font-bold text-ink mb-1">{product.tenSanPham}</h1>
           <div className="flex items-center gap-2 mb-5">
             {!selectedVar}
             <p className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">{VND(variantPrice)}</p>
@@ -281,7 +281,7 @@ export default function ProductDetail() {
                   </div>
                 )}
                 <div className="mb-4">
-                  <label className="font-semibold text-sm mb-2.5 block text-gray-700">Màu sắc:</label>
+                  <label className="font-semibold text-sm mb-2.5 block text-ink-soft">Màu sắc:</label>
                   <div className="flex gap-3 flex-wrap">
                     {uniqueColors.map((v) => {
                       const hasStock = variants.some(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0)
@@ -297,15 +297,15 @@ export default function ProductDetail() {
                           }}
                           className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                             selected
-                              ? 'bg-blue-700 text-white shadow-md shadow-blue-200'
-                              : 'bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                              ? 'bg-gold text-noir shadow-md shadow-blue-200'
+                              : 'bg-ivory border border-stone/20 hover:border-stone/30 hover:shadow-sm'
                           }`}>
                           {v.mauSac?.maMauHex && (
                             <span className={`w-5 h-5 rounded-full ${selected ? 'ring-2 ring-white ring-offset-1 ring-offset-blue-700' : 'ring-1 ring-gray-300'}`}
                               style={{ backgroundColor: v.mauSac.maMauHex }} />
                           )}
                           <span>{v.mauSac?.mauSac}</span>
-                          {!hasStock && <span className="text-[10px] font-medium text-red-500">(Hết)</span>}
+                          {!hasStock && <span className="text-[10px] font-medium text-bordeaux">(Hết)</span>}
                         </button>
                       )
                     })}
@@ -313,7 +313,7 @@ export default function ProductDetail() {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-sm mb-2.5 block text-gray-700">Kích cỡ:</label>
+                  <label className="font-semibold text-sm mb-2.5 block text-ink-soft">Kích cỡ:</label>
                   <div className="flex gap-2 flex-wrap">
                     {sizesForColor.map((v) => {
                       const disabled = (v.tonKho || 0) === 0
@@ -329,10 +329,10 @@ export default function ProductDetail() {
                           disabled={disabled}
                           className={`min-w-[3rem] px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                             selected
-                              ? 'bg-blue-700 text-white shadow-md shadow-blue-200'
+                              ? 'bg-gold text-noir shadow-md shadow-blue-200'
                               : disabled
-                                ? 'bg-gray-50 text-gray-300 border border-gray-100 cursor-not-allowed line-through'
-                                : 'bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                ? 'bg-ivory-100 text-stone border border-stone/10 cursor-not-allowed line-through'
+                                : 'bg-ivory border border-stone/20 hover:border-stone/30 hover:shadow-sm'
                           }`}>
                           {v.kichCo?.kichCo || 'N/A'}
                         </button>
@@ -341,36 +341,36 @@ export default function ProductDetail() {
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-400 mt-3">
-                  Tồn kho: <span className="font-medium text-gray-600">{selectedStock}</span>
-                  {selectedStock === 0 && <span className="ml-2 text-red-500 font-semibold">(Hết hàng)</span>}
+                <p className="text-xs text-stone mt-3">
+                  Tồn kho: <span className="font-medium text-stone">{selectedStock}</span>
+                  {selectedStock === 0 && <span className="ml-2 text-bordeaux font-semibold">(Hết hàng)</span>}
                 </p>
               </div>
             )
           })()}
 
           <div className="flex items-center gap-4 mb-5">
-            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+            <div className="flex items-center bg-ivory-100 border border-stone/20 rounded-xl overflow-hidden">
               <button onClick={() => setQty(Math.max(1, qty - 1))} disabled={qty <= 1}
-                className="px-3.5 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">−</button>
+                className="px-3.5 py-2.5 text-stone hover:bg-ivory-100 hover:text-ink transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">−</button>
               <input type="number" value={qty} min={1} max={selectedStock || 1}
                 onChange={e => {
                   const v = parseInt(e.target.value) || 1
                   setQty(Math.max(1, Math.min(selectedStock || 1, v)))
                 }}
                 onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) setQty(1) }}
-                className="w-16 px-2 py-2.5 border-x border-gray-200 text-center font-semibold text-gray-800 text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                className="w-16 px-2 py-2.5 border-x border-stone/20 text-center font-semibold text-ink text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               <button onClick={() => setQty(Math.min(selectedStock, qty + 1))} disabled={qty >= selectedStock}
-                className="px-3.5 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                className="px-3.5 py-2.5 text-stone hover:bg-ivory-100 hover:text-ink transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">+</button>
             </div>
-            {selectedStock > 0 && <span className="text-xs text-gray-400">Còn lại: <strong>{selectedStock}</strong></span>}
+            {selectedStock > 0 && <span className="text-xs text-stone">Còn lại: <strong>{selectedStock}</strong></span>}
           </div>
 
           <div className="flex gap-3">
             <button onClick={handleBuyNow} disabled={isOutOfStock || isSelectedOutOfStock}
               className={`flex-1 font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
                 isOutOfStock || isSelectedOutOfStock
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-ivory-100 text-stone cursor-not-allowed'
                   : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
               }`}>
               <Zap className="h-5 w-5" /> Mua ngay
@@ -378,35 +378,35 @@ export default function ProductDetail() {
             <button onClick={handleAddClick} disabled={isOutOfStock || isSelectedOutOfStock}
               className={`font-semibold py-3.5 px-5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border-2 ${
                 isOutOfStock || isSelectedOutOfStock
-                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                  : 'border-blue-600 text-blue-700 hover:bg-blue-50 hover:shadow-sm active:scale-95'
+                  ? 'bg-ivory-100 text-stone border-stone/20 cursor-not-allowed'
+                  : 'border-gold text-gold hover:bg-gold/10 hover:shadow-sm active:scale-95'
               }`}>
               <ShoppingCart className="h-5 w-5" />
             </button>
             <button onClick={toggleWish}
               className={`p-3.5 rounded-xl border transition-all duration-200 ${
                 inWish
-                  ? 'text-red-500 border-red-200 bg-red-50 hover:bg-red-100'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
+                  ? 'text-bordeaux border-bordeaux/20 bg-bordeaux/10 hover:bg-bordeaux/20'
+                  : 'border-stone/20 hover:border-stone/30 hover:bg-ivory-100 hover:shadow-sm'
               }`}>
               <Heart className={`h-5 w-5 transition-all duration-200 ${inWish ? 'fill-red-500 scale-110' : ''}`} />
             </button>
           </div>
 
-          {msg && <p className="mt-3 text-sm text-green-600 font-semibold">{msg}</p>}
+          {msg && <p className="mt-3 text-sm text-emerald-deep font-semibold">{msg}</p>}
         </div>
       </div>
 
       {product.moTa && (
         <div className="mt-10">
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-transparent px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <span className="w-1 h-5 bg-blue-600 rounded-full inline-block" />
+          <div className="bg-ivory border border-stone/10 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-transparent px-6 py-4 border-b border-stone/10">
+              <h2 className="text-lg font-bold text-ink flex items-center gap-2">
+                <span className="w-1 h-5 bg-gold rounded-full inline-block" />
                 Mô tả sản phẩm
               </h2>
             </div>
-            <div className="p-6 text-gray-600 leading-relaxed whitespace-pre-line text-sm">
+            <div className="p-6 text-stone leading-relaxed whitespace-pre-line text-sm">
               {product.moTa}
             </div>
           </div>
@@ -414,14 +414,14 @@ export default function ProductDetail() {
       )}
 
       <div className="mt-10">
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-50 to-transparent px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-1 h-5 bg-amber-500 rounded-full inline-block" />
+        <div className="bg-ivory border border-stone/10 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-amber-50 to-transparent px-6 py-4 border-b border-stone/10 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-ink flex items-center gap-2">
+              <span className="w-1 h-5 bg-gold/100 rounded-full inline-block" />
               Đánh giá sản phẩm
             </h2>
             {user && (
-              <Link to="/orders" className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
+              <Link to="/orders" className="text-xs font-medium text-gold hover:text-gold hover:underline">
                 Viết đánh giá →
               </Link>
             )}
@@ -429,13 +429,13 @@ export default function ProductDetail() {
           <div className="p-6">
             <div className="flex items-start gap-8 flex-wrap">
               <div className="text-center min-w-[100px]">
-                <span className="text-5xl font-bold text-gray-900">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</span>
+                <span className="text-5xl font-bold text-ink">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</span>
                 <div className="flex gap-0.5 justify-center mt-1.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`h-4 w-4 ${avgRating > 0 && i < Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
+                    <Star key={i} className={`h-4 w-4 ${avgRating > 0 && i < Math.round(avgRating) ? 'fill-amber-400 text-gold' : 'text-stone'}`} />
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-1 font-medium">{reviewCount} đánh giá</p>
+                <p className="text-sm text-stone mt-1 font-medium">{reviewCount} đánh giá</p>
               </div>
               <div className="flex-1 min-w-[200px] space-y-1.5 pt-1">
                 {[5, 4, 3, 2, 1].map((star) => {
@@ -443,12 +443,12 @@ export default function ProductDetail() {
                   const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0
                   return (
                     <div key={star} className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-500 w-5 text-right text-xs font-medium">{star}</span>
-                      <Star className="h-3 w-3 text-amber-400 fill-amber-400 shrink-0" />
-                      <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      <span className="text-stone w-5 text-right text-xs font-medium">{star}</span>
+                      <Star className="h-3 w-3 text-gold fill-amber-400 shrink-0" />
+                      <div className="flex-1 h-2.5 bg-ivory-100 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
                       </div>
-                      <span className="text-gray-400 w-6 text-xs text-right">{count}</span>
+                      <span className="text-stone w-6 text-xs text-right">{count}</span>
                     </div>
                   )
                 })}
@@ -456,9 +456,9 @@ export default function ProductDetail() {
             </div>
 
             {reviewCount > 1 && (
-              <div className="flex items-center gap-2 border-t border-gray-100 pt-4 mt-4">
-                <Filter className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-xs text-gray-500 mr-1">Sắp xếp:</span>
+              <div className="flex items-center gap-2 border-t border-stone/10 pt-4 mt-4">
+                <Filter className="h-3.5 w-3.5 text-stone" />
+                <span className="text-xs text-stone mr-1">Sắp xếp:</span>
                 {[
                   { value: 'newest', label: 'Mới nhất' },
                   { value: 'highest', label: 'Đánh giá cao' },
@@ -467,8 +467,8 @@ export default function ProductDetail() {
                   <button key={opt.value} onClick={() => { setReviewSort(opt.value); setReviewPage(0) }}
                     className={`px-3 py-1.5 text-xs rounded-lg border transition ${
                       reviewSort === opt.value
-                        ? 'bg-amber-400 text-white border-amber-400 font-semibold'
-                        : 'text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600'
+                        ? 'bg-gold text-noir border-gold font-semibold'
+                        : 'text-stone border-stone/20 hover:border-gold/30 hover:text-gold'
                     }`}>
                     {opt.label}
                   </button>
@@ -483,7 +483,7 @@ export default function ProductDetail() {
         <div className="mt-6">
           <div className="space-y-3">
             {pagedReviews.map((r) => (
-              <div key={r.maDanhGia} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <div key={r.maDanhGia} className="bg-ivory border border-stone/10 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
@@ -491,24 +491,24 @@ export default function ProductDetail() {
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-semibold text-gray-800">{r.nguoiDung?.hoTen || 'Khách hàng'}</p>
+                        <p className="text-sm font-semibold text-ink">{r.nguoiDung?.hoTen || 'Khách hàng'}</p>
                         {r.donHang && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-deep bg-emerald-deep/10 px-1.5 py-0.5 rounded-full">
                             <BadgeCheck className="h-3 w-3" /> Đã mua hàng
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-400 mt-0.5">{r.ngayTao ? new Date(r.ngayTao).toLocaleDateString('vi-VN') : ''}</p>
+                      <p className="text-[11px] text-stone mt-0.5">{r.ngayTao ? new Date(r.ngayTao).toLocaleDateString('vi-VN') : ''}</p>
                     </div>
                   </div>
                   <div className="flex gap-0.5 shrink-0">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < r.soSao ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+                      <Star key={i} className={`h-4 w-4 ${i < r.soSao ? 'text-gold fill-amber-400' : 'text-stone'}`} />
                     ))}
                   </div>
                 </div>
                 {r.binhLuan && (
-                  <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 rounded-xl p-3.5 border border-gray-50">
+                  <p className="text-sm text-stone leading-relaxed bg-ivory-100 rounded-xl p-3.5 border border-stone/5">
                     {r.binhLuan}
                   </p>
                 )}
@@ -519,21 +519,21 @@ export default function ProductDetail() {
           {totalReviewPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-5">
               <button disabled={reviewPage === 0} onClick={() => setReviewPage(reviewPage - 1)}
-                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-30 disabled:cursor-not-allowed transition">
                 ← Trước
               </button>
               {Array.from({ length: totalReviewPages }, (_, i) => (
                 <button key={i} onClick={() => setReviewPage(i)}
                   className={`w-8 h-8 text-xs rounded-lg border transition ${
                     i === reviewPage
-                      ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-sm'
-                      : 'text-gray-500 border-gray-200 hover:bg-gray-50'
+                      ? 'bg-gold text-noir border-gold font-semibold shadow-sm'
+                      : 'text-stone border-stone/20 hover:bg-ivory-100'
                   }`}>
                   {i + 1}
                 </button>
               ))}
               <button disabled={reviewPage >= totalReviewPages - 1} onClick={() => setReviewPage(reviewPage + 1)}
-                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-30 disabled:cursor-not-allowed transition">
                 Sau →
               </button>
             </div>
@@ -545,7 +545,7 @@ export default function ProductDetail() {
         <div className="mt-12">
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-            <h2 className="text-lg font-bold text-gray-900 whitespace-nowrap">Có thể bạn cũng thích</h2>
+            <h2 className="text-lg font-bold text-ink whitespace-nowrap">Có thể bạn cũng thích</h2>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

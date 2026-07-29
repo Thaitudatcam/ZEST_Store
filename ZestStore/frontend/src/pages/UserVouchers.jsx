@@ -9,9 +9,9 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 
 const STATUS = {
   0: { label: 'Chờ nhận', cls: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-  1: { label: 'Khả dụng', cls: 'text-green-600 bg-green-50 border-green-200' },
-  2: { label: 'Đã dùng', cls: 'text-gray-400 bg-gray-50 border-gray-200', hidden: true },
-  3: { label: 'Đã thu hồi', cls: 'text-red-500 bg-red-50 border-red-200', hidden: true },
+  1: { label: 'Khả dụng', cls: 'text-emerald-deep bg-emerald-deep/10 border-emerald-deep/20' },
+  2: { label: 'Đã dùng', cls: 'text-stone bg-ivory-100 border-stone/20', hidden: true },
+  3: { label: 'Đã thu hồi', cls: 'text-bordeaux bg-bordeaux/10 border-bordeaux/20', hidden: true },
 }
 
 export default function UserVouchers() {
@@ -71,23 +71,23 @@ export default function UserVouchers() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <Ticket className="h-7 w-7 text-blue-700" />
+        <Ticket className="h-7 w-7 text-gold" />
         <h1 className="text-2xl font-bold">Kho Voucher của tôi</h1>
       </div>
 
-      <form onSubmit={handleClaim} className="bg-white rounded-xl border p-4 mb-6">
+      <form onSubmit={handleClaim} className="bg-ivory rounded-xl border p-4 mb-6">
         <label className="block text-sm font-medium mb-2">Nhập mã voucher để nhận</label>
         <div className="flex gap-2">
           <input value={claimCode} onChange={e => setClaimCode(e.target.value)} placeholder="Nhập mã voucher..."
-            className="flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="flex-1 border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           <button type="submit" disabled={claiming || !claimCode.trim()}
-            className="bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-800 transition disabled:opacity-50 flex items-center gap-1.5">
+            className="bg-gold text-noir px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center gap-1.5">
             <Gift className="h-4 w-4" />
             Nhận
           </button>
         </div>
         {claimMsg && (
-          <p className={`text-sm mt-2 ${claimMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-sm mt-2 ${claimMsg.type === 'success' ? 'text-emerald-deep' : 'text-bordeaux'}`}>
             {claimMsg.text}
           </p>
         )}
@@ -95,8 +95,8 @@ export default function UserVouchers() {
 
       {personal.length > 0 && (
         <>
-          <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-600" /> Voucher của tôi ({personal.length})
+          <h2 className="font-semibold text-ink-soft mb-3 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-emerald-deep" /> Voucher của tôi ({personal.length})
           </h2>
           <div className="space-y-3 mb-6">
             {personal.map((v) => {
@@ -106,14 +106,14 @@ export default function UserVouchers() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded">
+                        <span className="inline-block bg-gold/20 text-gold text-xs font-semibold px-2 py-0.5 rounded">
                           {v.maCode}
                         </span>
                         {v.trangThai === 0 && (
                           <span className="text-[10px] bg-yellow-100 text-yellow-700 font-semibold px-1.5 py-0.5 rounded">Chờ nhận</span>
                         )}
                         {v.trangThai === 1 && (
-                          <span className="text-[10px] bg-green-100 text-green-700 font-semibold px-1.5 py-0.5 rounded">Đã nhận</span>
+                          <span className="text-[10px] bg-emerald-deep/20 text-emerald-deep font-semibold px-1.5 py-0.5 rounded">Đã nhận</span>
                         )}
                       </div>
                       <p className="font-medium text-sm">
@@ -130,7 +130,7 @@ export default function UserVouchers() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <div className="flex items-center gap-1 text-xs font-medium whitespace-nowrap">
-                        {v.trangThai === 0 ? <AlertCircle className="h-4 w-4 text-yellow-600" /> : v.trangThai === 1 ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}
+                        {v.trangThai === 0 ? <AlertCircle className="h-4 w-4 text-yellow-600" /> : v.trangThai === 1 ? <CheckCircle className="h-4 w-4 text-emerald-deep" /> : <XCircle className="h-4 w-4 text-bordeaux" />}
                         {s.label}
                       </div>
                       {v.trangThai === 0 && (
@@ -150,19 +150,19 @@ export default function UserVouchers() {
 
       {filteredPublic.length > 0 && (
         <>
-          <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Tag className="h-4 w-4 text-blue-600" /> Voucher công khai ({filteredPublic.length})
+          <h2 className="font-semibold text-ink-soft mb-3 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-gold" /> Voucher công khai ({filteredPublic.length})
           </h2>
           <div className="space-y-3">
             {filteredPublic.map((v) => (
-              <div key={v.maCode} className="border rounded-xl p-4 border-blue-100 bg-blue-50/30">
+              <div key={v.maCode} className="border rounded-xl p-4 border-gold/10 bg-gold/10/30">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded">
+                      <span className="inline-block bg-gold/20 text-gold text-xs font-semibold px-2 py-0.5 rounded">
                         {v.maCode}
                       </span>
-                      <span className="text-[10px] bg-gray-100 text-gray-600 font-semibold px-1.5 py-0.5 rounded">Công khai</span>
+                      <span className="text-[10px] bg-ivory-100 text-stone font-semibold px-1.5 py-0.5 rounded">Công khai</span>
                     </div>
                     <p className="font-medium text-sm">
                       {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : v.kieuGiamGia === 3 ? (v.giaTriGiam > 0 ? `Giảm tối đa ${VND(v.giaTriGiam)} tiền ship` : 'Miễn phí vận chuyển') : `Giảm ${VND(v.giaTriGiam)}`}
@@ -177,7 +177,7 @@ export default function UserVouchers() {
                       refreshVoucherCount()
                       load()
                     } catch {}
-                  }} className="shrink-0 bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-blue-800 transition">
+                  }} className="shrink-0 bg-gold text-noir text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-gold-hover transition">
                     Nhận
                   </button>
                 </div>
@@ -188,8 +188,8 @@ export default function UserVouchers() {
       )}
 
       {personal.length === 0 && filteredPublic.length === 0 && (
-        <div className="text-center py-20 text-gray-500">
-          <Ticket className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+        <div className="text-center py-20 text-stone">
+          <Ticket className="h-16 w-16 mx-auto mb-4 text-stone" />
           <p>Chưa có voucher nào</p>
           <p className="text-sm mt-1">Nhập mã voucher ở trên để nhận ưu đãi</p>
         </div>

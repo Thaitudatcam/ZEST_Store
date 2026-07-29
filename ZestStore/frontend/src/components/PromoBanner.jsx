@@ -8,10 +8,10 @@ const banners = [
   {
     id: 1,
     badge: 'Hot',
-    badgeColor: 'bg-red-500',
+    badgeColor: 'bg-bordeaux/100',
     title: 'FLASH SALE',
     highlight: 'GIẢM ĐẾN 45%',
-    highlightColor: 'text-red-500',
+    highlightColor: 'text-bordeaux',
     desc: 'Cơ hội sở hữu áo polo, áo thun nam cao cấp với giá cực sốc. Chỉ trong thời gian giới hạn!',
     img: ao1,
     link: '/products/o-polo-nam-1783922287918',
@@ -20,10 +20,10 @@ const banners = [
   {
     id: 3,
     badge: 'Limited',
-    badgeColor: 'bg-orange-500',
+    badgeColor: 'bg-gold/100',
     title: 'ƯU ĐÃI ĐẶC BIỆT',
     highlight: 'MUA 2 TẶNG 1',
-    highlightColor: 'text-orange-400',
+    highlightColor: 'text-gold',
     desc: 'Deal cực hời. Lên đồ đẹp – giá lại ngon. Chốt nhanh trước khi hết!',
     img: ao2,
     link: '/products/o-polo-th-thao-1783925305046',
@@ -132,13 +132,13 @@ export default function PromoBanner() {
             {/* Carousel arrows */}
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); prev(); }}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-ivory/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-ivory/20 transition-all"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); next(); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-white/20 transition-all"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-ivory/10 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-ivory/20 transition-all"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -150,7 +150,7 @@ export default function PromoBanner() {
                   key={i}
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrent(i); }}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === current ? 'w-6 bg-red-500' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                    i === current ? 'w-6 bg-bordeaux/100' : 'w-1.5 bg-ivory/40 hover:bg-ivory/70'
                   }`}
                 />
               ))}
@@ -177,7 +177,7 @@ export default function PromoBanner() {
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
                 <div className="absolute inset-0 flex flex-col justify-center p-5 md:p-6">
-                  <span className="inline-block bg-blue-600 text-white text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-sm w-fit mb-2">
+                  <span className="inline-block bg-gold text-noir text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-sm w-fit mb-2">
                     {sb.badge}
                   </span>
                   <h3 className="text-white text-[10px] font-medium tracking-[0.2em] mb-1">{sb.title}</h3>
@@ -185,7 +185,7 @@ export default function PromoBanner() {
                 </div>
 
                 {/* Hover arrow */}
-                <div className={`absolute right-4 bottom-4 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all duration-300 ${
+                <div className={`absolute right-4 bottom-4 w-8 h-8 rounded-full bg-ivory/10 backdrop-blur-sm flex items-center justify-center transition-all duration-300 ${
                   hovered === sb.id ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
                 }`}>
                   <ChevronRight className="h-4 w-4 text-white" />

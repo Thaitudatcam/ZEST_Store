@@ -63,7 +63,7 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 overflow-x-auto">
+    <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6 overflow-x-auto">
       <div className="flex items-center min-w-fit">
         {visibleSteps.map((s, i) => {
           const stepDef = stepDefs.find(st => st.status === s);
@@ -74,21 +74,21 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
           return (
             <div key={s} className="flex items-center">
               {i > 0 && (
-                <div className="w-8 sm:w-12 h-0.5 bg-blue-500 mx-1 sm:mx-2" />
+                <div className="w-8 sm:w-12 h-0.5 bg-gold/100 mx-1 sm:mx-2" />
               )}
               <div className="flex flex-col items-center">
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-300
-                  ${isCurrent ? 'bg-blue-600 text-white ring-4 ring-blue-200 animate-pulse' : 'bg-blue-600 text-white'}`}>
+                  ${isCurrent ? 'bg-gold text-noir ring-4 ring-blue-200 animate-pulse' : 'bg-gold text-noir'}`}>
                   <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
-                <p className="text-[10px] sm:text-xs font-semibold mt-1.5 text-center whitespace-nowrap text-gray-800">
+                <p className="text-[10px] sm:text-xs font-semibold mt-1.5 text-center whitespace-nowrap text-ink">
                   {stepDef.label}
                 </p>
                 {time && (
-                  <p className="text-[9px] sm:text-[10px] text-gray-400 mt-0.5">{time}</p>
+                  <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{time}</p>
                 )}
                 {isCurrent && !time && (
-                  <p className="text-[9px] sm:text-[10px] text-blue-600 font-medium mt-0.5">Đang xử lý...</p>
+                  <p className="text-[9px] sm:text-[10px] text-gold font-medium mt-0.5">Đang xử lý...</p>
                 )}
               </div>
             </div>
@@ -96,13 +96,13 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
         })}
         {isSpecial && (
           <div className="flex items-center ml-2">
-            <div className="w-8 sm:w-12 h-0.5 bg-red-300 mx-1 sm:mx-2" />
+            <div className="w-8 sm:w-12 h-0.5 bg-bordeaux/30 mx-1 sm:mx-2" />
             <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${currentStatus === 8 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${currentStatus === 8 ? 'bg-emerald-deep/20 text-emerald-deep' : 'bg-bordeaux/20 text-bordeaux'}`}>
                 {currentStatus === 5 || currentStatus === 9 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStatus === 8 ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
               </div>
-              <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap ${currentStatus === 8 ? 'text-green-600' : 'text-red-600'}`}>{STATUS_LABELS[currentStatus]}</p>
-              <p className="text-[9px] sm:text-[10px] text-gray-400 mt-0.5">{getTimeForStatus(currentStatus)}</p>
+              <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap ${currentStatus === 8 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{STATUS_LABELS[currentStatus]}</p>
+              <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{getTimeForStatus(currentStatus)}</p>
             </div>
           </div>
         )}
@@ -239,10 +239,10 @@ export default function OrderDetail() {
 
   if (!data) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8 text-center text-gray-500">
-        <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+      <div className="max-w-3xl mx-auto px-4 py-8 text-center text-stone">
+        <Package className="h-16 w-16 mx-auto mb-4 text-stone" />
         <p>Không tìm thấy đơn hàng</p>
-        <Link to="/orders" className="text-blue-700 font-semibold hover:underline mt-2 inline-block">Quay lại</Link>
+        <Link to="/orders" className="text-gold font-semibold hover:underline mt-2 inline-block">Quay lại</Link>
       </div>
     )
   }
@@ -261,16 +261,16 @@ export default function OrderDetail() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-28 lg:pb-8">
-      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-stone hover:text-ink-soft mb-4">
         <ArrowLeft className="h-4 w-4" /> Quay lại đơn hàng
       </Link>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+      <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold">Đơn hàng #{order.maDonHang}</h1>
-            <p className="text-sm text-gray-500">{order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}</p>
-            {order.maDonHangCode && <p className="text-xs text-gray-400 mt-0.5">Mã: {order.maDonHangCode}</p>}
+            <p className="text-sm text-stone">{order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}</p>
+            {order.maDonHangCode && <p className="text-xs text-stone mt-0.5">Mã: {order.maDonHangCode}</p>}
           </div>
           <StatusBadge status={order.trangThaiDon || order.trangThai} loaiDonHang={order.loaiDonHang} />
         </div>
@@ -278,9 +278,9 @@ export default function OrderDetail() {
 
       <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-        <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2 mb-4">
-          <Package className="h-5 w-5 text-blue-700" /> Sản phẩm
+      <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
+        <h2 className="text-base font-semibold text-ink flex items-center gap-2 mb-4">
+          <Package className="h-5 w-5 text-gold" /> Sản phẩm
         </h2>
         <div className="space-y-4">
           {items.map((item) => {
@@ -288,18 +288,18 @@ export default function OrderDetail() {
             const product = variant.sanPham || {}
             const anh = variant.urlAnh || product.urlAnhDaiDien || ''
             return (
-              <div key={item.maMucDonHang} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition" onClick={() => setSelectedItem(item)}>
-                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+              <div key={item.maMucDonHang} className="flex items-center gap-4 cursor-pointer hover:bg-ivory-100 -mx-2 px-2 rounded-lg transition" onClick={() => setSelectedItem(item)}>
+                <div className="w-16 h-16 bg-ivory-100 rounded-lg overflow-hidden shrink-0">
                   <SafeImg src={anh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
-                  <p className="text-xs text-gray-500">{[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}</p>
-                  <p className="text-xs text-gray-500">x{item.soLuong}</p>
+                  <p className="text-xs text-stone">{[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}</p>
+                  <p className="text-xs text-stone">x{item.soLuong}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold">{VND(item.thanhTien)}</p>
-                  <p className="text-xs text-gray-400">{VND(item.donGia)} / cái</p>
+                  <p className="text-xs text-stone">{VND(item.donGia)} / cái</p>
                 </div>
               </div>
             )
@@ -307,54 +307,54 @@ export default function OrderDetail() {
         </div>
         <hr className="border-t mt-4" />
         <div className="pt-4 space-y-1 text-sm">
-          <div className="flex justify-between text-gray-600"><span>Tạm tính</span><span>{VND(items.reduce((s, i) => s + Number(i.thanhTien), 0))}</span></div>
-          {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-green-600"><span>Giảm giá</span><span>-{VND(order.soTienGiam)}</span></div>}
-          {(order.phiVanChuyen || 0) > 0 && <div className="flex justify-between text-gray-600"><span>Phí vận chuyển</span><span>{VND(order.phiVanChuyen)}</span></div>}
-          <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-blue-700">{VND(order.tongTien)}</span></div>
+          <div className="flex justify-between text-stone"><span>Tạm tính</span><span>{VND(items.reduce((s, i) => s + Number(i.thanhTien), 0))}</span></div>
+          {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm giá</span><span>-{VND(order.soTienGiam)}</span></div>}
+          {(order.phiVanChuyen || 0) > 0 && <div className="flex justify-between text-stone"><span>Phí vận chuyển</span><span>{VND(order.phiVanChuyen)}</span></div>}
+          <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-gold">{VND(order.tongTien)}</span></div>
         </div>
       </div>
 
       {payments.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-          <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2 mb-4">
-            <CreditCard className="h-5 w-5 text-blue-700" /> Thanh toán
+        <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
+          <h2 className="text-base font-semibold text-ink flex items-center gap-2 mb-4">
+            <CreditCard className="h-5 w-5 text-gold" /> Thanh toán
           </h2>
           <div className="space-y-3 text-sm">
             {payments.map((p) => {
               const isOnline = p.phuongThuc > 1
               const canRetry = p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3) && order.trangThaiDon === 1
               return (
-                <div key={p.maThanhToan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={p.maThanhToan} className="flex items-center justify-between p-3 bg-ivory-100 rounded-lg">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
+                      <span className="font-medium text-ink-soft">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
                       {p.trangThaiThanhToan === 2 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-deep bg-emerald-deep/20 px-2 py-0.5 rounded-full">
                           <CheckCircle className="h-3 w-3" /> Đã thanh toán
                         </span>
                       )}
                       {p.trangThaiThanhToan === 1 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-gold-hover bg-gold/20 px-2 py-0.5 rounded-full">
                           <Clock className="h-3 w-3" /> Chờ thanh toán
                         </span>
                       )}
                       {p.trangThaiThanhToan === 3 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-bordeaux bg-bordeaux/20 px-2 py-0.5 rounded-full">
                           <XCircle className="h-3 w-3" /> Thất bại
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">{VND(p.soTien)}</p>
+                    <p className="text-xs text-stone mt-0.5">{VND(p.soTien)}</p>
                     {p.maGiaoDich && p.trangThaiThanhToan === 2 && (
-                      <p className="text-xs text-gray-400 mt-0.5">GD: {p.maGiaoDich}</p>
+                      <p className="text-xs text-stone mt-0.5">GD: {p.maGiaoDich}</p>
                     )}
                     {p.thoiGianTt && p.trangThaiThanhToan === 2 && (
-                      <p className="text-xs text-gray-400">{new Date(p.thoiGianTt).toLocaleString('vi-VN')}</p>
+                      <p className="text-xs text-stone">{new Date(p.thoiGianTt).toLocaleString('vi-VN')}</p>
                     )}
                   </div>
                   {canRetry && (
                     <button onClick={() => handlePayNow(p)} disabled={paying}
-                      className="flex items-center gap-1 text-xs bg-blue-700 text-white px-3 py-2 rounded-lg hover:bg-blue-800 transition disabled:opacity-50 shrink-0">
+                      className="flex items-center gap-1 text-xs bg-gold text-noir px-3 py-2 rounded-lg hover:bg-gold-hover transition disabled:opacity-50 shrink-0">
                       {paying ? <Loader className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
                       {paying ? 'Đang xử lý...' : p.trangThaiThanhToan === 3 ? 'Thử lại' : 'Thanh toán ngay'}
                     </button>
@@ -366,15 +366,15 @@ export default function OrderDetail() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-        <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2 mb-4">
-          <MapPin className="h-5 w-5 text-blue-700" /> Thông tin giao hàng
+      <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
+        <h2 className="text-base font-semibold text-ink flex items-center gap-2 mb-4">
+          <MapPin className="h-5 w-5 text-gold" /> Thông tin giao hàng
         </h2>
         <div className="text-sm space-y-1">
-          <p><span className="text-gray-500">Người nhận:</span> {order.tenNguoiNhan}</p>
-          <p><span className="text-gray-500">SĐT:</span> {order.sdtNguoiNhan}</p>
-          <p><span className="text-gray-500">Địa chỉ:</span> {order.diaChiGiaoHang}</p>
-          {order.ghiChu && <p><span className="text-gray-500">Ghi chú:</span> {order.ghiChu}</p>}
+          <p><span className="text-stone">Người nhận:</span> {order.tenNguoiNhan}</p>
+          <p><span className="text-stone">SĐT:</span> {order.sdtNguoiNhan}</p>
+          <p><span className="text-stone">Địa chỉ:</span> {order.diaChiGiaoHang}</p>
+          {order.ghiChu && <p><span className="text-stone">Ghi chú:</span> {order.ghiChu}</p>}
         </div>
       </div>
 
@@ -382,59 +382,59 @@ export default function OrderDetail() {
       <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2">
         {canCancel && (
           <button onClick={handleCancel} disabled={cancelling}
-            className="flex items-center gap-2 bg-white border border-red-200 text-red-600 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-red-50 transition disabled:opacity-50 shadow-sm">
+            className="flex items-center gap-2 bg-ivory border border-bordeaux/20 text-bordeaux px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bordeaux/10 transition disabled:opacity-50 shadow-sm">
             {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
             Hủy đơn
           </button>
         )}
         {canConfirmReceived && (
           <button onClick={handleConfirmReceived} disabled={confirmingReceived}
-            className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50 shadow-sm">
+            className="flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 shadow-sm">
             {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
             Đã nhận hàng
           </button>
         )}
         {canPayNow && (
           <button onClick={() => handlePayNow(payments.find(p => p.phuongThuc > 1))} disabled={paying}
-            className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50 shadow-sm">
+            className="flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 shadow-sm">
             {paying ? <Loader className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
             Thanh toán ngay
           </button>
         )}
         {canRequestReturn && (
           <button onClick={() => setReturnOpen(true)}
-            className="flex items-center gap-2 bg-white border border-orange-200 text-orange-600 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-orange-50 transition shadow-sm">
+            className="flex items-center gap-2 bg-ivory border border-gold/20 text-gold px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold/10 transition shadow-sm">
             <RefreshCw className="h-4 w-4" /> Yêu cầu trả hàng
           </button>
         )}
       </div>
 
       {/* Mobile sticky bottom action bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl p-4 z-50 flex gap-2">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-ivory border-t shadow-2xl p-4 z-50 flex gap-2">
         {canCancel && (
           <button onClick={handleCancel} disabled={cancelling}
-            className="flex-1 flex items-center justify-center gap-1.5 border border-red-200 text-red-600 py-3 rounded-xl text-sm font-medium hover:bg-red-50 transition disabled:opacity-50">
+            className="flex-1 flex items-center justify-center gap-1.5 border border-bordeaux/20 text-bordeaux py-3 rounded-xl text-sm font-medium hover:bg-bordeaux/10 transition disabled:opacity-50">
             {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
             Hủy đơn
           </button>
         )}
         {canConfirmReceived && (
           <button onClick={handleConfirmReceived} disabled={confirmingReceived}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-700 text-white py-3 rounded-xl text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50">
+            className="flex-1 flex items-center justify-center gap-1.5 bg-gold text-noir py-3 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
             {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
             Đã nhận hàng
           </button>
         )}
         {canPayNow && (
           <button onClick={() => handlePayNow(payments.find(p => p.phuongThuc > 1))} disabled={paying}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-700 text-white py-3 rounded-xl text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50">
+            className="flex-1 flex items-center justify-center gap-1.5 bg-gold text-noir py-3 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
             {paying ? <Loader className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
             Thanh toán ngay
           </button>
         )}
         {canRequestReturn && (
           <button onClick={() => setReturnOpen(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 border border-orange-200 text-orange-600 py-3 rounded-xl text-sm font-medium hover:bg-orange-50 transition">
+            className="flex-1 flex items-center justify-center gap-1.5 border border-gold/20 text-gold py-3 rounded-xl text-sm font-medium hover:bg-gold/10 transition">
             <RefreshCw className="h-4 w-4" /> Trả hàng
           </button>
         )}
@@ -442,19 +442,19 @@ export default function OrderDetail() {
 
       {returnOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setReturnOpen(false)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-orange-600 px-6 py-4">
+          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gold px-6 py-4">
               <h3 className="font-bold text-lg text-white">Yêu cầu trả hàng</h3>
-              <p className="text-orange-100 text-sm">Đơn hàng #{order.maDonHang}</p>
+              <p className="text-gold/20 text-sm">Đơn hàng #{order.maDonHang}</p>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Lý do trả hàng</p>
+                <p className="text-sm font-semibold text-ink-soft mb-2">Lý do trả hàng</p>
                 <div className="space-y-2">
                   {RETURN_REASONS.map((r) => (
                     <label key={r.value}
                       className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition text-sm
-                        ${returnReason === r.value ? 'border-orange-400 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        ${returnReason === r.value ? 'border-gold/40 bg-gold/10' : 'border-stone/20 hover:border-stone/30'}`}>
                       <input type="radio" name="returnReason" value={r.value}
                         checked={returnReason === r.value}
                         onChange={(e) => setReturnReason(e.target.value)}
@@ -471,13 +471,13 @@ export default function OrderDetail() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Hình ảnh minh chứng (tối đa 3 ảnh)</p>
+                <p className="text-sm font-semibold text-ink-soft mb-2">Hình ảnh minh chứng (tối đa 3 ảnh)</p>
                 <div className="flex gap-2 flex-wrap">
                   {returnImages.map((img, i) => (
                     <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
                       <img src={img} alt="" className="w-full h-full object-cover" />
                       <button onClick={() => setReturnImages(prev => prev.filter((_, j) => j !== i))}
-                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                        className="absolute -top-1 -right-1 bg-bordeaux/100 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-bordeaux">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -485,12 +485,12 @@ export default function OrderDetail() {
                   {returnImages.length < 3 && (
                     <>
                       <button onClick={() => returnFileRef.current?.click()}
-                        className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-orange-400 hover:text-orange-500 transition">
+                        className="w-20 h-20 border-2 border-dashed border-stone/30 rounded-lg flex flex-col items-center justify-center text-stone hover:border-gold/40 hover:text-gold transition">
                         <Image className="h-5 w-5" />
                         <span className="text-[10px] mt-0.5">Tải ảnh</span>
                       </button>
                       <button onClick={() => returnCameraRef.current?.click()}
-                        className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-orange-400 hover:text-orange-500 transition">
+                        className="w-20 h-20 border-2 border-dashed border-stone/30 rounded-lg flex flex-col items-center justify-center text-stone hover:border-gold/40 hover:text-gold transition">
                         <Camera className="h-5 w-5" />
                         <span className="text-[10px] mt-0.5">Chụp ảnh</span>
                       </button>
@@ -503,9 +503,9 @@ export default function OrderDetail() {
 
               <div className="flex gap-3 pt-2">
                 <button onClick={() => { setReturnOpen(false); setReturnReason(''); setReturnLyDo(''); setReturnImages([]) }}
-                  className="flex-1 border-2 border-gray-200 rounded-xl py-3 text-sm font-semibold hover:bg-gray-50 transition">Hủy</button>
+                  className="flex-1 border-2 border-stone/20 rounded-xl py-3 text-sm font-semibold hover:bg-ivory-100 transition">Hủy</button>
                 <button onClick={handleRequestReturn} disabled={returning || !returnReason}
-                  className="flex-1 bg-orange-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  className="flex-1 bg-gold text-noir rounded-xl py-3 text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                   {returning ? <Loader className="h-4 w-4 animate-spin" /> : null}
                   {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
                 </button>
@@ -521,45 +521,45 @@ export default function OrderDetail() {
         const anh = v.urlAnh || p.urlAnhDaiDien || ''
         return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setSelectedItem(null)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full animate-scale-in shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-ivory rounded-2xl max-w-lg w-full animate-scale-in shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="relative">
-              <img src={anh} alt={p.tenSanPham} className="w-full h-72 object-cover object-center bg-gray-100"
+              <img src={anh} alt={p.tenSanPham} className="w-full h-72 object-cover object-center bg-ivory-100"
                 onError={(e) => { e.target.src = 'https://placehold.co/600x400/e2e8f0/475569?text=Polo' }} />
-              <button onClick={() => setSelectedItem(null)} className="absolute top-3 right-3 bg-white/90 rounded-full p-1.5 hover:bg-white transition shadow-sm">
+              <button onClick={() => setSelectedItem(null)} className="absolute top-3 right-3 bg-ivory/90 rounded-full p-1.5 hover:bg-ivory transition shadow-sm">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-5 space-y-3">
               <div>
                 <h3 className="font-bold text-lg">{p.tenSanPham || 'Sản phẩm'}</h3>
-                <p className="text-xs text-gray-400">SKU: {v.sku || '—'}</p>
+                <p className="text-xs text-stone">SKU: {v.sku || '—'}</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
-                <span className="text-blue-700 font-bold text-xl">{VND(selectedItem.donGia || 0)}</span>
-                <span className="text-gray-400">x{selectedItem.soLuong}</span>
-                <span className="text-gray-600 font-semibold">= {VND(selectedItem.thanhTien || 0)}</span>
+                <span className="text-gold font-bold text-xl">{VND(selectedItem.donGia || 0)}</span>
+                <span className="text-stone">x{selectedItem.soLuong}</span>
+                <span className="text-stone font-semibold">= {VND(selectedItem.thanhTien || 0)}</span>
               </div>
               <div className="flex flex-wrap gap-3 text-sm">
                 {v.mauSac?.mauSac && (
-                  <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                  <span className="bg-ivory-100 px-3 py-1 rounded-full text-ink-soft">
                     Màu: <span className="font-medium">{v.mauSac.mauSac}</span>
                   </span>
                 )}
                 {v.kichCo?.kichCo && (
-                  <span className="bg-gray-100 px-3 py-1 rounded-full text-gray-700">
+                  <span className="bg-ivory-100 px-3 py-1 rounded-full text-ink-soft">
                     Size: <span className="font-medium">{v.kichCo.kichCo}</span>
                   </span>
                 )}
               </div>
               {p.moTa && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Mô tả</p>
-                  <p className="text-sm text-gray-600 line-clamp-4">{p.moTa}</p>
+                  <p className="text-xs font-semibold text-stone uppercase tracking-wide mb-1">Mô tả</p>
+                  <p className="text-sm text-stone line-clamp-4">{p.moTa}</p>
                 </div>
               )}
               {(p.slug || p.maSanPham) && (
                 <a href={`/products/${p.slug || p.maSanPham}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-blue-700 font-medium hover:underline mt-1">
+                  className="inline-flex items-center gap-1 text-sm text-gold font-medium hover:underline mt-1">
                   Xem chi tiết sản phẩm →
                 </a>
               )}

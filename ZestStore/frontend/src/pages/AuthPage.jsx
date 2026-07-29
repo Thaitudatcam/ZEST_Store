@@ -81,8 +81,8 @@ export default function AuthPage() {
 
             {/* Bottom decorative dots */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
-              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${active ? 'bg-white/15' : 'bg-gold/80'}`} />
-              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${active ? 'bg-gold/80' : 'bg-white/15'}`} />
+              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${active ? 'bg-ivory/15' : 'bg-gold/80'}`} />
+              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${active ? 'bg-gold/80' : 'bg-ivory/15'}`} />
             </div>
           </div>
         </div>

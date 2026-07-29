@@ -7,13 +7,13 @@ export default function EmptyState({ icon = 'Inbox', title = 'Không có dữ li
   const Icon = iconMap[icon] || Inbox
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <Icon className="h-10 w-10 text-gray-300" />
+      <div className="w-20 h-20 bg-ivory-100 rounded-full flex items-center justify-center mb-4">
+        <Icon className="h-10 w-10 text-stone" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-700 mb-1">{title}</h3>
-      {description && <p className="text-sm text-gray-400 max-w-xs">{description}</p>}
+      <h3 className="text-lg font-semibold text-ink-soft mb-1">{title}</h3>
+      {description && <p className="text-sm text-stone max-w-xs">{description}</p>}
       {actionLabel && actionTo && (
-        <Link to={actionTo} className="mt-4 bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+        <Link to={actionTo} className="mt-4 bg-gold text-noir px-5 py-2 rounded-lg text-sm font-semibold hover:bg-gold transition">
           {actionLabel}
         </Link>
       )}
