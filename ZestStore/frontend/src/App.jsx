@@ -9,8 +9,7 @@ import Home from './pages/Home'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
-import Login from './pages/Login'
-import Register from './pages/Register'
+import AuthPage from './pages/AuthPage'
 import ForgotPassword from './pages/ForgotPassword'
 import Profile from './pages/Profile'
 import Wishlist from './pages/Wishlist'
@@ -78,6 +77,9 @@ export default function App() {
         <Route path="change-password" element={<AdminChangePassword />} />
       </Route>
 
+      <Route path="/login" element={<AuthPage />} />
+      <Route path="/register" element={<AuthPage />} />
+      <Route path="/quen-mat-khau" element={<ForgotPassword />} />
       <Route path="*" element={
         <div className="flex flex-col min-h-screen">
           <Navbar />
@@ -89,9 +91,6 @@ export default function App() {
               <Route path="/policies/:slug" element={<PolicyPage />} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><ErrorBoundary><Checkout /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/quen-mat-khau" element={<ForgotPassword />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
               <Route path="/vouchers" element={<ProtectedRoute><UserVouchers /></ProtectedRoute>} />

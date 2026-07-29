@@ -61,23 +61,23 @@ export default function AdminLayout() {
   const handleLogout = () => { logout(); navigate('/login') }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-ivory flex">
       <style>{`
         .sidebar-scroll::-webkit-scrollbar { width: 4px; }
         .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(201,162,39,0.3); border-radius: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,162,39,0.5); }
       `}</style>
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white flex flex-col transform transition-transform duration-200 shadow-2xl ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="flex items-center justify-between h-16 px-5 border-b border-white/5 shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-noir-900 text-ivory flex flex-col transform transition-transform duration-200 shadow-2xl border-r border-gold/10 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <div className="flex items-center justify-between h-16 px-5 border-b border-gold/10 shrink-0">
           <Link to="/admin" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20">ZS</div>
+            <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center text-noir text-xs font-bold shadow-gold">ZS</div>
             <div>
-              <p className="text-sm font-bold tracking-wide">ZestStore</p>
-              <p className="text-[10px] font-medium text-blue-300/70 -mt-0.5">Quản trị</p>
+              <p className="font-serif text-sm font-bold tracking-wide">ZestStore</p>
+              <p className="text-[10px] font-medium text-gold/70 -mt-0.5 tracking-widest uppercase">Quản trị</p>
             </div>
           </Link>
-          <button className="lg:hidden text-slate-400 hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></button>
+          <button className="lg:hidden text-stone-light/60 hover:text-gold transition-colors" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></button>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 sidebar-scroll">
           {nav.map((item) => {
@@ -89,19 +89,19 @@ export default function AdminLayout() {
                   <button onClick={() => toggleNav(item.label)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                       childActive
-                        ? 'bg-gradient-to-r from-blue-500/15 to-transparent text-white border-l-2 border-blue-400'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-white border-l-2 border-transparent'
+                        ? 'bg-gradient-to-r from-gold/15 to-transparent text-ivory border-l-2 border-gold'
+                        : 'text-stone-light/60 hover:bg-white/5 hover:text-ivory border-l-2 border-transparent'
                     }`}>
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
-                      childActive ? 'bg-blue-500/20 text-blue-300' : 'text-slate-500 group-hover:text-slate-300'
+                      childActive ? 'bg-gold/20 text-gold' : 'text-stone-light/50 group-hover:text-stone-light/80'
                     }`}>
                       <item.icon className="h-4 w-4" />
                     </div>
                     <span className="truncate">{item.label}</span>
-                    <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-all duration-200 ${open ? 'rotate-180 text-blue-400' : 'text-slate-600'}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-all duration-200 ${open ? 'rotate-180 text-gold' : 'text-stone-light/40'}`} />
                   </button>
                   <div className={`overflow-hidden transition-all duration-200 ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="ml-4 pl-3 border-l border-white/5 space-y-0.5 pb-0.5">
+                    <div className="ml-4 pl-3 border-l border-gold/10 space-y-0.5 pb-0.5">
                       {item.children.map(child => {
                         let childActive = pathname === child.to
                         if (child.to === '/admin/products' && pathname.startsWith('/admin/products/') && !pathname.startsWith('/admin/products/detail')) childActive = true
@@ -109,8 +109,8 @@ export default function AdminLayout() {
                           <Link key={child.to} to={child.to} onClick={() => setSidebarOpen(false)}
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                               childActive
-                                ? 'bg-blue-500/10 text-blue-300'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                ? 'bg-gold/10 text-gold'
+                                : 'text-stone-light/60 hover:bg-white/5 hover:text-stone-light/90'
                             }`}>
                             <span className="w-1 h-1 rounded-full bg-current opacity-40 shrink-0" />
                             {child.label}
@@ -127,22 +127,22 @@ export default function AdminLayout() {
               <Link key={item.to} to={item.to} onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                   active
-                    ? 'bg-gradient-to-r from-blue-500/15 to-transparent text-white border-l-2 border-blue-400'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white border-l-2 border-transparent'
+                    ? 'bg-gradient-to-r from-gold/15 to-transparent text-ivory border-l-2 border-gold'
+                    : 'text-stone-light/60 hover:bg-white/5 hover:text-ivory border-l-2 border-transparent'
                 }`}>
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
-                  active ? 'bg-blue-500/20 text-blue-300' : 'text-slate-500 group-hover:text-slate-300'
+                  active ? 'bg-gold/20 text-gold' : 'text-stone-light/50 group-hover:text-stone-light/80'
                 }`}>
                   <item.icon className="h-4 w-4" />
                 </div>
                 <span className="truncate">{item.label}</span>
-                {item.badge > 0 && <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge > 99 ? '99+' : item.badge}</span>}
+                {item.badge > 0 && <span className="ml-auto bg-bordeaux text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{item.badge > 99 ? '99+' : item.badge}</span>}
               </Link>
             )
           })}
         </nav>
-        <div className="shrink-0 border-t border-white/5 px-3 py-2.5">
-          <Link to="/" className="flex items-center gap-2 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-all duration-200">
+        <div className="shrink-0 border-t border-gold/10 px-3 py-2.5">
+          <Link to="/" className="flex items-center gap-2 px-3 py-2 text-xs text-stone-light/50 hover:text-gold hover:bg-white/5 rounded-lg transition-all duration-200">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Về trang chủ
           </Link>
@@ -150,18 +150,18 @@ export default function AdminLayout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        <header className="bg-white border-b h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
-          <button className="lg:hidden text-gray-600" onClick={() => setSidebarOpen(true)}><Menu className="h-6 w-6" /></button>
+        <header className="bg-ivory border-b border-gold/15 h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
+          <button className="lg:hidden text-ink-soft" onClick={() => setSidebarOpen(true)}><Menu className="h-6 w-6" /></button>
           <div />
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-8 h-8 bg-noir text-gold rounded-full flex items-center justify-center text-xs font-bold ring-1 ring-gold/30">
               {user?.hoTen?.charAt(0) || 'A'}
             </div>
             <div className="hidden sm:block">
-              <p className="text-sm font-medium">{user?.hoTen}</p>
-              <p className="text-xs text-gray-500">{isStaff ? 'Nhân viên' : 'Admin'}</p>
+              <p className="text-sm font-medium text-ink">{user?.hoTen}</p>
+              <p className="text-xs text-stone">{isStaff ? 'Nhân viên' : 'Admin'}</p>
             </div>
-            <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500"><LogOut className="h-5 w-5" /></button>
+            <button onClick={handleLogout} className="ml-2 text-stone hover:text-bordeaux transition-colors"><LogOut className="h-5 w-5" /></button>
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-6">
@@ -169,7 +169,7 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && <div className="fixed inset-0 bg-noir/50 backdrop-blur-sm z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <AiChat />
     </div>
   )

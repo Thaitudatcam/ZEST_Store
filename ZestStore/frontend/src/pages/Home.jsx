@@ -89,22 +89,24 @@ export default function Home() {
     <div className="animate-fade-in">
 
       {/* ──────── HERO ──────── */}
-      <section className="relative bg-slate-900 text-white overflow-hidden min-h-[90vh] flex items-center">
-        <Aurora colorStops={['#00d4ff', '#3b82f6', '#5227FF']} amplitude={0.8} blend={0.6} />
+      <section className="relative bg-noir text-ivory overflow-hidden min-h-[90vh] flex items-center">
+        <Aurora colorStops={['#C9A227', '#8B6914', '#0B0B0F']} amplitude={0.8} blend={0.6} />
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12 flex flex-col md:flex-row items-center gap-6 w-full">
           <div className="flex-1 text-center md:text-left">
-            <span className="inline-block bg-white/15 text-white text-xs font-medium tracking-widest px-4 py-1.5 rounded-full mb-5 border border-white/25 backdrop-blur-sm">BỘ SƯU TẬP MỚI 2026</span>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight min-h-[1.2em]">
-                  <RotatingText texts={['Khẳng Định Phong Cách', 'Tự Tin Tỏa Sáng', 'Chất Riêng Của Bạn']} mainClassName="text-white" rotationInterval={3000} splitBy="characters" staggerDuration={0.02} />
+            <span className="inline-flex items-center gap-2 bg-gold/10 text-gold text-[11px] font-semibold tracking-[0.25em] uppercase px-4 py-1.5 rounded-full mb-5 border border-gold/30 backdrop-blur-sm">
+              <Sparkles className="h-3 w-3" /> Bộ Sưu Tập Mới 2026
+            </span>
+              <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight min-h-[1.2em]">
+                  <RotatingText texts={['Khẳng Định Phong Cách', 'Tự Tin Tỏa Sáng', 'Chất Riêng Của Bạn']} mainClassName="text-ivory" rotationInterval={3000} splitBy="characters" staggerDuration={0.02} />
               </h2>
-              <p className="text-base md:text-lg text-blue-100 mb-8 max-w-lg leading-relaxed">
+              <p className="text-base md:text-lg text-stone-light/70 mb-8 max-w-lg leading-relaxed">
                   Mỗi chiếc áo polo tại ZestStore được thiết kế để mang đến sự thoải mái,
                   lịch lãm và tự tin, đồng hành cùng bạn trong mọi phong cách sống.
               </p>
             <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8">
               <a href="#products" onClick={scrollToProducts}
-                className="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold px-7 py-3.5 rounded-full shadow-xl transition-all duration-300 hover:bg-yellow-300 hover:text-slate-900 hover:-translate-y-1 hover:shadow-2xl active:scale-95 cursor-pointer">
-                <ShoppingBag className="h-5 w-5" /> Mua ngay <ArrowRight className="h-4 w-4" /></a>
+                className="group inline-flex items-center gap-2 bg-gold text-noir font-semibold px-8 py-3.5 rounded-full shadow-gold transition-all duration-300 hover:bg-gold-light hover:-translate-y-1 active:scale-95 cursor-pointer">
+                <ShoppingBag className="h-5 w-5" /> Mua ngay <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" /></a>
             </div>
             <div className="flex flex-wrap gap-6 text-sm justify-center md:justify-start">
               {[
@@ -112,16 +114,16 @@ export default function Home() {
                 { icon: RefreshCw, label: 'Đổi trả 30 ngày' },
                 { icon: Shield, label: 'Chính hãng 100%' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-2 text-blue-200">
-                  <Icon className="h-4 w-4" /> <span>{label}</span>
+                <div key={label} className="flex items-center gap-2 text-stone-light/60">
+                  <Icon className="h-4 w-4 text-gold/70" /> <span>{label}</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="flex-1 flex justify-center">
             <div className="relative w-52 h-52 md:w-80 md:h-80">
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-full animate-pulse" />
-              <div className="relative w-full h-full rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/20">
+              <div className="absolute inset-0 bg-gradient-to-tr from-gold/20 to-transparent rounded-full animate-pulse" />
+              <div className="relative w-full h-full rounded-2xl shadow-lux overflow-hidden ring-1 ring-gold/30">
                 <img src={ZS} alt="Polo Nam" className="w-full h-full object-cover" />
               </div>
             </div>
@@ -138,34 +140,37 @@ export default function Home() {
       {/* ──────── PRODUCT LISTING WITH FILTERS ──────── */}
       <section ref={productRef} id="all-products" className="py-14">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-7"><GradientText from="#1e40af" to="#7c3aed">Tất cả sản phẩm</GradientText></h2>
+          <div className="mb-7">
+            <span className="inline-block text-xs font-semibold tracking-[0.2em] uppercase text-gold-dark mb-2">Khám phá</span>
+            <h2 className="font-serif text-3xl font-bold text-ink"><GradientText from="#8B6914" to="#C9A227">Tất cả sản phẩm</GradientText></h2>
+          </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-6">
+          <div className="bg-white rounded-xl border border-gold/15 p-4 mb-6 shadow-lux">
             <button onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="relative flex items-center gap-1.5 text-sm text-neutral-600 hover:text-neutral-900 transition">
+              className="relative flex items-center gap-1.5 text-sm text-ink-soft hover:text-gold-dark transition">
               <Filter className="h-4 w-4" />
               <span>Bộ lọc</span>
               <ChevronDown className={`h-3.5 w-3.5 transition-all duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
               {(filterCategory !== '' || sortBy !== 'ngayTao' || sortDir !== 'desc') && (
-                <span className="absolute -top-1 -right-4 w-2 h-2 bg-blue-600 rounded-full" />
+                <span className="absolute -top-1 -right-4 w-2 h-2 bg-gold rounded-full" />
               )}
             </button>
             <div className={`overflow-hidden transition-all duration-200 ${isFilterOpen ? 'max-h-96 opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
               <div className="flex flex-wrap gap-3 items-end">
                 <div>
-                  <label className="text-xs text-neutral-500 font-medium tracking-wide">Danh mục</label>
+                  <label className="text-xs text-stone font-medium tracking-wide">Danh mục</label>
                   <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
+                    className="w-full border border-noir-600/15 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold bg-ivory text-ink">
                     <option value="">Tất cả danh mục</option>
                     {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-neutral-500 font-medium tracking-wide">Sắp xếp</label>
+                  <label className="text-xs text-stone font-medium tracking-wide">Sắp xếp</label>
                   <select onChange={(e) => handleSortChange(e.target.value)}
-                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-neutral-800">
+                    className="w-full border border-noir-600/15 rounded-lg px-3 py-2.5 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold bg-ivory text-ink">
                     <option value="">Mới nhất</option>
                     <option value="gia-asc">Giá tăng dần</option>
                     <option value="gia-desc">Giá giảm dần</option>
@@ -180,7 +185,7 @@ export default function Home() {
             <FadeContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-xl overflow-hidden border border-neutral-200 bg-white">
+                <div key={i} className="rounded-xl overflow-hidden border border-gold/15 bg-white">
                   <div className="aspect-square skeleton" />
                   <div className="p-3 space-y-2">
                     <div className="h-3 w-3/4 skeleton" />
@@ -191,13 +196,13 @@ export default function Home() {
             </div>
             </FadeContent>
           ) : allProducts.length === 0 ? (
-            <FadeContent><p className="text-center py-12 text-neutral-400">Không tìm thấy sản phẩm</p></FadeContent>
+            <FadeContent><p className="text-center py-12 text-stone">Không tìm thấy sản phẩm</p></FadeContent>
           ) : (
             <FadeContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {allProducts.map((p, i) => (
                 <div key={p.maSanPham} className="animate-fade-in">
-                  <SpotlightCard spotlightColor="rgba(59, 130, 246, 0.15)" className="h-full">
+                  <SpotlightCard spotlightColor="rgba(201, 162, 39, 0.18)" className="h-full">
                     <ProductCard product={p} showRating={false} />
                   </SpotlightCard>
                 </div>

@@ -1,21 +1,94 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&display=swap');
+
+/* ============================================================
+   ZESTSTORE ATELIER — Design System (Luxury Fashion)
+   Master source of truth. See design-system/MASTER.md
+   ============================================================ */
+
+/* ============================================================
+   ZESTSTORE ATELIER — Design System (Luxury Fashion)
+   Master source of truth. See design-system/MASTER.md
+   ============================================================ */
+@theme {
+  /* --- Brand: Gold (primary accent) --- */
+  --color-gold: #C9A227;
+  --color-gold-light: #E0C158;
+  --color-gold-dark: #8B6914;
+  --color-gold-hover: #B8951F;
+  --color-gold-50: #FBF6E5;
+
+  /* --- Brand: Noir (dark surfaces) --- */
+  --color-noir: #0B0B0F;
+  --color-noir-950: #060608;
+  --color-noir-900: #0F0F15;
+  --color-noir-800: #16161E;
+  --color-noir-700: #1A1A22;
+  --color-noir-600: #25252F;
+  --color-noir-500: #34343F;
+
+  /* --- Brand: Ivory (light surfaces) --- */
+  --color-ivory: #FAF7F0;
+  --color-ivory-100: #F4EFE3;
+
+  /* --- Text --- */
+  --color-ink: #14141A;
+  --color-ink-soft: #2A2A33;
+  --color-stone: #8A8A93;
+  --color-stone-light: #B5B5BE;
+
+  /* --- Accent / Semantic (luxury palette) --- */
+  --color-bordeaux: #7B1E2B;        /* sale / error */
+  --color-bordeaux-light: #A12A3B;
+  --color-emerald-deep: #1F4D3A;    /* success */
+  --color-royal: #2A2466;           /* info / secondary accent */
+
+  /* --- Compatibility aliases (legacy dark-* tokens now defined) --- */
+  --color-dark-900: #0B0B0F;
+  --color-dark-800: #16161E;
+  --color-dark-700: #1A1A22;
+  --color-dark-600: #25252F;
+  --color-dark-border: #25252F;
+  --color-dark-muted: #8A8A93;
+
+  /* --- Typography --- */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Be Vietnam Pro', system-ui, sans-serif;
+
+  /* --- Radius / Shadow --- */
+  --radius-lux: 1rem;
+  --shadow-gold: 0 10px 30px -12px rgba(201, 162, 39, 0.45);
+  --shadow-lux: 0 18px 50px -20px rgba(11, 11, 15, 0.35);
+  --ring-gold: 0 0 0 3px rgba(201, 162, 39, 0.35);
+}
 
 html { scroll-behavior: smooth; }
 
-body { font-weight: 500; font-family: 'Be Vietnam Pro', sans-serif; }
+body { font-weight: 500; font-family: 'Be Vietnam Pro', sans-serif; background: var(--color-ivory); color: var(--color-ink); }
 
-h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', serif; font-weight: 700; }
+/* Headings use the serif display face for a couture feel */
+h1, h2, h3, h4, h5, h6 { font-family: 'Playfair Display', serif; font-weight: 700; letter-spacing: -0.01em; }
 
 p, span, a, li, button, input, select, textarea, label { font-weight: 500; }
 
 .font-semibold { font-weight: 600 !important; }
 .font-bold { font-weight: 700 !important; }
 
+/* Tabular figures for prices / stats */
+.tabular-nums, .price { font-variant-numeric: tabular-nums; }
+
+/* Display utility helpers */
+.font-serif { font-family: 'Playfair Display', serif; }
+.font-sans { font-family: 'Be Vietnam Pro', sans-serif; }
+
 .perspective { perspective: 1000px; }
 .backface-hidden { backface-visibility: hidden; }
 .rotate-y-180 { transform: rotateY(180deg); }
 
+/* ============================================================
+   Keyframes
+   ============================================================ */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -42,8 +115,8 @@ p, span, a, li, button, input, select, textarea, label { font-weight: 500; }
 }
 
 @keyframes pulse-subtle {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
-  50% { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(201, 162, 39, 0); }
 }
 
 @keyframes float {
@@ -61,6 +134,19 @@ p, span, a, li, button, input, select, textarea, label { font-weight: 500; }
   50% { opacity: 1; }
 }
 
+@keyframes shimmer-gold {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes fade-in-up-elegant {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
 @utility animate-fade-in {
   animation: fade-in 0.3s ease-out both;
 }
@@ -93,9 +179,38 @@ p, span, a, li, button, input, select, textarea, label { font-weight: 500; }
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
+@utility animate-fade-in-up-elegant {
+  animation: fade-in-up-elegant 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Gold shimmering text for premium highlights */
+@utility text-gold-shimmer {
+  background: linear-gradient(110deg, #8B6914 0%, #C9A227 30%, #F4E2A6 50%, #C9A227 70%, #8B6914 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-gold 4s linear infinite;
+}
+
+/* Hairline gold divider */
+@utility divider-gold {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(201, 162, 39, 0.6), transparent);
+}
+
 @utility skeleton {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background: linear-gradient(90deg, #ece7da 25%, #f6f1e3 50%, #ece7da 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 0.375rem;
 }
+
+/* Custom scrollbar — luxury */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(201, 162, 39, 0.35); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(201, 162, 39, 0.55); }
+
+/* Focus-visible consistency (accessibility) */
+:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }

@@ -182,10 +182,11 @@ public class ThongKeService {
                 .stream().limit(limit).map(o -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("maDonHang", o.getMaDonHang());
-                    m.put("tenNguoiNhan", o.getTenNguoiNhan());
+                    m.put("hoTen", o.getTenNguoiNhan());
                     m.put("tongTien", o.getTongTien());
                     m.put("trangThaiDon", o.getTrangThaiDon());
-                    m.put("ngayDat", o.getNgayDat());
+                    m.put("ngayTao", o.getNgayDat());
+                    m.put("loaiDonHang", o.getLoaiDonHang());
                     return m;
                 }).collect(Collectors.toList());
     }

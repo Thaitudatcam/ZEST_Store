@@ -37,10 +37,10 @@ function VND(n) {
 }
 
 const cards = [
-  { key: 'orders',   label: 'Đơn hàng',   icon: Package,  grad: 'from-blue-500 to-blue-600',       shadow: 'shadow-blue-200/50',      hoverBg: 'hover:border-blue-200 hover:shadow-blue-200/30' },
-  { key: 'revenue',  label: 'Doanh thu',  icon: DollarSign, grad: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-200/50',    hoverBg: 'hover:border-emerald-200 hover:shadow-emerald-200/30' },
-  { key: 'users',    label: 'Người dùng', icon: Users,     grad: 'from-violet-500 to-violet-600',   shadow: 'shadow-violet-200/50',     hoverBg: 'hover:border-violet-200 hover:shadow-violet-200/30' },
-  { key: 'products', label: 'Sản phẩm',   icon: Star,     grad: 'from-amber-500 to-amber-600',     shadow: 'shadow-amber-200/50',      hoverBg: 'hover:border-amber-200 hover:shadow-amber-200/30' },
+  { key: 'orders',   label: 'Đơn hàng',   icon: Package,  grad: 'from-gold to-gold-dark',       shadow: 'shadow-gold/40',      hoverBg: 'hover:border-gold/40 hover:shadow-gold/20' },
+  { key: 'revenue',  label: 'Doanh thu',  icon: DollarSign, grad: 'from-emerald-deep to-[#2a6b50]', shadow: 'shadow-emerald-deep/40',    hoverBg: 'hover:border-emerald-deep/40 hover:shadow-emerald-deep/20' },
+  { key: 'users',    label: 'Người dùng', icon: Users,     grad: 'from-royal to-[#3d3580]',   shadow: 'shadow-royal/40',     hoverBg: 'hover:border-royal/40 hover:shadow-royal/20' },
+  { key: 'products', label: 'Sản phẩm',   icon: Star,     grad: 'from-noir-700 to-noir',     shadow: 'shadow-noir/40',      hoverBg: 'hover:border-noir/40 hover:shadow-noir/20' },
 ]
 
 const positions = [
@@ -143,18 +143,18 @@ export default function Dashboard() {
     <div className="relative min-h-[calc(100vh-7rem)] flex items-center justify-center">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl" />
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-gold/8 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-royal/8 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gold/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-xl mx-auto">
         {/* Greeting */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="font-serif text-2xl font-bold text-ink">
             Chào {user?.hoTen || 'Admin'}!
           </h1>
-          <p className="text-sm text-gray-400 mt-1">{formatTime(now)}</p>
+          <p className="text-sm text-stone mt-1 tabular-nums">{formatTime(now)}</p>
         </div>
 
         {/* Grid */}
@@ -166,19 +166,19 @@ export default function Dashboard() {
             return (
               <button key={s.key}
                 onClick={() => handleStatClick(s.key)}
-                className={`${pos.grid} relative group backdrop-blur-xl bg-white/80 border border-white/40 ${s.shadow} ${s.hoverBg} ${pos.extra} transition-all duration-300 p-5 h-[120px] flex flex-col items-center justify-center`}
+                className={`${pos.grid} relative group backdrop-blur-xl bg-white/80 border border-gold/15 ${s.shadow} ${s.hoverBg} ${pos.extra} transition-all duration-300 p-5 h-[120px] flex flex-col items-center justify-center`}
               >
                 <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.grad} flex items-center justify-center shadow-lg ${s.shadow} group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300`}>
                   <Icon className="h-5 w-5 text-white" />
                 </div>
                 {s.key === 'orders' && getRawValue('orders') !== null ? (
-                  <CountUp to={getRawValue('orders')} duration={1.5} className="text-xl font-bold text-gray-800 leading-tight mt-1.5" separator="." />
+                  <CountUp to={getRawValue('orders')} duration={1.5} className="text-xl font-bold text-ink leading-tight mt-1.5 tabular-nums" separator="." />
                 ) : s.key === 'orders' ? (
-                  <span className="text-xl font-bold text-gray-800 leading-tight mt-1.5">...</span>
+                  <span className="text-xl font-bold text-ink leading-tight mt-1.5">...</span>
                 ) : (
-                  <span className="text-xl font-bold text-gray-800 leading-tight mt-1.5">{fmt(getRawValue(s.key) ?? 0)}</span>
+                  <span className="text-xl font-bold text-ink leading-tight mt-1.5 tabular-nums">{fmt(getRawValue(s.key) ?? 0)}</span>
                 )}
-                <span className="text-[10px] text-gray-400 font-medium">{s.label}</span>
+                <span className="text-[10px] text-stone font-medium">{s.label}</span>
               </button>
             )
           })}
@@ -187,23 +187,23 @@ export default function Dashboard() {
           <div className="col-start-2 row-start-1 row-span-3 flex flex-col items-center justify-center">
             <div className="relative flex flex-col items-center">
               {/* Speech bubble */}
-              <div className="absolute -top-[140px] left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 px-6 py-4 min-w-[280px] text-center animate-fade-in z-10">
+              <div className="absolute -top-[140px] left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl rounded-3xl shadow-lux border border-gold/20 px-6 py-4 min-w-[280px] text-center animate-fade-in z-10">
                 {robotReply ? (
                   <>
-                    <p className="text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: robotReply }} />
-                    <p className="text-[10px] text-gray-400 mt-1.5">{formatTime(now)}</p>
+                    <p className="text-sm text-ink-soft leading-relaxed" dangerouslySetInnerHTML={{ __html: robotReply }} />
+                    <p className="text-[10px] text-stone mt-1.5">{formatTime(now)}</p>
                   </>
                 ) : (
                     <>
-                      <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-wider tabular-nums leading-tight">{formatTime(now)}</p>
-                      <p className="text-sm text-gray-500">{robotGreetings[slot][greetIdx]}</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-gold to-gold-dark bg-clip-text text-transparent tracking-wider tabular-nums leading-tight">{formatTime(now)}</p>
+                      <p className="text-sm text-stone">{robotGreetings[slot][greetIdx]}</p>
                     </>
                 )}
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 border-r border-b border-white/60 rotate-45" />
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 border-r border-b border-gold/20 rotate-45" />
               </div>
 
               {/* Glow */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-cyan-400/20 rounded-full blur-3xl animate-glow-pulse" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gold/20 rounded-full blur-3xl animate-glow-pulse" />
 
               <div className="relative flex flex-col items-center animate-float">
                 <div className="flex flex-col items-center -mb-px">
@@ -250,7 +250,7 @@ export default function Dashboard() {
                   <div className="w-[25px] h-[22px] rounded-b-[12px] bg-gradient-to-b from-blue-600 to-indigo-700 ring-[1px] ring-white/10" />
                 </div>
               </div>
-              <span className="text-xs text-gray-400 font-medium mt-3 tracking-wider">TRỢ LÝ AI</span>
+              <span className="text-xs text-stone font-medium mt-3 tracking-wider">TRỢ LÝ AI</span>
             </div>
           </div>
         </div>

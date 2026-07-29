@@ -30,28 +30,32 @@ export default function ProductCard({ product, showRating = true }) {
   }
 
   return (
-    <Link to={`/products/${slug}`} className="group bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 relative">
-      <div className="aspect-square bg-gray-100 overflow-hidden relative">
-                    <SafeImg src={product.urlAnhDaiDien} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} />
+    <Link to={`/products/${slug}`} className="group bg-white rounded-2xl shadow-lux overflow-hidden hover:-translate-y-1 hover:shadow-gold transition-all duration-300 relative border border-noir-600/5">
+      <div className="aspect-square bg-ivory-100 overflow-hidden relative">
+        <SafeImg src={product.urlAnhDaiDien} alt={product.tenSanPham} className={`w-full h-full object-cover object-center group-hover:scale-105 transition duration-500 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`} />
         {user && (
-          <button onClick={toggleWish} className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full hover:bg-white transition z-10" disabled={isOutOfStock}>
-            <Heart className={`h-4 w-4 ${wished ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+          <button onClick={toggleWish} className="absolute top-2.5 right-2.5 p-1.5 bg-white/85 backdrop-blur-sm rounded-full hover:bg-white transition z-10 shadow-sm" disabled={isOutOfStock} aria-label="Yêu thích">
+            <Heart className={`h-4 w-4 transition-colors ${wished ? 'fill-bordeaux text-bordeaux' : 'text-ink-soft'}`} />
           </button>
         )}
-        {discount && !isOutOfStock && <span className="absolute bottom-2 left-2 bg-red-500 rounded-full px-2 py-0.5"><ShinyText text={`-${discount}%`} className="text-[10px] font-bold leading-none" color="#fff" shineColor="#ffdddd" speed={1.5} spread={80} /></span>}
+        {discount && !isOutOfStock && (
+          <span className="absolute bottom-2.5 left-2.5 bg-bordeaux rounded-full px-2.5 py-1">
+            <ShinyText text={`-${discount}%`} className="text-[10px] font-bold leading-none" color="#fff" shineColor="#f4cccc" speed={1.5} spread={80} />
+          </span>
+        )}
         {isOutOfStock && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-lg z-10">
+          <span className="absolute inset-0 flex items-center justify-center bg-noir/55 text-ivory font-serif font-bold text-lg z-10 tracking-wide">
             Hết hàng
           </span>
         )}
       </div>
 
-      <div className="p-3">
-        <h3 className="font-semibold text-sm text-gray-800 truncate">{product.tenSanPham}</h3>
+      <div className="p-3.5">
+        <h3 className="font-semibold text-sm text-ink truncate">{product.tenSanPham}</h3>
         {colors.length > 0 && (
           <div className="flex gap-1 mt-1.5">
             {colors.map((c, i) => (
-              <span key={i} className="inline-block w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: c.maMauHex || '#ccc' }} title={c.mauSac} />
+              <span key={i} className="inline-block w-3.5 h-3.5 rounded-full border border-noir-600/15" style={{ backgroundColor: c.maMauHex || '#ccc' }} title={c.mauSac} />
             ))}
           </div>
         )}
@@ -59,20 +63,20 @@ export default function ProductCard({ product, showRating = true }) {
           <div className="flex items-center gap-1.5 mt-1.5">
             <div className="flex">
               {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} className={`h-3 w-3 ${i <= Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
+                <Star key={i} className={`h-3 w-3 ${i <= Math.round(rating) ? 'fill-gold text-gold' : 'text-stone-light/40'}`} />
               ))}
             </div>
-            <span className="text-[11px] text-gray-400">({reviewCount})</span>
+            <span className="text-[11px] text-stone">({reviewCount})</span>
           </div>
         )}
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-2">
           {discount ? (
             <>
-              <p className="text-blue-700 font-bold text-sm">{VND(price * (1 - discount / 100))}</p>
-              <p className="text-gray-400 text-xs line-through">{VND(price)}</p>
+              <p className="text-gold-dark font-bold text-sm tabular-nums">{VND(price * (1 - discount / 100))}</p>
+              <p className="text-stone-light text-xs line-through tabular-nums">{VND(price)}</p>
             </>
           ) : (
-            <p className="text-blue-700 font-bold text-sm">{VND(price)}</p>
+            <p className="text-gold-dark font-bold text-sm tabular-nums">{VND(price)}</p>
           )}
         </div>
       </div>
