@@ -1,21 +1,54 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Check, User, Mail, Lock, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import Input from '../components/ui/Input'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 import logoImg from '../pictures/ZS.png'
 import bgImage from '../pictures/anhnen.png'
+
+/* ── 3D page-turn animation keyframe name constants ── */
+const ANIM_TURN_LEFT = 'turn-left'
+const ANIM_TURN_RIGHT = 'turn-right'
+const ANIM_DURATION = 860 // ms
 
 export default function AuthPage() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const reduced = useReducedMotion()
 
-  const [active, setActive] = useState(pathname === '/login')
+  const isSignUp = pathname === '/register'
+  const [animating, setAnimating] = useState(false)
+  const [showSignUp, setShowSignUp] = useState(isSignUp)
+  const [animKey, setAnimKey] = useState(0) // force re-trigger animation
 
-  const handleToggle = (toLogin) => {
-    setActive(toLogin)
-    navigate(toLogin ? '/login' : '/register', { replace: true })
+  /* Sync with route on mount */
+  useEffect(() => { setShowSignUp(isSignUp) }, [pathname])
+
+  const toggle = useCallback((toSignUp) => {
+    if (animating) return
+    setAnimating(true)
+    setShowSignUp(toSignUp)
+    setAnimKey((k) => k + 1)
+    setTimeout(() => setAnimating(false), ANIM_DURATION)
+    navigate(toSignUp ? '/register' : '/login', { replace: true })
+  }, [animating, navigate])
+
+  /* ── Determine overlay animation class ── */
+  const overlayAnimClass = showSignUp ? ANIM_TURN_LEFT : ANIM_TURN_RIGHT
+
+  /* ── Inline style for animation (avoids Tailwind purge issues) ── */
+  const overlayStyle = {
+    animationName: overlayAnimClass,
+    animationDuration: `${ANIM_DURATION}ms`,
+    animationTimingFunction: 'linear',
+    animationFillMode: 'forwards',
+    // On reduced motion, just snap position without animation
+    ...(reduced && {
+      animation: 'none',
+      transform: showSignUp ? 'translate3d(-100%, 0, 0)' : 'translate3d(0, 0, 0)',
+    }),
   }
 
   return (
@@ -23,16 +56,103 @@ export default function AuthPage() {
       style={{ backgroundImage: `url(${bgImage})` }}>
       <div className="absolute inset-0 bg-noir/70 backdrop-blur-sm" />
 
+      {/* ─── Mobile Layout (visible below md) ─── */}
+      <div className="w-full max-w-md rounded-2xl shadow-lux overflow-hidden relative border border-gold/20 md:hidden">
+        <div className="bg-noir flex flex-col items-center pt-10 pb-6 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
+          <img src={logoImg} alt="ZestStore" className="w-16 h-16 object-contain rounded-md ring-1 ring-gold/30 mb-2 relative z-10" />
+          <div className="w-6 h-px bg-gold/60 mx-auto mb-1.5" />
+          <p className="text-xs text-gold/80 tracking-[0.25em] uppercase relative z-10">Tinh hoa thời trang Việt</p>
+        </div>
+
+        <div className="bg-ivory px-6 py-8">
+          <AnimatePresence mode="wait">
+            {showSignUp ? (
+              <motion.div
+                key="mobile-register"
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -20 }}
+                transition={{ duration: 0.25 }}>
+                <RegisterForm onSuccess={() => navigate('/')} onSwitch={() => toggle(false)} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="mobile-login"
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -20 }}
+                transition={{ duration: 0.25 }}>
+                <LoginForm
+                  onSuccess={(data) => {
+                    if (data.vaiTro === 'ADMIN') navigate('/admin')
+                    else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
+                    else navigate('/')
+                  }}
+                  onSwitch={() => toggle(true)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ─── Desktop Layout: 3D Flip Auth Card (hidden below md) ─── */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-[920px] h-[540px] rounded-2xl shadow-lux flex overflow-hidden relative border border-gold/20">
-        {/* Left Panel — Noir + Gold accent */}
-        <div className="relative w-1/2 bg-noir flex flex-col items-center justify-center text-ivory p-10 overflow-hidden">
+        className="hidden md:flex w-full max-w-[920px] h-[540px] rounded-2xl shadow-lux overflow-hidden relative border border-gold/20"
+        style={{ perspective: '1500px' }}>
+
+        {/* Left Panel: Form Area (always visible behind overlay) */}
+        <div className="relative w-1/2 bg-ivory overflow-hidden">
+          <div className="absolute -top-20 -left-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
+
+          <div className="relative z-10 w-full h-full flex flex-col justify-center px-10">
+            <AnimatePresence mode="wait">
+              {showSignUp ? (
+                <motion.div
+                  key="register-form"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  aria-hidden={animating}
+                  {...(animating && { inert: '' })}>
+                  <RegisterForm onSuccess={() => navigate('/')} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="login-form"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  aria-hidden={animating}
+                  {...(animating && { inert: '' })}>
+                  <LoginForm onSuccess={(data) => {
+                    if (data.vaiTro === 'ADMIN') navigate('/admin')
+                    else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
+                    else navigate('/')
+                  }} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Right Panel: 3D Overlay (noir panel + CTA) */}
+        <div
+          key={animKey}
+          className="absolute top-0 right-0 w-1/2 h-full bg-noir flex flex-col items-center justify-center text-ivory p-10 overflow-hidden z-20"
+          style={{
+            ...overlayStyle,
+            transformStyle: 'preserve-3d',
+            backfaceVisibility: 'hidden',
+            willChange: animating ? 'transform' : 'auto',
+          }}>
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-gold/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-gold/5 rounded-full blur-3xl" />
-          {/* Hairline gold corner accents */}
           <div className="absolute top-6 left-6 w-8 h-8 border-t border-l border-gold/40" />
           <div className="absolute bottom-6 right-6 w-8 h-8 border-b border-r border-gold/40" />
 
@@ -57,55 +177,33 @@ export default function AuthPage() {
 
             <AnimatePresence mode="wait">
               <motion.div
-                key={active ? 'login' : 'register'}
+                key={showSignUp ? 'login-cta' : 'register-cta'}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className="w-full">
                 <h2 className="font-serif text-2xl font-bold mb-2.5 text-ivory">
-                  {active ? 'Chưa có tài khoản?' : 'Chào mừng trở lại!'}
+                  {showSignUp ? 'Chào mừng trở lại!' : 'Chưa có tài khoản?'}
                 </h2>
                 <p className="text-sm text-stone-light/70 mb-6 max-w-xs mx-auto leading-relaxed">
-                  {active
-                    ? 'Tạo tài khoản ngay và bắt đầu hành trình thời trang cùng ZestStore hôm nay!'
-                    : 'Đăng nhập để truy cập tủ đồ cá nhân và tiếp tục hành trình thời trang của bạn.'}
+                  {showSignUp
+                    ? 'Đăng nhập để truy cập tủ đồ cá nhân và tiếp tục hành trình thời trang của bạn.'
+                    : 'Tạo tài khoản ngay và bắt đầu hành trình thời trang cùng ZestStore hôm nay!'}
                 </p>
-                <button onClick={() => handleToggle(!active)}
-                  className="group inline-flex items-center gap-2 px-8 py-3 bg-gold text-noir font-semibold rounded-full text-sm shadow-gold hover:bg-gold-light hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.97]">
-                  {active ? 'Tạo Tài Khoản' : 'Đăng Nhập'}
+                <button
+                  onClick={() => toggle(!showSignUp)}
+                  disabled={animating}
+                  className="group inline-flex items-center gap-2 px-8 py-3 bg-gold text-noir font-semibold rounded-full text-sm shadow-gold hover:bg-gold-light hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed">
+                  {showSignUp ? 'Đăng Nhập' : 'Tạo Tài Khoản'}
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </motion.div>
             </AnimatePresence>
 
-            {/* Bottom decorative dots */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
-              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${active ? 'bg-ivory/15' : 'bg-gold/80'}`} />
-              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${active ? 'bg-gold/80' : 'bg-ivory/15'}`} />
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel — Ivory form */}
-        <div className="w-1/2 bg-ivory relative overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
-
-          <div className="w-[200%] h-full flex transition-transform duration-500 ease-in-out"
-            style={{ transform: active ? 'translateX(-50%)' : 'translateX(0%)' }}>
-            {/* Register */}
-            <div className="w-1/2 h-full shrink-0 flex flex-col justify-center px-10 relative z-10">
-              <RegisterForm onSuccess={() => navigate('/')}
-                onSwitch={() => { setActive(true); navigate('/login', { replace: true }) }} />
-            </div>
-            {/* Login */}
-            <div className="w-1/2 h-full shrink-0 flex flex-col justify-center px-10 relative z-10">
-              <LoginForm onSuccess={(data) => {
-                if (data.vaiTro === 'ADMIN') navigate('/admin')
-                else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
-                else navigate('/')
-              }}
-                onSwitch={() => { setActive(false); navigate('/register', { replace: true }) }} />
+              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${showSignUp ? 'bg-gold/80' : 'bg-ivory/15'}`} />
+              <span className={`w-2 h-2 rounded-full transition-all duration-300 ${showSignUp ? 'bg-ivory/15' : 'bg-gold/80'}`} />
             </div>
           </div>
         </div>
@@ -114,6 +212,9 @@ export default function AuthPage() {
   )
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   Register Form
+   ══════════════════════════════════════════════════════════════════ */
 function RegisterForm({ onSuccess, onSwitch }) {
   const { register } = useAuth()
   const [form, setForm] = useState({ hoTen: '', email: '', matKhau: '' })
@@ -163,16 +264,21 @@ function RegisterForm({ onSuccess, onSwitch }) {
         {sub ? 'Đang tạo tài khoản...' : 'Tạo Tài Khoản'}
       </button>
 
-      <p className="text-xs text-stone text-center pt-1">
-        Đã có tài khoản?{' '}
-        <button type="button" onClick={onSwitch} className="text-gold-dark hover:text-gold font-medium hover:underline">
-          Đăng Nhập
-        </button>
-      </p>
+      {onSwitch && (
+        <p className="text-xs text-stone text-center pt-1">
+          Đã có tài khoản?{' '}
+          <button type="button" onClick={onSwitch} className="text-gold-dark hover:text-gold font-medium hover:underline">
+            Đăng Nhập
+          </button>
+        </p>
+      )}
     </form>
   )
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   Login Form
+   ══════════════════════════════════════════════════════════════════ */
 function LoginForm({ onSuccess, onSwitch }) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
@@ -221,12 +327,14 @@ function LoginForm({ onSuccess, onSwitch }) {
         {sub ? 'Đang đăng nhập...' : 'Đăng Nhập'}
       </button>
 
-      <p className="text-xs text-stone text-center pt-1">
-        Chưa có tài khoản?{' '}
-        <button type="button" onClick={onSwitch} className="text-gold-dark hover:text-gold font-medium hover:underline">
-          Tạo Ngay
-        </button>
-      </p>
+      {onSwitch && (
+        <p className="text-xs text-stone text-center pt-1">
+          Chưa có tài khoản?{' '}
+          <button type="button" onClick={onSwitch} className="text-gold-dark hover:text-gold font-medium hover:underline">
+            Tạo Ngay
+          </button>
+        </p>
+      )}
     </form>
   )
 }
