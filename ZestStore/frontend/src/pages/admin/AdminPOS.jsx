@@ -27,7 +27,7 @@ export default function AdminPOS() {
   const [colors, setColors] = useState([])
   const [categories, setCategories] = useState([])
   const [soDiemSuDung, setSoDiemSuDung] = useState(0)
-  const [customerDiem, setCustomerDiem] = useState(null)
+  const [customerDiem, setCustomerDiem] = useState({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
   const [apDungDiem, setApDungDiem] = useState(false)
   const [categoryId, setCategoryId] = useState('')
 
@@ -48,6 +48,7 @@ export default function AdminPOS() {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [searchingCustomer, setSearchingCustomer] = useState(false)
   const customerRef = useRef(null)
+  const justSelectedRef = useRef(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickForm, setQuickForm] = useState({ hoTen: '', soDienThoai: '', email: '', matKhau: '' })
   const [quickSaving, setQuickSaving] = useState(false)
@@ -71,6 +72,7 @@ export default function AdminPOS() {
 
   useEffect(() => {
     const handler = setTimeout(async () => {
+      if (justSelectedRef.current) { justSelectedRef.current = false; return }
       if (!customerSearch.trim()) {
         setCustomerResults([])
         return
@@ -115,12 +117,13 @@ export default function AdminPOS() {
     setSelectedCustomer(c)
     setTenKhach(c.hoTen)
     setSdtKhach(c.soDienThoai || '')
+    justSelectedRef.current = true
     setCustomerSearch(c.hoTen + (c.soDienThoai ? ` (${c.soDienThoai})` : ''))
     setShowCustomerDropdown(false)
     setSoDiemSuDung(0)
     setApDungDiem(false)
     setCoupon(null); setCouponCode(''); setCouponMsg('')
-    getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem(null))
+    getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 }))
     fetchAvailableCoupons(c.maNguoiDung)
   }
 
@@ -130,7 +133,7 @@ export default function AdminPOS() {
     setSdtKhach('')
     setCustomerSearch('')
     setCustomerResults([])
-    setCustomerDiem(null)
+    setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
     setSoDiemSuDung(0)
     setApDungDiem(false)
     setAvailableCoupons([])
@@ -654,47 +657,49 @@ export default function AdminPOS() {
               </div>
             )}
           </div>
-          {selectedCustomer && customerDiem !== null && (
-            <div className="border-t pt-2 space-y-1">
+          <div className="border-t pt-2 space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-stone flex items-center gap-1">
                   <Coins className="h-3.5 w-3.5 text-gold" /> Điểm tích lũy
                 </label>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => {})}
-                    className="p-1 text-stone hover:text-gold hover:bg-gold/10 rounded transition" title="Cập nhật số dư">
-                    <RefreshCw className="h-3 w-3" />
-                  </button>
+                  {selectedCustomer && (
+                    <button onClick={() => getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => {})}
+                      className="p-1 text-stone hover:text-gold hover:bg-gold/10 rounded transition" title="Cập nhật số dư">
+                      <RefreshCw className="h-3 w-3" />
+                    </button>
+                  )}
                   <a href="/tich-diem" target="_blank" rel="noopener noreferrer"
                     className="p-1 text-stone hover:text-gold hover:bg-gold/10 rounded transition" title="Lịch sử giao dịch">
                     <History className="h-3 w-3" />
                   </a>
                 </div>
               </div>
-              {customerDiem.soDiem > 0 ? (
-                <div className="space-y-1">
-                  <p className="text-xs text-stone">Số dư: <strong className="text-gold-hover">{customerDiem.soDiem.toLocaleString()} điểm</strong></p>
-                  <label className="flex items-center gap-2 text-sm">
+              {selectedCustomer && customerDiem.soDiem > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span className="text-sm text-stone">Số dư: <strong className="text-gold-hover">{customerDiem.soDiem.toLocaleString()} điểm</strong></span>
+                  <label className="flex items-center gap-1.5 text-sm cursor-pointer">
                     <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setSoDiemSuDung(0) }} className="accent-amber-500" />
                     Có áp dụng điểm
                   </label>
                   {apDungDiem && (
-                    <div className="flex gap-2">
+                    <>
                       <input type="number" min={0} max={customerDiem.soDiem} value={soDiemSuDung}
                         onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), customerDiem.soDiem))}
-                        placeholder="Số điểm muốn dùng"
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                    </div>
-                  )}
-                  {apDungDiem && soDiemSuDung > 0 && (
-                    <p className="text-xs text-gold">Giảm thêm {VND(soDiemSuDung * 1000)}</p>
+                        placeholder="Số điểm"
+                        className="w-24 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                      {soDiemSuDung > 0 && (
+                        <span className="text-xs text-gold">-{VND(soDiemSuDung * 1000)}</span>
+                      )}
+                    </>
                   )}
                 </div>
-              ) : (
+              ) : selectedCustomer ? (
                 <p className="text-xs text-stone">Khách chưa có điểm tích lũy</p>
+              ) : (
+                <p className="text-xs text-stone">Chọn khách hàng để xem điểm tích lũy</p>
               )}
             </div>
-          )}
           <div className="space-y-1">
             <div className="flex justify-between text-sm text-stone">
               <span>Tạm tính:</span>

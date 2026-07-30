@@ -60,4 +60,13 @@ public class LookupService {
         }
         mauSacRepository.delete(color);
     }
+
+    public void deleteBrand(Integer id) {
+        ThuongHieu brand = thuongHieuRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand", id));
+        if (bienTheRepository.existsByThuongHieu_MaThuongHieuAndNgayXoaIsNull(id)) {
+            throw new BadRequestException("Cannot delete brand because it is in use by existing variants");
+        }
+        thuongHieuRepository.delete(brand);
+    }
 }

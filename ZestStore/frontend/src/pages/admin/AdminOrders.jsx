@@ -6,7 +6,7 @@ import { Search, Filter, Eye, Calendar, ChevronDown } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { SkeletonTable } from '../../components/Skeleton'
 
-const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'MoMo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'MoMo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR', 7: 'Ví' }
 const PAYMENT_STATUS_LABELS = { 1: 'Chờ TT', 2: 'Đã TT', 3: 'Thất bại' }
 
 function PaymentInfo({ payments }) {

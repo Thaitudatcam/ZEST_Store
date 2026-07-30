@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getCategories } from '../../api/categories'
 import { uploadProductImage, uploadVariantImage, generateDescription } from '../../api/products'
-import { createCategory, createBrand, createColor, createSize } from '../../api/admin'
+import { createCategory, deleteCategory, createBrand, deleteBrand, createColor, createSize } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
 import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles } from 'lucide-react'
@@ -40,6 +40,8 @@ export default function AdminProductForm() {
   const [showCatModal, setShowCatModal] = useState(false)
   const [showBrandModal, setShowBrandModal] = useState(false)
   const [quickAddName, setQuickAddName] = useState('')
+  const [sessionCreatedCatIds, setSessionCreatedCatIds] = useState([])
+  const [sessionCreatedBrandIds, setSessionCreatedBrandIds] = useState([])
   const [showColorModal, setShowColorModal] = useState(false)
   const [showSizeModal, setShowSizeModal] = useState(false)
   const [quickColorName, setQuickColorName] = useState('')
@@ -385,6 +387,7 @@ export default function AdminProductForm() {
       const newCat = await createCategory({ tenDanhMuc: quickAddName.trim(), slug })
       setCategories(prev => [...prev, newCat])
       setProduct(p => ({ ...p, maDanhMuc: newCat.maDanhMuc }))
+      setSessionCreatedCatIds(prev => [...prev, newCat.maDanhMuc])
       setShowCatModal(false)
       setQuickAddName('')
       toast.success('Thêm danh mục thành công')
@@ -397,10 +400,31 @@ export default function AdminProductForm() {
       const newBrand = await createBrand({ tenThuongHieu: quickAddName.trim() })
       setBrands(prev => [...prev, newBrand])
       setProduct(p => ({ ...p, maThuongHieu: newBrand.maThuongHieu }))
+      setSessionCreatedBrandIds(prev => [...prev, newBrand.maThuongHieu])
       setShowBrandModal(false)
       setQuickAddName('')
       toast.success('Thêm thương hiệu thành công')
     } catch { toast.error('Lỗi thêm thương hiệu') }
+  }
+
+  const handleUndoQuickCategory = async (id) => {
+    try {
+      await deleteCategory(id)
+      setCategories(prev => prev.filter(c => c.maDanhMuc !== id))
+      setSessionCreatedCatIds(prev => prev.filter(cid => cid !== id))
+      if (product.maDanhMuc === id) setProduct(p => ({ ...p, maDanhMuc: '' }))
+      toast.success('Đã xóa danh mục')
+    } catch { toast.error('Không thể xóa danh mục (có thể đã có sản phẩm)') }
+  }
+
+  const handleUndoQuickBrand = async (id) => {
+    try {
+      await deleteBrand(id)
+      setBrands(prev => prev.filter(b => b.maThuongHieu !== id))
+      setSessionCreatedBrandIds(prev => prev.filter(bid => bid !== id))
+      if (product.maThuongHieu === id) setProduct(p => ({ ...p, maThuongHieu: '' }))
+      toast.success('Đã xóa thương hiệu')
+    } catch { toast.error('Không thể xóa thương hiệu (có thể đã có sản phẩm)') }
   }
 
   const handleQuickAddColor = async () => {
@@ -496,11 +520,20 @@ export default function AdminProductForm() {
                     <FolderPlus className="h-4 w-4" />
                   </button>
                 </div>
-                <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
-                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
-                  <option value="">-- Chọn danh mục --</option>
-                  {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
-                </select>
+                <div className="relative">
+                  <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
+                    required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold pr-8">
+                    <option value="">-- Chọn danh mục --</option>
+                    {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
+                  </select>
+                  {sessionCreatedCatIds.includes(Number(product.maDanhMuc)) && (
+                    <button type="button" onClick={() => handleUndoQuickCategory(Number(product.maDanhMuc))}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-bordeaux hover:bg-bordeaux/10 rounded transition"
+                      title="Xóa danh mục vừa thêm">
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -510,11 +543,20 @@ export default function AdminProductForm() {
                     <Tag className="h-4 w-4" />
                   </button>
                 </div>
-                <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
-                  required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
-                  <option value="">-- Chọn thương hiệu --</option>
-                  {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
-                </select>
+                <div className="relative">
+                  <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
+                    required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold pr-8">
+                    <option value="">-- Chọn thương hiệu --</option>
+                    {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
+                  </select>
+                  {sessionCreatedBrandIds.includes(Number(product.maThuongHieu)) && (
+                    <button type="button" onClick={() => handleUndoQuickBrand(Number(product.maThuongHieu))}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-bordeaux hover:bg-bordeaux/10 rounded transition"
+                      title="Xóa thương hiệu vừa thêm">
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             <div>

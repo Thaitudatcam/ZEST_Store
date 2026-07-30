@@ -51,4 +51,6 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
     List<Object[]> minGiaBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
 
     boolean existsByMauSac_MaMauSacAndNgayXoaIsNull(Integer maMauSac);
+
+    boolean existsByThuongHieu_MaThuongHieuAndNgayXoaIsNull(Integer maThuongHieu);
 }

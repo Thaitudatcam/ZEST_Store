@@ -56,4 +56,11 @@ public class LookupController {
         lookupService.deleteColor(id);
         return ResponseEntity.ok(java.util.Map.of("message", "Color deleted successfully"));
     }
+
+    @DeleteMapping("/brands/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteBrand(@PathVariable Integer id) {
+        lookupService.deleteBrand(id);
+        return ResponseEntity.ok(java.util.Map.of("message", "Brand deleted successfully"));
+    }
 }
