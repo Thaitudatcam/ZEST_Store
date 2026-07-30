@@ -30,4 +30,7 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
 
     @Query("SELECT u FROM NguoiDung u WHERE u.trangThai = 1 AND EXISTS (SELECT 1 FROM DonHang d WHERE d.nguoiDung.maNguoiDung = u.maNguoiDung AND d.trangThaiDon IN (4, 6))")
     List<NguoiDung> findCustomersDaMuaHang();
+
+    /** Active users whose role is one of the given names (e.g. ADMIN, STAFF) — used to fan-out notifications. */
+    List<NguoiDung> findByVaiTro_TenVaiTroInAndTrangThai(List<String> tenVaiTro, Integer trangThai);
 }

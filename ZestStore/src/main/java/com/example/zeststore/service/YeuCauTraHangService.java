@@ -27,6 +27,7 @@ public class YeuCauTraHangService {
     private final MucDonHangRepository mucDonHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
     private final OrderSseService orderSseService;
+    private final ThongBaoService thongBaoService;
     private final ViService viService;
 
     @Transactional
@@ -75,6 +76,15 @@ public class YeuCauTraHangService {
                 .build());
 
         orderSseService.sendOrderStatusUpdate(orderId, 7, oldStatus, "user", lyDo);
+
+        // Notify admins/staff about the return request.
+        try {
+            thongBaoService.taoThongBaoChoAdmin(
+                    "Yêu cầu trả hàng #" + orderId,
+                    "Khách " + user.getHoTen() + " yêu cầu trả đơn #" + orderId + ". Lý do: " + lyDo,
+                    "YEU_CAU_TRA_HANG",
+                    "/admin/returns");
+        } catch (Exception ignored) {}
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maYeuCau", yeuCau.getMaYeuCau());
@@ -140,6 +150,16 @@ public class YeuCauTraHangService {
 
         orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 8, oldStatus, "admin", "return_approved");
 
+        // Notify the customer that their return request was approved.
+        try {
+            thongBaoService.taoThongBao(
+                    order.getNguoiDung().getMaNguoiDung(),
+                    "Yêu cầu trả hàng #" + order.getMaDonHang() + " đã được chấp nhận",
+                    "Đơn hàng #" + order.getMaDonHang() + " hoàn tiền " + refundAmount + "₫.",
+                    "TRA_HANG_DUOC_CHAP_NHAN",
+                    "/orders/" + order.getMaDonHang());
+        } catch (Exception ignored) {}
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("message", "Đã chấp nhận trả hàng");
         result.put("soTienHoan", refundAmount);
@@ -183,6 +203,16 @@ public class YeuCauTraHangService {
                 .build());
 
         orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), revertStatus, oldStatus, "admin", "return_rejected");
+
+        // Notify the customer that their return request was rejected.
+        try {
+            thongBaoService.taoThongBao(
+                    order.getNguoiDung().getMaNguoiDung(),
+                    "Yêu cầu trả hàng #" + order.getMaDonHang() + " bị từ chối",
+                    "Lý do: " + (lyDoTuChoi != null ? lyDoTuChoi : "Không hợp lệ"),
+                    "TRA_HANG_BI_TU_CHOI",
+                    "/orders/" + order.getMaDonHang());
+        } catch (Exception ignored) {}
 
         return Map.of("message", "Đã từ chối yêu cầu trả hàng");
     }

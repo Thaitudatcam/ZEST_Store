@@ -34,6 +34,7 @@ public class DonHangService {
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final HoaDonService hoaDonService;
     private final OrderSseService orderSseService;
+    private final ThongBaoService thongBaoService;
     private final GhnService ghnService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
@@ -327,6 +328,16 @@ public class DonHangService {
                     order.getMaDonHang(), BigDecimal.ZERO, "ONLINE_FREESHIP");
         }
 
+        // Notify all admins/staff that a new order has just been placed.
+        try {
+            thongBaoService.taoThongBaoChoAdmin(
+                    "Đơn hàng mới #" + order.getMaDonHang(),
+                    "Khách hàng " + user.getHoTen() + " vừa đặt đơn #" + order.getMaDonHang()
+                            + " — tổng " + finalTotal + "₫.",
+                    "DON_HANG_MOI",
+                    "/admin/orders/" + order.getMaDonHang());
+        } catch (Exception ignored) {}
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());
         result.put("tongTien", finalTotal);
@@ -425,6 +436,25 @@ public class DonHangService {
 
         orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", null);
 
+        // Notify the order's customer that its status changed (status map: 1=Chờ,2=ĐãXL,3=ĐangGiao,4=ĐãGiao,5=ĐãHủy,6=Hoàn thành,7=Trả hàng).
+        if (order.getNguoiDung() != null) {
+            String trangThaiText = switch (status) {
+                case 2 -> "đang được xử lý";
+                case 3 -> "đang được giao";
+                case 4 -> "đã được giao";
+                case 6 -> "đã hoàn thành";
+                default -> "đã được cập nhật";
+            };
+            try {
+                thongBaoService.taoThongBao(
+                        order.getNguoiDung().getMaNguoiDung(),
+                        "Đơn hàng #" + orderId + " " + trangThaiText,
+                        "Đơn hàng #" + orderId + " của bạn " + trangThaiText + ".",
+                        "DON_HANG_CAP_NHAT",
+                        "/orders/" + orderId);
+            } catch (Exception ignored) {}
+        }
+
         return order;
     }
 
@@ -505,6 +535,16 @@ public class DonHangService {
                 .build());
 
         orderSseService.sendOrderStatusUpdate(orderId, 7, oldStatus, "user", lyDo);
+
+        // Notify admins/staff that a return has been requested.
+        try {
+            thongBaoService.taoThongBaoChoAdmin(
+                    "Yêu cầu trả hàng #" + orderId,
+                    "Khách " + user.getHoTen() + " yêu cầu trả đơn #" + orderId
+                            + ". Lý do: " + lyDo + ".",
+                    "YEU_CAU_TRA_HANG",
+                    "/admin/returns");
+        } catch (Exception ignored) {}
 
         return Map.of("message", "Return requested");
     }
