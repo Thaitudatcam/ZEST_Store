@@ -104,44 +104,29 @@ export default function AuthPage() {
         className="hidden md:flex w-full max-w-[920px] h-[540px] rounded-2xl shadow-lux overflow-hidden relative border border-gold/20"
         style={{ perspective: '1500px' }}>
 
-        {/* Left Panel: Form Area (always visible behind overlay) */}
-        <div className="relative w-1/2 bg-ivory overflow-hidden">
+        {/* ── Left Panel: LoginForm (visible when overlay is at right) ── */}
+        <div className="relative w-1/2 h-full bg-ivory overflow-hidden">
           <div className="absolute -top-20 -left-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
-
-          <div className="relative z-10 w-full h-full flex flex-col justify-center px-10">
-            <AnimatePresence mode="wait">
-              {showSignUp ? (
-                <motion.div
-                  key="register-form"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  aria-hidden={animating}
-                  {...(animating && { inert: '' })}>
-                  <RegisterForm onSuccess={() => navigate('/')} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="login-form"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  aria-hidden={animating}
-                  {...(animating && { inert: '' })}>
-                  <LoginForm onSuccess={(data) => {
-                    if (data.vaiTro === 'ADMIN') navigate('/admin')
-                    else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
-                    else navigate('/')
-                  }} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="relative z-10 w-full h-full flex flex-col justify-center px-10"
+            aria-hidden={showSignUp} {...(showSignUp && { inert: '' })}>
+            <LoginForm onSuccess={(data) => {
+              if (data.vaiTro === 'ADMIN') navigate('/admin')
+              else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
+              else navigate('/')
+            }} />
           </div>
         </div>
 
-        {/* Right Panel: 3D Overlay (noir panel + CTA) */}
+        {/* ── Right Panel: RegisterForm (hidden behind overlay, revealed when it flips left) ── */}
+        <div className="relative w-1/2 h-full bg-ivory overflow-hidden">
+          <div className="absolute -top-20 -right-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
+          <div className="relative z-10 w-full h-full flex flex-col justify-center px-10"
+            aria-hidden={!showSignUp} {...(!showSignUp && { inert: '' })}>
+            <RegisterForm onSuccess={() => navigate('/')} />
+          </div>
+        </div>
+
+        {/* ── 3D Overlay: starts at right covering RegisterForm, flips left to cover LoginForm ── */}
         <div
           key={animKey}
           className="absolute top-0 right-0 w-1/2 h-full bg-noir flex flex-col items-center justify-center text-ivory p-10 overflow-hidden z-20"
