@@ -31,14 +31,14 @@ export default function ProductDetail() {
   const [msg, setMsg] = useState('')
   const [toast, setToast] = useState(null)
   const [inWish, setInWish] = useState(false)
-  const [selectedVar, setSelectedVar] = useState(null)
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0)
+  const [selectedSizeId, setSelectedSizeId] = useState(null)
   const [reviews, setReviews] = useState([])
   const [avgRating, setAvgRating] = useState(0)
   const [reviewCount, setReviewCount] = useState(0)
   const [reviewSort, setReviewSort] = useState('newest')
   const [reviewPage, setReviewPage] = useState(0)
   const [previewIdx, setPreviewIdx] = useState(0)
-  const [colorIdx, setColorIdx] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [buyNowMode, setBuyNowMode] = useState(false)
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -72,7 +72,13 @@ export default function ProductDetail() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [slug])
+  useEffect(() => {
+    setSelectedColorIndex(0)
+    setSelectedSizeId(null)
+    setPreviewIdx(0)
+    setQty(1)
+    load()
+  }, [slug])
 
   const handleAddCart = async (vid, sl) => {
     if (!user) return navigate('/login')
@@ -107,7 +113,7 @@ export default function ProductDetail() {
     if (!user) return navigate('/login')
     if (isOutOfStock) return setToast({ message: 'Sản phẩm đã hết hàng', type: 'error' })
     setBuyNowMode(false)
-    if (variants.length > 1 && !selectedVar) return scrollToVariants()
+    if (variants.length > 1 && !selectedSizeId) return scrollToVariants()
     handleAddCart()
   }
 
@@ -115,7 +121,7 @@ export default function ProductDetail() {
     if (!user) return navigate('/login')
     if (isOutOfStock) return setToast({ message: 'Sản phẩm đã hết hàng', type: 'error' })
     setBuyNowMode(true)
-    if (variants.length > 1 && !selectedVar) return scrollToVariants()
+    if (variants.length > 1 && !selectedSizeId) return scrollToVariants()
     try {
       const variantId = selectedVar || (variants[0]?.maBienThe)
       if (!variantId) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
@@ -143,17 +149,28 @@ export default function ProductDetail() {
       if (!id || seen.has(id)) return
       seen.add(id)
       const inColor = variants.filter((x) => x.mauSac?.maMauSac === id)
-      const firstWithImg = inColor.find((x) => x.urlAnh)
+      const vIdOf = (img) => img?.maBienThe ?? img?.bienThe?.maBienThe
+      const colorOfImg = (img) => variants.find((x) => x.maBienThe === vIdOf(img))?.mauSac?.maMauSac
+      const fromDb = images
+        .filter((img) => colorOfImg(img) === id)
+        .sort((a, b) => (a.thuTuHienThi ?? 0) - (b.thuTuHienThi ?? 0))
+        .map((img) => ({ url: img.urlAnh, maBienThe: vIdOf(img) }))
+      const fromVariant = inColor
+        .filter((x) => x.urlAnh)
+        .map((x) => ({ url: x.urlAnh, maBienThe: x.maBienThe }))
+      const imagesArr = [...fromDb, ...fromVariant].filter((t, i, arr) => t.url && arr.findIndex((x) => x.url === t.url) === i)
+      const sizes = inColor.filter((x, i, arr) => arr.findIndex((y) => y.kichCo?.maKichCo === x.kichCo?.maKichCo) === i)
       groups.push({
         maMauSac: id,
         mauSac: v.mauSac,
-        image: firstWithImg?.urlAnh || product?.urlAnhDaiDien,
-        sizes: inColor.filter((x, i, arr) => arr.findIndex((y) => y.kichCo?.maKichCo === x.kichCo?.maKichCo) === i),
+        images: imagesArr,
+        image: imagesArr[0]?.url || inColor[0]?.urlAnh || product?.urlAnhDaiDien,
+        sizes,
         inStock: inColor.some((x) => (x.tonKho || 0) > 0),
       })
     })
     return groups
-  }, [variants, product])
+  }, [variants, images, product])
 
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -174,66 +191,66 @@ export default function ProductDetail() {
 
   if (!product) return <div className="text-center py-20 text-stone">Không tìm thấy sản phẩm</div>
 
-  const selectedColorId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.mauSac?.maMauSac : null
-  const filteredImages = images
-  const thumbnails = [
-    ...filteredImages.map(i => ({ url: i.urlAnh, maBienThe: i.maBienThe ?? i.bienThe?.maBienThe })),
-    ...variants
-      .filter(v => v.urlAnh)
-      .sort((a, b) => (a.kichCo?.maKichCo || 0) - (b.kichCo?.maKichCo || 0))
-      .filter((v, i, arr) => {
-        const colorId = v.mauSac?.maMauSac
-        return !colorId || arr.findIndex(x => x.mauSac?.maMauSac === colorId) === i
-      })
-      .map(v => ({ url: v.urlAnh, maBienThe: v.maBienThe })),
-  ].filter((t, i, arr) => t.url && arr.findIndex(x => x.url === t.url) === i)
-  const allImages = thumbnails.map(t => t.url)
-  const selectedVariantImg = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.urlAnh : null
-  const mainImg = imageUrl(selectedVariantImg) || imageUrl(allImages[previewIdx]) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
-  const variantPrice = selectedVar ? (variants.find(v => v.maBienThe === selectedVar)?.gia || product.giaThapNhat || 0) : (product.giaThapNhat ?? variants[0]?.gia ?? 0)
-  const selectedVariant = selectedVar ? variants.find(v => v.maBienThe === selectedVar) : (variants[0] || null)
+  const currentGroup = colorGroups[selectedColorIndex] || null
+  const currentColorId = currentGroup?.maMauSac ?? null
+  const currentImages = currentGroup?.images ?? []
+
+  const selectedVariant = (() => {
+    if (!currentGroup) return variants[0] || null
+    const byColorAndSize = variants.find((v) => v.mauSac?.maMauSac === currentGroup.maMauSac && v.kichCo?.maKichCo === selectedSizeId)
+    const byColorInStock = variants.find((v) => v.mauSac?.maMauSac === currentGroup.maMauSac && (v.tonKho || 0) > 0)
+    const byColor = variants.find((v) => v.mauSac?.maMauSac === currentGroup.maMauSac)
+    return byColorAndSize || byColorInStock || byColor || variants[0] || null
+  })()
+
+  const selectedVar = selectedVariant?.maBienThe ?? null
+
+  const mainImg = imageUrl(currentImages[previewIdx]?.url) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
+  const variantPrice = selectedVariant?.gia || (product.giaThapNhat ?? variants[0]?.gia ?? 0)
   const selectedStock = selectedVariant?.tonKho ?? 0
   const totalStock = variants.reduce((sum, v) => sum + (v.tonKho || 0), 0)
   const isOutOfStock = totalStock === 0
   const isSelectedOutOfStock = selectedStock === 0
 
   const colorCount = colorGroups.length
+  const nextGroup = colorCount > 1 ? colorGroups[(selectedColorIndex + 1) % colorCount] : null
 
-  const pickVariantForColor = (group) => {
-    if (!group) return null
-    const withStock = group.sizes.find((s) => (s.tonKho || 0) > 0)
-    return withStock?.maBienThe || group.sizes[0]?.maBienThe || null
+  const applyColor = (idx) => {
+    const group = colorGroups[idx]
+    if (!group) return
+    setSelectedColorIndex(idx)
+    if (selectedSizeId) {
+      const sizeStillValid = group.sizes.some((s) => s.kichCo?.maKichCo === selectedSizeId)
+      if (!sizeStillValid) {
+        const first = group.sizes.find((s) => (s.tonKho || 0) > 0) || group.sizes[0]
+        setSelectedSizeId(first?.kichCo?.maKichCo ?? null)
+      }
+    }
+    setPreviewIdx(0)
   }
 
-  const syncColorIdx = (variantId) => {
-    const v = variants.find((x) => x.maBienThe === variantId)
-    if (!v) return
-    const idx = colorGroups.findIndex((g) => g.maMauSac === v.mauSac?.maMauSac)
-    if (idx >= 0) setColorIdx(idx)
+  const handleColorSelect = (maMauSac) => {
+    const idx = colorGroups.findIndex((g) => g.maMauSac === maMauSac)
+    if (idx >= 0) applyColor(idx)
+  }
+
+  const handleSizeSelect = (maKichCo) => {
+    setSelectedSizeId(maKichCo)
+    const vv = variants.find((v) => v.mauSac?.maMauSac === currentColorId && v.kichCo?.maKichCo === maKichCo)
+    if (vv) {
+      const imgIdx = currentImages.findIndex((t) => t.maBienThe === vv.maBienThe)
+      if (imgIdx >= 0) setPreviewIdx(imgIdx)
+    }
   }
 
   const goPrevColor = () => {
     if (colorCount <= 1) return
-    const next = (colorIdx - 1 + colorCount) % colorCount
-    setColorIdx(next)
-    const vId = pickVariantForColor(colorGroups[next])
-    if (vId) {
-      setSelectedVar(vId)
-      const tIdx = thumbnails.findIndex((t) => t.maBienThe === vId)
-      setPreviewIdx(tIdx >= 0 ? tIdx : 0)
-    }
+    applyColor((selectedColorIndex - 1 + colorCount) % colorCount)
   }
 
   const goNextColor = () => {
     if (colorCount <= 1) return
-    const next = (colorIdx + 1) % colorCount
-    setColorIdx(next)
-    const vId = pickVariantForColor(colorGroups[next])
-    if (vId) {
-      setSelectedVar(vId)
-      const tIdx = thumbnails.findIndex((t) => t.maBienThe === vId)
-      setPreviewIdx(tIdx >= 0 ? tIdx : 0)
-    }
+    applyColor((selectedColorIndex + 1) % colorCount)
   }
 
   const REVIEWS_PER_PAGE = 5
@@ -275,6 +292,12 @@ export default function ProductDetail() {
                 <div className="block md:hidden w-full h-full">
                   <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
                 </div>
+                {nextGroup?.image && (
+                  <button onClick={goNextColor} aria-label="Màu tiếp theo" title="Màu tiếp theo"
+                    className="absolute bottom-3 right-3 z-10 hidden sm:block w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 border-white shadow-lg ring-1 ring-stone/20 hover:scale-105 active:scale-95 transition-transform duration-200">
+                    <SafeImg src={imageUrl(nextGroup.image)} alt="" className="w-full h-full object-cover object-center" />
+                  </button>
+                )}
               </div>
               {colorCount > 1 && (
                 <button onClick={goNextColor} aria-label="Màu tiếp theo"
@@ -285,33 +308,6 @@ export default function ProductDetail() {
             </div>
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-4/5 h-5 rounded-[50%] bg-noir/15 blur-xl pointer-events-none" />
           </div>
-          {allImages.length > 1 && (
-            <div className="relative">
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {allImages.map((url, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => {
-                            setPreviewIdx(idx)
-                            const vId = thumbnails[idx]?.maBienThe
-                            if (vId) { setSelectedVar(vId); syncColorIdx(vId) }
-                        }}
-                        className={`w-20 h-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 ${
-                            idx === previewIdx
-                                ? 'border-gold ring-2 ring-blue-200 shadow-md'
-                                : 'border-stone/20 hover:border-stone/30  hover:shadow-sm'
-                        }`}
-                    >
-                        <SafeImg
-                            src={url}
-                            alt=""
-                            className="w-full h-full object-cover object-center"
-                        />
-                    </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <div>
@@ -322,7 +318,6 @@ export default function ProductDetail() {
           )}
           <h1 className="text-3xl font-bold text-ink mb-1">{product.tenSanPham}</h1>
           <div className="flex items-center gap-2 mb-5">
-            {!selectedVar}
             <p className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">{VND(variantPrice)}</p>
           </div>
 
@@ -334,21 +329,7 @@ export default function ProductDetail() {
               if (id && !seenColors.has(id)) { seenColors.add(id); uniqueColors.push(v) }
             })
 
-            const uniqueSizes = []
-            const seenSizes = new Set()
-            variants.forEach(v => {
-              const id = v.kichCo?.maKichCo
-              if (id && !seenSizes.has(id)) { seenSizes.add(id); uniqueSizes.push(v) }
-            })
-
-            const selectedSizeId = selectedVar ? variants.find(v => v.maBienThe === selectedVar)?.kichCo?.maKichCo : null
-
-            const sizesForColor = (selectedColorId
-              ? variants.filter(v => v.mauSac?.maMauSac === selectedColorId)
-              : variants).filter((v, i, arr) => {
-                const id = v.kichCo?.maKichCo
-                return id && arr.findIndex(x => x.kichCo?.maKichCo === id) === i
-              })
+            const sizesForColor = currentGroup?.sizes ?? []
 
             return (
               <div ref={variantRef} className={`relative mb-5 transition-all duration-500 ${highlightVariant ? 'bg-gradient-to-r from-red-100/90 via-rose-100/90 to-red-100/90 -mx-2 px-2 py-1 rounded-2xl' : ''}`}>
@@ -362,17 +343,10 @@ export default function ProductDetail() {
                   <div className="flex gap-3 flex-wrap">
                     {uniqueColors.map((v) => {
                       const hasStock = variants.some(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0)
-                      const selected = selectedColorId === v.mauSac?.maMauSac
+                      const selected = currentColorId === v.mauSac?.maMauSac
                       return (
                         <button key={v.mauSac?.maMauSac}
-                          onClick={() => {
-                            const firstAvail = hasStock ? variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0) || variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac) : variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac)
-                            const vId = firstAvail?.maBienThe || v.maBienThe
-                            setSelectedVar(vId)
-                            syncColorIdx(vId)
-                            const idx = thumbnails.findIndex(t => t.maBienThe === vId)
-                            setPreviewIdx(idx >= 0 ? idx : 0)
-                          }}
+                          onClick={() => handleColorSelect(v.mauSac?.maMauSac)}
                           className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                             selected
                               ? 'bg-gold text-noir shadow-md shadow-blue-200'
@@ -395,16 +369,10 @@ export default function ProductDetail() {
                   <div className="flex gap-2 flex-wrap">
                     {sizesForColor.map((v) => {
                       const disabled = (v.tonKho || 0) === 0
-                      const selected = selectedVar === v.maBienThe
+                      const selected = selectedSizeId === v.kichCo?.maKichCo
                       return (
                         <button key={v.maBienThe}
-                          onClick={() => {
-                            if (disabled) return
-                            setSelectedVar(v.maBienThe)
-                            syncColorIdx(v.maBienThe)
-                            const idx = thumbnails.findIndex(t => t.maBienThe === v.maBienThe)
-                            setPreviewIdx(idx >= 0 ? idx : 0)
-                          }}
+                          onClick={() => handleSizeSelect(v.kichCo?.maKichCo)}
                           disabled={disabled}
                           className={`min-w-[3rem] px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                             selected
