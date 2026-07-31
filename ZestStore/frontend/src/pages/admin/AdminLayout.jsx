@@ -3,7 +3,6 @@ import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Us
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
-import AiChat from '../../components/AiChat'
 import NotificationBell from '../../components/admin/NotificationBell'
 import AskAi from '../../components/admin/AskAi'
 
@@ -198,7 +197,6 @@ export default function AdminLayout() {
       </div>
 
       {sidebarOpen && <div className="fixed inset-0 bg-noir/50 backdrop-blur-sm z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-      <AiChat />
     </div>
   )
 }

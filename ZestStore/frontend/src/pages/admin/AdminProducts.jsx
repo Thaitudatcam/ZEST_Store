@@ -4,7 +4,7 @@ import { toggleProductStatus } from '../../api/admin'
 import { searchSuggestions } from '../../api/products'
 import api from '../../api/axios'
 import { Plus, Pencil, Trash2, Search, Eye, EyeOff, Loader } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
 
 const PAGE_SIZE = 15
@@ -22,6 +22,8 @@ export default function AdminProducts() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const searchRef = useRef(null)
   const debounceRef = useRef(null)
+  const [searchParams] = useSearchParams()
+  const keywordParam = searchParams.get('keyword')
 
   const load = (pg, q) => {
     api.get('/products/admin/list', { params: { page: pg, size: PAGE_SIZE, ...(q ? { keyword: q } : {}) } })
@@ -32,6 +34,14 @@ export default function AdminProducts() {
   }
 
   useEffect(() => { load(page, search) }, [page])
+
+  useEffect(() => {
+    if (keywordParam) {
+      setSearch(keywordParam)
+      setPage(0)
+      load(0, keywordParam)
+    }
+  }, [keywordParam])
 
   useEffect(() => {
     const handleClick = (e) => {
