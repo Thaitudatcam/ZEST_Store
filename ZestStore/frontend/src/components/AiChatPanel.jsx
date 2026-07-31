@@ -256,8 +256,10 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
                 .slice()
                 .sort((a, b) => new Date(b.ngayTao || 0) - new Date(a.ngayTao || 0))
                 .map((c) => (
-                  <button key={c.maHoiThoai} onClick={() => switchConv(c.maHoiThoai)}
-                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors text-left ${
+                  <div key={c.maHoiThoai} role="button" tabIndex={0}
+                    onClick={() => switchConv(c.maHoiThoai)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchConv(c.maHoiThoai) } }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors text-left cursor-pointer ${
                       activeConv === c.maHoiThoai ? 'bg-gold/10 text-gold' : 'text-stone-light/60 hover:bg-ivory/5 hover:text-stone-light/90'
                     }`}>
                     <span className="truncate flex-1">{c.tieuDe || 'Hội thoại'}</span>
@@ -266,7 +268,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
                       title="Xóa">
                       <Trash2 className="h-3 w-3" />
                     </button>
-                  </button>
+                  </div>
                 ))}
             </div>
           </div>

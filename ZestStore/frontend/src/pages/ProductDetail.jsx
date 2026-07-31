@@ -135,6 +135,26 @@ export default function ProductDetail() {
     }
   }
 
+  const colorGroups = useMemo(() => {
+    const groups = []
+    const seen = new Set()
+    variants.forEach((v) => {
+      const id = v.mauSac?.maMauSac
+      if (!id || seen.has(id)) return
+      seen.add(id)
+      const inColor = variants.filter((x) => x.mauSac?.maMauSac === id)
+      const firstWithImg = inColor.find((x) => x.urlAnh)
+      groups.push({
+        maMauSac: id,
+        mauSac: v.mauSac,
+        image: firstWithImg?.urlAnh || product?.urlAnhDaiDien,
+        sizes: inColor.filter((x, i, arr) => arr.findIndex((y) => y.kichCo?.maKichCo === x.kichCo?.maKichCo) === i),
+        inStock: inColor.some((x) => (x.tonKho || 0) > 0),
+      })
+    })
+    return groups
+  }, [variants, product])
+
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8">
@@ -177,25 +197,6 @@ export default function ProductDetail() {
   const isOutOfStock = totalStock === 0
   const isSelectedOutOfStock = selectedStock === 0
 
-  const colorGroups = useMemo(() => {
-    const groups = []
-    const seen = new Set()
-    variants.forEach((v) => {
-      const id = v.mauSac?.maMauSac
-      if (!id || seen.has(id)) return
-      seen.add(id)
-      const inColor = variants.filter((x) => x.mauSac?.maMauSac === id)
-      const firstWithImg = inColor.find((x) => x.urlAnh)
-      groups.push({
-        maMauSac: id,
-        mauSac: v.mauSac,
-        image: firstWithImg?.urlAnh || product?.urlAnhDaiDien,
-        sizes: inColor.filter((x, i, arr) => arr.findIndex((y) => y.kichCo?.maKichCo === x.kichCo?.maKichCo) === i),
-        inStock: inColor.some((x) => (x.tonKho || 0) > 0),
-      })
-    })
-    return groups
-  }, [variants, product])
   const colorCount = colorGroups.length
 
   const pickVariantForColor = (group) => {
