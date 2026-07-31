@@ -50,6 +50,10 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
             + "GROUP BY b.sanPham.maSanPham")
     List<Object[]> minGiaBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
 
+    @Query("SELECT DISTINCT b.sanPham.maSanPham, b.thuongHieu.tenThuongHieu FROM BienTheSanPham b "
+            + "WHERE b.sanPham.maSanPham IN :maSanPhamIds AND b.ngayXoa IS NULL")
+    List<Object[]> findBrandNamesBySanPhamIds(@Param("maSanPhamIds") List<Integer> maSanPhamIds);
+
     boolean existsByMauSac_MaMauSacAndNgayXoaIsNull(Integer maMauSac);
 
     boolean existsByThuongHieu_MaThuongHieuAndNgayXoaIsNull(Integer maThuongHieu);

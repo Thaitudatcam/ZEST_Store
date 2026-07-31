@@ -51,20 +51,20 @@ export function ToastProvider({ children }) {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 300)
   }, [])
 
-  const addToast = useCallback((message, type = 'info', duration = 5000) => {
+  const addToast = useCallback((message, type = 'info', duration = 5000, action = null) => {
     const id = ++idRef.current
     setToasts((prev) => {
-      const next = [...prev, { id, message, type, duration }]
+      const next = [...prev, { id, message, type, duration, action }]
       return next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next
     })
     setTimeout(() => removeToast(id), duration)
   }, [removeToast])
 
   const toast = useMemo(() => ({
-    success: (msg, dur) => addToast(msg, 'success', dur),
-    error: (msg, dur) => addToast(msg, 'error', dur),
-    info: (msg, dur) => addToast(msg, 'info', dur),
-    warning: (msg, dur) => addToast(msg, 'warning', dur),
+    success: (msg, dur, action) => addToast(msg, 'success', dur, action),
+    error: (msg, dur, action) => addToast(msg, 'error', dur, action),
+    info: (msg, dur, action) => addToast(msg, 'info', dur, action),
+    warning: (msg, dur, action) => addToast(msg, 'warning', dur, action),
   }), [addToast])
 
   return (
@@ -79,6 +79,12 @@ export function ToastProvider({ children }) {
               <div className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${cfg.bg} min-w-[280px] max-w-sm overflow-hidden`}>
                 <Icon className={`h-5 w-5 shrink-0 ${cfg.color}`} />
                 <span className="text-sm text-ink flex-1">{t.message}</span>
+                {t.action && (
+                  <button onClick={() => { t.action.onClick?.(); removeToast(t.id) }}
+                    className={`text-sm font-semibold shrink-0 hover:opacity-80 ${cfg.color}`}>
+                    {t.action.label}
+                  </button>
+                )}
                 <button onClick={() => removeToast(t.id)} className="text-stone hover:text-ink-soft shrink-0">
                   <X className="h-4 w-4" />
                 </button>

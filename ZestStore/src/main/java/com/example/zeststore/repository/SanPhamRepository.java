@@ -17,6 +17,8 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
 
     Optional<SanPham> findBySlug(String slug);
 
+    boolean existsByDanhMuc_MaDanhMucAndNgayXoaIsNull(Integer maDanhMuc);
+
     Page<SanPham> findByDanhMuc_MaDanhMuc(Integer maDanhMuc, Pageable pageable);
 
     Page<SanPham> findByTrangThaiAndNgayXoaIsNull(Integer trangThai, Pageable pageable);

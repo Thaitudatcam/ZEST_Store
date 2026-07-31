@@ -125,6 +125,7 @@ export default function AdminProducts() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-stone">Sản phẩm</th>
                 <th className="text-left px-4 py-3 font-semibold text-stone">Danh mục</th>
+                <th className="text-left px-4 py-3 font-semibold text-stone">Thương hiệu</th>
                 <th className="text-right px-4 py-3 font-semibold text-stone">Tồn kho</th>
                 <th className="text-center px-4 py-3 font-semibold text-stone">Trạng thái</th>
                 <th className="text-center px-4 py-3 font-semibold text-stone">Hành động</th>
@@ -140,6 +141,7 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-stone">{p.danhMuc?.tenDanhMuc || '-'}</td>
+                  <td className="px-4 py-3 text-stone">{p.tenThuongHieu || '-'}</td>
                   <td className="px-4 py-3 text-right font-semibold">{p.tongTonKho ?? 0}</td>
                   <td className="px-4 py-3 text-center">
                     <button onClick={() => handleToggle(p.maSanPham)}

@@ -136,6 +136,13 @@ public class SanPhamService {
             sp.setAverageRating(avgRatingMap.get(sp.getMaSanPham()));
             sp.setReviewCount(countMap.get(sp.getMaSanPham()));
         });
+        List<Object[]> brandData = bienTheRepository.findBrandNamesBySanPhamIds(ids);
+        Map<Integer, List<String>> brandMap = new HashMap<>();
+        for (Object[] row : brandData) {
+            int maSp = ((Number) row[0]).intValue();
+            brandMap.computeIfAbsent(maSp, k -> new ArrayList<>()).add((String) row[1]);
+        }
+        page.getContent().forEach(sp -> sp.setTenThuongHieu(String.join(", ", brandMap.getOrDefault(sp.getMaSanPham(), List.of()))));
     }
 
     public SanPham getBySlug(String slug) {
@@ -215,7 +222,7 @@ public class SanPhamService {
         if (sanPhamRepository.findBySlug(request.getSlug()).isPresent()) {
             throw new DuplicateResourceException("Slug already exists: " + request.getSlug());
         }
-        DanhMuc category = danhMucRepository.findById(request.getMaDanhMuc())
+        DanhMuc category = danhMucRepository.findByMaDanhMucAndNgayXoaIsNull(request.getMaDanhMuc())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", request.getMaDanhMuc()));
         SanPham product = sanPhamRepository.save(SanPham.builder()
                 .danhMuc(category)
@@ -234,7 +241,7 @@ public class SanPhamService {
     public SanPham updateProduct(Integer id, SanPhamRequest request) {
         SanPham product = getById(id);
         if (request.getMaDanhMuc() != null) {
-            product.setDanhMuc(danhMucRepository.findById(request.getMaDanhMuc())
+            product.setDanhMuc(danhMucRepository.findByMaDanhMucAndNgayXoaIsNull(request.getMaDanhMuc())
                     .orElseThrow(() -> new ResourceNotFoundException("Category", request.getMaDanhMuc())));
         }
         if (request.getTenSanPham() != null) product.setTenSanPham(request.getTenSanPham());

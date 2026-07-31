@@ -6,7 +6,7 @@ import { uploadProductImage, uploadVariantImage, generateDescription } from '../
 import { createCategory, deleteCategory, createBrand, deleteBrand, createColor, createSize } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
-import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles } from 'lucide-react'
+import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles, X } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
@@ -51,6 +51,11 @@ export default function AdminProductForm() {
   const [selectedSizeIds, setSelectedSizeIds] = useState([])
   const [deletedColorIds, setDeletedColorIds] = useState([])
   const [sessionCreatedColorIds, setSessionCreatedColorIds] = useState([])
+
+  const sessionCats = categories.filter(c => sessionCreatedCatIds.some(id => Number(id) === Number(c.maDanhMuc)))
+  const sessionBrands = brands.filter(b => sessionCreatedBrandIds.some(id => Number(id) === Number(b.maThuongHieu)))
+  const showCatUndo = sessionCreatedCatIds.some(id => Number(id) === Number(product.maDanhMuc))
+  const showBrandUndo = sessionCreatedBrandIds.some(id => Number(id) === Number(product.maThuongHieu))
 
   useEffect(() => {
     Promise.all([
@@ -390,7 +395,10 @@ export default function AdminProductForm() {
       setSessionCreatedCatIds(prev => [...prev, newCat.maDanhMuc])
       setShowCatModal(false)
       setQuickAddName('')
-      toast.success('Thêm danh mục thành công')
+      toast.success(`Đã thêm danh mục "${newCat.tenDanhMuc}"`, 6000, {
+        label: 'Hoàn tác',
+        onClick: () => handleUndoQuickCategory(newCat.maDanhMuc),
+      })
     } catch { toast.error('Lỗi thêm danh mục') }
   }
 
@@ -403,16 +411,19 @@ export default function AdminProductForm() {
       setSessionCreatedBrandIds(prev => [...prev, newBrand.maThuongHieu])
       setShowBrandModal(false)
       setQuickAddName('')
-      toast.success('Thêm thương hiệu thành công')
+      toast.success(`Đã thêm thương hiệu "${newBrand.tenThuongHieu}"`, 6000, {
+        label: 'Hoàn tác',
+        onClick: () => handleUndoQuickBrand(newBrand.maThuongHieu),
+      })
     } catch { toast.error('Lỗi thêm thương hiệu') }
   }
 
   const handleUndoQuickCategory = async (id) => {
     try {
       await deleteCategory(id)
-      setCategories(prev => prev.filter(c => c.maDanhMuc !== id))
-      setSessionCreatedCatIds(prev => prev.filter(cid => cid !== id))
-      if (product.maDanhMuc === id) setProduct(p => ({ ...p, maDanhMuc: '' }))
+      setCategories(prev => prev.filter(c => Number(c.maDanhMuc) !== Number(id)))
+      setSessionCreatedCatIds(prev => prev.filter(cid => Number(cid) !== Number(id)))
+      if (Number(product.maDanhMuc) === Number(id)) setProduct(p => ({ ...p, maDanhMuc: '' }))
       toast.success('Đã xóa danh mục')
     } catch { toast.error('Không thể xóa danh mục (có thể đã có sản phẩm)') }
   }
@@ -420,9 +431,37 @@ export default function AdminProductForm() {
   const handleUndoQuickBrand = async (id) => {
     try {
       await deleteBrand(id)
-      setBrands(prev => prev.filter(b => b.maThuongHieu !== id))
-      setSessionCreatedBrandIds(prev => prev.filter(bid => bid !== id))
-      if (product.maThuongHieu === id) setProduct(p => ({ ...p, maThuongHieu: '' }))
+      setBrands(prev => prev.filter(b => Number(b.maThuongHieu) !== Number(id)))
+      setSessionCreatedBrandIds(prev => prev.filter(bid => Number(bid) !== Number(id)))
+      if (Number(product.maThuongHieu) === Number(id)) setProduct(p => ({ ...p, maThuongHieu: '' }))
+      toast.success('Đã xóa thương hiệu')
+    } catch { toast.error('Không thể xóa thương hiệu (có thể đã có sản phẩm)') }
+  }
+
+  const handleDeleteSelectedCategory = async () => {
+    const id = product.maDanhMuc
+    if (!id) { toast.warning('Chưa chọn danh mục để xóa'); return }
+    const cat = categories.find(c => Number(c.maDanhMuc) === Number(id))
+    if (!confirm(`Xóa danh mục "${cat?.tenDanhMuc || id}"?`)) return
+    try {
+      await deleteCategory(id)
+      setCategories(prev => prev.filter(c => Number(c.maDanhMuc) !== Number(id)))
+      setSessionCreatedCatIds(prev => prev.filter(cid => Number(cid) !== Number(id)))
+      setProduct(p => ({ ...p, maDanhMuc: '' }))
+      toast.success('Đã xóa danh mục')
+    } catch { toast.error('Không thể xóa danh mục (có thể đã có sản phẩm)') }
+  }
+
+  const handleDeleteSelectedBrand = async () => {
+    const id = product.maThuongHieu
+    if (!id) { toast.warning('Chưa chọn thương hiệu để xóa'); return }
+    const brand = brands.find(b => Number(b.maThuongHieu) === Number(id))
+    if (!confirm(`Xóa thương hiệu "${brand?.tenThuongHieu || id}"?`)) return
+    try {
+      await deleteBrand(id)
+      setBrands(prev => prev.filter(b => Number(b.maThuongHieu) !== Number(id)))
+      setSessionCreatedBrandIds(prev => prev.filter(bid => Number(bid) !== Number(id)))
+      setProduct(p => ({ ...p, maThuongHieu: '' }))
       toast.success('Đã xóa thương hiệu')
     } catch { toast.error('Không thể xóa thương hiệu (có thể đã có sản phẩm)') }
   }
@@ -519,21 +558,40 @@ export default function AdminProductForm() {
                     className="p-1 text-gold hover:bg-gold/10 rounded" title="Thêm danh mục mới">
                     <FolderPlus className="h-4 w-4" />
                   </button>
+                  <button type="button" onClick={handleDeleteSelectedCategory}
+                    className="p-1 text-bordeaux hover:bg-bordeaux/10 rounded" title="Xóa danh mục đang chọn">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
                 <div className="relative">
                   <select value={product.maDanhMuc} onChange={(e) => setProduct(p => ({ ...p, maDanhMuc: e.target.value }))}
-                    required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold pr-8">
+                    required className={`w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold ${showCatUndo ? 'pr-16' : 'pr-8'}`}>
                     <option value="">-- Chọn danh mục --</option>
                     {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
                   </select>
-                  {sessionCreatedCatIds.includes(Number(product.maDanhMuc)) && (
-                    <button type="button" onClick={() => handleUndoQuickCategory(Number(product.maDanhMuc))}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-bordeaux hover:bg-bordeaux/10 rounded transition"
+                  {showCatUndo && (
+                    <button type="button" onClick={() => handleUndoQuickCategory(product.maDanhMuc)}
+                      className="absolute right-8 top-1/2 -translate-y-1/2 p-0.5 text-bordeaux hover:bg-bordeaux/10 rounded transition"
                       title="Xóa danh mục vừa thêm">
-                      ×
+                      <X className="h-4 w-4" />
                     </button>
                   )}
                 </div>
+                {sessionCats.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {sessionCats.map(c => (
+                      <span key={c.maDanhMuc}
+                        className="inline-flex items-center gap-1.5 bg-gold/10 border border-gold/25 text-ink text-xs px-2.5 py-1 rounded-full">
+                        <span className="font-medium">{c.tenDanhMuc}</span>
+                        <button type="button" onClick={() => handleUndoQuickCategory(c.maDanhMuc)}
+                          title="Xóa danh mục vừa thêm"
+                          className="text-bordeaux hover:bg-bordeaux/20 hover:text-noir rounded-full transition">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -542,21 +600,40 @@ export default function AdminProductForm() {
                     className="p-1 text-gold hover:bg-gold/10 rounded" title="Thêm thương hiệu mới">
                     <Tag className="h-4 w-4" />
                   </button>
+                  <button type="button" onClick={handleDeleteSelectedBrand}
+                    className="p-1 text-bordeaux hover:bg-bordeaux/10 rounded" title="Xóa thương hiệu đang chọn">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
                 <div className="relative">
                   <select value={product.maThuongHieu} onChange={(e) => setProduct(p => ({ ...p, maThuongHieu: e.target.value }))}
-                    required className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold pr-8">
+                    required className={`w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold ${showBrandUndo ? 'pr-16' : 'pr-8'}`}>
                     <option value="">-- Chọn thương hiệu --</option>
                     {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
                   </select>
-                  {sessionCreatedBrandIds.includes(Number(product.maThuongHieu)) && (
-                    <button type="button" onClick={() => handleUndoQuickBrand(Number(product.maThuongHieu))}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-bordeaux hover:bg-bordeaux/10 rounded transition"
+                  {showBrandUndo && (
+                    <button type="button" onClick={() => handleUndoQuickBrand(product.maThuongHieu)}
+                      className="absolute right-8 top-1/2 -translate-y-1/2 p-0.5 text-bordeaux hover:bg-bordeaux/10 rounded transition"
                       title="Xóa thương hiệu vừa thêm">
-                      ×
+                      <X className="h-4 w-4" />
                     </button>
                   )}
                 </div>
+                {sessionBrands.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {sessionBrands.map(b => (
+                      <span key={b.maThuongHieu}
+                        className="inline-flex items-center gap-1.5 bg-gold/10 border border-gold/25 text-ink text-xs px-2.5 py-1 rounded-full">
+                        <span className="font-medium">{b.tenThuongHieu}</span>
+                        <button type="button" onClick={() => handleUndoQuickBrand(b.maThuongHieu)}
+                          title="Xóa thương hiệu vừa thêm"
+                          className="text-bordeaux hover:bg-bordeaux/20 hover:text-noir rounded-full transition">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div>

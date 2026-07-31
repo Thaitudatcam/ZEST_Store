@@ -1,9 +1,11 @@
 package com.example.zeststore.service;
 
 import com.example.zeststore.entity.DanhMuc;
+import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.DuplicateResourceException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.DanhMucRepository;
+import com.example.zeststore.repository.SanPhamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,22 +21,23 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final DanhMucRepository danhMucRepository;
+    private final SanPhamRepository sanPhamRepository;
 
     public List<DanhMuc> getAll() {
         return danhMucRepository.findAll();
     }
 
     public List<DanhMuc> getRootCategories() {
-        return danhMucRepository.findByDanhMucChaIsNull();
+        return danhMucRepository.findByDanhMucChaIsNullAndNgayXoaIsNull();
     }
 
     public List<Map<String, Object>> getCategoryTree() {
-        List<DanhMuc> roots = danhMucRepository.findByDanhMucChaIsNull();
+        List<DanhMuc> roots = danhMucRepository.findByDanhMucChaIsNullAndNgayXoaIsNull();
         return roots.stream().map(this::buildTree).collect(Collectors.toList());
     }
 
     private Map<String, Object> buildTree(DanhMuc category) {
-        List<DanhMuc> children = danhMucRepository.findByDanhMucCha_MaDanhMuc(category.getMaDanhMuc());
+        List<DanhMuc> children = danhMucRepository.findByDanhMucCha_MaDanhMucAndNgayXoaIsNull(category.getMaDanhMuc());
         return Map.of(
                 "maDanhMuc", category.getMaDanhMuc(),
                 "tenDanhMuc", category.getTenDanhMuc(),
@@ -44,18 +47,18 @@ public class CategoryService {
     }
 
     public DanhMuc getById(Integer id) {
-        return danhMucRepository.findById(id)
+        return danhMucRepository.findByMaDanhMucAndNgayXoaIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", id));
     }
 
     @Transactional
     public DanhMuc create(String tenDanhMuc, String slug, Integer parentId) {
-        if (danhMucRepository.findByDuongDanSlug(slug).isPresent()) {
+        if (danhMucRepository.findByDuongDanSlugAndNgayXoaIsNull(slug).isPresent()) {
             throw new DuplicateResourceException("Slug already exists: " + slug);
         }
         DanhMuc parent = null;
         if (parentId != null) {
-            parent = danhMucRepository.findById(parentId)
+            parent = danhMucRepository.findByMaDanhMucAndNgayXoaIsNull(parentId)
                     .orElseThrow(() -> new ResourceNotFoundException("Parent category", parentId));
         }
         return danhMucRepository.save(DanhMuc.builder()
@@ -70,13 +73,13 @@ public class CategoryService {
         DanhMuc category = getById(id);
         if (tenDanhMuc != null) category.setTenDanhMuc(tenDanhMuc);
         if (slug != null && !slug.equals(category.getDuongDanSlug())) {
-            if (danhMucRepository.findByDuongDanSlug(slug).isPresent()) {
+            if (danhMucRepository.findByDuongDanSlugAndNgayXoaIsNull(slug).isPresent()) {
                 throw new DuplicateResourceException("Slug already exists: " + slug);
             }
             category.setDuongDanSlug(slug);
         }
         if (parentId != null) {
-            category.setDanhMucCha(danhMucRepository.findById(parentId)
+            category.setDanhMucCha(danhMucRepository.findByMaDanhMucAndNgayXoaIsNull(parentId)
                     .orElseThrow(() -> new ResourceNotFoundException("Parent category", parentId)));
         } else if (parentId == null && category.getDanhMucCha() != null) {
             category.setDanhMucCha(null);
@@ -87,6 +90,9 @@ public class CategoryService {
     @Transactional
     public Map<String, String> delete(Integer id) {
         DanhMuc category = getById(id);
+        if (sanPhamRepository.existsByDanhMuc_MaDanhMucAndNgayXoaIsNull(id)) {
+            throw new BadRequestException("Cannot delete category because it is in use by existing products");
+        }
         category.setNgayXoa(LocalDateTime.now());
         danhMucRepository.save(category);
         return Map.of("message", "Category deleted");

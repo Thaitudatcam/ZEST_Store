@@ -75,6 +75,10 @@ public class SanPham {
     private LocalDateTime ngayXoa;
 
     @Transient
+    @JsonProperty("tenThuongHieu")
+    private String tenThuongHieu;
+
+    @Transient
     @JsonProperty("tongTonKho")
     @Builder.Default
     private Integer tongTonKho = 0;
