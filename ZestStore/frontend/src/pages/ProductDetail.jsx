@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProductBySlug, getProducts } from '../api/products'
 import { addToCart } from '../api/cart'
@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap, ChevronDown, ThumbsUp, BadgeCheck, Filter, ArrowUpDown } from 'lucide-react'
+import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap, ChevronDown, ThumbsUp, BadgeCheck, Filter, ArrowUpDown, ChevronLeft } from 'lucide-react'
 import TiltedCard from '../components/ui/TiltedCard'
 import { VND } from '../components/ProductCard'
 import Toast from '../components/Toast'
@@ -38,6 +38,7 @@ export default function ProductDetail() {
   const [reviewSort, setReviewSort] = useState('newest')
   const [reviewPage, setReviewPage] = useState(0)
   const [previewIdx, setPreviewIdx] = useState(0)
+  const [colorIdx, setColorIdx] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [buyNowMode, setBuyNowMode] = useState(false)
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -176,6 +177,64 @@ export default function ProductDetail() {
   const isOutOfStock = totalStock === 0
   const isSelectedOutOfStock = selectedStock === 0
 
+  const colorGroups = useMemo(() => {
+    const groups = []
+    const seen = new Set()
+    variants.forEach((v) => {
+      const id = v.mauSac?.maMauSac
+      if (!id || seen.has(id)) return
+      seen.add(id)
+      const inColor = variants.filter((x) => x.mauSac?.maMauSac === id)
+      const firstWithImg = inColor.find((x) => x.urlAnh)
+      groups.push({
+        maMauSac: id,
+        mauSac: v.mauSac,
+        image: firstWithImg?.urlAnh || product?.urlAnhDaiDien,
+        sizes: inColor.filter((x, i, arr) => arr.findIndex((y) => y.kichCo?.maKichCo === x.kichCo?.maKichCo) === i),
+        inStock: inColor.some((x) => (x.tonKho || 0) > 0),
+      })
+    })
+    return groups
+  }, [variants, product])
+  const colorCount = colorGroups.length
+
+  const pickVariantForColor = (group) => {
+    if (!group) return null
+    const withStock = group.sizes.find((s) => (s.tonKho || 0) > 0)
+    return withStock?.maBienThe || group.sizes[0]?.maBienThe || null
+  }
+
+  const syncColorIdx = (variantId) => {
+    const v = variants.find((x) => x.maBienThe === variantId)
+    if (!v) return
+    const idx = colorGroups.findIndex((g) => g.maMauSac === v.mauSac?.maMauSac)
+    if (idx >= 0) setColorIdx(idx)
+  }
+
+  const goPrevColor = () => {
+    if (colorCount <= 1) return
+    const next = (colorIdx - 1 + colorCount) % colorCount
+    setColorIdx(next)
+    const vId = pickVariantForColor(colorGroups[next])
+    if (vId) {
+      setSelectedVar(vId)
+      const tIdx = thumbnails.findIndex((t) => t.maBienThe === vId)
+      setPreviewIdx(tIdx >= 0 ? tIdx : 0)
+    }
+  }
+
+  const goNextColor = () => {
+    if (colorCount <= 1) return
+    const next = (colorIdx + 1) % colorCount
+    setColorIdx(next)
+    const vId = pickVariantForColor(colorGroups[next])
+    if (vId) {
+      setSelectedVar(vId)
+      const tIdx = thumbnails.findIndex((t) => t.maBienThe === vId)
+      setPreviewIdx(tIdx >= 0 ? tIdx : 0)
+    }
+  }
+
   const REVIEWS_PER_PAGE = 5
   const sortedReviews = [...reviews].sort((a, b) => {
     if (reviewSort === 'newest') return new Date(b.ngayTao) - new Date(a.ngayTao)
@@ -200,13 +259,30 @@ export default function ProductDetail() {
 
       <div className="grid md:grid-cols-2 gap-8">
         <div className="max-w-lg mx-auto md:mx-0">
-          <div className="group relative aspect-square bg-ivory-100 rounded-2xl overflow-hidden mb-3 shadow-lg">
-            <div className="hidden md:block w-full h-full">
-              <TiltedCard imageSrc={mainImg} altText={product.tenSanPham} containerHeight="100%" containerWidth="100%" imageHeight="100%" imageWidth="100%" rotateAmplitude={10} scaleOnHover={1.03} />
+          <div className="relative mb-3">
+            <div className="flex items-center animate-float">
+              {colorCount > 1 && (
+                <button onClick={goPrevColor} aria-label="Màu trước"
+                  className="shrink-0 z-10 mr-1.5 md:mr-3 w-9 h-9 rounded-full bg-ivory/95 hover:bg-ivory text-ink shadow-md border border-stone/15 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+              <div key={mainImg} className="relative flex-1 aspect-square bg-ivory-100 rounded-2xl overflow-hidden shadow-lg animate-fade-in">
+                <div className="hidden md:block w-full h-full">
+                  <TiltedCard imageSrc={mainImg} altText={product.tenSanPham} containerHeight="100%" containerWidth="100%" imageHeight="100%" imageWidth="100%" rotateAmplitude={10} scaleOnHover={1.03} />
+                </div>
+                <div className="block md:hidden w-full h-full">
+                  <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
+                </div>
+              </div>
+              {colorCount > 1 && (
+                <button onClick={goNextColor} aria-label="Màu tiếp theo"
+                  className="shrink-0 z-10 ml-1.5 md:ml-3 w-9 h-9 rounded-full bg-ivory/95 hover:bg-ivory text-ink shadow-md border border-stone/15 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              )}
             </div>
-            <div className="block md:hidden w-full h-full">
-              <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
-            </div>
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-4/5 h-5 rounded-[50%] bg-noir/15 blur-xl pointer-events-none" />
           </div>
           {allImages.length > 1 && (
             <div className="relative">
@@ -217,7 +293,7 @@ export default function ProductDetail() {
                         onClick={() => {
                             setPreviewIdx(idx)
                             const vId = thumbnails[idx]?.maBienThe
-                            if (vId) setSelectedVar(vId)
+                            if (vId) { setSelectedVar(vId); syncColorIdx(vId) }
                         }}
                         className={`w-20 h-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 ${
                             idx === previewIdx
@@ -292,6 +368,7 @@ export default function ProductDetail() {
                             const firstAvail = hasStock ? variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0) || variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac) : variants.find(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac)
                             const vId = firstAvail?.maBienThe || v.maBienThe
                             setSelectedVar(vId)
+                            syncColorIdx(vId)
                             const idx = thumbnails.findIndex(t => t.maBienThe === vId)
                             setPreviewIdx(idx >= 0 ? idx : 0)
                           }}
@@ -323,6 +400,7 @@ export default function ProductDetail() {
                           onClick={() => {
                             if (disabled) return
                             setSelectedVar(v.maBienThe)
+                            syncColorIdx(v.maBienThe)
                             const idx = thumbnails.findIndex(t => t.maBienThe === v.maBienThe)
                             setPreviewIdx(idx >= 0 ? idx : 0)
                           }}
