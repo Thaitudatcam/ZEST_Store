@@ -34,7 +34,7 @@ export default function ViZeststore() {
 
   const loadLichSu = useCallback((p) => {
     setLoading(true)
-    getLichSuVi(p, 20)
+    getLichSuVi(p, 10)
       .then(data => {
         setLichSu(data.content || [])
         setTotalPages(data.totalPages || 0)

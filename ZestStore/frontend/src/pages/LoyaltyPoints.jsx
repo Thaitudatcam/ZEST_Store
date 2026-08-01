@@ -21,7 +21,7 @@ export default function LoyaltyPoints() {
   const load = async (p = 0) => {
     setLoading(true)
     try {
-      const [sd, ls] = await Promise.all([getSoDuDiem(), getLichSuDiem(p)])
+      const [sd, ls] = await Promise.all([getSoDuDiem(), getLichSuDiem(p, 10)])
       setViDiem(sd)
       setLichSu(Array.isArray(ls.content) ? ls.content : [])
       setTotalPages(ls.totalPages || 0)
