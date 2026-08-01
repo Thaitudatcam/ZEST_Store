@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
-import { getCategories } from '../../api/categories'
+import { getActiveCategories } from '../../api/categories'
 import { uploadProductImage, uploadVariantImage, generateDescription } from '../../api/products'
 import { createCategory, deleteCategory, createBrand, deleteBrand, createColor, createSize } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
@@ -59,7 +59,7 @@ export default function AdminProductForm() {
 
   useEffect(() => {
     Promise.all([
-      getCategories(),
+      getActiveCategories(),
       api.get('/sizes').then(r => r.data),
       api.get('/colors').then(r => r.data),
       api.get('/brands').then(r => r.data),

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
+import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
 import { getCustomerDiem } from '../../api/vi'
 import { getAvailableCoupons } from '../../api/coupons'
@@ -32,13 +33,8 @@ export default function AdminPOS() {
   const [categoryId, setCategoryId] = useState('')
 
   useEffect(() => {
-    api.get('/categories').then(r => {
-      const flatten = (list) => list.reduce((acc, c) => {
-        acc.push(c)
-        if (c.children) acc.push(...flatten(c.children))
-        return acc
-      }, [])
-      setCategories(flatten(r.data || []))
+    getActiveCategories().then(r => {
+      setCategories(Array.isArray(r) ? r : [])
     }).catch(() => {})
   }, [])
 

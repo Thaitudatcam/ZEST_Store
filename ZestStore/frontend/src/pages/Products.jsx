@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getProducts } from '../api/products'
-import { getCategoryTree } from '../api/categories'
+import { getActiveCategories } from '../api/categories'
 import ProductCard from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Search } from 'lucide-react'
@@ -14,7 +14,7 @@ export default function Products() {
   const [page, setPage] = useState(0)
 
   useEffect(() => {
-    getCategoryTree().then((d) => setCategories(Array.isArray(d) ? d : [])).catch(() => {})
+    getActiveCategories().then((d) => setCategories(Array.isArray(d) ? d : [])).catch(() => {})
   }, [])
 
   useEffect(() => {
