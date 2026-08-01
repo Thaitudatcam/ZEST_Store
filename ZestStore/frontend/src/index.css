@@ -32,6 +32,11 @@
   --color-ivory: #FAF7F0;
   --color-ivory-100: #F4EFE3;
 
+  /* --- Brand: Beige (warm cream surfaces) --- */
+  --color-beige: #E8DCC0;
+  --color-beige-light: #F1E9D4;
+  --color-beige-deep: #D8C9A8;
+
   /* --- Text --- */
   --color-ink: #14141A;
   --color-ink-soft: #2A2A33;

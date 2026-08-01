@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { getProducts } from '../api/products'
-import { getCategories } from '../api/categories'
+import { getActiveCategories } from '../api/categories'
 import { getBestSelling, getPopular, getPersonalized } from '../api/recommendations'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
@@ -41,20 +41,36 @@ export default function Home() {
   const [allProducts, setAllProducts] = useState([])
   const [allLoading, setAllLoading] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const catSlug = searchParams.get('category')
+    const kw = searchParams.get('keyword')
+    if (kw) setSearchQuery(kw)
+    if (catSlug) {
+      const match = categories.find((c) => c.slug === catSlug)
+      if (match) { setFilterCategory(match.maDanhMuc); setIsFilterOpen(true) }
+      else setFilterCategory('')
+    }
+    if (catSlug || kw) {
+      const t = setTimeout(() => productRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+      return () => clearTimeout(t)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, categories])
 
   useEffect(() => {
     (async () => {
       try {
         const [prodData, catData, sz, best] = await Promise.all([
           getProducts({ page: 0, size: 8, sortBy: 'ngayTao', sortDir: 'desc' }),
-          getCategories(),
+          getActiveCategories(),
           api.get('/sizes').then(r => r.data),
           getBestSelling(8).catch(() => []),
         ]);
         setLatestProducts(prodData.content ?? prodData ?? []);
         setBestSelling(Array.isArray(best) ? best : []);
-        const roots = Array.isArray(catData) ? catData.filter((c) => !c.maDanhMucCha) : [];
-        setCategories(roots);
+        setCategories(Array.isArray(catData) ? catData : []);
         setSizes(Array.isArray(sz) ? sz : []);
       } catch {} finally { setLoading(false); }
     })();

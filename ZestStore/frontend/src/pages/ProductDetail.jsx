@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap, ChevronDown, ThumbsUp, BadgeCheck, Filter, ArrowUpDown, ChevronLeft } from 'lucide-react'
+import { ShoppingCart, Heart, Star, MessageSquare, ChevronRight, Zap, ChevronDown, ThumbsUp, BadgeCheck, Filter, ArrowUpDown, ChevronLeft, ArrowRight, Instagram, Twitter, Facebook, Linkedin, Music2 } from 'lucide-react'
 import TiltedCard from '../components/ui/TiltedCard'
 import { VND } from '../components/ProductCard'
 import Toast from '../components/Toast'
@@ -263,8 +263,16 @@ export default function ProductDetail() {
   const totalReviewPages = Math.ceil(sortedReviews.length / REVIEWS_PER_PAGE)
   const pagedReviews = sortedReviews.slice(reviewPage * REVIEWS_PER_PAGE, (reviewPage + 1) * REVIEWS_PER_PAGE)
 
+  const truncateWords = (text, max) => {
+    if (!text) return 'Bộ sưu tập thời trang cao cấp, thiết kế tinh tế cho phong cách của bạn.'
+    const words = String(text).trim().split(/\s+/)
+    if (words.length <= max) return String(text).trim()
+    return words.slice(0, max).join(' ') + '…'
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-beige">
+      <div className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <nav className="flex items-center gap-1.5 text-sm text-stone mb-6">
@@ -275,13 +283,36 @@ export default function ProductDetail() {
         <span className="text-ink font-semibold truncate max-w-[200px]">{product.tenSanPham}</span>
       </nav>
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="max-w-lg mx-auto md:mx-0">
+      <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr_1fr] lg:items-center">
+
+        <div className="flex flex-col items-start gap-5 order-3 lg:order-1">
+          <h1 className="font-serif text-4xl sm:text-5xl lg:text-[3.25rem] font-bold leading-[1.12] text-ink">
+            Wear Confidence<br />Define Your Style.
+          </h1>
+          <p className="text-stone text-base leading-relaxed max-w-sm">
+            {truncateWords(product.moTa, 30)}
+          </p>
+          <button
+            onClick={() => document.getElementById('mo-ta-san-pham')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="inline-flex items-center gap-2 bg-noir text-white px-8 py-3.5 rounded-full font-semibold text-sm transition-all duration-200 hover:bg-noir-800 hover:-translate-y-0.5 active:scale-95 shadow-sm">
+            Get the look <ArrowRight className="h-4 w-4" />
+          </button>
+          <div className="flex gap-2.5 pt-2">
+            {[Instagram, Twitter, Facebook, Linkedin, Music2].map((Icon, i) => (
+              <a key={i} href="#" onClick={(e) => e.preventDefault()}
+                className="w-10 h-10 rounded-full bg-white/70 hover:bg-white text-ink-soft hover:text-noir flex items-center justify-center border border-beige-deep/40 transition-all duration-200 hover:scale-105">
+                <Icon className="h-4 w-4" />
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="order-1 lg:order-2 max-w-md mx-auto w-full">
           <div className="relative mb-3">
             <div className="flex items-center animate-float">
               {colorCount > 1 && (
                 <button onClick={goPrevColor} aria-label="Màu trước"
-                  className="shrink-0 z-10 mr-1.5 md:mr-3 w-9 h-9 rounded-full bg-ivory/95 hover:bg-ivory text-ink shadow-md border border-stone/15 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
+                  className="shrink-0 z-10 mr-1.5 md:mr-3 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-ink shadow-md border border-beige-deep/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
@@ -301,24 +332,19 @@ export default function ProductDetail() {
               </div>
               {colorCount > 1 && (
                 <button onClick={goNextColor} aria-label="Màu tiếp theo"
-                  className="shrink-0 z-10 ml-1.5 md:ml-3 w-9 h-9 rounded-full bg-ivory/95 hover:bg-ivory text-ink shadow-md border border-stone/15 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
+                  className="shrink-0 z-10 ml-1.5 md:ml-3 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-ink shadow-md border border-beige-deep/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
                   <ChevronRight className="h-5 w-5" />
                 </button>
               )}
             </div>
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-4/5 h-5 rounded-[50%] bg-noir/15 blur-xl pointer-events-none" />
           </div>
+          <p className="text-center font-serif text-xl md:text-2xl text-ink mt-6">Dress Better. Feel Better.</p>
         </div>
 
-        <div>
-          {product.danhMuc?.tenDanhMuc && (
-            <span className="inline-block text-[11px] font-semibold text-gold bg-gold/10 px-2.5 py-1 rounded-full mb-2">
-              {product.danhMuc.tenDanhMuc}
-            </span>
-          )}
-          <h1 className="text-3xl font-bold text-ink mb-1">{product.tenSanPham}</h1>
+        <div className="order-2 lg:order-3">
           <div className="flex items-center gap-2 mb-5">
-            <p className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">{VND(variantPrice)}</p>
+            <p className="text-4xl font-bold text-ink">{VND(variantPrice)}</p>
           </div>
 
           {variants.length > 0 && (() => {
@@ -332,28 +358,28 @@ export default function ProductDetail() {
             const sizesForColor = currentGroup?.sizes ?? []
 
             return (
-              <div ref={variantRef} className={`relative mb-5 transition-all duration-500 ${highlightVariant ? 'bg-gradient-to-r from-red-100/90 via-rose-100/90 to-red-100/90 -mx-2 px-2 py-1 rounded-2xl' : ''}`}>
+              <div ref={variantRef} className={`relative mb-5 transition-all duration-500 ${highlightVariant ? 'bg-noir/5 -mx-2 px-2 py-1 rounded-2xl' : ''}`}>
                 {highlightVariant && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-red-600 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-lg shadow-red-300/50 whitespace-nowrap z-10 animate-pulse">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-bordeaux text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-lg whitespace-nowrap z-10 animate-pulse">
                     Vui lòng chọn màu sắc & kích cỡ
                   </div>
                 )}
                 <div className="mb-4">
                   <label className="font-semibold text-sm mb-2.5 block text-ink-soft">Màu sắc:</label>
-                  <div className="flex gap-3 flex-wrap">
+                  <div className="flex gap-2 flex-wrap">
                     {uniqueColors.map((v) => {
                       const hasStock = variants.some(x => x.mauSac?.maMauSac === v.mauSac?.maMauSac && (x.tonKho || 0) > 0)
                       const selected = currentColorId === v.mauSac?.maMauSac
                       return (
                         <button key={v.mauSac?.maMauSac}
                           onClick={() => handleColorSelect(v.mauSac?.maMauSac)}
-                          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
                             selected
-                              ? 'bg-gold text-noir shadow-md shadow-blue-200'
-                              : 'bg-ivory border border-stone/20 hover:border-stone/30 hover:shadow-sm'
+                              ? 'bg-noir text-white shadow-md'
+                              : 'bg-white/80 border border-beige-deep/50 hover:border-noir/30 hover:bg-white'
                           }`}>
                           {v.mauSac?.maMauHex && (
-                            <span className={`w-5 h-5 rounded-full ${selected ? 'ring-2 ring-white ring-offset-1 ring-offset-blue-700' : 'ring-1 ring-gray-300'}`}
+                            <span className={`w-5 h-5 rounded-full ${selected ? 'ring-2 ring-white ring-offset-1 ring-offset-noir' : 'ring-1 ring-beige-deep/50'}`}
                               style={{ backgroundColor: v.mauSac.maMauHex }} />
                           )}
                           <span>{v.mauSac?.mauSac}</span>
@@ -374,12 +400,12 @@ export default function ProductDetail() {
                         <button key={v.maBienThe}
                           onClick={() => handleSizeSelect(v.kichCo?.maKichCo)}
                           disabled={disabled}
-                          className={`min-w-[3rem] px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          className={`w-12 h-12 rounded-full text-sm font-semibold transition-all duration-200 flex items-center justify-center ${
                             selected
-                              ? 'bg-gold text-noir shadow-md shadow-blue-200'
+                              ? 'bg-white text-noir border-2 border-noir shadow-md'
                               : disabled
-                                ? 'bg-ivory-100 text-stone border border-stone/10 cursor-not-allowed line-through'
-                                : 'bg-ivory border border-stone/20 hover:border-stone/30 hover:shadow-sm'
+                                ? 'bg-beige-deep/40 text-stone border border-transparent cursor-not-allowed line-through'
+                                : 'bg-noir text-white hover:bg-noir-800'
                           }`}>
                           {v.kichCo?.kichCo || 'N/A'}
                         </button>
@@ -397,44 +423,44 @@ export default function ProductDetail() {
           })()}
 
           <div className="flex items-center gap-4 mb-5">
-            <div className="flex items-center bg-ivory-100 border border-stone/20 rounded-xl overflow-hidden">
+            <div className="flex items-center bg-white/80 border border-beige-deep/50 rounded-full overflow-hidden">
               <button onClick={() => setQty(Math.max(1, qty - 1))} disabled={qty <= 1}
-                className="px-3.5 py-2.5 text-stone hover:bg-ivory-100 hover:text-ink transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">−</button>
+                className="px-3.5 py-2.5 text-stone hover:bg-white hover:text-ink transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">−</button>
               <input type="number" value={qty} min={1} max={selectedStock || 1}
                 onChange={e => {
                   const v = parseInt(e.target.value) || 1
                   setQty(Math.max(1, Math.min(selectedStock || 1, v)))
                 }}
                 onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) setQty(1) }}
-                className="w-16 px-2 py-2.5 border-x border-stone/20 text-center font-semibold text-ink text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                className="w-16 px-2 py-2.5 border-x border-beige-deep/40 text-center font-semibold text-ink text-sm outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
               <button onClick={() => setQty(Math.min(selectedStock, qty + 1))} disabled={qty >= selectedStock}
-                className="px-3.5 py-2.5 text-stone hover:bg-ivory-100 hover:text-ink transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">+</button>
+                className="px-3.5 py-2.5 text-stone hover:bg-white hover:text-ink transition font-medium text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed">+</button>
             </div>
             {selectedStock > 0 && <span className="text-xs text-stone">Còn lại: <strong>{selectedStock}</strong></span>}
           </div>
 
           <div className="flex gap-3">
             <button onClick={handleBuyNow} disabled={isOutOfStock || isSelectedOutOfStock}
-              className={`flex-1 font-semibold py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
+              className={`flex-1 font-semibold py-3.5 rounded-full transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${
                 isOutOfStock || isSelectedOutOfStock
-                  ? 'bg-ivory-100 text-stone cursor-not-allowed'
-                  : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
+                  ? 'bg-beige-deep/50 text-stone cursor-not-allowed'
+                  : 'bg-noir text-white hover:bg-noir-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
               }`}>
               <Zap className="h-5 w-5" /> Mua ngay
             </button>
             <button onClick={handleAddClick} disabled={isOutOfStock || isSelectedOutOfStock}
-              className={`font-semibold py-3.5 px-5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border-2 ${
+              className={`font-semibold py-3.5 px-5 rounded-full transition-all duration-200 flex items-center justify-center gap-2 border-2 ${
                 isOutOfStock || isSelectedOutOfStock
-                  ? 'bg-ivory-100 text-stone border-stone/20 cursor-not-allowed'
-                  : 'border-gold text-gold hover:bg-gold/10 hover:shadow-sm active:scale-95'
+                  ? 'bg-beige-deep/50 text-stone border-beige-deep/50 cursor-not-allowed'
+                  : 'border-noir text-noir hover:bg-noir/5 hover:shadow-sm active:scale-95'
               }`}>
               <ShoppingCart className="h-5 w-5" />
             </button>
             <button onClick={toggleWish}
-              className={`p-3.5 rounded-xl border transition-all duration-200 ${
+              className={`p-3.5 rounded-full border transition-all duration-200 ${
                 inWish
                   ? 'text-bordeaux border-bordeaux/20 bg-bordeaux/10 hover:bg-bordeaux/20'
-                  : 'border-stone/20 hover:border-stone/30 hover:bg-ivory-100 hover:shadow-sm'
+                  : 'border-beige-deep/50 hover:border-noir/30 hover:bg-white/80 hover:shadow-sm'
               }`}>
               <Heart className={`h-5 w-5 transition-all duration-200 ${inWish ? 'fill-red-500 scale-110' : ''}`} />
             </button>
@@ -445,9 +471,9 @@ export default function ProductDetail() {
       </div>
 
       {product.moTa && (
-        <div className="mt-10">
-          <div className="bg-ivory border border-stone/10 rounded-2xl shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-transparent px-6 py-4 border-b border-stone/10">
+        <div className="mt-12" id="mo-ta-san-pham">
+          <div className="bg-beige-light border border-beige-deep/40 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-beige-deep/25 px-6 py-4 border-b border-beige-deep/40">
               <h2 className="text-lg font-bold text-ink flex items-center gap-2">
                 <span className="w-1 h-5 bg-gold rounded-full inline-block" />
                 Mô tả sản phẩm
@@ -460,9 +486,9 @@ export default function ProductDetail() {
         </div>
       )}
 
-      <div className="mt-10">
-        <div className="bg-ivory border border-stone/10 rounded-2xl shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-50 to-transparent px-6 py-4 border-b border-stone/10 flex items-center justify-between">
+      <div className="mt-12">
+        <div className="bg-beige-light border border-beige-deep/40 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-beige-deep/25 px-6 py-4 border-b border-beige-deep/40 flex items-center justify-between">
             <h2 className="text-lg font-bold text-ink flex items-center gap-2">
               <span className="w-1 h-5 bg-gold/100 rounded-full inline-block" />
               Đánh giá sản phẩm
@@ -530,7 +556,7 @@ export default function ProductDetail() {
         <div className="mt-6">
           <div className="space-y-3">
             {pagedReviews.map((r) => (
-              <div key={r.maDanhGia} className="bg-ivory border border-stone/10 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
+              <div key={r.maDanhGia} className="bg-beige-light border border-beige-deep/40 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
@@ -555,7 +581,7 @@ export default function ProductDetail() {
                   </div>
                 </div>
                 {r.binhLuan && (
-                  <p className="text-sm text-stone leading-relaxed bg-ivory-100 rounded-xl p-3.5 border border-stone/5">
+                  <p className="text-sm text-stone leading-relaxed bg-white/80 rounded-xl p-3.5 border border-beige-deep/30">
                     {r.binhLuan}
                   </p>
                 )}
@@ -566,21 +592,21 @@ export default function ProductDetail() {
           {totalReviewPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-5">
               <button disabled={reviewPage === 0} onClick={() => setReviewPage(reviewPage - 1)}
-                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-beige-deep/30 disabled:opacity-30 disabled:cursor-not-allowed transition">
                 ← Trước
               </button>
               {Array.from({ length: totalReviewPages }, (_, i) => (
                 <button key={i} onClick={() => setReviewPage(i)}
                   className={`w-8 h-8 text-xs rounded-lg border transition ${
                     i === reviewPage
-                      ? 'bg-gold text-noir border-gold font-semibold shadow-sm'
-                      : 'text-stone border-stone/20 hover:bg-ivory-100'
+                      ? 'bg-noir text-white border-noir font-semibold shadow-sm'
+                      : 'text-stone border-beige-deep/40 hover:bg-beige-deep/30'
                   }`}>
                   {i + 1}
                 </button>
               ))}
               <button disabled={reviewPage >= totalReviewPages - 1} onClick={() => setReviewPage(reviewPage + 1)}
-                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                className="px-3 py-1.5 text-xs border rounded-lg hover:bg-beige-deep/30 disabled:opacity-30 disabled:cursor-not-allowed transition">
                 Sau →
               </button>
             </div>
@@ -593,7 +619,7 @@ export default function ProductDetail() {
           <div className="flex items-center gap-3 mb-5">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
             <h2 className="text-lg font-bold text-ink whitespace-nowrap">Có thể bạn cũng thích</h2>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-beige-deep/50 to-transparent" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {relatedProducts.map(p => (
@@ -642,6 +668,7 @@ export default function ProductDetail() {
           onClose={() => setModalOpen(false)}
         />
       )}
+      </div>
     </div>
   )
 }

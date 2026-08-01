@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,6 +26,21 @@ public class CategoryService {
 
     public List<DanhMuc> getAll() {
         return danhMucRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllActive() {
+        return danhMucRepository.findAll().stream()
+                .filter(d -> d.getNgayXoa() == null)
+                .map(d -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("maDanhMuc", d.getMaDanhMuc());
+                    m.put("tenDanhMuc", d.getTenDanhMuc());
+                    m.put("slug", d.getDuongDanSlug());
+                    m.put("maDanhMucCha", d.getDanhMucCha() != null ? d.getDanhMucCha().getMaDanhMuc() : null);
+                    return m;
+                })
+                .collect(Collectors.toList());
     }
 
     public List<DanhMuc> getRootCategories() {
