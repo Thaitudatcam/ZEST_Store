@@ -53,7 +53,6 @@ export default function AdminPOS() {
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [showCouponDropdown, setShowCouponDropdown] = useState(false)
   const [couponDropdownLoading, setCouponDropdownLoading] = useState(false)
-  const couponRef = useRef(null)
 
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
@@ -86,9 +85,6 @@ export default function AdminPOS() {
     const handleClick = (e) => {
       if (customerRef.current && !customerRef.current.contains(e.target)) {
         setShowCustomerDropdown(false)
-      }
-      if (couponRef.current && !couponRef.current.contains(e.target)) {
-        setShowCouponDropdown(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
@@ -565,13 +561,12 @@ export default function AdminPOS() {
               </div>
             )}
           </div>
-          <div className="border-t pt-2 space-y-2" ref={couponRef}>
+          <div className="border-t pt-2 space-y-2">
             <label className="text-xs font-medium text-stone">Mã giảm giá</label>
             <div className="flex gap-2 relative">
               <div className="flex-1 relative">
-                <input value={couponCode} onChange={e => { setCouponCode(e.target.value); setShowCouponDropdown(true) }}
-                  onFocus={() => { if (availableCoupons.length > 0 || couponDropdownLoading) setShowCouponDropdown(true) }}
-                  placeholder="Nhập hoặc quét mã..."
+                <input value={couponCode} onChange={e => setCouponCode(e.target.value)}
+                  placeholder="Nhập mã..."
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold pr-20" />
                 {(availableCoupons.length > 0 || couponDropdownLoading) && (
                   <button onClick={() => setShowCouponDropdown(prev => !prev)}
@@ -586,34 +581,45 @@ export default function AdminPOS() {
               </button>
             </div>
             {showCouponDropdown && (
-              <div className="bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                {couponDropdownLoading ? (
-                  <div className="p-3 text-center text-sm text-stone">
-                    <div className="h-4 w-4 border-2 border-gold border-t-transparent rounded-full animate-spin inline-block mr-2" />
-                    Đang tải...
-                  </div>
-                ) : availableCoupons.length === 0 ? (
-                  <div className="p-3 text-center text-sm text-stone">Không có mã giảm giá khả dụng</div>
-                ) : (
-                  availableCoupons.map((v, i) => (
-                    <button key={i} onClick={() => { setCouponCode(v.maCode); setShowCouponDropdown(false); applyCouponCode(v.maCode) }}
-                      className="w-full text-left px-3 py-2.5 hover:bg-gold/10 border-b last:border-0 flex items-center justify-between">
-                      <div>
-                        <span className="text-sm font-medium">{v.maCode}</span>
-                        <span className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${v.isPersonal ? 'bg-royal/20 text-royal' : 'bg-gold/20 text-gold'}`}>
-                          {v.isPersonal ? 'Ví' : 'Coupon'}
-                        </span>
-                        <p className="text-xs text-emerald-deep mt-0.5">
-                          {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
-                          {v.giaTriDonToiThieu > 0 && ` - Đơn tối thiểu ${VND(v.giaTriDonToiThieu)}`}
-                        </p>
-                      </div>
-                      <div className="text-right text-xs text-stone">
-                        {v.ngayKetThuc && <p>HSD: {v.ngayKetThuc.slice(0, 10)}</p>}
-                      </div>
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
+                onClick={() => setShowCouponDropdown(false)}>
+                <div className="bg-ivory rounded-2xl max-w-md w-full mx-4 overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <h3 className="font-bold text-lg">Chọn mã giảm giá</h3>
+                    <button onClick={() => setShowCouponDropdown(false)} className="text-stone hover:text-stone">
+                      <X className="h-5 w-5" />
                     </button>
-                  ))
-                )}
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {couponDropdownLoading ? (
+                      <div className="p-6 text-center text-sm text-stone">
+                        <div className="h-4 w-4 border-2 border-gold border-t-transparent rounded-full animate-spin inline-block mr-2" />
+                        Đang tải...
+                      </div>
+                    ) : availableCoupons.length === 0 ? (
+                      <div className="p-6 text-center text-sm text-stone">Không có mã giảm giá khả dụng</div>
+                    ) : (
+                      availableCoupons.map((v, i) => (
+                        <button key={i} onClick={() => { setCouponCode(v.maCode); setShowCouponDropdown(false); applyCouponCode(v.maCode) }}
+                          className="w-full text-left px-4 py-3 hover:bg-gold/10 border-b last:border-0 flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium">{v.maCode}</span>
+                            <span className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${v.isPersonal ? 'bg-royal/20 text-royal' : 'bg-gold/20 text-gold'}`}>
+                              {v.isPersonal ? 'Ví' : 'Coupon'}
+                            </span>
+                            <p className="text-xs text-emerald-deep mt-0.5">
+                              {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
+                              {v.giaTriDonToiThieu > 0 && ` - Đơn tối thiểu ${VND(v.giaTriDonToiThieu)}`}
+                            </p>
+                          </div>
+                          <div className="text-right text-xs text-stone">
+                            {v.ngayKetThuc && <p>HSD: {v.ngayKetThuc.slice(0, 10)}</p>}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             )}
             {couponMsg && <p className="text-xs text-bordeaux">{couponMsg}</p>}
