@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/sizes").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/brands").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/colors").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/diem/quy-tac").permitAll()
                 .requestMatchers("/api/debug/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/files/**").permitAll()

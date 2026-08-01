@@ -240,6 +240,13 @@ public class DonHangService {
         BigDecimal tienGiamDiem = BigDecimal.ZERO;
         Integer soDiemSuDung = request.getSoDiemSuDung();
         if (soDiemSuDung != null && soDiemSuDung > 0) {
+            int maxDiem = diemService.maxDiemChoPhep(tongTien.subtract(soTienGiam).max(BigDecimal.ZERO));
+            if (soDiemSuDung > maxDiem) {
+                soDiemSuDung = maxDiem;
+            }
+            if (soDiemSuDung > 0 && soDiemSuDung < diemService.diemToiThieu()) {
+                throw new BadRequestException("Tối thiểu " + diemService.diemToiThieu() + " điểm để sử dụng");
+            }
             tienGiamDiem = BigDecimal.valueOf(diemService.tinhTienGiam(soDiemSuDung));
             if (tienGiamDiem.compareTo(finalTotal) > 0) {
                 throw new BadRequestException("Số điểm giảm không được vượt quá tổng tiền thanh toán");
@@ -422,7 +429,7 @@ public class DonHangService {
         order = donHangRepository.save(order);
 
         if (Integer.valueOf(6).equals(status) && order.getNguoiDung() != null) {
-            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien(), "ONLINE");
+            tichDiemChoDonHang(order);
         }
 
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
@@ -489,7 +496,7 @@ public class DonHangService {
         donHangRepository.save(order);
 
         if (order.getNguoiDung() != null) {
-            diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), order.getTongTien(), "ONLINE");
+            tichDiemChoDonHang(order);
         }
 
         NguoiDung user = nguoiDungRepository.findById(userId)
@@ -658,5 +665,13 @@ public class DonHangService {
         orderSseService.sendOrderStatusUpdate(orderId, 5, oldStatus, "user", null);
 
         return Map.of("message", "Order cancelled");
+    }
+
+    private void tichDiemChoDonHang(DonHang order) {
+        BigDecimal base = order.getTongTien();
+        if (diemService.tichTienTrenTienMat() && order.getSoTienGiamDiem() != null) {
+            base = base.subtract(order.getSoTienGiamDiem()).max(BigDecimal.ZERO);
+        }
+        diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), base, "ONLINE");
     }
 }

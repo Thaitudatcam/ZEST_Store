@@ -1,5 +1,6 @@
 package com.example.zeststore.service;
 
+import com.example.zeststore.entity.DiemQuyTac;
 import com.example.zeststore.entity.DiemTichLuy;
 import com.example.zeststore.entity.DonHang;
 import com.example.zeststore.entity.LichSuDiem;
@@ -25,20 +26,51 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DiemService {
 
-    private static final int TI_LE_TICH = 10000;
-    private static final int TI_LE_DOI = 1000;
-    private static final int THOI_HAN_THANG = 12;
+    private static final int TI_LE_TICH_DEFAULT = 10000;
+    private static final int TI_LE_DOI_DEFAULT = 1000;
+    private static final int THOI_HAN_THANG_DEFAULT = 12;
 
     private final DiemTichLuyRepository diemTichLuyRepository;
     private final LichSuDiemRepository lichSuDiemRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final DonHangRepository donHangRepository;
+    private final DiemQuyTacService diemQuyTacService;
+
+    private int tiLeTich() {
+        DiemQuyTac r = diemQuyTacService.getRules();
+        return r.getTiLeTich() != null ? r.getTiLeTich() : 10000;
+    }
+
+    private int tiLeDoi() {
+        DiemQuyTac r = diemQuyTacService.getRules();
+        return r.getTiLeDoi() != null ? r.getTiLeDoi() : 1000;
+    }
+
+    private int thoiHanThang() {
+        DiemQuyTac r = diemQuyTacService.getRules();
+        return r.getThoiHanThang() != null ? r.getThoiHanThang() : 12;
+    }
+
+    public int diemToiThieu() {
+        DiemQuyTac r = diemQuyTacService.getRules();
+        return r.getDiemToiThieu() != null ? r.getDiemToiThieu() : 10;
+    }
+
+    public int giamToiDaPhanTram() {
+        DiemQuyTac r = diemQuyTacService.getRules();
+        return r.getGiamToiDaPhanTram() != null ? r.getGiamToiDaPhanTram() : 50;
+    }
+
+    public boolean tichTienTrenTienMat() {
+        DiemQuyTac r = diemQuyTacService.getRules();
+        return r.getTichTienMat() == null || r.getTichTienMat();
+    }
 
     @Transactional
     public void tichDiem(Integer maNguoiDung, Integer maDonHang, BigDecimal tongTien, String maKenh) {
         if (maNguoiDung == null || tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) return;
 
-        int diemTich = tongTien.divide(BigDecimal.valueOf(TI_LE_TICH), RoundingMode.DOWN).intValue();
+        int diemTich = tongTien.divide(BigDecimal.valueOf(tiLeTich()), RoundingMode.DOWN).intValue();
         if (diemTich <= 0) return;
 
         NguoiDung nguoiDung = nguoiDungRepository.findById(maNguoiDung)
@@ -53,7 +85,7 @@ public class DiemService {
                         .build()));
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime ngayHetHan = now.plusMonths(THOI_HAN_THANG);
+        LocalDateTime ngayHetHan = now.plusMonths(thoiHanThang());
 
         lichSuDiemRepository.save(LichSuDiem.builder()
                 .nguoiDung(nguoiDung)
@@ -95,7 +127,15 @@ public class DiemService {
 
     public int tinhTienGiam(Integer soDiem) {
         if (soDiem == null || soDiem <= 0) return 0;
-        return soDiem * TI_LE_DOI;
+        return soDiem * tiLeDoi();
+    }
+
+    public int maxDiemChoPhep(BigDecimal giaTriHang) {
+        if (giaTriHang == null || giaTriHang.compareTo(BigDecimal.ZERO) <= 0) return 0;
+        BigDecimal maxGiam = giaTriHang
+                .multiply(BigDecimal.valueOf(giamToiDaPhanTram()))
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.DOWN);
+        return maxGiam.divide(BigDecimal.valueOf(tiLeDoi()), 0, RoundingMode.DOWN).intValue();
     }
 
     @Transactional

@@ -80,13 +80,14 @@ public class POSService {
             soTienGiam = coupon.getGiaTriGiamToiDa();
         }
 
-        return Map.of(
-                "hopLe", true,
-                "loaiMa", loaiMa,
-                "kieuGiamGia", coupon.getKieuGiamGia(),
-                "soTienGiam", soTienGiam,
-                "lyDoTuChoi", null
-        );
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("hopLe", true);
+        result.put("maCode", coupon.getMaCode());
+        result.put("loaiMa", loaiMa);
+        result.put("kieuGiamGia", coupon.getKieuGiamGia());
+        result.put("soTienGiam", soTienGiam);
+        result.put("lyDoTuChoi", null);
+        return result;
     }
 
     @Transactional
@@ -192,6 +193,13 @@ public class POSService {
         BigDecimal tienGiamDiem = BigDecimal.ZERO;
         Integer soDiemSuDung = request.getSoDiemSuDung();
         if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
+            int maxDiem = diemService.maxDiemChoPhep(thanhToanTong);
+            if (soDiemSuDung > maxDiem) {
+                soDiemSuDung = maxDiem;
+            }
+            if (soDiemSuDung > 0 && soDiemSuDung < diemService.diemToiThieu()) {
+                throw new BadRequestException("Tối thiểu " + diemService.diemToiThieu() + " điểm để sử dụng");
+            }
             tienGiamDiem = BigDecimal.valueOf(diemService.tinhTienGiam(soDiemSuDung));
             if (tienGiamDiem.compareTo(thanhToanTong) > 0) {
                 throw new BadRequestException("Số điểm giảm không được vượt quá tổng tiền thanh toán");
@@ -218,7 +226,8 @@ public class POSService {
         order = donHangRepository.save(order);
 
         if (customer != null) {
-            diemService.tichDiem(customer.getMaNguoiDung(), order.getMaDonHang(), thanhToanTong.add(tienGiamDiem), "POS");
+            BigDecimal tichDiemBase = diemService.tichTienTrenTienMat() ? thanhToanTong : thanhToanTong.add(tienGiamDiem);
+            diemService.tichDiem(customer.getMaNguoiDung(), order.getMaDonHang(), tichDiemBase, "POS");
         }
         if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
             diemService.truDiem(customer.getMaNguoiDung(), soDiemSuDung, order.getMaDonHang(), "POS");

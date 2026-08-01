@@ -79,3 +79,6 @@ export const deleteCampaign = (id) => api.delete(`/admin/campaigns/${id}`).then(
 export const getCouponBatches = () => api.get('/admin/coupon-batches').then((r) => r.data)
 export const createCouponBatch = (data) => api.post('/admin/coupon-batches', data).then((r) => r.data)
 export const getCouponBatchVouchers = (id) => api.get(`/admin/coupon-batches/${id}/vouchers`).then((r) => r.data)
+
+export const getDiemQuyTacAdmin = () => api.get('/admin/diem-quy-tac').then((r) => r.data)
+export const updateDiemQuyTac = (data) => api.put('/admin/diem-quy-tac', data).then((r) => r.data)

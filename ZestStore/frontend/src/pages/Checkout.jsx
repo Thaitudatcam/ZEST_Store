@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
-import { getSoDu, getSoDuDiem, getLichSuDiem } from '../api/vi'
+import { getSoDu, getSoDuDiem, getLichSuDiem, getDiemQuyTac } from '../api/vi'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
@@ -96,7 +96,7 @@ export default function Checkout() {
   const [vietQrData, setVietQrData] = useState(null)
   const [diemSuDung, setDiemSuDung] = useState(0)
   const [soDiemHienCo, setSoDiemHienCo] = useState(0)
-  const [apDungDiem, setApDungDiem] = useState(false)
+  const [diemQuyTac, setDiemQuyTac] = useState(null)
   const [showDiemHistory, setShowDiemHistory] = useState(false)
   const [diemHistoryData, setDiemHistoryData] = useState([])
   const [diemHistoryLoading, setDiemHistoryLoading] = useState(false)
@@ -149,6 +149,7 @@ export default function Checkout() {
 
   const refreshDiem = () => {
     getSoDuDiem().then(d => setSoDiemHienCo(d.soDiem || 0)).catch(() => {})
+    getDiemQuyTac().then(setDiemQuyTac).catch(() => {})
   }
 
   const loadDiemHistory = async () => {
@@ -410,7 +411,14 @@ export default function Checkout() {
     ? (freeshipVoucher.giaTriGiam === 0 ? shippingFee : Math.min(freeshipVoucher.giaTriGiam, shippingFee))
     : 0
   const effectiveShippingFee = shippingFee - freeshipDiscount
-  const tienGiamDiem = diemSuDung * 1000
+
+  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1000
+  const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
+  const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
+  const giaTriHangSauCoupon = Math.max(0, rawTotal - discount)
+  const maxDiemTheoQuyTac = Math.floor(giaTriHangSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
+  const maxDiemSuDung = Math.max(0, Math.min(soDiemHienCo, maxDiemTheoQuyTac))
+  const tienGiamDiem = diemSuDung * tiLeDoi
   const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee - tienGiamDiem)
 
   const goToStep = (s) => {
@@ -427,6 +435,7 @@ export default function Checkout() {
     if (cart.length === 0) { return }
     if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn đầy đủ địa chỉ giao hàng'); return }
     if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
+    if (diemSuDung > 0 && diemSuDung < diemToiThieu) { toast.error(`Tối thiểu ${diemToiThieu} điểm để sử dụng`); return }
     setPlacing(true)
     try {
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
@@ -442,7 +451,7 @@ export default function Checkout() {
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
         weight: Math.max(weight, 500),
-        soDiemSuDung: apDungDiem && diemSuDung > 0 ? diemSuDung : undefined,
+        soDiemSuDung: diemSuDung > 0 ? diemSuDung : undefined,
       }
       if (selectedItems) {
         orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
@@ -723,23 +732,15 @@ export default function Checkout() {
                       <div className="flex items-center justify-between text-xs text-stone">
                         <span>Số dư: <strong className="text-gold-hover">{soDiemHienCo.toLocaleString()} điểm</strong></span>
                       </div>
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setDiemSuDung(0) }} className="accent-amber-500" />
-                        Có áp dụng điểm tích lũy
-                      </label>
-                      {apDungDiem && (
-                        <div className="space-y-1">
-                          <div className="flex gap-2 items-center">
-                            <input type="number" min={0} max={soDiemHienCo} value={diemSuDung}
-                              onChange={e => setDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), soDiemHienCo))}
-                              placeholder="Số điểm muốn dùng"
-                              className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                          </div>
-                          {diemSuDung > 0 && (
-                            <p className="text-xs text-gold">Giảm {VND(diemSuDung * 1000)}</p>
-                          )}
+                      <div className="space-y-1">
+                        <div className="flex gap-2 items-center">
+                          <input type="number" min={0} max={maxDiemSuDung} value={diemSuDung}
+                            onChange={e => setDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), maxDiemSuDung))}
+                            placeholder="Số điểm muốn dùng"
+                            className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                          <span className="text-xs text-stone shrink-0">Min: {diemToiThieu} điểm</span>
                         </div>
-                      )}
+                      </div>
                     </div>
                   ) : (
                     <p className="text-xs text-stone">Bạn chưa có điểm tích lũy. <a href="/tich-diem" className="text-gold underline">Xem chi tiết</a></p>
@@ -778,10 +779,6 @@ export default function Checkout() {
             </div>
             <hr className="border-t" />
             <div className="pt-3 space-y-2 text-sm">
-              <div className="flex justify-between text-stone">
-                <span>Tạm tính</span>
-                <span>{VND(rawTotal)}</span>
-              </div>
               {discount > 0 && (
                 <div className="flex justify-between text-emerald-deep">
                   <span>Giảm giá</span>

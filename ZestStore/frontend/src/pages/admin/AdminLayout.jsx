@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw, Gift } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw, Gift, Coins } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
@@ -63,6 +63,7 @@ export default function AdminLayout() {
     ]},
     { to: '/admin/coupons', label: 'Mã giảm giá', icon: Ticket },
     { to: '/admin/campaigns', label: 'Quà tặng', icon: Gift },
+    { to: '/admin/diem-quy-tac', label: 'Quy tắc điểm', icon: Coins },
     { to: '/admin/reviews', label: 'Đánh giá', icon: Star },
     { label: 'Quản lý người dùng', icon: Users, children: [
       { to: '/admin/customers', label: 'Khách hàng' },

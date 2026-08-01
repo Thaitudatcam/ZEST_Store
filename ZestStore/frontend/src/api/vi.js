@@ -18,3 +18,5 @@ export const getLichSuDiem = (page = 0, size = 20) =>
 
 export const getCustomerDiem = (maNguoiDung) =>
   api.get(`/diem/admin/${maNguoiDung}`).then(r => r.data)
+
+export const getDiemQuyTac = () => api.get('/diem/quy-tac').then(r => r.data)

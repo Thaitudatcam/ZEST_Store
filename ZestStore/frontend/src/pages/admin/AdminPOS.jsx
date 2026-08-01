@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
-import { getCustomerDiem } from '../../api/vi'
+import { getCustomerDiem, getDiemQuyTac } from '../../api/vi'
 import { getAvailableCoupons } from '../../api/coupons'
 import { VND } from '../../components/ProductCard'
 import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins, RefreshCw, History } from 'lucide-react'
@@ -27,13 +27,14 @@ export default function AdminPOS() {
   const [categories, setCategories] = useState([])
   const [soDiemSuDung, setSoDiemSuDung] = useState(0)
   const [customerDiem, setCustomerDiem] = useState({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
-  const [apDungDiem, setApDungDiem] = useState(false)
   const [categoryId, setCategoryId] = useState('')
+  const [diemQuyTac, setDiemQuyTac] = useState(null)
 
   useEffect(() => {
     getActiveCategories().then(r => {
       setCategories(Array.isArray(r) ? r : [])
     }).catch(() => {})
+    getDiemQuyTac().then(setDiemQuyTac).catch(() => {})
   }, [])
 
   const [customerSearch, setCustomerSearch] = useState('')
@@ -93,6 +94,13 @@ export default function AdminPOS() {
 
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
 
+  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1000
+  const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
+  const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
+  const giaTriHangSauCoupon = Math.max(0, total - (coupon?.soTienGiam || 0))
+  const maxDiemTheoQuyTac = Math.floor(giaTriHangSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
+  const maxDiemSuDung = Math.max(0, Math.min(customerDiem.soDiem, maxDiemTheoQuyTac))
+
   const fetchAvailableCoupons = useCallback(async (maNguoiDung) => {
     if (!maNguoiDung) { setAvailableCoupons([]); return }
     setCouponDropdownLoading(true)
@@ -109,7 +117,6 @@ export default function AdminPOS() {
     setCustomerSearch(c.hoTen + (c.soDienThoai ? ` (${c.soDienThoai})` : ''))
     setShowCustomerDropdown(false)
     setSoDiemSuDung(0)
-    setApDungDiem(false)
     setCoupon(null); setCouponCode(''); setCouponMsg('')
     getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 }))
     fetchAvailableCoupons(c.maNguoiDung)
@@ -121,7 +128,6 @@ export default function AdminPOS() {
     setCustomerResults([])
     setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
     setSoDiemSuDung(0)
-    setApDungDiem(false)
     setAvailableCoupons([])
     setCoupon(null); setCouponCode(''); setCouponMsg('')
   }
@@ -142,6 +148,13 @@ export default function AdminPOS() {
     const timer = setTimeout(() => fetchAvailableCoupons(selectedCustomer.maNguoiDung), 500)
     return () => clearTimeout(timer)
   }, [total])
+
+  useEffect(() => {
+    if (cart.length === 0) {
+      setCoupon(null); setCouponCode(''); setCouponMsg('')
+      setAvailableCoupons([]); setShowCouponDropdown(false)
+    }
+  }, [cart.length])
 
   const searchRef = useRef(null)
   const reqCounter = useRef(0)
@@ -311,6 +324,7 @@ export default function AdminPOS() {
 
   const handlePlace = async () => {
     if (cart.length === 0) return
+    if (soDiemSuDung > 0 && soDiemSuDung < diemToiThieu) { setMsg({ type: 'error', text: `Tối thiểu ${diemToiThieu} điểm để sử dụng` }); return }
     setPlacing(true)
     try {
       if (paymentMethod === 6) {
@@ -325,7 +339,7 @@ export default function AdminPOS() {
           maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
           maCode: coupon?.maCode || undefined,
           phuongThucThanhToan: 5,
-          soDiemSuDung: apDungDiem && soDiemSuDung > 0 ? soDiemSuDung : undefined,
+          soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         }).then(r => r.data)
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
         setCart([])
@@ -350,7 +364,7 @@ export default function AdminPOS() {
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
         phuongThucThanhToan: 6,
-        soDiemSuDung: apDungDiem && soDiemSuDung > 0 ? soDiemSuDung : undefined,
+        soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       setCart([])
@@ -566,16 +580,18 @@ export default function AdminPOS() {
             <div className="flex gap-2 relative">
               <div className="flex-1 relative">
                 <input value={couponCode} onChange={e => setCouponCode(e.target.value)}
-                  placeholder="Nhập mã..."
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold pr-20" />
+                  disabled={cart.length === 0}
+                  placeholder={cart.length === 0 ? ' ' : 'Nhập mã...'}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold pr-20 disabled:bg-stone/10 disabled:cursor-not-allowed" />
                 {(availableCoupons.length > 0 || couponDropdownLoading) && (
                   <button onClick={() => setShowCouponDropdown(prev => !prev)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gold hover:text-gold-hover font-medium">
+                    disabled={cart.length === 0}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gold hover:text-gold-hover font-medium disabled:opacity-40">
                     Gợi ý {!couponDropdownLoading && `(${availableCoupons.length})`}
                   </button>
                 )}
               </div>
-              <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}
+              <button onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim() || cart.length === 0}
                 className="px-3 py-2 bg-gold text-noir text-sm font-medium rounded-lg hover:bg-gold-hover transition disabled:opacity-50">
                 {couponLoading ? '...' : 'Áp dụng'}
               </button>
@@ -660,21 +676,11 @@ export default function AdminPOS() {
               {selectedCustomer && customerDiem.soDiem > 0 ? (
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span className="text-sm text-stone">Số dư: <strong className="text-gold-hover">{customerDiem.soDiem.toLocaleString()} điểm</strong></span>
-                  <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                    <input type="checkbox" checked={apDungDiem} onChange={e => { setApDungDiem(e.target.checked); if (!e.target.checked) setSoDiemSuDung(0) }} className="accent-amber-500" />
-                    Có áp dụng điểm
-                  </label>
-                  {apDungDiem && (
-                    <>
-                      <input type="number" min={0} max={customerDiem.soDiem} value={soDiemSuDung}
-                        onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), customerDiem.soDiem))}
-                        placeholder="Số điểm"
-                        className="w-24 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
-                      {soDiemSuDung > 0 && (
-                        <span className="text-xs text-gold">-{VND(soDiemSuDung * 1000)}</span>
-                      )}
-                    </>
-                  )}
+                  <input type="number" min={0} max={maxDiemSuDung} value={soDiemSuDung}
+                    onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), maxDiemSuDung))}
+                    placeholder="Số điểm"
+                    className="w-24 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+                  <span className="text-xs text-stone">Min: {diemToiThieu} </span>
                 </div>
               ) : selectedCustomer ? (
                 <p className="text-xs text-stone">Khách chưa có điểm tích lũy</p>
@@ -683,10 +689,6 @@ export default function AdminPOS() {
               )}
             </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-sm text-stone">
-              <span>Tạm tính:</span>
-              <span>{VND(total)}</span>
-            </div>
             {coupon && (
               <div className="flex justify-between text-sm text-emerald-deep">
                 <span>Giảm giá ({coupon.maCode}):</span>
@@ -696,14 +698,15 @@ export default function AdminPOS() {
             {soDiemSuDung > 0 && (
               <div className="flex justify-between text-sm text-gold">
                 <span>Giảm điểm:</span>
-                <span>-{VND(soDiemSuDung * 1000)}</span>
+                <span>-{VND(soDiemSuDung * tiLeDoi)}</span>
               </div>
             )}
             <div className="flex justify-between items-center pt-1 border-t">
               <span className="font-semibold">Phải thanh toán:</span>
-              <span className="text-lg font-bold text-gold">{VND(Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * 1000))}</span>
+              <span className="text-lg font-bold text-gold">{VND(Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi))}</span>
             </div>
           </div>
+
           <div className="flex gap-2">
             <select value={paymentMethod} onChange={e => setPaymentMethod(Number(e.target.value))}
               className="border rounded-xl px-3 py-3 text-sm bg-ivory focus:outline-none focus:ring-2 focus:ring-gold">

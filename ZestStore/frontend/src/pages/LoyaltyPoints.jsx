@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getSoDuDiem, getLichSuDiem } from '../api/vi'
+import { getSoDuDiem, getLichSuDiem, getDiemQuyTac } from '../api/vi'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Coins, Plus, Minus, Clock, Info, AlertTriangle, History } from 'lucide-react'
 
@@ -17,15 +17,17 @@ export default function LoyaltyPoints() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [quyTac, setQuyTac] = useState(null)
 
   const load = async (p = 0) => {
     setLoading(true)
     try {
-      const [sd, ls] = await Promise.all([getSoDuDiem(), getLichSuDiem(p, 10)])
+      const [sd, ls, qt] = await Promise.all([getSoDuDiem(), getLichSuDiem(p, 10), getDiemQuyTac().catch(() => null)])
       setViDiem(sd)
       setLichSu(Array.isArray(ls.content) ? ls.content : [])
       setTotalPages(ls.totalPages || 0)
       setPage(ls.number || 0)
+      setQuyTac(qt)
     } catch {} finally { setLoading(false) }
   }
 
@@ -55,9 +57,14 @@ export default function LoyaltyPoints() {
         <div className="flex items-start gap-3">
           <Info className="h-5 w-5 text-gold mt-0.5 shrink-0" />
           <div className="text-sm text-stone space-y-1">
-            <p>• Cứ <strong>10.000đ</strong> giá trị đơn hàng = <strong>1 điểm</strong></p>
-            <p>• <strong>1 điểm</strong> = <strong>1.000đ</strong> giảm khi thanh toán</p>
-            <p>• Điểm có hạn <strong>12 tháng</strong> kể từ ngày tích lũy</p>
+            <p>• Cứ <strong>{VND(quyTac?.tiLeTich ?? 10000)}</strong> giá trị đơn hàng hợp lệ = <strong>1 điểm</strong></p>
+            <p>• <strong>1 điểm</strong> = <strong>{VND(quyTac?.tiLeDoi ?? 1000)}</strong> giảm khi thanh toán</p>
+            <p>• Điểm có hạn <strong>{quyTac?.thoiHanThang ?? 12} tháng</strong> kể từ ngày tích lũy</p>
+            <p>• Cần tối thiểu <strong>{quyTac?.diemToiThieu ?? 10} điểm</strong> để sử dụng</p>
+            <p>• Điểm chỉ giảm tối đa <strong>{quyTac?.giamToiDaPhanTram ?? 50}%</strong> giá trị hàng hóa (sau khi trừ mã giảm giá)</p>
+            {quyTac?.tichTienMat === false && (
+              <p>• Không tích điểm trên phần thanh toán bằng điểm</p>
+            )}
             <p>• Có thể dùng cùng lúc với mã giảm giá (giảm sau voucher)</p>
           </div>
         </div>
