@@ -16,8 +16,6 @@ export default function AdminPOS() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [cart, setCart] = useState([])
-  const [tenKhach, setTenKhach] = useState('')
-  const [sdtKhach, setSdtKhach] = useState('')
   const [placing, setPlacing] = useState(false)
   const [msg, setMsg] = useState(null)
   const [variantModal, setVariantModal] = useState(null)
@@ -111,8 +109,6 @@ export default function AdminPOS() {
 
   const selectCustomer = (c) => {
     setSelectedCustomer(c)
-    setTenKhach(c.hoTen)
-    setSdtKhach(c.soDienThoai || '')
     justSelectedRef.current = true
     setCustomerSearch(c.hoTen + (c.soDienThoai ? ` (${c.soDienThoai})` : ''))
     setShowCustomerDropdown(false)
@@ -125,8 +121,6 @@ export default function AdminPOS() {
 
   const clearCustomer = () => {
     setSelectedCustomer(null)
-    setTenKhach('')
-    setSdtKhach('')
     setCustomerSearch('')
     setCustomerResults([])
     setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
@@ -334,16 +328,12 @@ export default function AdminPOS() {
           items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
           maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
           maCode: coupon?.maCode || undefined,
-          tenKhachHang: tenKhach.trim() || undefined,
-          sdtKhachHang: sdtKhach.trim() || undefined,
           phuongThucThanhToan: 5,
           soDiemSuDung: apDungDiem && soDiemSuDung > 0 ? soDiemSuDung : undefined,
         }).then(r => r.data)
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
         setCart([])
         setSelectedCustomer(null)
-        setTenKhach('')
-        setSdtKhach('')
         setCoupon(null)
         setCouponCode('')
         setPayResult(res)
@@ -363,16 +353,12 @@ export default function AdminPOS() {
         items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
-        tenKhachHang: tenKhach.trim() || undefined,
-        sdtKhachHang: sdtKhach.trim() || undefined,
         phuongThucThanhToan: 6,
         soDiemSuDung: apDungDiem && soDiemSuDung > 0 ? soDiemSuDung : undefined,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       setCart([])
       setSelectedCustomer(null)
-      setTenKhach('')
-      setSdtKhach('')
       setCoupon(null)
       setCouponCode('')
       setBankInfo(null)
@@ -547,7 +533,7 @@ export default function AdminPOS() {
                 setCustomerSearch(e.target.value)
                 if (selectedCustomer) clearCustomer()
               }} onFocus={() => customerResults.length > 0 && setShowCustomerDropdown(true)}
-                placeholder="Tìm tên hoặc SĐT khách..."
+                placeholder="Tìm tên, email hoặc SĐT khách..."
                 className="flex-1 border rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
               <button onClick={() => { setQuickAddOpen(true); setQuickForm({ hoTen: '', soDienThoai: '', email: '', matKhau: '' }) }}
                 className="shrink-0 w-9 flex items-center justify-center border border-dashed border-gold text-gold rounded-lg hover:bg-gold/10 transition"
@@ -579,12 +565,6 @@ export default function AdminPOS() {
               </div>
             )}
           </div>
-          <input value={tenKhach} onChange={e => { setTenKhach(e.target.value); setSelectedCustomer(null) }}
-            placeholder="Tên khách (không bắt buộc)"
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
-          <input value={sdtKhach} onChange={e => { setSdtKhach(e.target.value); setSelectedCustomer(null) }}
-            placeholder="SĐT (không bắt buộc)"
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
           <div className="border-t pt-2 space-y-2" ref={couponRef}>
             <label className="text-xs font-medium text-stone">Mã giảm giá</label>
             <div className="flex gap-2 relative">
