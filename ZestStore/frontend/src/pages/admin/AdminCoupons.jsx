@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
-import { getCategories } from '../../api/categories'
+import { getActiveCategories } from '../../api/categories'
 import { getProducts } from '../../api/products'
 import { grantVoucher } from '../../api/userVoucher'
 import { Plus, Trash2, Filter, X, Tag, Package, Layers, Gift, PenSquare } from 'lucide-react'
@@ -33,7 +33,7 @@ export default function AdminCoupons() {
     maDanhMucIds: [], maSanPhamIds: [], congKhai: true,
   })
 
-  useEffect(() => { getCategories().then(setCategories).catch(() => {}) }, [])
+  useEffect(() => { getActiveCategories().then(setCategories).catch(() => {}) }, [])
   useEffect(() => {
     getProducts({ page: 0, size: 100, search: prodSearch || undefined })
       .then(r => setProducts(r.content || r || []))

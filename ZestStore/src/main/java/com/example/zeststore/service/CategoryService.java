@@ -31,7 +31,7 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllActive() {
         return danhMucRepository.findAll().stream()
-                .filter(d -> d.getNgayXoa() == null)
+                .filter(d -> d.getNgayXoa() == null && (d.getHienThi() == null || d.getHienThi()))
                 .map(d -> {
                     Map<String, Object> m = new HashMap<>();
                     m.put("maDanhMuc", d.getMaDanhMuc());
@@ -81,6 +81,7 @@ public class CategoryService {
                 .tenDanhMuc(tenDanhMuc)
                 .duongDanSlug(slug)
                 .danhMucCha(parent)
+                .hienThi(true)
                 .build());
     }
 

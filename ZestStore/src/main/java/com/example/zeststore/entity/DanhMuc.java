@@ -44,6 +44,9 @@ public class DanhMuc {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
+    @Column(name = "hien_thi")
+    private Boolean hienThi = true;
+
     @OneToMany(mappedBy = "danhMuc")
     @ToString.Exclude
     @JsonIgnore

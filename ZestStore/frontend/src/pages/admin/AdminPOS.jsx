@@ -451,7 +451,7 @@ export default function AdminPOS() {
               <option value="">Tất cả danh mục</option>
               {categories.map(c => (
                 <option key={c.maDanhMuc} value={c.maDanhMuc}>
-                  {'—'.repeat((c.maDanhMucCha ? 1 : 0))}{c.tenDanhMuc}
+                  {categories.some(p => Number(p.maDanhMuc) === Number(c.maDanhMucCha)) ? '—' : ''}{c.tenDanhMuc}
                 </option>
               ))}
             </select>
