@@ -39,14 +39,14 @@ public class CategoryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> create(@Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.ok(categoryService.create(
-                request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha()));
+                request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha(), request.getHienThi()));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody CategoryRequest request) {
         return ResponseEntity.ok(categoryService.update(
-                id, request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha()));
+                id, request.getTenDanhMuc(), request.getSlug(), request.getMaDanhMucCha(), request.getHienThi()));
     }
 
     @DeleteMapping("/{id}")

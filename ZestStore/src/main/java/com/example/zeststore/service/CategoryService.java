@@ -54,12 +54,14 @@ public class CategoryService {
 
     private Map<String, Object> buildTree(DanhMuc category) {
         List<DanhMuc> children = danhMucRepository.findByDanhMucCha_MaDanhMucAndNgayXoaIsNull(category.getMaDanhMuc());
-        return Map.of(
-                "maDanhMuc", category.getMaDanhMuc(),
-                "tenDanhMuc", category.getTenDanhMuc(),
-                "slug", category.getDuongDanSlug(),
-                "children", children.stream().map(this::buildTree).collect(Collectors.toList())
-        );
+        Map<String, Object> node = new HashMap<>();
+        node.put("maDanhMuc", category.getMaDanhMuc());
+        node.put("tenDanhMuc", category.getTenDanhMuc());
+        node.put("slug", category.getDuongDanSlug());
+        node.put("maDanhMucCha", category.getDanhMucCha() != null ? category.getDanhMucCha().getMaDanhMuc() : null);
+        node.put("hienThi", category.getHienThi());
+        node.put("children", children.stream().map(this::buildTree).collect(Collectors.toList()));
+        return node;
     }
 
     public DanhMuc getById(Integer id) {
@@ -68,7 +70,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public DanhMuc create(String tenDanhMuc, String slug, Integer parentId) {
+    public DanhMuc create(String tenDanhMuc, String slug, Integer parentId, Boolean hienThi) {
         if (danhMucRepository.findByDuongDanSlugAndNgayXoaIsNull(slug).isPresent()) {
             throw new DuplicateResourceException("Slug already exists: " + slug);
         }
@@ -81,12 +83,12 @@ public class CategoryService {
                 .tenDanhMuc(tenDanhMuc)
                 .duongDanSlug(slug)
                 .danhMucCha(parent)
-                .hienThi(true)
+                .hienThi(hienThi != null ? hienThi : true)
                 .build());
     }
 
     @Transactional
-    public DanhMuc update(Integer id, String tenDanhMuc, String slug, Integer parentId) {
+    public DanhMuc update(Integer id, String tenDanhMuc, String slug, Integer parentId, Boolean hienThi) {
         DanhMuc category = getById(id);
         if (tenDanhMuc != null) category.setTenDanhMuc(tenDanhMuc);
         if (slug != null && !slug.equals(category.getDuongDanSlug())) {
@@ -101,6 +103,7 @@ public class CategoryService {
         } else if (parentId == null && category.getDanhMucCha() != null) {
             category.setDanhMucCha(null);
         }
+        if (hienThi != null) category.setHienThi(hienThi);
         return danhMucRepository.save(category);
     }
 

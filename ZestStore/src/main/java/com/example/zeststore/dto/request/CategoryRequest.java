@@ -17,4 +17,6 @@ public class CategoryRequest {
     private String slug;
 
     private Integer maDanhMucCha;
+
+    private Boolean hienThi;
 }

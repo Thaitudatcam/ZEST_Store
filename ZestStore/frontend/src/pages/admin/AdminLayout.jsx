@@ -58,6 +58,8 @@ export default function AdminLayout() {
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
       { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },
+      { to: '/admin/categories', label: 'Danh mục' },
+      { to: '/admin/brands', label: 'Thương hiệu' },
     ]},
     { to: '/admin/coupons', label: 'Mã giảm giá', icon: Ticket },
     { to: '/admin/campaigns', label: 'Quà tặng', icon: Gift },

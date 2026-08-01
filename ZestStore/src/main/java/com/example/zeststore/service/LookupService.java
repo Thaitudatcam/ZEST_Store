@@ -31,6 +31,13 @@ public class LookupService {
         return thuongHieuRepository.save(brand);
     }
 
+    public ThuongHieu updateBrand(Integer id, String tenThuongHieu) {
+        ThuongHieu brand = thuongHieuRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand", id));
+        brand.setTenThuongHieu(tenThuongHieu);
+        return thuongHieuRepository.save(brand);
+    }
+
     public Object getSizes() {
         return kichCoRepository.findAll();
     }

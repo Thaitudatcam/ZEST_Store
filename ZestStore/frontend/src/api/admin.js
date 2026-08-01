@@ -16,6 +16,8 @@ export const deleteCoupon = (id) => api.delete(`/coupons/${id}`).then((r) => r.d
 export const createCategory = (data) => api.post('/categories', data).then((r) => r.data)
 export const deleteBrand = (id) => api.delete('/brands/' + id).then((r) => r.data)
 export const createBrand = (data) => api.post('/brands', data).then((r) => r.data)
+export const updateBrand = (id, data) => api.put('/brands/' + id, data).then((r) => r.data)
+export const getBrands = () => api.get('/brands').then((r) => r.data)
 export const createColor = (data) => api.post('/colors', data).then((r) => r.data)
 export const createSize = (data) => api.post('/sizes', data).then((r) => r.data)
 export const updateCategory = (id, data) => api.put(`/categories/${id}`, data).then((r) => r.data)

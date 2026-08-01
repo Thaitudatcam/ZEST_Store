@@ -63,4 +63,10 @@ public class LookupController {
         lookupService.deleteBrand(id);
         return ResponseEntity.ok(java.util.Map.of("message", "Brand deleted successfully"));
     }
+
+    @PutMapping("/brands/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateBrand(@PathVariable Integer id, @Valid @RequestBody BrandRequest request) {
+        return ResponseEntity.ok(lookupService.updateBrand(id, request.getTenThuongHieu()));
+    }
 }

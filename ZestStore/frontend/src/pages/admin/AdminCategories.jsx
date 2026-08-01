@@ -13,6 +13,7 @@ function TreeNode({ cat, onEdit, onDelete, depth = 0 }) {
           <button onClick={() => setOpen(!open)} className="text-stone">{open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</button>
         ) : <div className="w-4" />}
         <span className="flex-1 text-sm font-medium">{cat.tenDanhMuc}</span>
+        {cat.hienThi === false && <span className="text-[10px] font-semibold text-stone-light bg-stone/10 border border-stone/20 px-1.5 py-0.5 rounded-full">Ẩn</span>}
         <button onClick={() => onEdit(cat)} className="p-1 text-gold hover:bg-gold/10 rounded"><Pencil className="h-3.5 w-3.5" /></button>
         <button onClick={() => onDelete(cat.maDanhMuc)} className="p-1 text-bordeaux hover:bg-bordeaux/10 rounded"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
@@ -23,21 +24,21 @@ function TreeNode({ cat, onEdit, onDelete, depth = 0 }) {
 
 export default function AdminCategories() {
   const [cats, setCats] = useState([])
-  const [form, setForm] = useState({ tenDanhMuc: '', slug: '', maDanhMucCha: '' })
+  const [form, setForm] = useState({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true })
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
 
   const load = () => getCategoryTree().then(setCats).catch(() => {})
   useEffect(() => { load() }, [])
 
-  const handleEdit = (cat) => { setEditing(cat); setForm({ tenDanhMuc: cat.tenDanhMuc, slug: cat.slug || '', maDanhMucCha: cat.maDanhMucCha || '' }); setShowForm(true) }
+  const handleEdit = (cat) => { setEditing(cat); setForm({ tenDanhMuc: cat.tenDanhMuc, slug: cat.slug || '', maDanhMucCha: cat.maDanhMucCha || '', hienThi: cat.hienThi !== false }); setShowForm(true) }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       if (editing) await updateCategory(editing.maDanhMuc, form)
       else await createCategory(form)
-      setShowForm(false); setEditing(null); setForm({ tenDanhMuc: '', slug: '', maDanhMucCha: '' }); load()
+      setShowForm(false); setEditing(null); setForm({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true }); load()
     } catch { alert('Lỗi') }
   }
 
@@ -59,7 +60,7 @@ export default function AdminCategories() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Danh mục</h1>
-        <button onClick={() => { setEditing(null); setForm({ tenDanhMuc: '', slug: '', maDanhMucCha: '' }); setShowForm(true) }} className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
+        <button onClick={() => { setEditing(null); setForm({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true }); setShowForm(true) }} className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
           <Plus className="h-4 w-4" /> Thêm danh mục
         </button>
       </div>
@@ -91,6 +92,10 @@ export default function AdminCategories() {
                   ))}
                 </select>
               </div>
+              <label className="flex items-center gap-2 text-sm font-medium text-ink-soft cursor-pointer">
+                <input type="checkbox" checked={form.hienThi} onChange={(e) => setForm({ ...form, hienThi: e.target.checked })} className="h-4 w-4 rounded accent-gold" />
+                Hiển thị trên website
+              </label>
               <div className="flex gap-3">
                 <button type="submit" className="bg-gold text-noir px-6 py-2 rounded-lg font-semibold hover:bg-gold-hover">{editing ? 'Cập nhật' : 'Tạo'}</button>
                 <button type="button" onClick={() => { setShowForm(false); setEditing(null) }} className="border px-6 py-2 rounded-lg font-semibold hover:bg-ivory-100">Hủy</button>
