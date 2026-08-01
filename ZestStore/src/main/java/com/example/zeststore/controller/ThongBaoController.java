@@ -6,7 +6,6 @@ import com.example.zeststore.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -14,7 +13,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Map;
 
 /**
- * Admin/Staff notification endpoints.
+ * Notification endpoints for the signed-in user.
+ * All endpoints resolve the current user from the Authentication principal,
+ * so a user can only read/update their own notifications.
  * <ul>
  *   <li>REST: list, unread count, mark read</li>
  *   <li>SSE: {@code GET /api/notifications/stream} for realtime push</li>
@@ -23,7 +24,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','STAFF')")
 public class ThongBaoController {
 
     private final ThongBaoService thongBaoService;

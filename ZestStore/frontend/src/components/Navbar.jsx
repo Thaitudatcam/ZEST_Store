@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Shirt, Bell, User, Menu, X, ChevronDown, Search, Loader, Ticket, Coins, Heart, ShoppingCart } from 'lucide-react'
+import { Shirt, User, Menu, X, ChevronDown, Search, Loader, Ticket, Coins, Heart, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
@@ -10,6 +10,7 @@ import { getActiveCategories } from '../api/categories'
 import { getSoDuDiem } from '../api/vi'
 import { useToast } from '../context/ToastContext'
 import SafeImg from './SafeImg'
+import NotificationBell from './NotificationBell'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
@@ -126,8 +127,9 @@ export default function Navbar() {
             <button onClick={() => setSearchOpen(!searchOpen)} className="flex items-center justify-center w-9 h-9 rounded-full text-ink-soft hover:text-noir hover:bg-noir/5 transition" aria-label="Tìm kiếm">
               <Search className="h-5 w-5" />
             </button>
+            {user && <NotificationBell />}
             <Link to="/cart" className="relative flex items-center justify-center w-9 h-9 rounded-full text-ink-soft hover:text-noir hover:bg-noir/5 transition" aria-label="Giỏ hàng">
-              <Bell className="h-5 w-5" />
+              <ShoppingCart className="h-5 w-5" />
               {count > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-bordeaux text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none animate-scale-in">
                   {count > 99 ? '99+' : count}
@@ -183,6 +185,7 @@ export default function Navbar() {
             <button onClick={() => setSearchOpen(!searchOpen)} className="text-ink-soft">
               <Search className="h-5 w-5" />
             </button>
+            {user && <NotificationBell className="w-8 h-8" />}
             <Link to="/cart" className="relative text-ink-soft">
               <ShoppingCart className="h-5 w-5" />
               {count > 0 && <span className="absolute -top-2 -right-2 bg-bordeaux text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">{count}</span>}
