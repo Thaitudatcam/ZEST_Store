@@ -11,6 +11,7 @@ import { getAvailableCoupons } from '../api/coupons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet, Coins, RefreshCw, History } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
@@ -148,6 +149,8 @@ export default function Checkout() {
   const [addrDistricts, setAddrDistricts] = useState([])
   const [addrWards, setAddrWards] = useState([])
   const [addrLoading, setAddrLoading] = useState(false)
+  const [confirmOrder, setConfirmOrder] = useState(false)
+  const [confirmAddr, setConfirmAddr] = useState(false)
 
   const refreshDiem = () => {
     getSoDuDiem().then(d => setSoDiemHienCo(d.soDiem || 0)).catch(() => {})
@@ -344,8 +347,8 @@ export default function Checkout() {
     cascadeAddress(a.tinhThanhPho, a.quanHuyen, undefined, a.phuongXa, a)
   }
 
-  const handleAddAddress = async (e) => {
-    e.preventDefault()
+  const handleAddAddress = async () => {
+    setConfirmAddr(false)
     setAddrLoading(true)
     try {
       await addAddress(addrForm)
@@ -447,12 +450,17 @@ export default function Checkout() {
     setStep(s)
   }
 
-  const handlePlaceOrder = async () => {
-    if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { return }
+  const requestPlace = () => {
+    if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { toast.error('Vui lòng điền đầy đủ thông tin giao hàng'); return }
     if (cart.length === 0) { return }
     if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn đầy đủ địa chỉ giao hàng'); return }
     if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
     if (diemSuDung > 0 && diemSuDung < diemToiThieu) { toast.error(`Tối thiểu ${diemToiThieu} điểm để sử dụng`); return }
+    setConfirmOrder(true)
+  }
+
+  const handlePlaceOrder = async () => {
+    setConfirmOrder(false)
     setPlacing(true)
     try {
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
@@ -781,7 +789,7 @@ export default function Checkout() {
               {ghnError && <p className="text-bordeaux text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
               <div className="flex gap-3">
                 <button onClick={() => goToStep('payment')} className="flex-1 border-2 border-stone/20 text-ink-soft py-3 rounded-xl font-semibold hover:bg-ivory-100 transition">Quay lại</button>
-                <button onClick={handlePlaceOrder} disabled={placing || ghnError}
+                <button onClick={requestPlace} disabled={placing || ghnError}
                   className="flex-1 bg-gold text-noir py-3 rounded-xl font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                   {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : 'Đặt hàng ngay'}
                 </button>
@@ -954,7 +962,7 @@ export default function Checkout() {
             </button>
           </div>
 
-          <form onSubmit={handleAddAddress} className="space-y-3">
+          <form onSubmit={(e) => { e.preventDefault(); setConfirmAddr(true) }} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })} placeholder="Tên người nhận" required
                 className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
@@ -1000,5 +1008,25 @@ export default function Checkout() {
       )}
 
 
+      <ConfirmDialog
+        open={confirmOrder}
+        title="Xác nhận đặt hàng"
+        message="Bạn chắc chắn muốn đặt đơn hàng này?"
+        confirmText="Đặt hàng"
+        variant="gold"
+        loading={placing}
+        onConfirm={handlePlaceOrder}
+        onCancel={() => setConfirmOrder(false)}
+      />
+      <ConfirmDialog
+        open={confirmAddr}
+        title="Thêm địa chỉ"
+        message={`Bạn chắc chắn muốn thêm địa chỉ "${addrForm.chiTietDiaChi || ''}"?`}
+        confirmText="Thêm"
+        variant="gold"
+        loading={addrLoading}
+        onConfirm={handleAddAddress}
+        onCancel={() => setConfirmAddr(false)}
+      />
   </>)
 }

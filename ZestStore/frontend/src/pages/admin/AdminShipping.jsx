@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getShippingFees, createShippingFee, updateShippingFee, deleteShippingFee } from '../../api/admin'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const PAGE_SIZE = 15
 
@@ -10,13 +11,14 @@ export default function AdminShipping() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ tenTinh: '', phiVanChuyen: '' })
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(false)
   const [page, setPage] = useState(0)
 
   const load = () => getShippingFees().then(setFees).catch(() => {})
   useEffect(() => { load() }, [])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
+    setConfirmSave(false)
     try {
       const data = { tenTinh: form.tenTinh, phiVanChuyen: Number(form.phiVanChuyen) }
       if (editing) {
@@ -101,7 +103,7 @@ export default function AdminShipping() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => { setShowForm(false); setEditing(null) }}>
           <div className="bg-ivory rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-bold text-lg mb-4">{editing ? 'Cập nhật' : 'Thêm'} phí vận chuyển</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmSave(true) }} className="space-y-4">
               <input value={form.tenTinh} onChange={(e) => setForm({ ...form, tenTinh: e.target.value })} placeholder="Tên tỉnh/thành phố" required
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
               <input type="number" value={form.phiVanChuyen} onChange={(e) => setForm({ ...form, phiVanChuyen: e.target.value })} placeholder="Phí vận chuyển" required
@@ -117,18 +119,24 @@ export default function AdminShipping() {
         </div>
       )}
 
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-stone mb-4">Xóa phí vận chuyển này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận"
+        message="Xóa phí vận chuyển này?"
+        confirmText="Xóa"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmSave}
+        title={editing ? 'Cập nhật phí vận chuyển' : 'Thêm phí vận chuyển'}
+        message={`Bạn chắc chắn muốn ${editing ? 'cập nhật' : 'thêm'} phí vận chuyển cho "${form.tenTinh}"?`}
+        confirmText={editing ? 'Cập nhật' : 'Thêm'}
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
     </div>
   )
 }

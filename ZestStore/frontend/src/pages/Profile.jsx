@@ -5,6 +5,7 @@ import { guiMaXacThuc } from '../api/auth'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { getProvinces, getDistricts, getWards } from '../api/ghn'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Profile() {
   const [searchParams] = useSearchParams()
@@ -28,6 +29,7 @@ export default function Profile() {
   const [districtId, setDistrictId] = useState(0)
   const [wardCode, setWardCode] = useState('')
   const [pendingEmail, setPendingEmail] = useState('')
+  const [confirmAction, setConfirmAction] = useState(null)
   const load = async () => {
     try {
       const [p, a, prov] = await Promise.all([getProfile(), getAddresses(), getProvinces()])
@@ -48,8 +50,8 @@ export default function Profile() {
     }
   }, [districtId])
 
-  const handleUpdate = async (e) => {
-    e.preventDefault(); setMsg('')
+  const handleUpdate = async () => {
+    setMsg('')
     if (!profile) { setMsg('Không tải được thông tin tài khoản'); return }
     const emailChanged = form.email !== profile.email
     // Luôn lưu họ tên/SĐT. Nếu đổi email thì gửi email làm "email mới chờ xác thực"
@@ -96,8 +98,8 @@ export default function Profile() {
     }
   }, [location.state])
 
-  const handlePwd = async (e) => {
-    e.preventDefault(); setPwdMsg('')
+  const handlePwd = async () => {
+    setPwdMsg('')
     if (pwd.matKhauMoi.length < 6) { setPwdMsg('Mật khẩu mới phải có ít nhất 6 ký tự'); return }
     if (pwd.matKhauMoi !== pwd.xacNhanMatKhauMoi) { setPwdMsg('Mật khẩu mới không khớp'); return }
     if (pwd.matKhauCu && pwd.matKhauMoi === pwd.matKhauCu) { setPwdMsg('Mật khẩu mới không được trùng với mật khẩu cũ'); return }
@@ -110,8 +112,8 @@ export default function Profile() {
     }
   }
 
-  const handleAddr = async (e) => {
-    e.preventDefault(); setMsg('')
+  const handleAddr = async () => {
+    setMsg('')
     try {
       if (editAddr) {
         await updateAddress(editAddr, addrForm)
@@ -139,6 +141,7 @@ export default function Profile() {
   }
 
   const handleDelAddr = async (id) => {
+    setConfirmAction(null)
     try { await deleteAddress(id); load() } catch { setMsg('Xóa địa chỉ thất bại') }
   }
   const handleSetDefault = async (id) => { await setDefaultAddress(id); load() }
@@ -158,7 +161,7 @@ export default function Profile() {
       {msg && <p className="text-sm text-emerald-deep mb-4">{msg}</p>}
 
       {tab === 'profile' && (
-        <form onSubmit={handleUpdate} className="bg-ivory rounded-xl border p-6 space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); setConfirmAction('updateProfile') }} className="bg-ivory rounded-xl border p-6 space-y-4">
           <div>
             <label className="text-sm text-stone">Email</label>
             <div className="flex items-center gap-2 mt-1">
@@ -198,7 +201,7 @@ export default function Profile() {
       )}
 
       {tab === 'password' && (
-        <form onSubmit={handlePwd} className="bg-ivory rounded-xl border p-6 space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); setConfirmAction('changePwd') }} className="bg-ivory rounded-xl border p-6 space-y-4">
           {pwdMsg && <p className={`text-sm ${pwdMsg === 'Đổi mật khẩu thành công' ? 'text-emerald-deep' : 'text-bordeaux'}`}>{pwdMsg}</p>}
           <div className="relative">
             <input type={showPwd.cu ? 'text' : 'password'} value={pwd.matKhauCu}
@@ -243,11 +246,11 @@ export default function Profile() {
               <div className="flex gap-2">
                 <button onClick={() => handleEditAddr(a)} className="text-gold hover:underline text-sm"><Pencil className="h-4 w-4 inline" /></button>
                 {!a.laMacDinh && <button onClick={() => handleSetDefault(a.maDiaChi)} className="text-gold hover:underline text-sm"><Star className="h-4 w-4 inline" /></button>}
-                <button onClick={() => handleDelAddr(a.maDiaChi)} className="text-bordeaux hover:text-bordeaux"><Trash2 className="h-4 w-4" /></button>
+                <button onClick={() => setConfirmAction(a.maDiaChi)} className="text-bordeaux hover:text-bordeaux"><Trash2 className="h-4 w-4" /></button>
               </div>
             </div>
           ))}
-          <form onSubmit={handleAddr} className="bg-ivory rounded-xl border p-4 space-y-3">
+          <form onSubmit={(e) => { e.preventDefault(); setConfirmAction('saveAddr') }} className="bg-ivory rounded-xl border p-4 space-y-3">
             <h3 className="font-semibold">{editAddr ? 'Sửa địa chỉ' : 'Thêm địa chỉ'}</h3>
             <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })} placeholder="Tên người nhận" required className="w-full border rounded-lg px-3 py-2 text-sm" />
             <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })} placeholder="Số điện thoại" required className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -277,6 +280,42 @@ export default function Profile() {
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmAction === 'updateProfile'}
+        title="Cập nhật hồ sơ"
+        message="Bạn chắc chắn muốn lưu các thay đổi thông tin tài khoản?"
+        confirmText="Lưu"
+        variant="gold"
+        onConfirm={() => { setConfirmAction(null); handleUpdate() }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'changePwd'}
+        title="Đổi mật khẩu"
+        message="Bạn chắc chắn muốn đổi mật khẩu?"
+        confirmText="Đổi mật khẩu"
+        variant="gold"
+        onConfirm={() => { setConfirmAction(null); handlePwd() }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'saveAddr'}
+        title={editAddr ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ'}
+        message={`Bạn chắc chắn muốn ${editAddr ? 'cập nhật' : 'thêm'} địa chỉ này?`}
+        confirmText={editAddr ? 'Cập nhật' : 'Thêm'}
+        variant="gold"
+        onConfirm={() => { setConfirmAction(null); handleAddr() }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction !== null && !['updateProfile', 'changePwd', 'saveAddr'].includes(confirmAction)}
+        title="Xóa địa chỉ"
+        message="Bạn chắc chắn muốn xóa địa chỉ này?"
+        confirmText="Xóa"
+        onConfirm={() => handleDelAddr(confirmAction)}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   )
 }

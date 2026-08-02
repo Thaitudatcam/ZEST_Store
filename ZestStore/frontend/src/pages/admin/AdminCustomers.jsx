@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getCustomers, toggleCustomerStatus } from '../../api/admin'
 import { getCustomerDiem } from '../../api/vi'
 import { Search, Eye, Lock, Unlock, Filter, Coins } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const PAGE_SIZE = 20
 
@@ -146,18 +147,15 @@ export default function AdminCustomers() {
         </div>
       )}
 
-      {confirmToggle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmToggle(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-stone mb-4">Thay đổi trạng thái khách hàng này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmToggle(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={handleToggle} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Xác nhận</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmToggle !== null}
+        title="Xác nhận"
+        message="Thay đổi trạng thái khách hàng này?"
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={handleToggle}
+        onCancel={() => setConfirmToggle(null)}
+      />
     </div>
   )
 }

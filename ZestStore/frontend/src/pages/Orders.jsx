@@ -7,6 +7,7 @@ import { Package, XCircle, ChevronRight, ShoppingBag, CheckCircle, Truck, Home, 
 import { Link, useNavigate } from "react-router-dom";
 import { VND } from "../components/ProductCard";
 import { useToast } from "../context/ToastContext";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const STEP_ICONS = { 1: ShoppingBag, 2: CheckCircle, 3: Package, 4: Truck, 6: Home };
 
@@ -48,6 +49,8 @@ export default function Orders() {
   const [reviewData, setReviewData] = useState({});
   const [submittingReview, setSubmittingReview] = useState(false);
   const [hoverStar, setHoverStar] = useState({});
+  const [confirmCancel, setConfirmCancel] = useState(null);
+  const [confirmReview, setConfirmReview] = useState(false);
   const load = () =>
     getOrders()
       .then(setOrders)
@@ -57,6 +60,7 @@ export default function Orders() {
   }, []);
 
   const handleCancel = async (id) => {
+    setConfirmCancel(null);
     try {
       await cancelOrder(id);
       load();
@@ -127,6 +131,7 @@ export default function Orders() {
   };
 
   const handleSubmitReviews = async () => {
+    setConfirmReview(false);
     setSubmittingReview(true);
     try {
       const { items, orderId } = reviewModal;
@@ -202,7 +207,7 @@ export default function Orders() {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        if (confirm("Hủy đơn hàng này?")) handleCancel(o.maDonHang);
+                        setConfirmCancel(o.maDonHang);
                       }}
                       className="text-xs text-bordeaux hover:underline flex items-center gap-1"
                     >
@@ -318,7 +323,7 @@ export default function Orders() {
               <button onClick={closeReview} className="flex-1 border rounded-xl py-2.5 text-sm font-medium hover:bg-ivory-100 transition">
                 Hủy
               </button>
-              <button onClick={handleSubmitReviews} disabled={submittingReview || reviewModal.items.length === 0}
+              <button onClick={() => setConfirmReview(true)} disabled={submittingReview || reviewModal.items.length === 0}
                 className="flex-1 bg-gold text-noir rounded-xl py-2.5 text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-1">
                 {submittingReview ? <Loader className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
                 {submittingReview ? 'Đang gửi...' : 'Gửi đánh giá'}
@@ -327,6 +332,25 @@ export default function Orders() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmCancel !== null}
+        title="Hủy đơn hàng"
+        message="Bạn chắc chắn muốn hủy đơn hàng này?"
+        confirmText="Hủy đơn"
+        onConfirm={() => handleCancel(confirmCancel)}
+        onCancel={() => setConfirmCancel(null)}
+      />
+      <ConfirmDialog
+        open={confirmReview}
+        title="Gửi đánh giá"
+        message="Bạn chắc chắn muốn gửi đánh giá cho các sản phẩm đã chọn?"
+        confirmText="Gửi đánh giá"
+        variant="gold"
+        loading={submittingReview}
+        onConfirm={handleSubmitReviews}
+        onCancel={() => setConfirmReview(false)}
+      />
     </div>
   );
 }

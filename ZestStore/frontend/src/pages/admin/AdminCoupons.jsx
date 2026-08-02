@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
 import { getActiveCategories } from '../../api/categories'
 import { getProducts } from '../../api/products'
 import { grantVoucher } from '../../api/userVoucher'
 import { Plus, Trash2, Filter, X, Tag, Package, Layers, Gift, PenSquare } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const PAGE_SIZE = 15
 
@@ -27,6 +28,11 @@ export default function AdminCoupons() {
   const [searchingUser, setSearchingUser] = useState(false)
   const [catTab, setCatTab] = useState('categories')
   const [editing, setEditing] = useState(null)
+  const [confirmToggle, setConfirmToggle] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(false)
+  const [confirmEdit, setConfirmEdit] = useState(false)
+  const [editPayload, setEditPayload] = useState(null)
+  const [confirmGrant, setConfirmGrant] = useState(null)
   const [form, setForm] = useState({
     maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '',
     ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '',
@@ -106,10 +112,24 @@ export default function AdminCoupons() {
     }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async () => {
+    setConfirmSave(false)
+    try {
+      await createCoupon(payloadRef.current)
+      setShowForm(false)
+      setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', maDanhMucIds: [], maSanPhamIds: [], congKhai: true })
+      load()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi tạo coupon')
+    }
+  }
+
+  const payloadRef = useRef(null)
+
+  const requestCreate = (e) => {
     e.preventDefault()
     if (!validate()) return
-    const payload = {
+    payloadRef.current = {
       maCode: form.maCode,
       kieuGiamGia: form.kieuGiamGia,
       giaTriGiam: Number(form.giaTriGiam),
@@ -118,19 +138,11 @@ export default function AdminCoupons() {
       ngayKetThuc: form.ngayKetThuc + 'T23:59:59',
       soLuong: form.soLuong ? Number(form.soLuong) : null,
       giaTriGiamToiDa: form.kieuGiamGia === 2 || form.kieuGiamGia === 3 ? null : (form.giaTriGiamToiDa ? Number(form.giaTriGiamToiDa) : null),
-
       maDanhMucIds: form.maDanhMucIds.length > 0 ? form.maDanhMucIds : null,
       maSanPhamIds: form.maSanPhamIds.length > 0 ? form.maSanPhamIds : null,
       congKhai: form.congKhai,
     }
-    try {
-      await createCoupon(payload)
-      setShowForm(false)
-      setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', maDanhMucIds: [], maSanPhamIds: [], congKhai: true })
-      load()
-    } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi tạo coupon')
-    }
+    setConfirmSave(true)
   }
 
   const handleDelete = async () => {
@@ -145,6 +157,7 @@ export default function AdminCoupons() {
   }
 
   const handleToggleStatus = async (id) => {
+    setConfirmToggle(null)
     try {
       await toggleCouponStatus(id)
       load(filter)
@@ -153,11 +166,34 @@ export default function AdminCoupons() {
     }
   }
 
+  const doGrant = async (user) => {
+    setConfirmGrant(null)
+    setGranting(true); setGrantMsg('')
+    try {
+      const res = await grantVoucher(user.maNguoiDung, grantModal.maPhieuGiamGia)
+      setGrantMsg({ type: 'success', text: res.message || 'Đã cấp thành công!' })
+      setUserResults([]); setUserSearch('')
+      load()
+    } catch (err) {
+      setGrantMsg({ type: 'error', text: err.response?.data?.message || 'Lỗi cấp voucher' })
+    } finally { setGranting(false) }
+  }
+
+  const doEdit = async () => {
+    setConfirmEdit(false)
+    try {
+      await updateCoupon(editing.maPhieuGiamGia, editPayload)
+      setEditing(null)
+      load()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi sửa coupon')
+    }
+  }
+
   useEffect(() => { setPage(0) }, [coupons.length])
   const totalPages = Math.ceil(coupons.length / PAGE_SIZE)
   const paged = coupons.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('vi-VN') : '—')
-
   const StaBadge = ({ c }) => {
     const st = c.trangThaiThucTe ?? c.trangThai
     const label = STA_LABELS[st] ?? 'Không xác định'
@@ -271,7 +307,7 @@ export default function AdminCoupons() {
                   <td className="px-3 py-3 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <StaBadge c={c} />
-                      <button type="button" onClick={() => handleToggleStatus(c.maPhieuGiamGia)}
+                      <button type="button" onClick={() => setConfirmToggle(c.maPhieuGiamGia)}
                         disabled={c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date()}
                         className={`relative inline-flex h-4 w-8 items-center rounded-full transition ${c.trangThai === 1 ? 'bg-emerald-deep/100' : 'bg-ivory-100'} ${c.ngayKetThuc && new Date(c.ngayKetThuc) < new Date() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                         <span className={`inline-block h-3 w-3 transform rounded-full bg-ivory transition ${c.trangThai === 1 ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -320,7 +356,7 @@ export default function AdminCoupons() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={requestCreate} className="space-y-4">
               <input value={form.maCode} onChange={e => setForm({ ...form, maCode: e.target.value.toUpperCase() })}
                 placeholder="Mã code" required
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
@@ -467,7 +503,7 @@ export default function AdminCoupons() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={async (e) => {
+            <form onSubmit={(e) => {
               e.preventDefault()
               const t = e.target
               if (t.ngayBatDau.value && t.ngayKetThuc.value && new Date(t.ngayBatDau.value) >= new Date(t.ngayKetThuc.value)) {
@@ -483,13 +519,8 @@ export default function AdminCoupons() {
               if (v('soLuong') !== '') payload.soLuong = n('soLuong')
               if (v('giaTriGiamToiDa') !== '') payload.giaTriGiamToiDa = n('giaTriGiamToiDa')
               payload.congKhai = t.congKhai.checked
-              try {
-                await updateCoupon(editing.maPhieuGiamGia, payload)
-                setEditing(null)
-                load()
-              } catch (err) {
-                alert(err.response?.data?.message || 'Lỗi sửa coupon')
-              }
+              setEditPayload(payload)
+              setConfirmEdit(true)
             }}>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -580,17 +611,7 @@ export default function AdminCoupons() {
                       <p className="text-sm font-medium">{u.hoTen}</p>
                       <p className="text-xs text-stone">{u.email}</p>
                     </div>
-                    <button disabled={granting} onClick={async () => {
-                      setGranting(true); setGrantMsg('')
-                      try {
-                        const res = await grantVoucher(u.maNguoiDung, grantModal.maPhieuGiamGia)
-                        setGrantMsg({ type: 'success', text: res.message || 'Đã cấp thành công!' })
-                        setUserResults([]); setUserSearch('')
-                        load()
-                      } catch (err) {
-                        setGrantMsg({ type: 'error', text: err.response?.data?.message || 'Lỗi cấp voucher' })
-                      } finally { setGranting(false) }
-                    }} className="shrink-0 bg-royal text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-royal transition disabled:opacity-50">
+                    <button disabled={granting} onClick={() => setConfirmGrant(u)} className="shrink-0 bg-royal text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-royal transition disabled:opacity-50">
                       Cấp
                     </button>
                   </div>
@@ -608,18 +629,50 @@ export default function AdminCoupons() {
       )}
 
       {/* Delete confirm */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-stone mb-4">Xóa mã giảm giá này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận"
+        message="Xóa mã giảm giá này?"
+        confirmText="Xóa"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={confirmToggle !== null}
+        title="Đổi trạng thái mã giảm giá"
+        message="Bạn có chắc muốn đổi trạng thái của mã giảm giá này?"
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={() => handleToggleStatus(confirmToggle)}
+        onCancel={() => setConfirmToggle(null)}
+      />
+      <ConfirmDialog
+        open={confirmSave}
+        title="Tạo mã giảm giá"
+        message={`Bạn chắc chắn muốn tạo mã "${form.maCode}"?`}
+        confirmText="Tạo"
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
+      <ConfirmDialog
+        open={confirmEdit}
+        title="Cập nhật mã giảm giá"
+        message={`Bạn chắc chắn muốn lưu thay đổi cho mã "${editing?.maCode}"?`}
+        confirmText="Lưu"
+        variant="gold"
+        onConfirm={doEdit}
+        onCancel={() => setConfirmEdit(false)}
+      />
+      <ConfirmDialog
+        open={confirmGrant !== null}
+        title="Cấp voucher"
+        message={`Cấp voucher "${grantModal?.maCode}" cho ${confirmGrant?.hoTen || confirmGrant?.email}?`}
+        confirmText="Cấp"
+        variant="gold"
+        onConfirm={() => doGrant(confirmGrant)}
+        onCancel={() => setConfirmGrant(null)}
+      />
     </div>
   )
 }

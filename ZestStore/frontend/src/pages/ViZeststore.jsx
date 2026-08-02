@@ -5,6 +5,7 @@ import { confirmVietQrPayment } from '../api/payment'
 import { VND } from '../components/ProductCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Wallet, ArrowDownLeft, ArrowUpRight, RefreshCw, Plus, X, Banknote, QrCode, Clock } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const LOAI_LABELS = { 1: 'Nạp tiền', 2: 'Thanh toán' }
 const LOAI_COLORS = { 1: 'text-emerald-deep bg-emerald-deep/10', 2: 'text-bordeaux bg-bordeaux/10' }
@@ -25,6 +26,7 @@ export default function ViZeststore() {
   const [statusMsg, setStatusMsg] = useState('')
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
+  const [confirmNap, setConfirmNap] = useState(null)
   const qrTimerRef = useRef(null)
   const qrPollRef = useRef(null)
   const [qrCountdown, setQrCountdown] = useState(900)
@@ -103,6 +105,7 @@ export default function ViZeststore() {
   }
 
   const handleNap = async (phuongThuc) => {
+    setConfirmNap(null)
     const soTien = parseInt(amount)
     if (!soTien || soTien <= 0) return
     setNapLoading(true)
@@ -240,22 +243,22 @@ export default function ViZeststore() {
 
             <div className="space-y-3">
               <p className="text-sm text-stone mb-2">Chọn phương thức thanh toán</p>
-              <button onClick={() => handleNap(4)} disabled={napLoading || !amount}
+              <button onClick={() => setConfirmNap(4)} disabled={napLoading || !amount}
                 className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-ivory-100 disabled:opacity-40 transition-colors">
                 <div className="h-8 w-12 bg-ivory-100 rounded flex items-center justify-center text-xs font-bold text-stone">VNPay</div>
                 <span className="font-medium">VNPay</span>
               </button>
-              <button onClick={() => handleNap(5)} disabled={napLoading || !amount}
+              <button onClick={() => setConfirmNap(5)} disabled={napLoading || !amount}
                 className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-ivory-100 disabled:opacity-40 transition-colors">
                 <div className="h-8 w-12 bg-ivory-100 rounded flex items-center justify-center text-xs font-bold text-pink-500">MoMo</div>
                 <span className="font-medium">Ví MoMo</span>
               </button>
-              <button onClick={() => handleNap(6)} disabled={napLoading || !amount}
+              <button onClick={() => setConfirmNap(6)} disabled={napLoading || !amount}
                 className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-ivory-100 disabled:opacity-40 transition-colors">
                 <div className="h-8 w-12 bg-ivory-100 rounded flex items-center justify-center text-xs font-bold text-gold">Zalo</div>
                 <span className="font-medium">ZaloPay</span>
               </button>
-              <button onClick={() => handleNap(8)} disabled={napLoading || !amount}
+              <button onClick={() => setConfirmNap(8)} disabled={napLoading || !amount}
                 className="w-full flex items-center gap-3 border rounded-xl px-4 py-3 hover:bg-ivory-100 disabled:opacity-40 transition-colors">
                 <div className="h-8 w-12 bg-ivory-100 rounded flex items-center justify-center text-xs font-bold text-emerald-deep">
                   <QrCode className="h-5 w-5" />
@@ -315,6 +318,17 @@ export default function ViZeststore() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmNap !== null}
+        title="Nạp tiền vào ví"
+        message={`Bạn chắc chắn muốn nạp ${VND(parseInt(amount) || 0)} vào ví ZestStore?`}
+        confirmText="Nạp tiền"
+        variant="gold"
+        loading={napLoading}
+        onConfirm={() => handleNap(confirmNap)}
+        onCancel={() => setConfirmNap(null)}
+      />
     </div>
   )
 }

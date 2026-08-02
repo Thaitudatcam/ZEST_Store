@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
 import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles, X } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
@@ -30,6 +31,8 @@ export default function AdminProductForm() {
   const [generatingDesc, setGeneratingDesc] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null)
+  const [confirmSaveProduct, setConfirmSaveProduct] = useState(false)
+  const [confirmRemoveImage, setConfirmRemoveImage] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
   const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
@@ -91,7 +94,7 @@ export default function AdminProductForm() {
     .finally(() => setLoading(false))
   }, [id])
 
-  const handleSaveProduct = async (e) => {
+  const requestSaveProduct = (e) => {
     e.preventDefault()
     if (!product.tenSanPham.trim()) { toast.error('Vui lòng nhập tên sản phẩm'); return }
     if (!product.maDanhMuc) { toast.error('Vui lòng chọn danh mục'); return }
@@ -99,6 +102,11 @@ export default function AdminProductForm() {
     if (variants.length === 0) { toast.error('Vui lòng tạo ít nhất một biến thể'); return }
     const zeroPriceVariant = variants.find(v => !v.gia || Number(v.gia) <= 0)
     if (zeroPriceVariant) { toast.error('Giá biến thể phải lớn hơn 0'); return }
+    setConfirmSaveProduct(true)
+  }
+
+  const handleSaveProduct = async () => {
+    setConfirmSaveProduct(false)
     setSaving(true)
     try {
       const slug = product.tenSanPham.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
@@ -348,6 +356,7 @@ export default function AdminProductForm() {
   }
 
   const handleRemoveImage = (fileId) => {
+    setConfirmRemoveImage(null)
     if (fileId !== 'main') {
       api.delete(`/products/images/${fileId}`).catch(() => {})
     }
@@ -477,7 +486,7 @@ export default function AdminProductForm() {
     <div>
       
 
-      <form onSubmit={handleSaveProduct} className="bg-ivory rounded-2xl border p-6 space-y-6">
+      <form onSubmit={requestSaveProduct} className="bg-ivory rounded-2xl border p-6 space-y-6">
         <div className="grid grid-cols-[1fr_400px] gap-6">
           <div>
             <h2 className="font-semibold text-lg">Thông tin sản phẩm</h2>
@@ -563,7 +572,7 @@ export default function AdminProductForm() {
                     {img.maMauSac ? (
                       <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/60 text-white px-1.5 py-0.5 rounded">{getColorName(img.maMauSac) || 'Ảnh biến thể'}</span>
                     ) : null}
-                    <button type="button" onClick={() => handleRemoveImage(img.fileId)}
+                    <button type="button" onClick={() => setConfirmRemoveImage(img.fileId)}
                       className="absolute top-2 right-2 p-1.5 bg-ivory/80 rounded-full hover:bg-ivory transition opacity-0 group-hover:opacity-100">
                       <Trash2 className="h-4 w-4 text-bordeaux" />
                     </button>
@@ -904,31 +913,43 @@ export default function AdminProductForm() {
         </div>
       )}
 
-      {confirmDelete !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-stone mb-4">Bạn chắc chắn muốn xóa biến thể này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={() => handleDeleteVariant(confirmDelete)} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận xóa"
+        message="Bạn chắc chắn muốn xóa biến thể này?"
+        confirmText="Xóa"
+        onConfirm={() => handleDeleteVariant(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
-      {confirmDeleteColor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDeleteColor(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-stone mb-4">Xóa tất cả biến thể màu <strong>{confirmDeleteColor.mauSac}</strong>?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDeleteColor(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={() => handleDeleteVariantsByColor(confirmDeleteColor.maMauSac)} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDeleteColor !== null}
+        title="Xác nhận xóa"
+        message={<>Xóa tất cả biến thể màu <strong>{confirmDeleteColor?.mauSac}</strong>?</>}
+        confirmText="Xóa"
+        onConfirm={() => handleDeleteVariantsByColor(confirmDeleteColor.maMauSac)}
+        onCancel={() => setConfirmDeleteColor(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmSaveProduct}
+        title={isEdit ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm'}
+        message={`Bạn chắc chắn muốn ${isEdit ? 'cập nhật' : 'tạo'} sản phẩm "${product.tenSanPham}"?`}
+        confirmText={isEdit ? 'Cập nhật' : 'Tạo'}
+        variant="gold"
+        loading={saving}
+        onConfirm={handleSaveProduct}
+        onCancel={() => setConfirmSaveProduct(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmRemoveImage !== null}
+        title="Xóa ảnh"
+        message="Bạn chắc chắn muốn xóa ảnh này?"
+        confirmText="Xóa"
+        onConfirm={() => handleRemoveImage(confirmRemoveImage)}
+        onCancel={() => setConfirmRemoveImage(null)}
+      />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { VND } from '../../components/ProductCard'
 import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins, RefreshCw, History } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminPOS() {
   const navigate = useNavigate()
@@ -47,6 +48,7 @@ export default function AdminPOS() {
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickForm, setQuickForm] = useState({ hoTen: '', soDienThoai: '', email: '', matKhau: '' })
   const [quickSaving, setQuickSaving] = useState(false)
+  const [confirmQuickAdd, setConfirmQuickAdd] = useState(false)
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
@@ -61,6 +63,7 @@ export default function AdminPOS() {
   const [paymentMethod, setPaymentMethod] = useState(5)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
+  const [confirmAction, setConfirmAction] = useState(null)
 
   const getQtyInCart = (maBienThe) => cart.filter(c => c.maBienThe === maBienThe).reduce((s, c) => s + c.soLuong, 0)
 
@@ -272,7 +275,10 @@ export default function AdminPOS() {
     }))
   }
 
-  const removeItem = (idx) => setCart(prev => prev.filter((_, i) => i !== idx))
+  const removeItem = (idx) => {
+    setConfirmAction(null)
+    setCart(prev => prev.filter((_, i) => i !== idx))
+  }
 
   const applyCouponCode = async (code) => {
     if (!code?.trim()) return
@@ -300,6 +306,7 @@ export default function AdminPOS() {
   const handleApplyCoupon = () => applyCouponCode(couponCode)
 
   const handleQuickAdd = async () => {
+    setConfirmQuickAdd(false)
     if (!quickForm.hoTen.trim()) {
       setMsg({ type: 'error', text: 'Vui lòng nhập họ tên khách hàng' })
       return
@@ -325,6 +332,7 @@ export default function AdminPOS() {
   }
 
   const handlePlace = async () => {
+    setConfirmAction(null)
     if (cart.length === 0) return
     if (soDiemSuDung > 0 && soDiemSuDung < diemToiThieu) { setMsg({ type: 'error', text: `Tối thiểu ${diemToiThieu} điểm để sử dụng` }); return }
     setPlacing(true)
@@ -520,7 +528,7 @@ export default function AdminPOS() {
                     className="w-6 h-6 flex items-center justify-center rounded bg-ivory-100 hover:bg-ivory-100 text-xs">
                     <Plus className="h-3 w-3" />
                   </button>
-                  <button onClick={() => removeItem(i)}
+                  <button onClick={() => setConfirmAction(i)}
                     className="w-6 h-6 flex items-center justify-center rounded text-bordeaux hover:text-bordeaux text-xs">
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -734,7 +742,7 @@ export default function AdminPOS() {
               <option value={5}>💵 Tiền mặt</option>
               <option value={6}>🏦 VietQR</option>
             </select>
-            <button onClick={handlePlace} disabled={cart.length === 0 || placing}
+            <button onClick={() => setConfirmAction('place')} disabled={cart.length === 0 || placing}
               className="flex-1 bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
               {placing ? 'Đang xử lý...' : 'Thanh toán'}
             </button>
@@ -768,7 +776,7 @@ export default function AdminPOS() {
                 className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
             <div className="border-t p-4">
-              <button onClick={handleQuickAdd} disabled={quickSaving || !quickForm.hoTen.trim()}
+              <button onClick={() => setConfirmQuickAdd(true)} disabled={quickSaving || !quickForm.hoTen.trim()}
                 className="w-full bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                 {quickSaving ? 'Đang lưu...' : 'Thêm khách hàng'}
               </button>
@@ -1028,6 +1036,34 @@ export default function AdminPOS() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={typeof confirmAction === 'number'}
+        title="Xóa sản phẩm"
+        message="Bạn chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+        confirmText="Xóa"
+        onConfirm={() => removeItem(confirmAction)}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'place'}
+        title="Xác nhận thanh toán"
+        message="Bạn chắc chắn muốn tạo đơn bán hàng với giỏ hiện tại?"
+        confirmText="Thanh toán"
+        variant="gold"
+        onConfirm={() => handlePlace()}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmQuickAdd}
+        title="Thêm khách hàng"
+        message={`Bạn chắc chắn muốn tạo khách hàng "${quickForm.hoTen.trim()}"?`}
+        confirmText="Thêm"
+        variant="gold"
+        loading={quickSaving}
+        onConfirm={handleQuickAdd}
+        onCancel={() => setConfirmQuickAdd(false)}
+      />
     </div>
   )
 }

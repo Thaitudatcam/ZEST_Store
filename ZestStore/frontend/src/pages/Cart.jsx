@@ -7,6 +7,7 @@ import { Trash2, ShoppingBag, Plus, Minus, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ export default function Cart() {
   const [toast, setToast] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [selectedItem, setSelectedItem] = useState(null)
+  const [confirmAction, setConfirmAction] = useState(null)
   const { refreshCount } = useCart()
 
   const load = () => getCart().then(setItems).finally(() => setLoading(false))
@@ -91,6 +93,7 @@ export default function Cart() {
   }
 
   const handleRemove = async (vid) => {
+    setConfirmAction(null)
     try {
       await removeCartItem(vid)
       setItems(prev => { const next = prev.filter(i => i.maBienThe !== vid); setSelectedIds(s => { const n = new Set(s); n.delete(vid); return n }); return next })
@@ -99,6 +102,7 @@ export default function Cart() {
   }
 
   const handleClear = async () => {
+    setConfirmAction(null)
     try {
       await clearCart()
       setItems([])
@@ -161,7 +165,7 @@ export default function Cart() {
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Giỏ hàng ({items.length})</h1>
-        {items.length > 0 && <button onClick={handleClear} className="text-sm text-bordeaux hover:underline">Xóa tất cả</button>}
+        {items.length > 0 && <button onClick={() => setConfirmAction('clear')} className="text-sm text-bordeaux hover:underline">Xóa tất cả</button>}
       </div>
 
       {items.length === 0 ? (
@@ -223,7 +227,7 @@ export default function Cart() {
                             className="px-2 py-1 hover:bg-ivory-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="h-3 w-3" /></button>
                         </div>
                         {i.tonKho !== undefined && <span className="text-[10px] text-stone w-12 text-right">Kho: {i.tonKho}</span>}
-                        <button onClick={() => handleRemove(i.maBienThe)} className="text-bordeaux hover:text-bordeaux transition active:scale-90"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => setConfirmAction(i.maBienThe)} className="text-bordeaux hover:text-bordeaux transition active:scale-90"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     ))}
                   </div>
@@ -297,6 +301,22 @@ export default function Cart() {
         </div>
       )})()}
 
+      <ConfirmDialog
+        open={confirmAction === 'clear'}
+        title="Xóa toàn bộ giỏ hàng"
+        message="Bạn chắc chắn muốn xóa tất cả sản phẩm trong giỏ hàng?"
+        confirmText="Xóa tất cả"
+        onConfirm={() => handleClear()}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction !== null && confirmAction !== 'clear'}
+        title="Xóa sản phẩm"
+        message="Bạn chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+        confirmText="Xóa"
+        onConfirm={() => handleRemove(confirmAction)}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   )
 }

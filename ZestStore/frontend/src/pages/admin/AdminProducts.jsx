@@ -6,6 +6,7 @@ import api from '../../api/axios'
 import { Plus, Pencil, Trash2, Search, Eye, EyeOff, Loader } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const PAGE_SIZE = 15
 
@@ -16,6 +17,7 @@ export default function AdminProducts() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmToggle, setConfirmToggle] = useState(null)
   const [error, setError] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -71,6 +73,7 @@ export default function AdminProducts() {
   }
 
   const handleToggle = async (id) => {
+    setConfirmToggle(null)
     try {
       await toggleProductStatus(id)
       load(page, search)
@@ -144,7 +147,7 @@ export default function AdminProducts() {
                   <td className="px-4 py-3 text-stone">{p.tenThuongHieu || '-'}</td>
                   <td className="px-4 py-3 text-right font-semibold">{p.tongTonKho ?? 0}</td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => handleToggle(p.maSanPham)}
+                    <button onClick={() => setConfirmToggle(p.maSanPham)}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
                         p.trangThai === 1
                           ? 'bg-emerald-deep/20 text-emerald-deep border-emerald-deep/20 hover:bg-emerald-200'
@@ -178,18 +181,24 @@ export default function AdminProducts() {
         )}
       </div>
 
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-stone mb-4">Bạn chắc chắn muốn xóa sản phẩm này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={handleDelete} className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận xóa"
+        message="Bạn chắc chắn muốn xóa sản phẩm này?"
+        confirmText="Xóa"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmToggle !== null}
+        title="Đổi trạng thái sản phẩm"
+        message={`Bạn có chắc muốn ${products.find(p => p.maSanPham === confirmToggle)?.trangThai === 1 ? 'ẩn' : 'hiện'} sản phẩm này trên website?`}
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={() => handleToggle(confirmToggle)}
+        onCancel={() => setConfirmToggle(null)}
+      />
     </div>
   )
 }

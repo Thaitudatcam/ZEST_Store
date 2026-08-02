@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getReturnRequests, approveReturn, rejectReturn } from '../../api/orders'
 import { Loader, Search, CheckCircle, XCircle, RefreshCw, Clock, Image, ExternalLink } from 'lucide-react'
 import { VND } from '../../components/ProductCard'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const FILTER_TABS = [
   { label: 'Tất cả', value: null },
@@ -21,6 +22,7 @@ export default function AdminReturns() {
   const [actionLoading, setActionLoading] = useState(null)
   const [rejectModal, setRejectModal] = useState(null)
   const [rejectLyDo, setRejectLyDo] = useState('')
+  const [confirmApprove, setConfirmApprove] = useState(null)
   const [imageModal, setImageModal] = useState(null)
 
   const load = () => {
@@ -36,6 +38,7 @@ export default function AdminReturns() {
   }, [filter])
 
   const handleApprove = async (id) => {
+    setConfirmApprove(null)
     setActionLoading(id)
     try {
       await approveReturn(id)
@@ -119,7 +122,7 @@ export default function AdminReturns() {
                   </div>
                   {r.trangThai === 1 && (
                     <div className="flex gap-2">
-                      <button onClick={() => handleApprove(r.maYeuCau)} disabled={actionLoading === r.maYeuCau}
+                      <button onClick={() => setConfirmApprove(r.maYeuCau)} disabled={actionLoading === r.maYeuCau}
                         className="flex items-center gap-1 bg-gold text-noir px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gold-hover transition disabled:opacity-50">
                         {actionLoading === r.maYeuCau ? <Loader className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                         Duyệt
@@ -200,6 +203,16 @@ export default function AdminReturns() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmApprove !== null}
+        title="Duyệt yêu cầu trả hàng"
+        message="Bạn có chắc muốn chấp nhận yêu cầu trả hàng này?"
+        confirmText="Duyệt"
+        variant="gold"
+        onConfirm={() => handleApprove(confirmApprove)}
+        onCancel={() => setConfirmApprove(null)}
+      />
     </div>
   )
 }

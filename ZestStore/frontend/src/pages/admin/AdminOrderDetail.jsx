@@ -5,6 +5,7 @@ import StatusBadge from '../../components/StatusBadge'
 import SafeImg from '../../components/SafeImg'
 import { useToast } from '../../context/ToastContext'
 import { ArrowLeft, Package, CreditCard, Truck, Clock, User, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -296,28 +297,16 @@ export default function AdminOrderDetail() {
         </div>
       </div>
 
-      {confirmStatus && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setConfirmStatus(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6 animate-scale-in shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="text-center mb-4">
-              <div className="w-14 h-14 rounded-full bg-gold/20 text-gold flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="h-7 w-7" />
-              </div>
-              <h3 className="font-bold text-lg">Xác nhận cập nhật</h3>
-              <p className="text-sm text-stone mt-1">
-                Bạn có chắc muốn chuyển đơn hàng <span className="font-semibold">#{order.maDonHang}</span> sang trạng thái <span className="font-semibold text-gold">{STATUS_LABELS[confirmStatus]}</span>?
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmStatus(null)} className="flex-1 border rounded-xl py-2.5 text-sm font-medium hover:bg-ivory-100 transition">Hủy</button>
-              <button onClick={() => { setConfirmStatus(null); handleUpdateStatus(confirmStatus) }} disabled={updating !== null}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${confirmStatus === 5 ? 'bg-bordeaux hover:bg-bordeaux' : 'bg-gold hover:bg-gold-hover'}`}>
-                {updating === confirmStatus ? <Loader className="h-4 w-4 animate-spin mx-auto" /> : 'Xác nhận'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmStatus !== null}
+        title="Xác nhận cập nhật"
+        message={<>Bạn có chắc muốn chuyển đơn hàng <span className="font-semibold">#{order.maDonHang}</span> sang trạng thái <span className="font-semibold text-gold">{STATUS_LABELS[confirmStatus]}</span>?</>}
+        confirmText="Xác nhận"
+        variant={confirmStatus === 5 ? 'danger' : 'gold'}
+        loading={updating === confirmStatus}
+        onConfirm={() => { setConfirmStatus(null); handleUpdateStatus(confirmStatus) }}
+        onCancel={() => setConfirmStatus(null)}
+      />
 
       {selectedItem && (() => {
         const v = selectedItem.bienThe || {}

@@ -8,6 +8,7 @@ import { SkeletonPage, SkeletonCard } from '../components/Skeleton'
 import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader, X, Image, Camera } from 'lucide-react'
 
 const RETURN_REASONS = [
@@ -124,6 +125,7 @@ export default function OrderDetail() {
   const [returnImages, setReturnImages] = useState([])
   const [returning, setReturning] = useState(false)
   const [confirmingReceived, setConfirmingReceived] = useState(false)
+  const [confirmAction, setConfirmAction] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
   const returnFileRef = useRef(null)
   const returnCameraRef = useRef(null)
@@ -381,14 +383,14 @@ export default function OrderDetail() {
       {/* Desktop action buttons */}
       <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2">
         {canCancel && (
-          <button onClick={handleCancel} disabled={cancelling}
+          <button onClick={() => setConfirmAction('cancel')} disabled={cancelling}
             className="flex items-center gap-2 bg-ivory border border-bordeaux/20 text-bordeaux px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bordeaux/10 transition disabled:opacity-50 shadow-sm">
             {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
             Hủy đơn
           </button>
         )}
         {canConfirmReceived && (
-          <button onClick={handleConfirmReceived} disabled={confirmingReceived}
+          <button onClick={() => setConfirmAction('received')} disabled={confirmingReceived}
             className="flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 shadow-sm">
             {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
             Đã nhận hàng
@@ -412,14 +414,14 @@ export default function OrderDetail() {
       {/* Mobile sticky bottom action bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-ivory border-t shadow-2xl p-4 z-50 flex gap-2">
         {canCancel && (
-          <button onClick={handleCancel} disabled={cancelling}
+          <button onClick={() => setConfirmAction('cancel')} disabled={cancelling}
             className="flex-1 flex items-center justify-center gap-1.5 border border-bordeaux/20 text-bordeaux py-3 rounded-xl text-sm font-medium hover:bg-bordeaux/10 transition disabled:opacity-50">
             {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
             Hủy đơn
           </button>
         )}
         {canConfirmReceived && (
-          <button onClick={handleConfirmReceived} disabled={confirmingReceived}
+          <button onClick={() => setConfirmAction('received')} disabled={confirmingReceived}
             className="flex-1 flex items-center justify-center gap-1.5 bg-gold text-noir py-3 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
             {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
             Đã nhận hàng
@@ -504,7 +506,7 @@ export default function OrderDetail() {
               <div className="flex gap-3 pt-2">
                 <button onClick={() => { setReturnOpen(false); setReturnReason(''); setReturnLyDo(''); setReturnImages([]) }}
                   className="flex-1 border-2 border-stone/20 rounded-xl py-3 text-sm font-semibold hover:bg-ivory-100 transition">Hủy</button>
-                <button onClick={handleRequestReturn} disabled={returning || !returnReason}
+                <button onClick={() => { if (returnReason) setConfirmAction('return') }} disabled={returning || !returnReason}
                   className="flex-1 bg-gold text-noir rounded-xl py-3 text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
                   {returning ? <Loader className="h-4 w-4 animate-spin" /> : null}
                   {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
@@ -567,6 +569,33 @@ export default function OrderDetail() {
           </div>
         </div>
       )})()}
+
+      <ConfirmDialog
+        open={confirmAction === 'cancel'}
+        title="Hủy đơn hàng"
+        message="Bạn chắc chắn muốn hủy đơn hàng này? Hành động này không thể hoàn tác."
+        confirmText="Hủy đơn"
+        onConfirm={() => { setConfirmAction(null); handleCancel() }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'received'}
+        title="Xác nhận đã nhận hàng"
+        message="Bạn đã nhận được đơn hàng này?"
+        confirmText="Đã nhận hàng"
+        variant="gold"
+        onConfirm={() => { setConfirmAction(null); handleConfirmReceived() }}
+        onCancel={() => setConfirmAction(null)}
+      />
+      <ConfirmDialog
+        open={confirmAction === 'return'}
+        title="Gửi yêu cầu trả hàng"
+        message={`Bạn chắc chắn muốn gửi yêu cầu trả hàng với lý do "${returnReason === 'Khác' ? returnLyDo.trim() : returnReason}"?`}
+        confirmText="Gửi yêu cầu"
+        variant="gold"
+        onConfirm={() => { setConfirmAction(null); handleRequestReturn() }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   )
 }

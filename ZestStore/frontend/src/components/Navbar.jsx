@@ -11,6 +11,7 @@ import { getSoDuDiem } from '../api/vi'
 import { useToast } from '../context/ToastContext'
 import SafeImg from './SafeImg'
 import NotificationBell from './NotificationBell'
+import ConfirmDialog from './ConfirmDialog'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
@@ -43,6 +44,7 @@ export default function Navbar() {
   const searchRef = useRef(null)
   const debounceRef = useRef(null)
   const [diemHienCo, setDiemHienCo] = useState(null)
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   const pathname = location.pathname
   const categoryParam = new URLSearchParams(location.search).get('category')
@@ -103,6 +105,7 @@ export default function Navbar() {
   }, [user])
 
   const handleLogout = () => { logout(); navigate('/login') }
+  const requestLogout = () => setConfirmLogout(true)
 
   return (
     <nav className="bg-beige sticky top-0 z-50">
@@ -169,7 +172,7 @@ export default function Navbar() {
                     {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                       <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gold-dark font-semibold hover:bg-noir/5 transition">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
                     )}
-                    <button onClick={() => { handleLogout(); setDropdownOpen(false) }} className="w-full text-left block px-4 py-2 text-sm text-bordeaux hover:bg-bordeaux/5 transition">Đăng xuất</button>
+                    <button onClick={() => { requestLogout(); setDropdownOpen(false) }} className="w-full text-left block px-4 py-2 text-sm text-bordeaux hover:bg-bordeaux/5 transition">Đăng xuất</button>
                   </div>
                 )}
               </div>
@@ -246,7 +249,7 @@ export default function Navbar() {
               {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                 <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setOpen(false)} className="block py-2 text-gold-dark font-semibold">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
               )}
-              <button onClick={() => { handleLogout(); setOpen(false) }} className="block w-full text-left py-2 text-bordeaux">Đăng xuất</button>
+              <button onClick={() => { requestLogout(); setOpen(false) }} className="block w-full text-left py-2 text-bordeaux">Đăng xuất</button>
             </>
           ) : (
             <>
@@ -256,6 +259,16 @@ export default function Navbar() {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Đăng xuất"
+        message="Bạn có chắc muốn đăng xuất khỏi tài khoản này?"
+        confirmText="Đăng xuất"
+        variant="gold"
+        onConfirm={() => { setConfirmLogout(false); handleLogout() }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </nav>
   )
 }

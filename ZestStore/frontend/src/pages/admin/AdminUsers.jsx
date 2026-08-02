@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus } from '../../api/admin'
 import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminUsers() {
   const { pathname } = useLocation()
@@ -23,6 +24,8 @@ export default function AdminUsers() {
   const [sortDir, setSortDir] = useState('asc')
   const [selectedIds, setSelectedIds] = useState([])
   const [confirmBulk, setConfirmBulk] = useState(null)
+  const [confirmEmpToggle, setConfirmEmpToggle] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(false)
   const PAGE_SIZE = 20
 
   const loadCustomers = () => getCustomers().then(setCustomers).catch(() => setError('Không thể tải khách hàng'))
@@ -90,6 +93,7 @@ export default function AdminUsers() {
   }
 
   const handleToggleEmployee = async (id) => {
+    setConfirmEmpToggle(null)
     try { await toggleEmployeeStatus(id); setError(''); loadEmployees() }
     catch { setError('Cập nhật thất bại') }
   }
@@ -102,8 +106,8 @@ export default function AdminUsers() {
     setShowForm(true)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
+    setConfirmSave(false)
     try {
       if (editing) {
         const payload = { ...form }
@@ -114,6 +118,11 @@ export default function AdminUsers() {
       }
       setShowForm(false); setEditing(null); setError(''); loadEmployees()
     } catch (err) { setError(err.response?.data?.message || 'Thao tác thất bại') }
+  }
+
+  const requestSave = (e) => {
+    e.preventDefault()
+    setConfirmSave(true)
   }
 
   useEffect(() => { setPage(0); setEmpPage(0); setSelectedIds([]) }, [search, statusFilter, roleFilter])
@@ -227,18 +236,15 @@ export default function AdminUsers() {
         )
       })()}
 
-      {confirmBulk && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmBulk(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-stone mb-4">{confirmBulk === 'lock' ? 'Khóa' : 'Mở khóa'} {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmBulk(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={() => handleBulkToggle(confirmBulk)} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Xác nhận</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmBulk !== null}
+        title="Xác nhận"
+        message={`${confirmBulk === 'lock' ? 'Khóa' : 'Mở khóa'} ${selectedIds.length} ${tab === 'customers' ? 'khách hàng' : 'nhân viên'}?`}
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={() => handleBulkToggle(confirmBulk)}
+        onCancel={() => setConfirmBulk(null)}
+      />
 
       {tab === 'customers' && (
         <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
@@ -355,7 +361,7 @@ export default function AdminUsers() {
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-1">
                         <button onClick={() => openEdit(e)} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => handleToggleEmployee(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
+                        <button onClick={() => setConfirmEmpToggle(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
                           {e.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </button>
                       </div>
@@ -400,18 +406,35 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {confirmToggle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmToggle(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-stone mb-4">Thay đổi trạng thái khách hàng này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmToggle(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={handleToggleCustomer} className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-medium hover:bg-gold-hover">Xác nhận</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmToggle !== null}
+        title="Xác nhận"
+        message="Thay đổi trạng thái khách hàng này?"
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={handleToggleCustomer}
+        onCancel={() => setConfirmToggle(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmEmpToggle !== null}
+        title="Xác nhận"
+        message="Thay đổi trạng thái nhân viên này?"
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={() => handleToggleEmployee(confirmEmpToggle)}
+        onCancel={() => setConfirmEmpToggle(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmSave}
+        title={editing ? 'Cập nhật nhân viên' : 'Thêm nhân viên'}
+        message={`Bạn chắc chắn muốn ${editing ? 'cập nhật nhân viên' : 'thêm nhân viên'} "${form.hoTen}"?`}
+        confirmText={editing ? 'Cập nhật' : 'Tạo'}
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
 
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
@@ -420,7 +443,7 @@ export default function AdminUsers() {
               <h2 className="font-bold text-lg">{editing ? 'Sửa nhân viên' : 'Thêm nhân viên'}</h2>
               <button onClick={() => setShowForm(false)} className="text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={requestSave} className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-ink-soft">Họ tên</label>
                 <input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />

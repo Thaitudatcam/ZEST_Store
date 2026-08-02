@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
 import NotificationBell from '../../components/admin/NotificationBell'
 import AskAi from '../../components/admin/AskAi'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminLayout() {
   const { pathname } = useLocation()
@@ -14,6 +15,7 @@ export default function AdminLayout() {
   const [navOpen, setNavOpen] = useState({ 'Bán hàng': true })
   const [pendingReturns, setPendingReturns] = useState(0)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const accountRef = useRef(null)
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export default function AdminLayout() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                 Về trang chủ
               </Link>
-              <button onClick={(e) => { e.stopPropagation(); setAccountOpen(false); handleLogout() }}
+              <button onClick={(e) => { e.stopPropagation(); setAccountOpen(false); setConfirmLogout(true) }}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-stone-light/60 hover:text-bordeaux hover:bg-bordeaux/10 transition-all duration-200">
                 <LogOut className="h-4 w-4" />
                 Đăng xuất
@@ -200,6 +202,16 @@ export default function AdminLayout() {
       </div>
 
       {sidebarOpen && <div className="fixed inset-0 bg-noir/50 backdrop-blur-sm z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Đăng xuất"
+        message="Bạn có chắc muốn đăng xuất khỏi tài khoản này?"
+        confirmText="Đăng xuất"
+        variant="gold"
+        onConfirm={() => { setConfirmLogout(false); handleLogout() }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </div>
   )
 }

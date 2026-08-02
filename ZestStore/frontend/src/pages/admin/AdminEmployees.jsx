@@ -3,6 +3,7 @@ import {
   getEmployees, getCustomers, updateEmployee, toggleEmployeeStatus, convertToEmployee
 } from '../../api/admin'
 import { Search, Plus, Pencil, Lock, Unlock, X, Filter, UserPlus, Loader } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminEmployees() {
   const [employees, setEmployees] = useState([])
@@ -19,6 +20,9 @@ export default function AdminEmployees() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '', vaiTro: 'STAFF', choPhepBanHang: false })
   const [showForm, setShowForm] = useState(false)
+  const [confirmSave, setConfirmSave] = useState(false)
+  const [confirmToggle, setConfirmToggle] = useState(null)
+  const [confirmConvert, setConfirmConvert] = useState(false)
 
   const load = () => getEmployees().then(setEmployees).catch(() => setError('Không thể tải nhân viên'))
   useEffect(() => { load() }, [])
@@ -56,8 +60,8 @@ export default function AdminEmployees() {
     setShowForm(true)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
+    setConfirmSave(false)
     try {
       const payload = { ...form }
       if (!payload.matKhau) delete payload.matKhau
@@ -67,6 +71,7 @@ export default function AdminEmployees() {
   }
 
   const handleConvert = async () => {
+    setConfirmConvert(false)
     if (!selected) return
     try {
       await convertToEmployee({ maNguoiDung: selected.maNguoiDung, vaiTro: 'STAFF', choPhepBanHang: convertPos })
@@ -75,6 +80,7 @@ export default function AdminEmployees() {
   }
 
   const handleToggle = async (id) => {
+    setConfirmToggle(null)
     try { await toggleEmployeeStatus(id); setError(''); load() }
     catch { setError('Cập nhật thất bại') }
   }
@@ -168,7 +174,7 @@ export default function AdminEmployees() {
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
                       <button onClick={() => openEdit(e)} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => handleToggle(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
+                      <button onClick={() => setConfirmToggle(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
                         {e.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                       </button>
                     </div>
@@ -232,7 +238,7 @@ export default function AdminEmployees() {
                   </label>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={handleConvert}
+                  <button onClick={() => setConfirmConvert(true)}
                     className="bg-gold text-noir px-6 py-2 rounded-lg font-semibold hover:bg-gold-hover">
                     Xác nhận
                   </button>
@@ -255,7 +261,7 @@ export default function AdminEmployees() {
               <h2 className="font-bold text-lg">Chỉnh sửa nhân viên</h2>
               <button onClick={() => setShowForm(false)} className="text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmSave(true) }} className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-ink-soft">Họ tên</label>
                 <input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
@@ -294,6 +300,33 @@ export default function AdminEmployees() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Cập nhật nhân viên"
+        message={`Bạn chắc chắn muốn lưu thay đổi cho nhân viên "${editing?.hoTen || ''}"?`}
+        confirmText="Lưu"
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
+      <ConfirmDialog
+        open={confirmToggle !== null}
+        title="Đổi trạng thái nhân viên"
+        message="Bạn chắc chắn muốn thay đổi trạng thái hoạt động của nhân viên này?"
+        confirmText="Xác nhận"
+        onConfirm={() => handleToggle(confirmToggle)}
+        onCancel={() => setConfirmToggle(null)}
+      />
+      <ConfirmDialog
+        open={confirmConvert}
+        title="Chuyển thành nhân viên"
+        message={`Bạn chắc chắn muốn chuyển "${selected?.hoTen || ''}" thành nhân viên${convertPos ? ' và cho phép bán tại quầy' : ''}?`}
+        confirmText="Chuyển đổi"
+        variant="gold"
+        onConfirm={handleConvert}
+        onCancel={() => setConfirmConvert(false)}
+      />
     </div>
   )
 }

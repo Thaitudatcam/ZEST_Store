@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getCampaigns, createCampaign, updateCampaign, deleteCampaign, toggleCampaignStatus, launchCampaign, getCoupons } from '../../api/admin'
 import { Plus, X, Play, Gift, PenSquare, Trash2 } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminCampaigns() {
   const [campaigns, setCampaigns] = useState([])
@@ -9,6 +10,12 @@ export default function AdminCampaigns() {
   const [launching, setLaunching] = useState(null)
   const [editing, setEditing] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmToggle, setConfirmToggle] = useState(null)
+  const [confirmLaunch, setConfirmLaunch] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(false)
+  const [confirmEdit, setConfirmEdit] = useState(false)
+  const [editPayload, setEditPayload] = useState(null)
+  const [payloadRef, setPayloadRef] = useState(null)
   const [form, setForm] = useState({
     tenChuongTrinh: '', loaiTrigger: 0, maPhieuGiamGia: '',
     soNgayKhongHoatDong: '', doiTuong: '', dieuKien: '', ngayBatDau: '', ngayKetThuc: '',
@@ -21,23 +28,10 @@ export default function AdminCampaigns() {
 
   useEffect(() => { load() }, [])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.tenChuongTrinh.trim() || !form.maPhieuGiamGia) { alert('Vui lòng nhập đủ thông tin'); return }
-    if (form.loaiTrigger === 1 && !form.soNgayKhongHoatDong) { alert('Vui lòng nhập số ngày không hoạt động'); return }
-    if (form.ngayBatDau && form.ngayKetThuc && new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) { alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return }
+  const handleSubmit = async () => {
+    setConfirmSave(false)
     try {
-      const payload = {
-        tenChuongTrinh: form.tenChuongTrinh,
-        loaiTrigger: Number(form.loaiTrigger),
-        maPhieuGiamGia: Number(form.maPhieuGiamGia),
-        soNgayKhongHoatDong: form.soNgayKhongHoatDong ? Number(form.soNgayKhongHoatDong) : null,
-        doiTuong: form.doiTuong ? Number(form.doiTuong) : null,
-        dieuKien: form.dieuKien ? Number(form.dieuKien) : null,
-        ngayBatDau: form.ngayBatDau ? form.ngayBatDau + 'T00:00:00' : null,
-        ngayKetThuc: form.ngayKetThuc ? form.ngayKetThuc + 'T23:59:59' : null,
-      }
-      await createCampaign(payload)
+      await createCampaign(payloadRef)
       setShowForm(false)
       setForm({ tenChuongTrinh: '', loaiTrigger: 0, maPhieuGiamGia: '', soNgayKhongHoatDong: '', doiTuong: '', dieuKien: '', ngayBatDau: '', ngayKetThuc: '' })
       load()
@@ -46,7 +40,26 @@ export default function AdminCampaigns() {
     }
   }
 
+  const requestCreate = (e) => {
+    e.preventDefault()
+    if (!form.tenChuongTrinh.trim() || !form.maPhieuGiamGia) { alert('Vui lòng nhập đủ thông tin'); return }
+    if (form.loaiTrigger === 1 && !form.soNgayKhongHoatDong) { alert('Vui lòng nhập số ngày không hoạt động'); return }
+    if (form.ngayBatDau && form.ngayKetThuc && new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) { alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return }
+    setPayloadRef({
+      tenChuongTrinh: form.tenChuongTrinh,
+      loaiTrigger: Number(form.loaiTrigger),
+      maPhieuGiamGia: Number(form.maPhieuGiamGia),
+      soNgayKhongHoatDong: form.soNgayKhongHoatDong ? Number(form.soNgayKhongHoatDong) : null,
+      doiTuong: form.doiTuong ? Number(form.doiTuong) : null,
+      dieuKien: form.dieuKien ? Number(form.dieuKien) : null,
+      ngayBatDau: form.ngayBatDau ? form.ngayBatDau + 'T00:00:00' : null,
+      ngayKetThuc: form.ngayKetThuc ? form.ngayKetThuc + 'T23:59:59' : null,
+    })
+    setConfirmSave(true)
+  }
+
   const handleToggle = async (id) => {
+    setConfirmToggle(null)
     try {
       await toggleCampaignStatus(id)
       load()
@@ -56,6 +69,7 @@ export default function AdminCampaigns() {
   }
 
   const handleLaunch = async (id) => {
+    setConfirmLaunch(null)
     setLaunching(id)
     try {
       await launchCampaign(id)
@@ -63,6 +77,17 @@ export default function AdminCampaigns() {
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi phát động')
     } finally { setLaunching(null) }
+  }
+
+  const doEdit = async () => {
+    setConfirmEdit(false)
+    try {
+      await updateCampaign(editing.maChuongTrinh, editPayload)
+      setEditing(null)
+      load()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi sửa chương trình')
+    }
   }
 
   const TRIGGER_LABELS = { 0: 'Đăng ký mới', 1: 'Quay lại', 2: 'Sự kiện' }
@@ -105,7 +130,7 @@ export default function AdminCampaigns() {
                     {c.ngayBatDau ? new Date(c.ngayBatDau).toLocaleDateString('vi-VN') : '—'} → {c.ngayKetThuc ? new Date(c.ngayKetThuc).toLocaleDateString('vi-VN') : '—'}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => handleToggle(c.maChuongTrinh)}
+                    <button onClick={() => setConfirmToggle(c.maChuongTrinh)}
                       className={`relative inline-flex h-4 w-8 items-center rounded-full transition ${c.trangThai === 1 ? 'bg-emerald-deep/100' : 'bg-ivory-100'} cursor-pointer`}>
                       <span className={`inline-block h-3 w-3 transform rounded-full bg-ivory transition ${c.trangThai === 1 ? 'translate-x-4' : 'translate-x-0.5'}`} />
                     </button>
@@ -117,7 +142,7 @@ export default function AdminCampaigns() {
                         <PenSquare className="h-4 w-4" />
                       </button>
                       {c.loaiTrigger === 2 && c.trangThai === 1 && !c.daChayXong && (
-                        <button onClick={() => handleLaunch(c.maChuongTrinh)} disabled={launching === c.maChuongTrinh}
+                        <button onClick={() => setConfirmLaunch(c.maChuongTrinh)} disabled={launching === c.maChuongTrinh}
                           className="text-emerald-deep hover:bg-emerald-deep/10 p-1 rounded disabled:opacity-40" title="Phát động ngay">
                           <Play className="h-4 w-4" />
                         </button>
@@ -147,7 +172,7 @@ export default function AdminCampaigns() {
               <h2 className="font-semibold text-lg">Thêm chương trình quà tặng</h2>
               <button onClick={() => setShowForm(false)} className="text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={requestCreate} className="space-y-4">
               <input value={form.tenChuongTrinh} onChange={e => setForm({ ...form, tenChuongTrinh: e.target.value })}
                 placeholder="Tên chương trình" required
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
@@ -230,7 +255,7 @@ export default function AdminCampaigns() {
               <h2 className="font-semibold text-lg">Sửa chương trình</h2>
               <button onClick={() => setEditing(null)} className="text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
-            <form onSubmit={async (e) => {
+            <form onSubmit={(e) => {
               e.preventDefault()
               const t = e.target
               const payload = {}
@@ -244,13 +269,8 @@ export default function AdminCampaigns() {
               }
               if (t.soNgayKhongHoatDong?.value) payload.soNgayKhongHoatDong = Number(t.soNgayKhongHoatDong.value)
               if (editing.loaiTrigger === 2 && t.doiTuong?.value) payload.doiTuong = Number(t.doiTuong.value)
-              try {
-                await updateCampaign(editing.maChuongTrinh, payload)
-                setEditing(null)
-                load()
-              } catch (err) {
-                alert(err.response?.data?.message || 'Lỗi sửa chương trình')
-              }
+              setEditPayload(payload)
+              setConfirmEdit(true)
             }}>
               <input name="tenChuongTrinh" defaultValue={editing.tenChuongTrinh}
                 className="w-full border rounded-lg px-4 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-gold" />
@@ -303,26 +323,58 @@ export default function AdminCampaigns() {
       )}
 
       {/* Delete confirm */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận</h3>
-            <p className="text-sm text-stone mb-4">Xóa chương trình quà tặng này?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={async () => {
-                try {
-                  await deleteCampaign(confirmDelete)
-                  setConfirmDelete(null)
-                  load()
-                } catch (err) {
-                  alert(err.response?.data?.message || 'Lỗi xóa')
-                }
-              }} className="flex-1 py-2.5 bg-bordeaux text-white rounded-xl text-sm font-medium hover:bg-bordeaux">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận"
+        message="Xóa chương trình quà tặng này?"
+        confirmText="Xóa"
+        onConfirm={async () => {
+          try {
+            await deleteCampaign(confirmDelete)
+            setConfirmDelete(null)
+            load()
+          } catch (err) {
+            alert(err.response?.data?.message || 'Lỗi xóa')
+          }
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={confirmToggle !== null}
+        title="Đổi trạng thái chương trình"
+        message="Bạn có chắc muốn đổi trạng thái của chương trình quà tặng này?"
+        confirmText="Xác nhận"
+        variant="gold"
+        onConfirm={() => handleToggle(confirmToggle)}
+        onCancel={() => setConfirmToggle(null)}
+      />
+      <ConfirmDialog
+        open={confirmLaunch !== null}
+        title="Phát động chương trình"
+        message="Bạn có chắc muốn phát động chương trình quà tặng này ngay bây giờ?"
+        confirmText="Phát động"
+        variant="gold"
+        onConfirm={() => handleLaunch(confirmLaunch)}
+        onCancel={() => setConfirmLaunch(null)}
+      />
+      <ConfirmDialog
+        open={confirmSave}
+        title="Tạo chương trình quà tặng"
+        message={`Bạn chắc chắn muốn tạo chương trình "${form.tenChuongTrinh}"?`}
+        confirmText="Tạo"
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
+      <ConfirmDialog
+        open={confirmEdit}
+        title="Cập nhật chương trình"
+        message="Bạn chắc chắn muốn lưu các thay đổi cho chương trình này?"
+        confirmText="Lưu"
+        variant="gold"
+        onConfirm={doEdit}
+        onCancel={() => setConfirmEdit(false)}
+      />
     </div>
   )
 }

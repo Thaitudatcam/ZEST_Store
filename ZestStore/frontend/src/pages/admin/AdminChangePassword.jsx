@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { changePassword } from '../../api/users'
 import { Eye, EyeOff, Lock } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminChangePassword() {
   const [pwd, setPwd] = useState({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhauMoi: '' })
   const [showPwd, setShowPwd] = useState({ cu: false, moi: false, xacNhan: false })
   const [msg, setMsg] = useState({ text: '', type: '' })
+  const [confirmSave, setConfirmSave] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setMsg({ text: '', type: '' })
-    if (pwd.matKhauMoi.length < 6) { setMsg({ text: 'Mật khẩu mới phải có ít nhất 6 ký tự', type: 'error' }); return }
-    if (pwd.matKhauMoi !== pwd.xacNhanMatKhauMoi) { setMsg({ text: 'Mật khẩu mới không khớp', type: 'error' }); return }
+  const handleSubmit = async () => {
+    setConfirmSave(false); setMsg({ text: '', type: '' })
     try {
       await changePassword({ matKhauCu: pwd.matKhauCu, matKhauMoi: pwd.matKhauMoi })
       setMsg({ text: 'Đổi mật khẩu thành công', type: 'success' })
@@ -20,6 +20,14 @@ export default function AdminChangePassword() {
     }
   }
 
+  const requestSave = (e) => {
+    e.preventDefault(); setMsg({ text: '', type: '' })
+    if (pwd.matKhauMoi.length < 6) { setMsg({ text: 'Mật khẩu mới phải có ít nhất 6 ký tự', type: 'error' }); return }
+    if (pwd.matKhauMoi !== pwd.xacNhanMatKhauMoi) { setMsg({ text: 'Mật khẩu mới không khớp', type: 'error' }); return }
+    if (!pwd.matKhauCu) { setMsg({ text: 'Vui lòng nhập mật khẩu cũ', type: 'error' }); return }
+    setConfirmSave(true)
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Đổi mật khẩu</h1>
@@ -27,7 +35,7 @@ export default function AdminChangePassword() {
         {msg.text && (
           <p className={`text-sm mb-4 ${msg.type === 'success' ? 'text-emerald-deep' : 'text-bordeaux'}`}>{msg.text}</p>
         )}
-        <form onSubmit={handleSubmit} className="bg-ivory rounded-2xl shadow-sm border p-6 space-y-4">
+        <form onSubmit={requestSave} className="bg-ivory rounded-2xl shadow-sm border p-6 space-y-4">
           <div className="relative">
             <label className="text-xs text-stone mb-1 block">Mật khẩu cũ</label>
             <input type={showPwd.cu ? 'text' : 'password'} value={pwd.matKhauCu}
@@ -67,6 +75,16 @@ export default function AdminChangePassword() {
           </button>
         </form>
       </div>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Đổi mật khẩu"
+        message="Bạn chắc chắn muốn cập nhật mật khẩu đăng nhập?"
+        confirmText="Đổi mật khẩu"
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
     </div>
   )
 }

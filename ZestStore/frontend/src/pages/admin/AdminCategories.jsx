@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getCategoryTree } from '../../api/categories'
 import { createCategory, updateCategory, deleteCategory } from '../../api/admin'
 import { Plus, Pencil, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 function TreeNode({ cat, onEdit, onDelete, depth = 0 }) {
   const [open, setOpen] = useState(true)
@@ -27,14 +28,16 @@ export default function AdminCategories() {
   const [form, setForm] = useState({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true })
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(false)
 
   const load = () => getCategoryTree().then(setCats).catch(() => {})
   useEffect(() => { load() }, [])
 
   const handleEdit = (cat) => { setEditing(cat); setForm({ tenDanhMuc: cat.tenDanhMuc, slug: cat.slug || '', maDanhMucCha: cat.maDanhMucCha || '', hienThi: cat.hienThi !== false }); setShowForm(true) }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
+    setConfirmSave(false)
     try {
       if (editing) await updateCategory(editing.maDanhMuc, form)
       else await createCategory(form)
@@ -43,7 +46,7 @@ export default function AdminCategories() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Xóa danh mục này?')) return
+    setConfirmDelete(null)
     try { await deleteCategory(id); load() } catch { alert('Không thể xóa (có thể có sản phẩm con)') }
   }
 
@@ -67,14 +70,14 @@ export default function AdminCategories() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-ivory rounded-2xl shadow-sm border p-4">
-          {cats.map((c) => <TreeNode key={c.maDanhMuc} cat={c} onEdit={handleEdit} onDelete={handleDelete} />)}
+          {cats.map((c) => <TreeNode key={c.maDanhMuc} cat={c} onEdit={handleEdit} onDelete={(id) => setConfirmDelete(id)} />)}
           {cats.length === 0 && <p className="text-center text-stone py-8">Chưa có danh mục</p>}
         </div>
 
         {showForm && (
           <div className="bg-ivory rounded-2xl shadow-sm border p-6 h-fit">
             <h2 className="font-semibold mb-4">{editing ? 'Sửa danh mục' : 'Thêm danh mục'}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); setConfirmSave(true) }} className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-ink-soft">Tên danh mục</label>
                 <input value={form.tenDanhMuc} onChange={(e) => setForm({ ...form, tenDanhMuc: e.target.value })} required className="w-full border rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
@@ -104,6 +107,24 @@ export default function AdminCategories() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận xóa"
+        message="Bạn chắc chắn muốn xóa danh mục này?"
+        confirmText="Xóa"
+        onConfirm={() => handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={confirmSave}
+        title={editing ? 'Cập nhật danh mục' : 'Thêm danh mục'}
+        message={`Bạn chắc chắn muốn ${editing ? 'cập nhật' : 'tạo'} danh mục "${form.tenDanhMuc}"?`}
+        confirmText={editing ? 'Cập nhật' : 'Tạo'}
+        variant="gold"
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
     </div>
   )
 }

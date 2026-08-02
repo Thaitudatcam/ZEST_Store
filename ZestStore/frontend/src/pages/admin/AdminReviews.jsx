@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAllReviews, deleteReview, restoreReview } from '../../api/admin'
 import { Search, Trash2, Star, RotateCcw, Filter, X, MessageSquare, Eye, EyeOff, BarChart3, ShoppingBag } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 const STATUS = { ALL: 'all', ACTIVE: 'active', DELETED: 'deleted' }
 const PAGE_SIZE = 15
@@ -13,6 +14,7 @@ export default function AdminReviews() {
   const [error, setError] = useState('')
   const [page, setPage] = useState(0)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmRestore, setConfirmRestore] = useState(null)
   const [detailReview, setDetailReview] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
 
@@ -37,6 +39,7 @@ export default function AdminReviews() {
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const handleRestore = async (id) => {
+    setConfirmRestore(null)
     try { await restoreReview(id); setError(''); load() }
     catch { setError('Khôi phục thất bại') }
   }
@@ -183,7 +186,7 @@ export default function AdminReviews() {
                   </td>
                   <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
                     {r.ngayXoa ? (
-                      <button onClick={() => handleRestore(r.maDanhGia)} className="p-2 text-emerald-deep hover:bg-emerald-deep/10 rounded-lg transition" title="Khôi phục">
+                      <button onClick={() => setConfirmRestore(r.maDanhGia)} className="p-2 text-emerald-deep hover:bg-emerald-deep/10 rounded-lg transition" title="Khôi phục">
                         <RotateCcw className="h-4 w-4" />
                       </button>
                     ) : (
@@ -223,20 +226,23 @@ export default function AdminReviews() {
         )}
       </div>
 
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setConfirmDelete(null)}>
-          <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Xác nhận xóa</h3>
-            <p className="text-sm text-stone mb-5">Đánh giá này sẽ bị ẩn khỏi trang sản phẩm. Bạn có thể khôi phục sau.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(null)}
-                className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100 transition">Hủy</button>
-              <button onClick={handleDelete}
-                className="flex-1 py-2.5 bg-bordeaux text-noir rounded-xl text-sm font-medium hover:bg-bordeaux transition shadow-sm">Xóa</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        title="Xác nhận xóa"
+        message="Đánh giá này sẽ bị ẩn khỏi trang sản phẩm. Bạn có thể khôi phục sau."
+        confirmText="Xóa"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={confirmRestore !== null}
+        title="Khôi phục đánh giá"
+        message="Bạn có chắc muốn khôi phục đánh giá này?"
+        confirmText="Khôi phục"
+        variant="gold"
+        onConfirm={() => handleRestore(confirmRestore)}
+        onCancel={() => setConfirmRestore(null)}
+      />
 
       {selectedProduct && (() => {
         const p = selectedProduct
@@ -324,7 +330,7 @@ export default function AdminReviews() {
             </div>
             <div className="flex gap-3 mt-5 pt-4 border-t border-stone/10">
               {detailReview.ngayXoa ? (
-                <button onClick={() => { handleRestore(detailReview.maDanhGia); setDetailReview(null) }}
+                <button onClick={() => { setConfirmRestore(detailReview.maDanhGia); setDetailReview(null) }}
                   className="flex-1 py-2.5 bg-emerald-deep text-white rounded-xl text-sm font-medium hover:bg-emerald-deep transition shadow-sm flex items-center justify-center gap-1.5">
                   <RotateCcw className="h-4 w-4" /> Khôi phục
                 </button>

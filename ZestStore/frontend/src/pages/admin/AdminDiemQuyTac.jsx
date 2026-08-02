@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { getDiemQuyTacAdmin, updateDiemQuyTac } from '../../api/admin'
 import { Save, Coins, Loader2 } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminDiemQuyTac() {
   const [rules, setRules] = useState(null)
   const [form, setForm] = useState({ tiLeTich: '', tiLeDoi: '', thoiHanThang: '', diemToiThieu: '', giamToiDaPhanTram: '', tichTienMat: true })
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
+  const [confirmSave, setConfirmSave] = useState(false)
 
   const load = () => getDiemQuyTacAdmin()
     .then((r) => {
@@ -24,8 +26,8 @@ export default function AdminDiemQuyTac() {
 
   useEffect(() => { load() }, [])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
+    setConfirmSave(false)
     setSaving(true)
     setMessage(null)
     try {
@@ -68,7 +70,7 @@ export default function AdminDiemQuyTac() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Quy tắc sử dụng điểm tích lũy</h1>
         <button
-          onClick={handleSubmit}
+          onClick={() => setConfirmSave(true)}
           disabled={saving}
           className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2 disabled:opacity-60"
         >
@@ -88,7 +90,7 @@ export default function AdminDiemQuyTac() {
           <h2 className="font-bold text-lg text-noir">Thiết lập chung</h2>
         </div>
         {rules && (
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <form onSubmit={(e) => { e.preventDefault(); setConfirmSave(true) }} className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {field('Tiền tích 1 điểm (VNĐ)', 'tiLeTich', 'Cứ mỗi X VNĐ giá trị đơn hàng hợp lệ, khách được 1 điểm', 1)}
             {field('Giá trị 1 điểm (VNĐ)', 'tiLeDoi', '1 điểm quy đổi thành X VNĐ khi thanh toán', 1)}
             {field('Thời hạn điểm (tháng)', 'thoiHanThang', 'Điểm hết hạn sau X tháng kể từ khi tích lũy', 1)}
@@ -117,6 +119,17 @@ export default function AdminDiemQuyTac() {
           </form>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmSave}
+        title="Lưu quy tắc sử dụng điểm"
+        message="Bạn chắc chắn muốn áp dụng các quy tắc điểm tích lũy mới?"
+        confirmText="Lưu quy tắc"
+        variant="gold"
+        loading={saving}
+        onConfirm={handleSubmit}
+        onCancel={() => setConfirmSave(false)}
+      />
     </div>
   )
 }

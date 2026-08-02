@@ -4,6 +4,7 @@ import { getAvailableCoupons } from '../api/coupons'
 import { useVoucher } from '../context/VoucherContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { Ticket, Gift, Clock, CheckCircle, XCircle, Tag, AlertCircle } from 'lucide-react'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
@@ -22,6 +23,9 @@ export default function UserVouchers() {
   const [claimCode, setClaimCode] = useState('')
   const [claimMsg, setClaimMsg] = useState('')
   const [claiming, setClaiming] = useState(false)
+  const [confirmClaim, setConfirmClaim] = useState(false)
+  const [confirmAccept, setConfirmAccept] = useState(null)
+  const [confirmPublic, setConfirmPublic] = useState(null)
 
   const load = async () => {
     setLoading(true)
@@ -37,8 +41,8 @@ export default function UserVouchers() {
 
   useEffect(() => { load() }, [])
 
-  const handleClaim = async (e) => {
-    e.preventDefault()
+  const handleClaim = async () => {
+    setConfirmClaim(false)
     if (!claimCode.trim()) return
     setClaiming(true)
     setClaimMsg('')
@@ -53,7 +57,14 @@ export default function UserVouchers() {
     } finally { setClaiming(false) }
   }
 
+  const requestClaim = (e) => {
+    e.preventDefault()
+    if (!claimCode.trim()) return
+    setConfirmClaim(true)
+  }
+
   const handleAccept = async (v) => {
+    setConfirmAccept(null)
     try {
       await acceptVoucher(v.maVoucherNguoiDung)
       load()
@@ -61,6 +72,15 @@ export default function UserVouchers() {
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi nhận voucher')
     }
+  }
+
+  const handlePublic = async (v) => {
+    setConfirmPublic(null)
+    try {
+      await claimVoucher(v.maCode)
+      refreshVoucherCount()
+      load()
+    } catch {}
   }
 
   if (loading) return <LoadingSpinner className="py-20" />
@@ -75,7 +95,7 @@ export default function UserVouchers() {
         <h1 className="text-2xl font-bold">Kho Voucher của tôi</h1>
       </div>
 
-      <form onSubmit={handleClaim} className="bg-ivory rounded-xl border p-4 mb-6">
+      <form onSubmit={requestClaim} className="bg-ivory rounded-xl border p-4 mb-6">
         <label className="block text-sm font-medium mb-2">Nhập mã voucher để nhận</label>
         <div className="flex gap-2">
           <input value={claimCode} onChange={e => setClaimCode(e.target.value)} placeholder="Nhập mã voucher..."
@@ -134,7 +154,7 @@ export default function UserVouchers() {
                         {s.label}
                       </div>
                       {v.trangThai === 0 && (
-                        <button onClick={() => handleAccept(v)}
+                        <button onClick={() => setConfirmAccept(v)}
                           className="bg-yellow-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-yellow-600 transition">
                           Nhận
                         </button>
@@ -171,13 +191,7 @@ export default function UserVouchers() {
                     {v.giaTriDonToiThieu > 0 && <p className="text-xs opacity-70 mt-0.5">Đơn tối thiểu {VND(v.giaTriDonToiThieu)}</p>}
                     {v.ngayKetThuc && <p className="text-xs opacity-60 mt-0.5">HSD: {new Date(v.ngayKetThuc).toLocaleDateString('vi-VN')}</p>}
                   </div>
-                  <button onClick={async () => {
-                    try {
-                      await claimVoucher(v.maCode)
-                      refreshVoucherCount()
-                      load()
-                    } catch {}
-                  }} className="shrink-0 bg-gold text-noir text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-gold-hover transition">
+                  <button onClick={() => setConfirmPublic(v)} className="shrink-0 bg-gold text-noir text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-gold-hover transition">
                     Nhận
                   </button>
                 </div>
@@ -194,6 +208,35 @@ export default function UserVouchers() {
           <p className="text-sm mt-1">Nhập mã voucher ở trên để nhận ưu đãi</p>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmClaim}
+        title="Nhận voucher"
+        message={`Bạn chắc chắn muốn nhận voucher với mã "${claimCode}"?`}
+        confirmText="Nhận"
+        variant="gold"
+        loading={claiming}
+        onConfirm={handleClaim}
+        onCancel={() => setConfirmClaim(false)}
+      />
+      <ConfirmDialog
+        open={confirmAccept !== null}
+        title="Nhận voucher"
+        message={`Bạn chắc chắn muốn nhận voucher "${confirmAccept?.maCode || ''}" vào tài khoản?`}
+        confirmText="Nhận"
+        variant="gold"
+        onConfirm={() => handleAccept(confirmAccept)}
+        onCancel={() => setConfirmAccept(null)}
+      />
+      <ConfirmDialog
+        open={confirmPublic !== null}
+        title="Nhận voucher"
+        message={`Bạn chắc chắn muốn nhận voucher "${confirmPublic?.maCode || ''}"?`}
+        confirmText="Nhận"
+        variant="gold"
+        onConfirm={() => handlePublic(confirmPublic)}
+        onCancel={() => setConfirmPublic(null)}
+      />
     </div>
   )
 }
