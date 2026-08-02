@@ -27,9 +27,10 @@ public class PhieuGiamGiaController {
     private final UserService userService;
 
     @PostMapping("/validate")
-    public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request) {
+    public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request, Authentication auth) {
+        Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
         return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(
-                request.getMaCode(), request.getTongTien(), request.getMaSanPhamIds()));
+                request.getMaCode(), request.getTongTien(), request.getMaSanPhamIds(), userId));
     }
 
     @GetMapping("/available")

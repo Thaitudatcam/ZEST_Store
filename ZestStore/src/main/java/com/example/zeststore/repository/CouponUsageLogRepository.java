@@ -10,4 +10,6 @@ import java.util.List;
 public interface CouponUsageLogRepository extends JpaRepository<CouponUsageLog, Long> {
     List<CouponUsageLog> findByMaCodeOrderByThoiGianDesc(String maCode);
     List<CouponUsageLog> findByMaNguoiDungOrderByThoiGianDesc(Integer maNguoiDung);
+
+    boolean existsByMaCodeAndMaNguoiDung(String maCode, Integer maNguoiDung);
 }

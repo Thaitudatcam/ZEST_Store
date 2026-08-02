@@ -98,6 +98,7 @@ public class PhieuGiamGiaService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (PhieuGiamGia c : coupons) {
             if (!Boolean.TRUE.equals(c.getCongKhai())) continue;
+            if (isCouponUsedByUser(c, userId)) continue;
             if (isCouponApplicableToProducts(c, maSanPhamIds)) {
                 result.add(buildCouponMap(c, tongTien, false));
             }
@@ -109,13 +110,29 @@ public class PhieuGiamGiaService {
                 PhieuGiamGia p = v.getPhieuGiamGia();
                 boolean alreadyInResult = result.stream()
                         .anyMatch(r -> p.getMaCode().equals(r.get("maCode")));
-                if (!alreadyInResult && Integer.valueOf(1).equals(p.getTrangThai())
+                if (!alreadyInResult && !isCouponUsedByUser(p, userId)
+                        && Integer.valueOf(1).equals(p.getTrangThai())
                         && p.getNgayXoa() == null && isCouponApplicableToProducts(p, maSanPhamIds)) {
                     result.add(buildCouponMap(p, tongTien, true));
                 }
             }
         }
         return result;
+    }
+
+    /**
+     * Một mã giảm giá chỉ được dùng tối đa 1 lần cho mỗi tài khoản.
+     * Được xem là "đã dùng" khi tài khoản có voucher cá nhân ở trạng thái DA_DUNG
+     * hoặc đã có ghi nhận sử dụng trong CouponUsageLog cho chính mã này.
+     */
+    public boolean isCouponUsedByUser(PhieuGiamGia coupon, Integer userId) {
+        if (coupon == null || userId == null) return false;
+        Optional<VoucherNguoiDung> vnd = voucherNguoiDungRepository
+                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, coupon.getMaPhieuGiamGia());
+        if (vnd.isPresent() && TrangThaiVoucher.DA_DUNG.equals(vnd.get().getTrangThai())) {
+            return true;
+        }
+        return couponUsageLogRepository.existsByMaCodeAndMaNguoiDung(coupon.getMaCode(), userId);
     }
 
     private boolean isCouponApplicableToProducts(PhieuGiamGia c, List<Integer> maSanPhamIds) {
@@ -200,9 +217,17 @@ public class PhieuGiamGiaService {
     }
 
     public Map<String, Object> validateCoupon(String code, BigDecimal giaTriDon, List<Integer> maSanPhamIds) {
+        return validateCoupon(code, giaTriDon, maSanPhamIds, null);
+    }
+
+    public Map<String, Object> validateCoupon(String code, BigDecimal giaTriDon, List<Integer> maSanPhamIds, Integer userId) {
         if (giaTriDon == null) giaTriDon = BigDecimal.ZERO;
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(code)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
+
+        if (isCouponUsedByUser(coupon, userId)) {
+            throw new BadRequestException("Mã giảm giá đã được sử dụng");
+        }
 
         int tt = computeTrangThaiThucTe(coupon);
         if (tt != 2) {

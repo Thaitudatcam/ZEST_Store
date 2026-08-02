@@ -176,6 +176,10 @@ public class DonHangService {
             coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
+            if (phieuGiamGiaService.isCouponUsedByUser(coupon, user.getMaNguoiDung())) {
+                throw new BadRequestException("Mã giảm giá đã được sử dụng");
+            }
+
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
                 throw new BadRequestException("Mã giảm giá đã ngừng hoạt động");
             }
@@ -215,6 +219,9 @@ public class DonHangService {
         if (request.getMaCodeFreeship() != null && !request.getMaCodeFreeship().isEmpty()) {
             freeshipCoupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCodeFreeship())
                     .orElseThrow(() -> new BadRequestException("Mã freeship không hợp lệ"));
+            if (phieuGiamGiaService.isCouponUsedByUser(freeshipCoupon, user.getMaNguoiDung())) {
+                throw new BadRequestException("Mã freeship đã được sử dụng");
+            }
             if (!Integer.valueOf(3).equals(freeshipCoupon.getKieuGiamGia())) {
                 throw new BadRequestException("Mã này không phải mã freeship");
             }

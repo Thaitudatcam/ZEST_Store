@@ -7,6 +7,7 @@ import { getSoDu, getSoDuDiem, getLichSuDiem, getDiemQuyTac } from '../api/vi'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
+import { getAvailableCoupons } from '../api/coupons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
@@ -109,6 +110,7 @@ export default function Checkout() {
   const [freeshipVoucher, setFreeshipVoucher] = useState(null)
   const [freeshipMsg, setFreeshipMsg] = useState('')
   const [userVouchers, setUserVouchers] = useState([])
+  const [availableDiscount, setAvailableDiscount] = useState([])
   const [vouchersOpen, setVouchersOpen] = useState(false)
   const [step, setStep] = useState('delivery')
   const [form, setForm] = useState({
@@ -360,6 +362,19 @@ export default function Checkout() {
   useEffect(() => {
     if (!cart.length) { setDiscountCoupon(null); setDiscountMsg(''); setDiscountCode(''); setFreeshipVoucher(null); setFreeshipMsg(''); return }
   }, [cart.length])
+
+  useEffect(() => {
+    if (!cart.length) { setAvailableDiscount([]); return }
+    let cancelled = false
+    const total = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
+    const productIds = [...new Set(cart.map(i => i.maSanPham).filter(Boolean))]
+    const timer = setTimeout(() => {
+      getAvailableCoupons(total, productIds)
+        .then(res => { if (!cancelled) setAvailableDiscount(res || []) })
+        .catch(() => { if (!cancelled) setAvailableDiscount([]) })
+    }, 400)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [cart])
 
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) return
@@ -653,7 +668,7 @@ export default function Checkout() {
                           {discountLoading ? '...' : 'Áp dụng'}
                         </button>
                       </div>
-                      {userVouchers.filter(v => v.kieuGiamGia !== 3).length > 0 && (
+                      {availableDiscount.filter(v => v.kieuGiamGia !== 3).length > 0 && (
                         <div className="relative mt-2">
                           <button onClick={() => setDiscountVouchersOpen(!discountVouchersOpen)} type="button"
                             className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-ivory hover:border-gold transition">
@@ -662,8 +677,8 @@ export default function Checkout() {
                           </button>
                           {discountVouchersOpen && (
                             <div className="absolute z-10 mt-1 w-full bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                              {userVouchers.filter(v => v.kieuGiamGia !== 3).map(v => (
-                                <button key={v.maVoucherNguoiDung} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
+                              {availableDiscount.filter(v => v.kieuGiamGia !== 3).map(v => (
+                                <button key={v.maCode} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
                                   className="w-full text-left px-3 py-2.5 text-sm hover:bg-gold/10 border-b last:border-b-0 transition flex items-center justify-between">
                                   <span className="font-medium">{v.maCode}</span>
                                   <span className="text-emerald-deep text-xs font-medium">

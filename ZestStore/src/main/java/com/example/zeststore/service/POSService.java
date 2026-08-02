@@ -65,6 +65,9 @@ public class POSService {
                 }
                 loaiMa = "VOUCHER";
             }
+            if (phieuGiamGiaService.isCouponUsedByUser(coupon, maNguoiDung)) {
+                return Map.of("hopLe", false, "loaiMa", loaiMa, "lyDoTuChoi", "Mã giảm giá đã được sử dụng");
+            }
         }
 
         BigDecimal soTienGiam;
@@ -143,6 +146,10 @@ public class POSService {
         if (request.getMaCode() != null && !request.getMaCode().trim().isEmpty()) {
             coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode().trim())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
+
+            if (customer != null && phieuGiamGiaService.isCouponUsedByUser(coupon, customer.getMaNguoiDung())) {
+                throw new BadRequestException("Mã giảm giá đã được sử dụng");
+            }
 
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
                 throw new BadRequestException("Mã giảm giá không hoạt động");
