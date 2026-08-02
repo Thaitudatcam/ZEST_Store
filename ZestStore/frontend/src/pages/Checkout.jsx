@@ -169,11 +169,11 @@ export default function Checkout() {
   useEffect(() => {
     getSoDu().then(d => setSoDuVi(d.soDu || 0)).catch(() => {})
     refreshDiem()
-    Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProvinces()])
-      .then(([cartData, addrData, provData]) => {
+    const provPromise = getProvinces().catch(() => [])
+    Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses()])
+      .then(([cartData, addrData]) => {
         if (!selectedItems) setCart(cartData)
         setAddresses(addrData)
-        setProvinces(provData || [])
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
         if (def) {
           const fullAddr = def.tinhThanhPho ? `${def.chiTietDiaChi}, ${def.tinhThanhPho}` : def.chiTietDiaChi
@@ -187,8 +187,12 @@ export default function Checkout() {
             quanHuyen: def.quanHuyen || '',
             phuongXa: def.phuongXa || '',
           }))
-          cascadeAddress(def.tinhThanhPho, def.quanHuyen, provData || [], def.phuongXa, def)
         }
+        provPromise.then((provData) => {
+          const provs = provData || []
+          setProvinces(provs)
+          if (def) cascadeAddress(def.tinhThanhPho, def.quanHuyen, provs, def.phuongXa, def)
+        })
       })
       .finally(() => setLoading(false))
   }, [])

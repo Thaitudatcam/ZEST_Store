@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress, guiMaXacThucEmailMoi } from '../api/users'
 import { guiMaXacThuc } from '../api/auth'
@@ -32,11 +32,19 @@ export default function Profile() {
   const [confirmAction, setConfirmAction] = useState(null)
   const load = async () => {
     try {
-      const [p, a, prov] = await Promise.all([getProfile(), getAddresses(), getProvinces()])
-      setProfile(p); setAddresses(a); setForm({ hoTen: p.hoTen || '', email: p.email || '', soDienThoai: p.soDienThoai || '' }); setPendingEmail(p.emailMoiChoXacThuc || ''); setProvinces(prov || [])
+      const [p, a] = await Promise.all([getProfile(), getAddresses()])
+      setProfile(p); setAddresses(a); setForm({ hoTen: p.hoTen || '', email: p.email || '', soDienThoai: p.soDienThoai || '' }); setPendingEmail(p.emailMoiChoXacThuc || '')
     } catch {} finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
+
+  const provincesRequested = useRef(false)
+  useEffect(() => {
+    if (tab === 'addresses' && !provincesRequested.current) {
+      provincesRequested.current = true
+      getProvinces().then((prov) => setProvinces(prov || [])).catch(() => {})
+    }
+  }, [tab])
 
   useEffect(() => {
     if (provinceId) {

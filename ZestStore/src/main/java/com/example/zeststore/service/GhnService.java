@@ -10,6 +10,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -19,6 +21,23 @@ public class GhnService {
     private final GhnConfig config;
     private final RestTemplate restTemplate;
     private final PhiVanChuyenService phiVanChuyenService;
+
+    private static final long CACHE_TTL_MS = 24L * 60 * 60 * 1000;
+    private record CacheEntry(Object value, long expiresAt) {}
+    private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
+
+    private Map<String, Object> cachedGet(String key, Supplier<Map<String, Object>> loader) {
+        long now = System.currentTimeMillis();
+        CacheEntry entry = cache.get(key);
+        if (entry != null && entry.expiresAt() > now) {
+            return (Map<String, Object>) entry.value();
+        }
+        Map<String, Object> result = loader.get();
+        if (!result.containsKey("error")) {
+            cache.put(key, new CacheEntry(result, now + CACHE_TTL_MS));
+        }
+        return result;
+    }
 
     private HttpEntity<Void> createGetEntity() {
         HttpHeaders headers = new HttpHeaders();
@@ -49,39 +68,45 @@ public class GhnService {
     }
 
     public Map<String, Object> getProvinces() {
-        try {
-            String url = config.getBaseUrl() + "/master-data/province";
-            var response = restTemplate.exchange(url, HttpMethod.GET, createGetEntity(),
-                    new ParameterizedTypeReference<Map<String, Object>>() {});
-            return parseResponse(response);
-        } catch (Exception e) {
-            log.error("GHN getProvinces failed: {}", e.getMessage());
-            return errorResponse(e.getMessage());
-        }
+        return cachedGet("provinces", () -> {
+            try {
+                String url = config.getBaseUrl() + "/master-data/province";
+                var response = restTemplate.exchange(url, HttpMethod.GET, createGetEntity(),
+                        new ParameterizedTypeReference<Map<String, Object>>() {});
+                return parseResponse(response);
+            } catch (Exception e) {
+                log.error("GHN getProvinces failed: {}", e.getMessage());
+                return errorResponse(e.getMessage());
+            }
+        });
     }
 
     public Map<String, Object> getDistricts(int provinceId) {
-        try {
-            String url = config.getBaseUrl() + "/master-data/district?province_id=" + provinceId;
-            var response = restTemplate.exchange(url, HttpMethod.GET, createGetEntity(),
-                    new ParameterizedTypeReference<Map<String, Object>>() {});
-            return parseResponse(response);
-        } catch (Exception e) {
-            log.error("GHN getDistricts failed: {}", e.getMessage());
-            return errorResponse(e.getMessage());
-        }
+        return cachedGet("districts:" + provinceId, () -> {
+            try {
+                String url = config.getBaseUrl() + "/master-data/district?province_id=" + provinceId;
+                var response = restTemplate.exchange(url, HttpMethod.GET, createGetEntity(),
+                        new ParameterizedTypeReference<Map<String, Object>>() {});
+                return parseResponse(response);
+            } catch (Exception e) {
+                log.error("GHN getDistricts failed: {}", e.getMessage());
+                return errorResponse(e.getMessage());
+            }
+        });
     }
 
     public Map<String, Object> getWards(int districtId) {
-        try {
-            String url = config.getBaseUrl() + "/master-data/ward?district_id=" + districtId;
-            var response = restTemplate.exchange(url, HttpMethod.GET, createGetEntity(),
-                    new ParameterizedTypeReference<Map<String, Object>>() {});
-            return parseResponse(response);
-        } catch (Exception e) {
-            log.error("GHN getWards failed: {}", e.getMessage());
-            return errorResponse(e.getMessage());
-        }
+        return cachedGet("wards:" + districtId, () -> {
+            try {
+                String url = config.getBaseUrl() + "/master-data/ward?district_id=" + districtId;
+                var response = restTemplate.exchange(url, HttpMethod.GET, createGetEntity(),
+                        new ParameterizedTypeReference<Map<String, Object>>() {});
+                return parseResponse(response);
+            } catch (Exception e) {
+                log.error("GHN getWards failed: {}", e.getMessage());
+                return errorResponse(e.getMessage());
+            }
+        });
     }
 
     public Map<String, Object> getServices(int toDistrictId, Integer fromDistrictId) {
