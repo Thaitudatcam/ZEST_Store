@@ -3,6 +3,7 @@ package com.example.zeststore.service;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
+import com.example.zeststore.repository.CouponUsageLogRepository;
 import com.example.zeststore.repository.NguoiDungRepository;
 import com.example.zeststore.repository.PhieuGiamGiaRepository;
 import com.example.zeststore.repository.VoucherNguoiDungRepository;
@@ -24,6 +25,7 @@ public class VoucherNguoiDungService {
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
+    private final CouponUsageLogRepository couponUsageLogRepository;
 
     /**
      * Lấy danh sách voucher cá nhân — chỉ trả về CHUA_NHAN và DA_NHAN,
@@ -90,6 +92,9 @@ public class VoucherNguoiDungService {
         if (alreadyClaimed) {
             throw new BadRequestException("Bạn đã nhận voucher này rồi");
         }
+        if (couponUsageLogRepository.existsByMaCodeAndMaNguoiDung(maCode, userId)) {
+            throw new BadRequestException("Bạn đã sử dụng mã này");
+        }
 
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
@@ -117,7 +122,7 @@ public class VoucherNguoiDungService {
 
         boolean already = voucherNguoiDungRepository
                 .findByUserAndCouponAndStatusIn(userId, couponId,
-                        List.of(TrangThaiVoucher.CHUA_NHAN, TrangThaiVoucher.DA_NHAN))
+                        List.of(TrangThaiVoucher.CHUA_NHAN, TrangThaiVoucher.DA_NHAN, TrangThaiVoucher.DA_DUNG))
                 .isPresent();
         if (already) {
             throw new BadRequestException("Người dùng này đã có voucher này rồi");

@@ -89,6 +89,10 @@ public class AutoGrantService {
                 skipped++;
                 continue;
             }
+            if (hasVoucherForCoupon(user, coupon)) {
+                skipped++;
+                continue;
+            }
             try {
                 doGrant(user, coupon, campaign);
                 granted++;
@@ -111,12 +115,21 @@ public class AutoGrantService {
                 user.getMaNguoiDung(), campaign.getMaChuongTrinh())) {
             return;
         }
+        if (hasVoucherForCoupon(user, campaign.getPhieuGiamGia())) {
+            return;
+        }
         PhieuGiamGia coupon = campaign.getPhieuGiamGia();
         if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
             log.warn("Campaign {}: coupon {} out of stock", campaign.getMaChuongTrinh(), coupon.getMaCode());
             return;
         }
         doGrant(user, coupon, campaign);
+    }
+
+    private boolean hasVoucherForCoupon(NguoiDung user, PhieuGiamGia coupon) {
+        return voucherNguoiDungRepository
+                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(user.getMaNguoiDung(), coupon.getMaPhieuGiamGia())
+                .isPresent();
     }
 
     private void doGrant(NguoiDung user, PhieuGiamGia coupon, ChuongTrinhQuaTang campaign) {

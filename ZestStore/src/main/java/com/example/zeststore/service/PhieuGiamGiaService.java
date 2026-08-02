@@ -29,6 +29,7 @@ public class PhieuGiamGiaService {
     private final DanhMucRepository danhMucRepository;
     private final SanPhamRepository sanPhamRepository;
     private final CouponUsageLogRepository couponUsageLogRepository;
+    private final NguoiDungRepository nguoiDungRepository;
 
     // ========== IN-MEMORY COUPON RESERVATION ==========
     private final ConcurrentHashMap<String, CouponReservation> reservations = new ConcurrentHashMap<>();
@@ -99,6 +100,7 @@ public class PhieuGiamGiaService {
         for (PhieuGiamGia c : coupons) {
             if (!Boolean.TRUE.equals(c.getCongKhai())) continue;
             if (isCouponUsedByUser(c, userId)) continue;
+            if (userHasVoucherFor(c, userId)) continue;
             if (isCouponApplicableToProducts(c, maSanPhamIds)) {
                 result.add(buildCouponMap(c, tongTien, false));
             }
@@ -133,6 +135,17 @@ public class PhieuGiamGiaService {
             return true;
         }
         return couponUsageLogRepository.existsByMaCodeAndMaNguoiDung(coupon.getMaCode(), userId);
+    }
+
+    /**
+     * User đã có bản ghi voucher cá nhân cho mã này (bất kỳ trạng thái nào).
+     * Dùng để không gợi ý mã chưa nhận / đã nhận / đã dùng trong danh sách công khai.
+     */
+    public boolean userHasVoucherFor(PhieuGiamGia coupon, Integer userId) {
+        if (coupon == null || userId == null) return false;
+        return voucherNguoiDungRepository
+                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, coupon.getMaPhieuGiamGia())
+                .isPresent();
     }
 
     private boolean isCouponApplicableToProducts(PhieuGiamGia c, List<Integer> maSanPhamIds) {
@@ -348,13 +361,16 @@ public class PhieuGiamGiaService {
             phieuGiamGiaRepository.save(coupon);
         }
         if (maNguoiDung != null) {
-            voucherNguoiDungRepository
+            VoucherNguoiDung v = voucherNguoiDungRepository
                     .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(maNguoiDung, coupon.getMaPhieuGiamGia())
-                    .ifPresent(v -> {
-                        v.setTrangThai(TrangThaiVoucher.DA_DUNG);
-                        v.setNgaySuDung(LocalDateTime.now());
-                        voucherNguoiDungRepository.save(v);
-                    });
+                    .orElseGet(() -> VoucherNguoiDung.builder()
+                            .nguoiDung(nguoiDungRepository.getReferenceById(maNguoiDung))
+                            .phieuGiamGia(coupon)
+                            .trangThai(TrangThaiVoucher.DA_DUNG)
+                            .build());
+            v.setTrangThai(TrangThaiVoucher.DA_DUNG);
+            v.setNgaySuDung(LocalDateTime.now());
+            voucherNguoiDungRepository.save(v);
         }
         logCouponUsage(maCode, maNguoiDung, maDonHang, soTienGiam, loai);
         releaseReservation(maCode);
