@@ -95,7 +95,7 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [soDuVi, setSoDuVi] = useState(0)
   const [vietQrData, setVietQrData] = useState(null)
-  const [diemSuDung, setDiemSuDung] = useState(0)
+  const [dungDiem, setDungDiem] = useState(false)
   const [soDiemHienCo, setSoDiemHienCo] = useState(0)
   const [diemQuyTac, setDiemQuyTac] = useState(null)
   const [showDiemHistory, setShowDiemHistory] = useState(false)
@@ -433,6 +433,8 @@ export default function Checkout() {
   const giaTriHangSauCoupon = Math.max(0, rawTotal - discount)
   const maxDiemTheoQuyTac = Math.floor(giaTriHangSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
   const maxDiemSuDung = Math.max(0, Math.min(soDiemHienCo, maxDiemTheoQuyTac))
+  const diemDungDuoc = soDiemHienCo > 0 && maxDiemSuDung >= diemToiThieu
+  const diemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
   const tienGiamDiem = diemSuDung * tiLeDoi
   const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee - tienGiamDiem)
 
@@ -746,16 +748,29 @@ export default function Checkout() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-stone">
                         <span>Số dư: <strong className="text-gold-hover">{soDiemHienCo.toLocaleString()} điểm</strong></span>
+                        <span className="text-xs text-stone">Giảm tối đa {giamToiDaPhanTram}% giá trị hàng</span>
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex gap-2 items-center">
-                          <input type="number" min={0} max={maxDiemSuDung} value={diemSuDung}
-                            onChange={e => setDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), maxDiemSuDung))}
-                            placeholder="Số điểm muốn dùng"
-                            className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                          <span className="text-xs text-stone shrink-0">Min: {diemToiThieu} điểm</span>
-                        </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm">Dùng điểm tích lũy giảm giá</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={dungDiem}
+                          disabled={!diemDungDuoc}
+                          onClick={() => setDungDiem(v => !v)}
+                          className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${dungDiem ? 'bg-gold' : 'bg-ivory-100 border border-stone/30'}`}>
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${dungDiem ? 'translate-x-5' : ''}`} />
+                        </button>
                       </div>
+                      {diemDungDuoc ? (
+                        dungDiem && (
+                          <p className="text-xs text-gold">
+                            Sẽ dùng {maxDiemSuDung.toLocaleString()} điểm (giảm {VND(maxDiemSuDung * tiLeDoi)})
+                          </p>
+                        )
+                      ) : (
+                        <p className="text-xs text-stone">Cần tối thiểu {diemToiThieu} điểm để sử dụng</p>
+                      )}
                     </div>
                   ) : (
                     <p className="text-xs text-stone">Bạn chưa có điểm tích lũy. <a href="/tich-diem" className="text-gold underline">Xem chi tiết</a></p>

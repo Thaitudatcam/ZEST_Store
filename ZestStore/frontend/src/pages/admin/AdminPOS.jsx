@@ -25,7 +25,7 @@ export default function AdminPOS() {
   const [sizes, setSizes] = useState([])
   const [colors, setColors] = useState([])
   const [categories, setCategories] = useState([])
-  const [soDiemSuDung, setSoDiemSuDung] = useState(0)
+  const [dungDiem, setDungDiem] = useState(false)
   const [customerDiem, setCustomerDiem] = useState({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
   const [categoryId, setCategoryId] = useState('')
   const [diemQuyTac, setDiemQuyTac] = useState(null)
@@ -100,6 +100,8 @@ export default function AdminPOS() {
   const giaTriHangSauCoupon = Math.max(0, total - (coupon?.soTienGiam || 0))
   const maxDiemTheoQuyTac = Math.floor(giaTriHangSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
   const maxDiemSuDung = Math.max(0, Math.min(customerDiem.soDiem, maxDiemTheoQuyTac))
+  const diemDungDuoc = customerDiem.soDiem > 0 && maxDiemSuDung >= diemToiThieu
+  const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
 
   const fetchAvailableCoupons = useCallback(async (maNguoiDung) => {
     if (!maNguoiDung) { setAvailableCoupons([]); return }
@@ -116,7 +118,7 @@ export default function AdminPOS() {
     justSelectedRef.current = true
     setCustomerSearch(c.hoTen + (c.soDienThoai ? ` (${c.soDienThoai})` : ''))
     setShowCustomerDropdown(false)
-    setSoDiemSuDung(0)
+    setDungDiem(false)
     setCoupon(null); setCouponCode(''); setCouponMsg('')
     getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 }))
     fetchAvailableCoupons(c.maNguoiDung)
@@ -127,7 +129,7 @@ export default function AdminPOS() {
     setCustomerSearch('')
     setCustomerResults([])
     setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
-    setSoDiemSuDung(0)
+    setDungDiem(false)
     setAvailableCoupons([])
     setCoupon(null); setCouponCode(''); setCouponMsg('')
   }
@@ -674,13 +676,32 @@ export default function AdminPOS() {
                 </div>
               </div>
               {selectedCustomer && customerDiem.soDiem > 0 ? (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <span className="text-sm text-stone">Số dư: <strong className="text-gold-hover">{customerDiem.soDiem.toLocaleString()} điểm</strong></span>
-                  <input type="number" min={0} max={maxDiemSuDung} value={soDiemSuDung}
-                    onChange={e => setSoDiemSuDung(Math.min(Math.max(0, Number(e.target.value) || 0), maxDiemSuDung))}
-                    placeholder="Số điểm"
-                    className="w-24 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
-                  <span className="text-xs text-stone">Min: {diemToiThieu} </span>
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <span className="text-sm text-stone">Số dư: <strong className="text-gold-hover">{customerDiem.soDiem.toLocaleString()} điểm</strong></span>
+                    <span className="text-xs text-stone">Giảm tối đa {giamToiDaPhanTram}% giá trị hàng</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm">Dùng điểm tích lũy giảm giá</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={dungDiem}
+                      disabled={!diemDungDuoc}
+                      onClick={() => setDungDiem(v => !v)}
+                      className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${dungDiem ? 'bg-gold' : 'bg-ivory-100 border border-stone/30'}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${dungDiem ? 'translate-x-5' : ''}`} />
+                    </button>
+                  </div>
+                  {diemDungDuoc ? (
+                    dungDiem && (
+                      <p className="text-xs text-gold">
+                        Sẽ dùng {maxDiemSuDung.toLocaleString()} điểm (giảm {VND(maxDiemSuDung * tiLeDoi)})
+                      </p>
+                    )
+                  ) : (
+                    <p className="text-xs text-stone">Cần tối thiểu {diemToiThieu} điểm để sử dụng</p>
+                  )}
                 </div>
               ) : selectedCustomer ? (
                 <p className="text-xs text-stone">Khách chưa có điểm tích lũy</p>
