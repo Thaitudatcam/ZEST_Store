@@ -1,21 +1,11 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { quenMatKhau, xacThucQuenMatKhau, datLaiMatKhau } from '../api/auth'
-import OtpVerification from '../components/OtpVerification'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { quenMatKhau, datLaiMatKhau } from '../api/auth'
 import { KeyRound, Mail, Lock } from 'lucide-react'
-
-const maskEmail = (email) => {
-  if (!email) return ''
-  const idx = email.indexOf('@')
-  if (idx <= 0) return email
-  const local = email.slice(0, idx)
-  const domain = email.slice(idx)
-  const head = local.slice(0, Math.min(2, local.length))
-  return `${head}***${domain}`
-}
 
 export default function ForgotPassword() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [step, setStep] = useState(1)
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
@@ -25,27 +15,28 @@ export default function ForgotPassword() {
   const [err, setErr] = useState('')
   const [sub, setSub] = useState(false)
 
+  useEffect(() => {
+    const s = location.state
+    if (s?.step === 3 && s?.email) {
+      setEmail(s.email)
+      setOtp(s.otp || '')
+      setStep(3)
+    } else if (s?.step === 1 && s?.email) {
+      setEmail(s.email)
+      setStep(1)
+    }
+    window.history.replaceState({}, document.title)
+  }, [location.state])
+
   const handleSendOtp = async (e) => {
     e.preventDefault()
     setErr(''); setMsg(''); setSub(true)
     try {
-      const res = await quenMatKhau({ email })
-      setMsg(res.message)
-      setStep(2)
+      await quenMatKhau({ email })
+      navigate(`/xac-thuc-otp?type=forgotPassword&email=${encodeURIComponent(email)}`)
     } catch (err) {
       setErr(err.response?.data?.message || 'Có lỗi xảy ra')
     } finally { setSub(false) }
-  }
-
-  const handleResendOtp = async () => {
-    await quenMatKhau({ email })
-  }
-
-  const handleXacThucOtp = async (code) => {
-    await xacThucQuenMatKhau({ email, maXacThuc: code })
-    setOtp(code)
-    setMsg('')
-    setStep(3)
   }
 
   const handleReset = async (e) => {
@@ -61,9 +52,8 @@ export default function ForgotPassword() {
     } catch (err) {
       const msgErr = err.response?.data?.message || 'Có lỗi xảy ra'
       if (msgErr.includes('hết hạn')) {
-        setOtp(''); setErr(''); setMsg('')
-        setStep(2)
-        quenMatKhau({ email }).catch(() => {})
+        setErr('')
+        navigate(`/xac-thuc-otp?type=forgotPassword&email=${encodeURIComponent(email)}`)
       } else {
         setErr(msgErr)
       }
@@ -122,18 +112,6 @@ export default function ForgotPassword() {
           <a href="/login" className="text-gold hover:underline">Quay lại đăng nhập</a>
         </p>
       </div>
-
-      {step === 2 && (
-        <OtpVerification
-          title="Xác minh OTP"
-          email={maskEmail(email)}
-          length={6}
-          expireSeconds={600}
-          onConfirm={handleXacThucOtp}
-          onResend={handleResendOtp}
-          onBack={() => { setStep(1); setErr(''); setMsg('') }}
-        />
-      )}
     </div>
   )
 }

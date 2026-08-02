@@ -11,6 +11,7 @@ import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import AuthPage from './pages/AuthPage'
 import ForgotPassword from './pages/ForgotPassword'
+import OtpVerifyPage from './pages/OtpVerifyPage'
 import Profile from './pages/Profile'
 import Wishlist from './pages/Wishlist'
 import UserVouchers from './pages/UserVouchers'
@@ -85,6 +86,7 @@ export default function App() {
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<AuthPage />} />
       <Route path="/quen-mat-khau" element={<ForgotPassword />} />
+      <Route path="/xac-thuc-otp" element={<OtpVerifyPage />} />
       <Route path="*" element={
         <div className="flex flex-col min-h-screen">
           <Navbar />

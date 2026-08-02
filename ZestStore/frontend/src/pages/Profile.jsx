@@ -1,27 +1,15 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
-import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress, guiMaXacThucEmailMoi, xacNhanEmailMoi } from '../api/users'
-import { guiMaXacThuc, xacThucEmail } from '../api/auth'
-import { useAuth } from '../context/AuthContext'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import { getProfile, updateProfile, changePassword as changePwd, getAddresses, addAddress, updateAddress, deleteAddress, setDefaultAddress, guiMaXacThucEmailMoi } from '../api/users'
+import { guiMaXacThuc } from '../api/auth'
 import LoadingSpinner from '../components/LoadingSpinner'
-import OtpVerification from '../components/OtpVerification'
 import { User, MapPin, Plus, Trash2, Star, Pencil, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { getProvinces, getDistricts, getWards } from '../api/ghn'
-
-const maskEmail = (email) => {
-  if (!email) return ''
-  const idx = email.indexOf('@')
-  if (idx <= 0) return email
-  const local = email.slice(0, idx)
-  const domain = email.slice(idx)
-  const head = local.slice(0, Math.min(2, local.length))
-  return `${head}***${domain}`
-}
 
 export default function Profile() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const location = useLocation()
   const [tab, setTab] = useState(searchParams.get('tab') === 'password' ? 'password' : 'profile')
   const [profile, setProfile] = useState(null)
   const [addresses, setAddresses] = useState([])
@@ -39,10 +27,7 @@ export default function Profile() {
   const [provinceId, setProvinceId] = useState(0)
   const [districtId, setDistrictId] = useState(0)
   const [wardCode, setWardCode] = useState('')
-  const [emailOtpStep, setEmailOtpStep] = useState(null) // 'verify' | 'change'
-  const [emailNew, setEmailNew] = useState('')
   const [pendingEmail, setPendingEmail] = useState('')
-
   const load = async () => {
     try {
       const [p, a, prov] = await Promise.all([getProfile(), getAddresses(), getProvinces()])
@@ -77,7 +62,6 @@ export default function Profile() {
         // Lưu pending email, hiện "Chưa xác thực" + nút xác thực thủ công.
         // Không load() để giữ form.email = email mới.
         setPendingEmail(form.email)
-        setEmailNew(form.email)
         setMsg('Cập nhật thành công. Email mới chưa được xác thực, vui lòng bấm "Xác thực email mới".')
       } else {
         setMsg('Cập nhật thành công')
@@ -88,39 +72,29 @@ export default function Profile() {
     }
   }
 
-  const handleGuiOtp = async () => {
-    await guiMaXacThuc()
-  }
-
-  const handleXacThucOtp = async (code) => {
-    await xacThucEmail({ maXacThuc: code })
-    setMsg('Xác thực email thành công')
-    setEmailOtpStep(null)
-    load()
-  }
-
-  const handleGuiOtpEmailMoi = async () => {
-    await guiMaXacThucEmailMoi({ emailMoi: emailNew })
-  }
-
-  const handleXacThucEmailMoi = async () => {
+  const handleXacThucEmailNgay = async () => {
     try {
-      await guiMaXacThucEmailMoi({ emailMoi: form.email })
-      setEmailNew(form.email)
-      setEmailOtpStep('change')
+      await guiMaXacThuc()
+      navigate('/xac-thuc-otp?type=verifyEmail')
     } catch (err) {
       setMsg(err.response?.data?.message || 'Lỗi gửi mã OTP')
     }
   }
 
-  const handleXacNhanEmailMoi = async (code) => {
-    await xacNhanEmailMoi({ maXacThuc: code })
-    // Email mới đã được áp dụng trong DB -> token hiện tại (chứa email cũ) không còn hợp lệ.
-    // Đăng xuất và yêu cầu đăng nhập lại bằng email mới.
-    setEmailOtpStep(null); setEmailNew(''); setPendingEmail('')
-    logout()
-    navigate('/login', { state: { message: 'Đổi email thành công. Vui lòng đăng nhập lại bằng email mới.' } })
+  const handleXacThucEmailMoi = async () => {
+    try {
+      await guiMaXacThucEmailMoi({ emailMoi: form.email })
+      navigate(`/xac-thuc-otp?type=verifyNewEmail&emailMoi=${encodeURIComponent(form.email)}`)
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Lỗi gửi mã OTP')
+    }
   }
+
+  useEffect(() => {
+    if (location.state?.msg) {
+      setMsg(location.state.msg)
+    }
+  }, [location.state])
 
   const handlePwd = async (e) => {
     e.preventDefault(); setPwdMsg('')
@@ -188,7 +162,7 @@ export default function Profile() {
           <div>
             <label className="text-sm text-stone">Email</label>
             <div className="flex items-center gap-2 mt-1">
-              <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setEmailNew(e.target.value) }} className="flex-1 border rounded-lg px-4 py-2" />
+              <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }) }} className="flex-1 border rounded-lg px-4 py-2" />
               {form.email === profile?.email
                 ? (profile?.emailDaXacThuc
                     ? <span className="flex items-center gap-1 text-emerald-deep text-sm whitespace-nowrap"><ShieldCheck className="h-4 w-4" /> Đã xác thực ✓</span>
@@ -201,7 +175,7 @@ export default function Profile() {
             {form.email === profile?.email
               ? (!profile?.emailDaXacThuc && (
                   <div className="mt-2">
-                    <button type="button" onClick={() => setEmailOtpStep('verify')}
+                    <button type="button" onClick={handleXacThucEmailNgay}
                       className="text-gold text-sm hover:underline">
                       Xác thực email ngay
                     </button>
@@ -302,29 +276,6 @@ export default function Profile() {
             </div>
           </form>
         </div>
-      )}
-
-      {emailOtpStep === 'verify' && (
-        <OtpVerification
-          email={maskEmail(profile?.email)}
-          length={6}
-          expireSeconds={600}
-          onConfirm={handleXacThucOtp}
-          onResend={handleGuiOtp}
-          onBack={() => setEmailOtpStep(null)}
-        />
-      )}
-
-      {emailOtpStep === 'change' && (
-        <OtpVerification
-          title="Xác thực email mới"
-          email={maskEmail(emailNew)}
-          length={6}
-          expireSeconds={600}
-          onConfirm={handleXacNhanEmailMoi}
-          onResend={handleGuiOtpEmailMoi}
-          onBack={() => { setEmailOtpStep(null); setForm({ ...form, email: profile?.email || '' }) }}
-        />
       )}
     </div>
   )
