@@ -1,7 +1,6 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.service.AdminAiService;
-import com.example.zeststore.service.AiAnalyticsService;
 import com.example.zeststore.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +16,8 @@ import java.util.Map;
 @PreAuthorize("hasRole('ADMIN')")
 public class AiAnalyticsController {
 
-    private final AiAnalyticsService aiAnalyticsService;
     private final AdminAiService adminAiService;
     private final UserService userService;
-
-    @GetMapping("/insights")
-    public ResponseEntity<?> getInsights(Authentication auth) {
-        Integer userId = userService.getUserIdFromAuth(auth);
-        return ResponseEntity.ok(aiAnalyticsService.generateInsights(userId));
-    }
 
     @PostMapping("/ask")
     public ResponseEntity<?> ask(@RequestBody Map<String, String> body, Authentication auth) {

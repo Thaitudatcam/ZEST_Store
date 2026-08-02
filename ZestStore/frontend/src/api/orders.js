@@ -6,6 +6,5 @@ export const cancelOrder = (id) => api.put(`/orders/${id}/cancel`).then((r) => r
 export const confirmReceived = (id) => api.put(`/orders/${id}/confirm-received`).then((r) => r.data)
 export const requestReturn = (id, lyDo, hinhAnh) => api.post(`/orders/${id}/return-request`, { lyDo, hinhAnh }).then((r) => r.data)
 export const getReturnRequests = (trangThai) => api.get('/admin/return-requests', { params: { trangThai } }).then((r) => r.data)
-export const getReturnRequestDetail = (id) => api.get(`/admin/return-requests/${id}`).then((r) => r.data)
 export const approveReturn = (id) => api.put(`/admin/return-requests/${id}/approve`).then((r) => r.data)
 export const rejectReturn = (id, lyDoTuChoi) => api.put(`/admin/return-requests/${id}/reject`, { lyDoTuChoi }).then((r) => r.data)

@@ -3,9 +3,6 @@ import api from './axios'
 export const getBestSelling = (limit = 10) =>
   api.get('/recommendations/best-selling', { params: { limit } }).then((r) => r.data)
 
-export const getRelatedProducts = (id, limit = 6) =>
-  api.get(`/recommendations/product/${id}/related`, { params: { limit } }).then((r) => r.data)
-
 export const getPopular = (limit = 10) =>
   api.get('/recommendations/popular', { params: { limit } }).then((r) => r.data)
 

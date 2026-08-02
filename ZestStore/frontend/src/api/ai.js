@@ -11,6 +11,3 @@ export const sendMessage = (noiDung, maHoiThoai, hinhAnh) =>
 
 export const deleteConversation = (id) =>
   api.delete(`/ai/conversations/${id}`).then((r) => r.data)
-
-export const getAiInsights = () =>
-  api.get('/ai/analytics/insights').then((r) => r.data)
