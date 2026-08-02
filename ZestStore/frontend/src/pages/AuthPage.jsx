@@ -212,7 +212,7 @@ function RegisterForm({ onSuccess, onSwitch }) {
     if (!agree) { setErr('Vui lòng đồng ý với Điều khoản & Điều kiện'); return }
     setSub(true)
     try {
-      await register(form.hoTen, form.email, form.matKhau, undefined)
+      await register(form.hoTen, form.email, form.matKhau, undefined, agree)
       onSuccess?.()
     } catch (err) {
       setErr(err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || 'Đăng ký thất bại')
@@ -241,7 +241,7 @@ function RegisterForm({ onSuccess, onSwitch }) {
           className={`w-4.5 h-4.5 mt-0.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${agree ? 'bg-gold border-gold' : 'border-stone-light/40 group-hover:border-gold'}`}>
           {agree && <Check className="h-3 w-3 text-noir" strokeWidth={3} />}
         </button>
-        <span className="text-xs text-stone leading-relaxed">Tôi đồng ý với <a href="#" className="text-gold-dark hover:underline font-medium">Điều Khoản Dịch Vụ</a> & <a href="#" className="text-gold-dark hover:underline font-medium">Chính Sách Bảo Mật</a></span>
+        <span className="text-xs text-stone leading-relaxed">Tôi đồng ý với <Link to="/policies/dieu-khoan-dich-vu" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-gold-dark hover:underline font-medium">Điều Khoản Dịch Vụ</Link> & <Link to="/policies/chinh-sach-su-dung" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-gold-dark hover:underline font-medium">Chính Sách Sử Dụng</Link></span>
       </label>
 
       <button type="submit" disabled={sub || !form.hoTen || !form.email || !form.matKhau}

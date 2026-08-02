@@ -38,6 +38,29 @@ const policies = {
       { h: '4. Chăm sóc khách hàng', p: 'Hotline: 1900 1234 (8:00 - 21:00). Email: support@zeststore.vn. Chat trực tiếp trên website hoặc fanpage Facebook.' },
     ],
   },
+  'dieu-khoan-dich-vu': {
+    title: 'Điều khoản dịch vụ',
+    content: [
+      { h: '1. Phạm vi áp dụng', p: 'Điều khoản dịch vụ này áp dụng cho toàn bộ khách hàng sử dụng website, ứng dụng và các dịch vụ của ZestStore. Bằng việc truy cập hoặc sử dụng dịch vụ, bạn xác nhận đã đọc, hiểu và đồng ý với toàn bộ các điều khoản dưới đây.' },
+      { h: '2. Tài khoản khách hàng', p: 'Khi tạo tài khoản, bạn phải cung cấp thông tin chính xác, đầy đủ và chịu trách nhiệm bảo mật thông tin đăng nhập của mình. Bạn đồng ý thông báo ngay cho ZestStore khi phát hiện tài khoản bị truy cập trái phép.' },
+      { h: '3. Giá cả và thanh toán', p: 'Giá sản phẩm hiển thị trên website đã gồm thuế và được tính theo thời điểm đặt hàng. ZestStore có quyền thay đổi giá, chương trình khuyến mãi mà không cần thông báo trước. Mọi giao dịch phải được thanh toán đầy đủ trước khi đơn hàng được xử lý.' },
+      { h: '4. Giao hàng và đổi trả', p: 'Đơn hàng được giao theo chính sách vận chuyển của ZestStore. Khách hàng có quyền đổi trả sản phẩm theo chính sách đổi trả được công bố trên website trong vòng 7 ngày kể từ ngày nhận hàng.' },
+      { h: '5. Sở hữu trí tuệ', p: 'Toàn bộ nội dung trên website bao gồm hình ảnh, logo, mô tả sản phẩm và thiết kế giao diện thuộc quyền sở hữu của ZestStore. Không được sao chép, sử dụng lại dưới mọi hình thức khi chưa có sự đồng ý bằng văn bản.' },
+      { h: '6. Giới hạn trách nhiệm', p: 'ZestStore không chịu trách nhiệm về những thiệt hại gián tiếp phát sinh từ việc sử dụng dịch vụ ngoài tầm kiểm soát của chúng tôi như lỗi mạng, sự cố từ nhà vận chuyển hoặc hành vi của bên thứ ba.' },
+      { h: '7. Sửa đổi điều khoản', p: 'ZestStore có quyền sửa đổi, bổ sung điều khoản dịch vụ bất cứ lúc nào. Phiên bản mới sẽ được cập nhật trên website và có hiệu lực kể từ ngày công bố. Việc bạn tiếp tục sử dụng dịch vụ đồng nghĩa với việc chấp nhận các thay đổi.' },
+    ],
+  },
+  'chinh-sach-su-dung': {
+    title: 'Chính sách sử dụng',
+    content: [
+      { h: '1. Tạo và bảo mật tài khoản', p: 'Tài khoản chỉ được tạo sau khi khách hàng đồng ý với điều khoản dịch vụ và chính sách sử dụng. Khách hàng phải giữ bí mật mật khẩu, không cho người khác mượn tài khoản và tự chịu trách nhiệm về mọi hoạt động diễn ra trên tài khoản của mình.' },
+      { h: '2. Sử dụng hợp lý', p: 'Khách hàng được phép sử dụng website để mua sắm, tra cứu thông tin sản phẩm và sử dụng các tính năng hợp pháp khác. Không được sử dụng dịch vụ cho mục đích thương mại hóa, gian lận hoặc phá hoại hệ thống.' },
+      { h: '3. Hành vi bị cấm', p: 'Nghiêm cấm các hành vi: đăng ký nhiều tài khoản ảo, lạm dụng chương trình khuyến mãi, phát tán mã độc, tấn công hoặc can thiệp vào hệ thống, xúc phạm hoặc quấy rối người dùng khác, sử dụng thông tin sai lệch gây ảnh hưởng đến hoạt động của website.' },
+      { h: '4. Nội dung và đánh giá', p: 'Khi viết đánh giá sản phẩm, khách hàng phải đảm bảo nội dung trung thực, không chứa thông tin bịa đặt, quảng cáo trá hình, ngôn từ tục tĩu hoặc xâm phạm quyền của bên thứ ba. ZestStore có quyền gỡ bỏ các nội dung vi phạm.' },
+      { h: '5. Xử lý vi phạm', p: 'ZestStore có quyền cảnh báo, tạm khóa hoặc chấm dứt tài khoản vi phạm chính sách mà không cần báo trước, đồng thời có thể từ chối xử lý các đơn hàng phát sinh từ hành vi gian lận.' },
+      { h: '6. Chấm dứt sử dụng', p: 'Khách hàng có thể yêu cầu xóa tài khoản bất cứ lúc nào qua email support@zeststore.vn. Việc xóa tài khoản sẽ ngừng toàn bộ quyền sử dụng dịch vụ nhưng không ảnh hưởng đến các giao dịch đã hoàn tất trước đó.' },
+    ],
+  },
 }
 
 export default function PolicyPage() {

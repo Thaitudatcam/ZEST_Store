@@ -45,6 +45,8 @@ export default function Footer() {
           <ul className="space-y-2 text-sm">
             <li><Link to="/policies/doi-tra" className="hover:text-gold transition">Chính sách đổi trả</Link></li>
             <li><Link to="/policies/bao-mat" className="hover:text-gold transition">Chính sách bảo mật</Link></li>
+            <li><Link to="/policies/dieu-khoan-dich-vu" className="hover:text-gold transition">Điều khoản dịch vụ</Link></li>
+            <li><Link to="/policies/chinh-sach-su-dung" className="hover:text-gold transition">Chính sách sử dụng</Link></li>
             <li><Link to="/policies/van-chuyen" className="hover:text-gold transition">Chính sách vận chuyển</Link></li>
             <li><Link to="/policies/huong-dan-mua-hang" className="hover:text-gold transition">Hướng dẫn mua hàng</Link></li>
           </ul>

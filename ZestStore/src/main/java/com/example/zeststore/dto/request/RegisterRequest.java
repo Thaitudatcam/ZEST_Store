@@ -1,5 +1,6 @@
 package com.example.zeststore.dto.request;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -27,4 +28,7 @@ public class RegisterRequest {
 
     @Size(max = 15)
     private String soDienThoai;
+
+    @AssertTrue(message = "Bạn phải đồng ý với Điều khoản dịch vụ và Chính sách sử dụng")
+    private Boolean dongYDongThuan;
 }
