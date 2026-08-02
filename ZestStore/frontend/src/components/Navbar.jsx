@@ -167,7 +167,6 @@ export default function Navbar() {
                       <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-gold-dark" /> Điểm tích lũy</span>
                       {diemHienCo !== null && <span className="text-xs font-semibold text-gold-dark tabular-nums">{diemHienCo.toLocaleString()}</span>}
                     </Link>
-                    <Link to="/profile?tab=password" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-ink-soft hover:bg-noir/5 hover:text-noir transition">Đổi mật khẩu</Link>
                     <hr className="my-1 border-beige-deep/40" />
                     {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                       <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gold-dark font-semibold hover:bg-noir/5 transition">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
@@ -245,7 +244,6 @@ export default function Navbar() {
                 {diemHienCo !== null && <span className="text-xs font-semibold text-gold-dark tabular-nums">{diemHienCo.toLocaleString()}</span>}
               </Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Tài khoản</Link>
-              <Link to="/profile?tab=password" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Đổi mật khẩu</Link>
               {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                 <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setOpen(false)} className="block py-2 text-gold-dark font-semibold">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
               )}
