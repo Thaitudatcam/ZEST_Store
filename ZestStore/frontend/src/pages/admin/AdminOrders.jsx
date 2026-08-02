@@ -55,7 +55,10 @@ export default function AdminOrders() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const todayStr = new Date().toISOString().split('T')[0]
-  const [tuNgay, setTuNgay] = useState(todayStr)
+  const [tuNgay, setTuNgay] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() - 30)
+    return d.toISOString().split('T')[0]
+  })
   const [denNgay, setDenNgay] = useState(todayStr)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const dateError = tuNgay && denNgay && tuNgay > denNgay ? 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' : ''

@@ -266,15 +266,27 @@ function RegisterForm({ onSuccess, onSwitch }) {
    ══════════════════════════════════════════════════════════════════ */
 function LoginForm({ onSuccess, onSwitch }) {
   const { login } = useAuth()
-  const [email, setEmail] = useState('')
-  const [matKhau, setMatKhau] = useState('')
+  const [email, setEmail] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rememberedLogin') || 'null')?.email || '' } catch { return '' }
+  })
+  const [matKhau, setMatKhau] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rememberedLogin') || 'null')?.matKhau || '' } catch { return '' }
+  })
+  const [remember, setRemember] = useState(() => {
+    try { return !!JSON.parse(localStorage.getItem('rememberedLogin') || 'null') } catch { return false }
+  })
   const [err, setErr] = useState('')
   const [sub, setSub] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setErr(''); setSub(true)
     try {
-      const data = await login(email, matKhau)
+      const data = await login(email, matKhau, remember)
+      if (remember) {
+        localStorage.setItem('rememberedLogin', JSON.stringify({ email, matKhau }))
+      } else {
+        localStorage.removeItem('rememberedLogin')
+      }
       onSuccess?.(data)
     } catch (err) {
       setErr(err.response?.data?.message || 'Đăng nhập thất bại')
@@ -299,7 +311,7 @@ function LoginForm({ onSuccess, onSwitch }) {
 
       <div className="flex items-center justify-between pt-0.5">
         <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" className="w-4 h-4 rounded border-stone-light/40 text-gold focus:ring-gold/30 cursor-pointer" />
+          <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="w-4 h-4 rounded border-stone-light/40 text-gold focus:ring-gold/30 cursor-pointer" />
           <span className="text-xs text-stone">Ghi nhớ đăng nhập</span>
         </label>
         <Link to="/quen-mat-khau" className="text-xs text-gold-dark hover:text-gold font-medium hover:underline">

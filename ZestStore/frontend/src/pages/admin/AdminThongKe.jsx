@@ -89,7 +89,7 @@ export default function AdminThongKe() {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
-    Promise.all([
+    const loadAll = () => Promise.all([
       getStats().catch(() => null),
       getOrderStats().catch(() => null),
       getRevenueByDay(today, today).then(r => Array.isArray(r) ? r.reduce((s, d) => s + Number(d.doanhThu || 0), 0) : null).catch(() => null),
@@ -100,6 +100,11 @@ export default function AdminThongKe() {
       setTodayRevenue(rev)
       setRecentOrders(recent)
     }).finally(() => setLoading(false))
+    loadAll()
+    const id = setInterval(loadAll, 30000)
+    const onFocus = () => loadAll()
+    window.addEventListener('focus', onFocus)
+    return () => { clearInterval(id); window.removeEventListener('focus', onFocus) }
   }, [])
 
   useEffect(() => {

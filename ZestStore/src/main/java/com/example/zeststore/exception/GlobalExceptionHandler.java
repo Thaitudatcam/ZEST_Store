@@ -1,7 +1,9 @@
 package com.example.zeststore.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -9,9 +11,11 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,6 +37,38 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<?> handleDuplicate(DuplicateResourceException ex) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<?> handleMissingParam(MissingServletRequestParameterException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST,
+                "Thiếu tham số bắt buộc: " + ex.getParameterName());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST,
+                "Tham số không hợp lệ: " + ex.getName());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleNotReadable(HttpMessageNotReadableException ex) {
+        String message = ex.getMessage() != null ? ex.getMessage() : "Dữ liệu gửi lên không hợp lệ";
+        String root = message.contains("JSON parse error") ? message.split("JSON parse error: ", 2)[1]
+                : message;
+        String detail = root.split("\\.at \\[")[0];
+        return buildResponse(HttpStatus.BAD_REQUEST, "Dữ liệu gửi lên không hợp lệ: " + detail);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String message = ex.getMostSpecificCause() != null
+                ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        if (message != null && (message.contains("duplicate") || message.contains("Duplicate")
+                || message.contains("UQ_") || message.contains("UNIQUE"))) {
+            return buildResponse(HttpStatus.BAD_REQUEST, "Dữ liệu đã tồn tại, không thể trùng");
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST, "Dữ liệu không hợp lệ hoặc thiếu trường bắt buộc");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

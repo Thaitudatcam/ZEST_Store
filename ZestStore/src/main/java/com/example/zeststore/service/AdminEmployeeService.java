@@ -2,6 +2,8 @@ package com.example.zeststore.service;
 
 import com.example.zeststore.entity.NguoiDung;
 import com.example.zeststore.entity.VaiTro;
+import com.example.zeststore.exception.BadRequestException;
+import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.NguoiDungRepository;
 import com.example.zeststore.repository.VaiTroRepository;
 import lombok.RequiredArgsConstructor;
@@ -110,16 +112,22 @@ public class AdminEmployeeService {
 
     @Transactional
     public Map<String, Object> convertToEmployee(Map<String, Object> body) {
+        if (body.get("maNguoiDung") == null) {
+            throw new BadRequestException("maNguoiDung is required");
+        }
         Integer maNguoiDung = Integer.valueOf(body.get("maNguoiDung").toString());
         String vaiTroStr = (String) body.get("vaiTro");
+        if (vaiTroStr == null || vaiTroStr.isBlank()) {
+            throw new BadRequestException("vaiTro is required");
+        }
         Boolean choPhepBanHang = body.get("choPhepBanHang") != null
                 ? Boolean.parseBoolean(body.get("choPhepBanHang").toString()) : false;
 
         NguoiDung user = nguoiDungRepository.findById(maNguoiDung)
-                .orElseThrow(() -> new RuntimeException("User not found: " + maNguoiDung));
+                .orElseThrow(() -> new ResourceNotFoundException("User", maNguoiDung));
 
         if (user.getVaiTro() != null && !"CUSTOMER".equals(user.getVaiTro().getTenVaiTro())) {
-            throw new RuntimeException("User is already an employee");
+            throw new BadRequestException("User is already an employee");
         }
 
         VaiTro role = vaiTroRepository.findByTenVaiTro(vaiTroStr)

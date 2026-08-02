@@ -70,7 +70,7 @@ public class AiChatService {
         systemContent.append("gợi ý size, màu sắc, và giải đáp thắc mắc về đơn hàng.");
 
         if (!matchedProducts.isEmpty()) {
-            systemContent.append("\n\nSản phẩm hiện có phù hợp với yêu cầu của khách hàng:\n");
+            systemContent.append("\n\nDANH SÁCH SẢN PHẨM THẬT ĐANG BÁN TRONG CỬA HÀNG, phù hợp với yêu cầu của khách:\n");
             for (int i = 0; i < matchedProducts.size(); i++) {
                 Map<String, Object> p = matchedProducts.get(i);
                 systemContent.append((i + 1) + ". ").append(p.get("tenSanPham"))
@@ -80,7 +80,18 @@ public class AiChatService {
                 }
                 systemContent.append("\n");
             }
-            systemContent.append("Hãy tư vấn và gợi ý các sản phẩm này cho khách hàng dựa trên nhu cầu của họ.");
+            systemContent.append("\nQUY TẮC BẮT BUỘC:\n");
+            systemContent.append("1. CHỈ được gợi ý, tư vấn NHỮNG sản phẩm nằm trong DANH SÁCH trên.\n");
+            systemContent.append("2. TUYỆT ĐỐI không được bịa ra, hư cấu, hoặc nhắc đến bất kỳ tên sản phẩm, giá, mã sản phẩm nào không có trong danh sách.\n");
+            systemContent.append("3. DANH SÁCH trên là các sản phẩm THẬT đang bán, KHỚP với yêu cầu của khách. BẮT BUỘC phải gợi ý ít nhất 1-2 sản phẩm trong danh sách này.\n");
+            systemContent.append("4. TUYỆT ĐỐI không được nói 'không có sản phẩm', 'cửa hàng chưa có', 'không tìm thấy', hay 'không khớp' khi danh sách đã có sản phẩm. Nếu khách nói 'không có áo polo trắng' nhưng danh sách có áo polo trắng, hãy trả lời rằng áo polo trắng CÓ SẴN.\n");
+            systemContent.append("5. Nếu khách hỏi về một sản phẩm cụ thể không có trong danh sách, lịch sự gợi ý sản phẩm TƯƠNG TỰ trong danh sách.\n");
+            systemContent.append("6. Không được gợi ý sản phẩm có tồn kho bằng 0.\n");
+        } else {
+            systemContent.append("\n\nQUY TẮC BẮT BUỘC:\n");
+            systemContent.append("1. HIỆN TẠI KHÔNG có sản phẩm nào trong cửa hàng khớp với yêu cầu của khách.\n");
+            systemContent.append("2. TUYỆT ĐỐI không được bịa ra, hư cấu bất kỳ sản phẩm, giá cả, mã sản phẩm nào.\n");
+            systemContent.append("3. Hãy lịch sự thông báo cửa hàng chưa có sản phẩm phù hợp, mời khách mô tả lại nhu cầu khác, hoặc gợi ý khách tham khảo danh mục sản phẩm có sẵn.");
         }
 
         ArrayNode messagesNode = objectMapper.createArrayNode();
