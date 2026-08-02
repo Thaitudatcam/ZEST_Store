@@ -66,8 +66,18 @@ public class UserService {
     public Map<String, Object> updateProfile(Integer userId, UserUpdateRequest request) {
         NguoiDung user = getUserById(userId);
         if (request.getHoTen() != null) user.setHoTen(request.getHoTen());
-        // Email không được đổi tại đây. Việc đổi email phải qua luồng OTP:
+        // Email mới chỉ được lưu làm "email chờ xác thực" (chưa đổi email chính).
+        // Việc áp dụng email chính phải qua luồng OTP:
         // POST /users/gui-ma-xac-thuc-email-moi -> POST /users/xac-nhan-email-moi
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (request.getEmail().isBlank()) {
+                throw new BadRequestException("Email mới không được để trống");
+            }
+            if (nguoiDungRepository.existsByEmail(request.getEmail())) {
+                throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
+            }
+            user.setEmailMoiChoXacThuc(request.getEmail());
+        }
         if (request.getSoDienThoai() != null && !request.getSoDienThoai().equals(user.getSoDienThoai())) {
             if (nguoiDungRepository.existsBySoDienThoai(request.getSoDienThoai())) {
                 throw new DuplicateResourceException("Số điện thoại đã được sử dụng bởi tài khoản khác");

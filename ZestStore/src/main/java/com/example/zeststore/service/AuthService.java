@@ -150,6 +150,12 @@ public class AuthService {
         NguoiDung user = nguoiDungRepository.findByEmail(email).orElse(null);
 
         if (user == null) {
+            // Email có thể đang là email mới chưa xác thực (emailMoiChoXacThuc)
+            // đã lưu từ tài khoản -> báo chưa xác thực thay vì "không tìm thấy".
+            boolean isPendingEmail = nguoiDungRepository.findByEmailMoiChoXacThuc(email).isPresent();
+            if (isPendingEmail) {
+                throw new BadRequestException("Email chưa được xác thực, không thể đặt lại mật khẩu");
+            }
             throw new BadRequestException("Không tìm thấy tài khoản với email này");
         }
 

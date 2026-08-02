@@ -41,11 +41,12 @@ export default function Profile() {
   const [wardCode, setWardCode] = useState('')
   const [emailOtpStep, setEmailOtpStep] = useState(null) // 'verify' | 'change'
   const [emailNew, setEmailNew] = useState('')
+  const [pendingEmail, setPendingEmail] = useState('')
 
   const load = async () => {
     try {
       const [p, a, prov] = await Promise.all([getProfile(), getAddresses(), getProvinces()])
-      setProfile(p); setAddresses(a); setForm({ hoTen: p.hoTen || '', email: p.email || '', soDienThoai: p.soDienThoai || '' }); setProvinces(prov || [])
+      setProfile(p); setAddresses(a); setForm({ hoTen: p.hoTen || '', email: p.email || '', soDienThoai: p.soDienThoai || '' }); setPendingEmail(p.emailMoiChoXacThuc || ''); setProvinces(prov || [])
     } catch {} finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -66,16 +67,18 @@ export default function Profile() {
     e.preventDefault(); setMsg('')
     if (!profile) { setMsg('Không tải được thông tin tài khoản'); return }
     const emailChanged = form.email !== profile.email
-    // Luôn lưu họ tên/SĐT. Nếu đổi email thì KHÔNG gửi email vào updateProfile
-    // (backend đã bỏ đổi email trực tiếp) mà chuyển sang luồng OTP riêng.
+    // Luôn lưu họ tên/SĐT. Nếu đổi email thì gửi email làm "email mới chờ xác thực"
+    // (backend không đổi email chính, chỉ lưu emailMoiChoXacThuc và KHÔNG gửi OTP).
     try {
-      await updateProfile({ hoTen: form.hoTen, soDienThoai: form.soDienThoai })
+      await updateProfile(emailChanged
+        ? { hoTen: form.hoTen, soDienThoai: form.soDienThoai, email: form.email }
+        : { hoTen: form.hoTen, soDienThoai: form.soDienThoai })
       if (emailChanged) {
-        // Bắt đầu luồng xác thực email mới (không load lại để giữ form.email = email mới)
-        await guiMaXacThucEmailMoi({ emailMoi: form.email })
+        // Lưu pending email, hiện "Chưa xác thực" + nút xác thực thủ công.
+        // Không load() để giữ form.email = email mới.
+        setPendingEmail(form.email)
         setEmailNew(form.email)
-        setEmailOtpStep('change')
-        setMsg(`Đã gửi mã OTP đến ${form.email}. Vui lòng nhập mã để xác thực email mới.`)
+        setMsg('Cập nhật thành công. Email mới chưa được xác thực, vui lòng bấm "Xác thực email mới".')
       } else {
         setMsg('Cập nhật thành công')
         load()
@@ -100,11 +103,21 @@ export default function Profile() {
     await guiMaXacThucEmailMoi({ emailMoi: emailNew })
   }
 
+  const handleXacThucEmailMoi = async () => {
+    try {
+      await guiMaXacThucEmailMoi({ emailMoi: form.email })
+      setEmailNew(form.email)
+      setEmailOtpStep('change')
+    } catch (err) {
+      setMsg(err.response?.data?.message || 'Lỗi gửi mã OTP')
+    }
+  }
+
   const handleXacNhanEmailMoi = async (code) => {
     await xacNhanEmailMoi({ maXacThuc: code })
     // Email mới đã được áp dụng trong DB -> token hiện tại (chứa email cũ) không còn hợp lệ.
     // Đăng xuất và yêu cầu đăng nhập lại bằng email mới.
-    setEmailOtpStep(null); setEmailNew('')
+    setEmailOtpStep(null); setEmailNew(''); setPendingEmail('')
     logout()
     navigate('/login', { state: { message: 'Đổi email thành công. Vui lòng đăng nhập lại bằng email mới.' } })
   }
@@ -173,19 +186,33 @@ export default function Profile() {
             <label className="text-sm text-stone">Email</label>
             <div className="flex items-center gap-2 mt-1">
               <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); setEmailNew(e.target.value) }} className="flex-1 border rounded-lg px-4 py-2" />
-              {profile?.emailDaXacThuc
-                ? <span className="flex items-center gap-1 text-emerald-deep text-sm whitespace-nowrap"><ShieldCheck className="h-4 w-4" /> Đã xác thực ✓</span>
-                : <span className="flex items-center gap-1 text-gold text-sm whitespace-nowrap"><ShieldAlert className="h-4 w-4" /> Chưa xác thực</span>
+              {form.email === profile?.email
+                ? (profile?.emailDaXacThuc
+                    ? <span className="flex items-center gap-1 text-emerald-deep text-sm whitespace-nowrap"><ShieldCheck className="h-4 w-4" /> Đã xác thực ✓</span>
+                    : <span className="flex items-center gap-1 text-gold text-sm whitespace-nowrap"><ShieldAlert className="h-4 w-4" /> Chưa xác thực</span>)
+                : form.email === pendingEmail && (
+                    <span className="flex items-center gap-1 text-gold text-sm whitespace-nowrap"><ShieldAlert className="h-4 w-4" /> Chưa xác thực</span>
+                  )
               }
             </div>
-            {!profile?.emailDaXacThuc && form.email === profile?.email && (
-              <div className="mt-2">
-                <button type="button" onClick={() => setEmailOtpStep('verify')}
-                  className="text-gold text-sm hover:underline">
-                  Xác thực email ngay
-                </button>
-              </div>
-            )}
+            {form.email === profile?.email
+              ? (!profile?.emailDaXacThuc && (
+                  <div className="mt-2">
+                    <button type="button" onClick={() => setEmailOtpStep('verify')}
+                      className="text-gold text-sm hover:underline">
+                      Xác thực email ngay
+                    </button>
+                  </div>
+                ))
+              : form.email === pendingEmail && (
+                  <div className="mt-2">
+                    <button type="button" onClick={handleXacThucEmailMoi}
+                      className="text-gold text-sm hover:underline">
+                      Xác thực email mới
+                    </button>
+                  </div>
+                )
+            }
           </div>
           <div><label className="text-sm text-stone">Số điện thoại</label><input type="tel" value={form.soDienThoai} onChange={(e) => setForm({ ...form, soDienThoai: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
           <div><label className="text-sm text-stone">Họ tên</label><input value={form.hoTen} onChange={(e) => setForm({ ...form, hoTen: e.target.value })} className="w-full border rounded-lg px-4 py-2 mt-1" /></div>
