@@ -184,6 +184,10 @@ public class AuthService {
 
         verifyOtpInternal(user, otp);
 
+        if (passwordEncoder.matches(matKhauMoi, user.getMatKhauMaHoa())) {
+            throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ");
+        }
+
         user.setMatKhauMaHoa(passwordEncoder.encode(matKhauMoi));
         user.setMaXacThucHash(null);
         user.setMaXacThucHetHan(null);

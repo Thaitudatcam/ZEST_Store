@@ -126,11 +126,14 @@ export default function Profile() {
     e.preventDefault(); setPwdMsg('')
     if (pwd.matKhauMoi.length < 6) { setPwdMsg('Mật khẩu mới phải có ít nhất 6 ký tự'); return }
     if (pwd.matKhauMoi !== pwd.xacNhanMatKhauMoi) { setPwdMsg('Mật khẩu mới không khớp'); return }
+    if (pwd.matKhauCu && pwd.matKhauMoi === pwd.matKhauCu) { setPwdMsg('Mật khẩu mới không được trùng với mật khẩu cũ'); return }
     try {
       await changePwd({ matKhauCu: pwd.matKhauCu, matKhauMoi: pwd.matKhauMoi })
       setPwdMsg('Đổi mật khẩu thành công')
       setPwd({ matKhauCu: '', matKhauMoi: '', xacNhanMatKhauMoi: '' })
-    } catch { setPwdMsg('Mật khẩu cũ không đúng') }
+    } catch (err) {
+      setPwdMsg(err.response?.data?.message || 'Mật khẩu cũ không đúng')
+    }
   }
 
   const handleAddr = async (e) => {

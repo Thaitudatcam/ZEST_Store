@@ -95,11 +95,14 @@ public class UserService {
     public Map<String, String> changePassword(Integer userId, ChangePasswordRequest request) {
         NguoiDung user = getUserById(userId);
         if (!passwordEncoder.matches(request.getMatKhauCu(), user.getMatKhauMaHoa())) {
-            throw new BadRequestException("Current password is incorrect");
+            throw new BadRequestException("Mật khẩu cũ không đúng");
+        }
+        if (passwordEncoder.matches(request.getMatKhauMoi(), user.getMatKhauMaHoa())) {
+            throw new BadRequestException("Mật khẩu mới không được trùng với mật khẩu cũ");
         }
         user.setMatKhauMaHoa(passwordEncoder.encode(request.getMatKhauMoi()));
         nguoiDungRepository.save(user);
-        return Map.of("message", "Password changed successfully");
+        return Map.of("message", "Đổi mật khẩu thành công");
     }
 
     public List<DiaChiNguoiDung> getAddresses(Integer userId) {
