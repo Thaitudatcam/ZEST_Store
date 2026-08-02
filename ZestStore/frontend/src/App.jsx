@@ -20,6 +20,7 @@ import ViZeststore from './pages/ViZeststore'
 import LoyaltyPoints from './pages/LoyaltyPoints'
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
+import AboutPage from './pages/AboutPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
@@ -93,6 +94,7 @@ export default function App() {
               <Route path="/products" element={<Navigate to="/" replace />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/policies/:slug" element={<PolicyPage />} />
+              <Route path="/gioi-thieu" element={<AboutPage />} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><ErrorBoundary><Checkout /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

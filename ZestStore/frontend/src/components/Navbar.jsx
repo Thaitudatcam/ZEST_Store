@@ -120,7 +120,7 @@ export default function Navbar() {
             {categories.map((c) => (
               <NavPill key={c.maDanhMuc} to={`/?category=${c.slug}`} label={c.tenDanhMuc} active={pathname === '/' && categoryParam === c.slug} />
             ))}
-            <NavPill to="/policies/huong-dan-mua-hang" label="Giới thiệu" active={pathname.startsWith('/policies')} />
+            <NavPill to="/gioi-thieu" label="Giới thiệu" active={pathname.startsWith('/gioi-thieu')} />
           </div>
 
           <div className="hidden lg:flex items-center gap-1 shrink-0">
@@ -228,7 +228,7 @@ export default function Navbar() {
           {categories.map((c) => (
             <Link key={c.maDanhMuc} to={`/?category=${c.slug}`} onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">{c.tenDanhMuc}</Link>
           ))}
-          <Link to="/policies/huong-dan-mua-hang" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Giới thiệu</Link>
+          <Link to="/gioi-thieu" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Giới thiệu</Link>
           <hr className="my-1 border-beige-deep/40" />
           {user ? (
             <>
