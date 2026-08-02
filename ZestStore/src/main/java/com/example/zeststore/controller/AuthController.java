@@ -6,6 +6,7 @@ import com.example.zeststore.dto.request.RegisterRequest;
 import com.example.zeststore.dto.request.QuenMatKhauRequest;
 import com.example.zeststore.dto.request.DatLaiMatKhauRequest;
 import com.example.zeststore.dto.request.XacThucEmailRequest;
+import com.example.zeststore.dto.request.XacThucQuenMatKhauRequest;
 import com.example.zeststore.dto.response.AuthResponse;
 import com.example.zeststore.entity.GioHang;
 import com.example.zeststore.entity.DanhSachYeuThich;
@@ -167,6 +168,11 @@ public class AuthController {
     @PostMapping("/dat-lai-mat-khau")
     public ResponseEntity<?> datLaiMatKhau(@Valid @RequestBody DatLaiMatKhauRequest request) {
         return ResponseEntity.ok(authService.datLaiMatKhau(request.getEmail(), request.getMaXacThuc(), request.getMatKhauMoi()));
+    }
+
+    @PostMapping("/xac-thuc-quen-mat-khau")
+    public ResponseEntity<?> xacThucQuenMatKhau(@Valid @RequestBody XacThucQuenMatKhauRequest request) {
+        return ResponseEntity.ok(authService.xacThucQuenMatKhau(request.getEmail(), request.getMaXacThuc()));
     }
 
     @PostMapping("/refresh")

@@ -67,6 +67,10 @@ public class AuthService {
             }
         }
 
+        if (user.getMaXacThucHetHan() != null && user.getMaXacThucHetHan().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("Mã xác thực hiện tại vẫn còn hiệu lực, vui lòng đợi mã hết hạn rồi gửi lại");
+        }
+
         String otp = taoOtp();
         String hash = hashOtp(otp);
         user.setMaXacThucHash(hash);
@@ -145,11 +149,26 @@ public class AuthService {
     public Map<String, Object> guiOtpQuenMatKhau(String email) {
         NguoiDung user = nguoiDungRepository.findByEmail(email).orElse(null);
 
-        if (user == null || !Boolean.TRUE.equals(user.getEmailDaXacThuc())) {
-            return Map.of("message", "Nếu email hợp lệ và đã được xác thực, mã OTP sẽ được gửi đến email của bạn");
+        if (user == null) {
+            throw new BadRequestException("Không tìm thấy tài khoản với email này");
+        }
+
+        if (!Boolean.TRUE.equals(user.getEmailDaXacThuc())) {
+            throw new BadRequestException("Email chưa được xác thực, không thể đặt lại mật khẩu");
         }
 
         return guiOtp(email);
+    }
+
+    @Transactional
+    public Map<String, Object> xacThucQuenMatKhau(String email, String otp) {
+        NguoiDung user = nguoiDungRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+
+        verifyOtpInternal(user, otp);
+
+        // Không xóa maXacThucHash/maXacThucHetHan -> datLaiMatKhau sau đó vẫn xác thực được.
+        return Map.of("message", "Mã xác thực hợp lệ");
     }
 
     @Transactional

@@ -38,7 +38,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh",
-                                 "/api/auth/quen-mat-khau", "/api/auth/dat-lai-mat-khau").permitAll()
+                                 "/api/auth/quen-mat-khau", "/api/auth/dat-lai-mat-khau",
+                                 "/api/auth/xac-thuc-quen-mat-khau").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/reviews/product/**").permitAll()

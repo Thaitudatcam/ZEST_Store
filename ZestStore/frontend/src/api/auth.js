@@ -5,4 +5,5 @@ export const refreshTokenApi = (token) => api.post('/auth/refresh', { token }).t
 export const guiMaXacThuc = () => api.post('/auth/gui-ma-xac-thuc').then((r) => r.data)
 export const xacThucEmail = (data) => api.post('/auth/xac-thuc-email', data).then((r) => r.data)
 export const quenMatKhau = (data) => api.post('/auth/quen-mat-khau', data).then((r) => r.data)
+export const xacThucQuenMatKhau = (data) => api.post('/auth/xac-thuc-quen-mat-khau', data).then((r) => r.data)
 export const datLaiMatKhau = (data) => api.post('/auth/dat-lai-mat-khau', data).then((r) => r.data)
