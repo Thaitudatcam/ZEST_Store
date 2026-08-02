@@ -38,6 +38,7 @@ public class OpenAiService {
             ObjectNode body = objectMapper.createObjectNode();
             body.put("model", aiConfig.getModel() != null ? aiConfig.getModel() : "gpt-4o-mini");
             body.put("max_tokens", 500);
+            body.put("temperature", 0.3);
             body.set("messages", messagesNode);
 
             String jsonBody = objectMapper.writeValueAsString(body);

@@ -9,6 +9,7 @@ import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,9 +22,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,11 +97,58 @@ public class SanPhamService {
         return result;
     }
 
+    private static final Set<String> SEARCH_STOP_WORDS = Set.of(
+            "tôi", "mình", "muốn", "mua", "cần", "có", "không", "bạn", "cho",
+            "hãy", "giúp", "tư", "vấn", "gợi", "ý", "thì", "mà", "và", "của",
+            "một", "những", "các", "loại", "thích", "hợp", "nhé", "ạ", "ơi",
+            "được", "bị", "ra", "rồi", "nào", "với", "hộ", "em", "màu", "cỡ",
+            "size", "giá", "khoảng", "dưới", "trên", "khoang", "từ", "đến", "đ",
+            "mặc", "thoải", "mái", "chất", "liệu", "vải", "sản", "phẩm", "xin", "chào", "gửi"
+    );
+
+    private List<String> extractSearchKeywords(String input) {
+        if (input == null || input.isBlank()) return List.of();
+        String normalized = input.toLowerCase(Locale.ROOT)
+                .replaceAll("[?!.,:;\"'()\\[\\]]+", " ");
+        String[] words = normalized.split("\\s+");
+        List<String> tokens = new ArrayList<>();
+        for (String w : words) {
+            String word = w.trim();
+            if (word.isEmpty() || SEARCH_STOP_WORDS.contains(word)) continue;
+            tokens.add(word);
+        }
+        return tokens;
+    }
+
     public List<Map<String, Object>> searchSuggestions(String keyword, int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
-        Page<SanPham> products = sanPhamRepository.searchByKeyword(keyword, pageable);
-        populateStock(products);
-        return products.getContent().stream().map(sp -> {
+        List<String> tokens = extractSearchKeywords(keyword);
+
+        Set<Integer> seen = new LinkedHashSet<>();
+        List<SanPham> results = new ArrayList<>();
+        if (!tokens.isEmpty()) {
+            for (String token : tokens) {
+                Pageable pageable = PageRequest.of(0, limit);
+                Page<SanPham> page = sanPhamRepository.searchByKeyword(token, pageable);
+                for (SanPham sp : page.getContent()) {
+                    if (seen.add(sp.getMaSanPham())) results.add(sp);
+                }
+                if (results.size() >= limit) break;
+            }
+        }
+
+        // Không tìm thấy từ khóa nào -> trả về sản phẩm đang bán mới nhất
+        if (results.isEmpty()) {
+            List<SanPham> fallback = sanPhamRepository
+                    .findTop10ByTrangThaiAndNgayXoaIsNullOrderByNgayTaoDesc(1);
+            results.addAll(fallback);
+        }
+
+        List<SanPham> top = results.size() > limit
+                ? results.subList(0, limit) : results;
+        Page<SanPham> stockPage = new PageImpl<>(top, PageRequest.of(0, limit), top.size());
+        populateStock(stockPage);
+
+        return top.stream().map(sp -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("maSanPham", sp.getMaSanPham());
             m.put("tenSanPham", sp.getTenSanPham());

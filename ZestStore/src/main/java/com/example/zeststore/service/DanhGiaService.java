@@ -41,27 +41,31 @@ public class DanhGiaService {
 
     @Transactional
     public DanhGia addReview(Integer userId, DanhGiaRequest request) {
+        if (request.getMaSanPham() == null) {
+            throw new BadRequestException("maSanPham is required");
+        }
+        if (request.getMaDonHang() == null) {
+            throw new BadRequestException("maDonHang is required");
+        }
+        if (request.getMaBienThe() == null) {
+            throw new BadRequestException("maBienThe is required");
+        }
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         SanPham product = sanPhamRepository.findById(request.getMaSanPham())
                 .orElseThrow(() -> new ResourceNotFoundException("Product", request.getMaSanPham()));
 
-        DonHang order = null;
-        if (request.getMaDonHang() != null) {
-            order = donHangRepository.findById(request.getMaDonHang())
-                    .orElseThrow(() -> new ResourceNotFoundException("Order", request.getMaDonHang()));
-            Optional<DanhGia> existing = danhGiaRepository
-                    .findByNguoiDung_MaNguoiDungAndSanPham_MaSanPhamAndDonHang_MaDonHang(
-                            userId, request.getMaSanPham(), request.getMaDonHang());
-            if (existing.isPresent()) {
-                throw new BadRequestException("You have already reviewed this product for this order");
-            }
+        DonHang order = donHangRepository.findById(request.getMaDonHang())
+                .orElseThrow(() -> new ResourceNotFoundException("Order", request.getMaDonHang()));
+        Optional<DanhGia> existing = danhGiaRepository
+                .findByNguoiDung_MaNguoiDungAndSanPham_MaSanPhamAndDonHang_MaDonHang(
+                        userId, request.getMaSanPham(), request.getMaDonHang());
+        if (existing.isPresent()) {
+            throw new BadRequestException("You have already reviewed this product for this order");
         }
 
-        BienTheSanPham bienThe = request.getMaBienThe() != null
-                ? bienTheRepository.findById(request.getMaBienThe())
-                        .orElseThrow(() -> new ResourceNotFoundException("ProductVariant", request.getMaBienThe()))
-                : null;
+        BienTheSanPham bienThe = bienTheRepository.findById(request.getMaBienThe())
+                .orElseThrow(() -> new ResourceNotFoundException("ProductVariant", request.getMaBienThe()));
 
         return danhGiaRepository.save(DanhGia.builder()
                 .nguoiDung(user)

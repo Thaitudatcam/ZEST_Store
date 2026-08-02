@@ -48,6 +48,9 @@ public class ViController {
     public ResponseEntity<?> napTien(@RequestBody Map<String, Object> body,
                                      HttpServletRequest request,
                                      Authentication auth) {
+        if (body.get("soTien") == null || body.get("phuongThuc") == null) {
+            throw new com.example.zeststore.exception.BadRequestException("soTien and phuongThuc are required");
+        }
         BigDecimal soTien = new BigDecimal(body.get("soTien").toString());
         Integer phuongThuc = Integer.valueOf(body.get("phuongThuc").toString());
         Integer userId = userService.getUserIdFromAuth(auth);

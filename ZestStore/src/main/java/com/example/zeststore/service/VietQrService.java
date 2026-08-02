@@ -2,6 +2,7 @@ package com.example.zeststore.service;
 
 import com.example.zeststore.config.PaymentConfig;
 import com.example.zeststore.entity.ThanhToan;
+import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.ThanhToanRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class VietQrService {
 
     public Map<String, Object> createQrNapTien(ThanhToan payment) {
         if (!Integer.valueOf(8).equals(payment.getPhuongThuc())) {
-            throw new IllegalStateException("Payment method is not VietQR");
+            throw new BadRequestException("Payment method is not VietQR");
         }
 
         PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();
@@ -60,7 +61,7 @@ public class VietQrService {
                 .orElseThrow(() -> new ResourceNotFoundException("Pending payment for order", orderId));
 
         if (!Integer.valueOf(6).equals(payment.getPhuongThuc())) {
-            throw new IllegalStateException("Payment method is not VietQR");
+            throw new BadRequestException("Payment method is not VietQR");
         }
 
         PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();

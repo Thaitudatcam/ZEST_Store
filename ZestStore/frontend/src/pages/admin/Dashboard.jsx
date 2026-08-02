@@ -71,9 +71,9 @@ export default function Dashboard() {
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     const today = new Date().toISOString().split('T')[0]
-    Promise.all([
+    return Promise.all([
       getStats().catch(() => null),
       getOrderStats().catch(() => null),
       getRevenueByDay(today, today).then(r => {
@@ -86,6 +86,14 @@ export default function Dashboard() {
       setTodayRevenue(rev)
     }).finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    loadStats()
+    const id = setInterval(loadStats, 30000)
+    const onFocus = () => loadStats()
+    window.addEventListener('focus', onFocus)
+    return () => { clearInterval(id); window.removeEventListener('focus', onFocus) }
+  }, [loadStats])
 
   const mergedOrders = orderStats ? {
     totalOrders: orderStats.totalOrders ?? 0,

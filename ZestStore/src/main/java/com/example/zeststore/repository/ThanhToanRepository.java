@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -28,4 +29,15 @@ public interface ThanhToanRepository extends JpaRepository<ThanhToan, Integer> {
     Optional<ThanhToan> findByDonHang_MaDonHangAndTrangThaiThanhToan(Integer maDonHang, Integer trangThaiThanhToan);
 
     List<ThanhToan> findByTrangThaiThanhToanAndThoiGianTaoBefore(Integer trangThai, LocalDateTime thoiGian);
+
+    long countByTrangThaiThanhToan(Integer trangThaiThanhToan);
+
+    @Query("SELECT COALESCE(SUM(t.soTien), 0) FROM ThanhToan t WHERE t.trangThaiThanhToan = :status")
+    BigDecimal sumSoTienByTrangThai(@Param("status") Integer status);
+
+    @Query("SELECT COALESCE(SUM(t.soTien), 0) FROM ThanhToan t WHERE t.trangThaiThanhToan = 2 AND t.thoiGianTt >= :since")
+    BigDecimal sumCompletedSince(@Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(t) FROM ThanhToan t WHERE t.trangThaiThanhToan = 2 AND t.thoiGianTt >= :since")
+    long countCompletedSince(@Param("since") LocalDateTime since);
 }

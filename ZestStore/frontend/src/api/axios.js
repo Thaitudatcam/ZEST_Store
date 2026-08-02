@@ -5,6 +5,15 @@ const api = axios.create({ baseURL: '/api' })
 let isRefreshing = false
 let failedQueue = []
 
+const getToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+const getStorage = () => (localStorage.getItem('token') ? localStorage : sessionStorage)
+const clearAuth = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
+}
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) reject(error)
@@ -14,7 +23,7 @@ const processQueue = (error, token = null) => {
 }
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -23,12 +32,11 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config
-    const hasToken = !!localStorage.getItem('token')
+    const hasToken = !!getToken()
     // 401: thử refresh token. 403 + có token: token đã invalid (vd: đổi email)
     // -> không refresh được nữa, đăng xuất về login.
     if (err.response?.status === 403 && hasToken && !originalRequest.url?.includes('/auth/')) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      clearAuth()
       window.location.href = '/login'
       return Promise.reject(err)
     }
@@ -44,20 +52,19 @@ api.interceptors.response.use(
 
       isRefreshing = true
       try {
-        const oldToken = localStorage.getItem('token')
+        const oldToken = getToken()
         if (!oldToken) throw new Error('No token')
         const { default: auth } = await import('./auth')
         const data = await auth.refreshTokenApi(oldToken)
         const newToken = data.token
-        localStorage.setItem('token', newToken)
-        localStorage.setItem('user', JSON.stringify(data))
+        getStorage().setItem('token', newToken)
+        getStorage().setItem('user', JSON.stringify(data))
         processQueue(null, newToken)
         originalRequest.headers.Authorization = `Bearer ${newToken}`
         return api(originalRequest)
       } catch {
         processQueue(new Error('Refresh failed'))
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        clearAuth()
         window.location.href = '/login'
         return Promise.reject(err)
       } finally {
