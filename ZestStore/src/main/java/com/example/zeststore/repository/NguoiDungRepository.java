@@ -21,6 +21,8 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByEmailMoiChoXacThuc(String emailMoiChoXacThuc);
+
     boolean existsBySoDienThoai(String soDienThoai);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

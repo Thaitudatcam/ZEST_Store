@@ -94,7 +94,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        if (nguoiDungRepository.existsByEmail(request.getEmail())) {
+        if (nguoiDungRepository.existsByEmail(request.getEmail())
+                || nguoiDungRepository.existsByEmailMoiChoXacThuc(request.getEmail())) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("message", "Email already exists"));
         }

@@ -73,7 +73,8 @@ public class UserService {
             if (request.getEmail().isBlank()) {
                 throw new BadRequestException("Email mới không được để trống");
             }
-            if (nguoiDungRepository.existsByEmail(request.getEmail())) {
+            if (nguoiDungRepository.existsByEmail(request.getEmail())
+                    || nguoiDungRepository.existsByEmailMoiChoXacThuc(request.getEmail())) {
                 throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
             }
             user.setEmailMoiChoXacThuc(request.getEmail());
@@ -181,7 +182,8 @@ public class UserService {
         if (emailMoi.equals(user.getEmail())) {
             throw new BadRequestException("Email mới trùng với email hiện tại");
         }
-        if (nguoiDungRepository.existsByEmail(emailMoi)) {
+        if (nguoiDungRepository.existsByEmail(emailMoi)
+                || nguoiDungRepository.existsByEmailMoiChoXacThuc(emailMoi)) {
             throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
         }
         user.setEmailMoiChoXacThuc(emailMoi);
@@ -195,6 +197,14 @@ public class UserService {
         String emailMoi = user.getEmailMoiChoXacThuc();
         if (emailMoi == null) {
             throw new BadRequestException("Chưa có yêu cầu đổi email nào");
+        }
+        boolean emailTakenByOther = nguoiDungRepository.findByEmailMoiChoXacThuc(emailMoi)
+                .map(other -> !other.getMaNguoiDung().equals(userId))
+                .orElse(false);
+        if (nguoiDungRepository.existsByEmail(emailMoi) || emailTakenByOther) {
+            user.setEmailMoiChoXacThuc(null);
+            nguoiDungRepository.save(user);
+            throw new DuplicateResourceException("Email đã được sử dụng bởi tài khoản khác");
         }
         Map<String, Object> result = authService.xacThucOtp(user, maXacThuc);
         user.setEmail(emailMoi);
