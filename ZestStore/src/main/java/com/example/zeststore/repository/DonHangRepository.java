@@ -120,5 +120,21 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     Long countCompletedOrders(@Param("tuNgay") LocalDateTime tuNgay,
                               @Param("denNgay") LocalDateTime denNgay);
 
+    @Query("SELECT MIN(d.ngayDat) FROM DonHang d")
+    LocalDateTime minNgayDat();
+
+    @Query("SELECT FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd'), COUNT(d) "
+            + "FROM DonHang d WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd')")
+    List<Object[]> countDonHangTheoNgay(@Param("tuNgay") LocalDateTime tuNgay,
+                                        @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("SELECT FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd'), COUNT(d) "
+            + "FROM DonHang d WHERE d.trangThaiDon = :trangThai AND d.ngayDat BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd')")
+    List<Object[]> countDonHangTheoTrangThaiVaNgay(@Param("trangThai") Integer trangThai,
+                                                   @Param("tuNgay") LocalDateTime tuNgay,
+                                                   @Param("denNgay") LocalDateTime denNgay);
+
     List<DonHang> findTop10ByOrderByNgayDatDesc();
 }

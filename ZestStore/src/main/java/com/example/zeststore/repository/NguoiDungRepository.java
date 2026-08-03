@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,4 +38,13 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, Integer> {
 
     /** Active users whose role is one of the given names (e.g. ADMIN, STAFF) — used to fan-out notifications. */
     List<NguoiDung> findByVaiTro_TenVaiTroInAndTrangThai(List<String> tenVaiTro, Integer trangThai);
+
+    @Query("SELECT FUNCTION('FORMAT', n.ngayTao, 'yyyy-MM-dd'), COUNT(n) "
+            + "FROM NguoiDung n WHERE n.ngayTao BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', n.ngayTao, 'yyyy-MM-dd')")
+    List<Object[]> countNguoiDungTheoNgay(@Param("tuNgay") LocalDateTime tuNgay,
+                                          @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("SELECT MIN(n.ngayTao) FROM NguoiDung n")
+    LocalDateTime minNgayTao();
 }

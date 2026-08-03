@@ -208,4 +208,21 @@ public class ThongKeController {
         }
     }
 
+    @PostMapping("/stats/rebuild")
+    public ResponseEntity<?> rebuild(@RequestParam(required = false) LocalDate tuNgay,
+                                     @RequestParam(required = false) LocalDate denNgay) {
+        try {
+            if (tuNgay == null) tuNgay = thongKeService.ngayThongKeDauTien();
+            if (denNgay == null) denNgay = LocalDate.now();
+            int count = thongKeService.rebuildThongKe(tuNgay, denNgay);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "daTinh", count,
+                    "tuNgay", tuNgay.toString(),
+                    "denNgay", denNgay.toString()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Lỗi: " + e.getMessage()));
+        }
+    }
+
 }

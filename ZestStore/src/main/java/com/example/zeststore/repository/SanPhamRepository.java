@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,4 +59,13 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     @Query("SELECT s FROM SanPham s WHERE s.ngayXoa IS NULL AND "
             + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
     Page<SanPham> searchAdminByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT FUNCTION('FORMAT', s.ngayTao, 'yyyy-MM-dd'), COUNT(s) "
+            + "FROM SanPham s WHERE s.ngayXoa IS NULL AND s.ngayTao BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', s.ngayTao, 'yyyy-MM-dd')")
+    List<Object[]> countSanPhamTheoNgay(@Param("tuNgay") LocalDateTime tuNgay,
+                                        @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("SELECT MIN(s.ngayTao) FROM SanPham s")
+    LocalDateTime minNgayTao();
 }
