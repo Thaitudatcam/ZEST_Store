@@ -686,20 +686,39 @@ export default function Checkout() {
                         <div className="relative mt-2">
                           <button onClick={() => setDiscountVouchersOpen(!discountVouchersOpen)} type="button"
                             className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-sm bg-ivory hover:border-gold transition">
-                            <span className="text-stone">Chọn mã từ ví của bạn...</span>
+                            <span className="text-stone">Chọn mã giảm giá...</span>
                             <ChevronRight className={`h-4 w-4 text-stone transition-transform ${discountVouchersOpen ? 'rotate-90' : ''}`} />
                           </button>
                           {discountVouchersOpen && (
-                            <div className="absolute z-10 mt-1 w-full bg-ivory border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                              {availableDiscount.filter(v => v.kieuGiamGia !== 3).map(v => (
-                                <button key={v.maCode} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
-                                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-gold/10 border-b last:border-b-0 transition flex items-center justify-between">
-                                  <span className="font-medium">{v.maCode}</span>
-                                  <span className="text-emerald-deep text-xs font-medium">
-                                    {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
-                                  </span>
-                                </button>
-                              ))}
+                            <div className="absolute z-10 mt-1 w-full bg-ivory border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                              {availableDiscount.filter(v => v.kieuGiamGia !== 3 && !v.isPersonal).length > 0 && (
+                                <>
+                                  <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-stone">Mã công khai</div>
+                                  {availableDiscount.filter(v => v.kieuGiamGia !== 3 && !v.isPersonal).map(v => (
+                                    <button key={v.maCode} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
+                                      className="w-full text-left px-3 py-2.5 text-sm hover:bg-gold/10 border-b last:border-b-0 transition flex items-center justify-between">
+                                      <span className="font-medium">{v.maCode}</span>
+                                      <span className="text-emerald-deep text-xs font-medium">
+                                        {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </>
+                              )}
+                              {availableDiscount.filter(v => v.kieuGiamGia !== 3 && v.isPersonal).length > 0 && (
+                                <>
+                                  <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-royal">Ví của bạn</div>
+                                  {availableDiscount.filter(v => v.kieuGiamGia !== 3 && v.isPersonal).map(v => (
+                                    <button key={v.maCode} onClick={() => { handleSelectDiscountVoucher(v); setDiscountVouchersOpen(false) }}
+                                      className="w-full text-left px-3 py-2.5 text-sm hover:bg-gold/10 border-b last:border-b-0 transition flex items-center justify-between">
+                                      <span className="font-medium">{v.maCode}</span>
+                                      <span className="text-emerald-deep text-xs font-medium">
+                                        {v.kieuGiamGia === 1 ? `Giảm ${v.giaTriGiam}%` : `Giảm ${VND(v.giaTriGiam)}`}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </>
+                              )}
                             </div>
                           )}
                         </div>

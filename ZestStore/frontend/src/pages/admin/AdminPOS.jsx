@@ -107,11 +107,10 @@ export default function AdminPOS() {
   const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
 
   const fetchAvailableCoupons = useCallback(async (maNguoiDung) => {
-    if (!maNguoiDung) { setAvailableCoupons([]); return }
     setCouponDropdownLoading(true)
     try {
-      const res = await getAvailableCoupons(total, [], maNguoiDung)
-      setAvailableCoupons(res || [])
+      const res = await getAvailableCoupons(total, [], maNguoiDung || null)
+      setAvailableCoupons((res || []).filter(v => v.kieuGiamGia !== 3))
     } catch { setAvailableCoupons([]) }
     setCouponDropdownLoading(false)
   }, [total])
@@ -133,8 +132,8 @@ export default function AdminPOS() {
     setCustomerResults([])
     setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
     setDungDiem(false)
-    setAvailableCoupons([])
     setCoupon(null); setCouponCode(''); setCouponMsg('')
+    fetchAvailableCoupons(null)
   }
 
   useEffect(() => {
@@ -149,8 +148,7 @@ export default function AdminPOS() {
   }, [categoryId])
 
   useEffect(() => {
-    if (!selectedCustomer) return
-    const timer = setTimeout(() => fetchAvailableCoupons(selectedCustomer.maNguoiDung), 500)
+    const timer = setTimeout(() => fetchAvailableCoupons(selectedCustomer?.maNguoiDung || null), 500)
     return () => clearTimeout(timer)
   }, [total])
 
