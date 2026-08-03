@@ -7,6 +7,7 @@ import com.example.zeststore.repository.ThongBaoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -59,8 +60,10 @@ public class ThongBaoService {
 
     /**
      * Create a notification for a single user and push it live over SSE.
+     * Runs in its own transaction so a notification failure never marks the
+     * caller's business transaction as rollback-only.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void taoThongBao(Integer maNguoiDung, String tieuDe, String noiDung, String loai, String lienKet) {
         nguoiDungRepository.findById(maNguoiDung).ifPresentOrElse(
                 nguoiDung -> persistAndPush(nguoiDung, tieuDe, noiDung, loai, lienKet),
@@ -70,8 +73,9 @@ public class ThongBaoService {
     /**
      * Fan-out the same notification to every active ADMIN/STAFF user.
      * Useful for events that staff should see (new order, return request, ...).
+     * Runs in its own transaction (see {@link #taoThongBao}).
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void taoThongBaoChoAdmin(String tieuDe, String noiDung, String loai, String lienKet) {
         List<NguoiDung> recipients =
                 nguoiDungRepository.findByVaiTro_TenVaiTroInAndTrangThai(List.of("ADMIN", "STAFF"), 1);
