@@ -14,7 +14,7 @@ const banners = [
     highlightColor: 'text-bordeaux',
     desc: 'Cơ hội sở hữu áo polo, áo thun nam cao cấp với giá cực sốc. Chỉ trong thời gian giới hạn!',
     img: ao1,
-    link: '/products/o-polo-nam-1783922287918',
+    link: '/products/o-polo-nam-1785760495905',
   },
 
   {
@@ -26,7 +26,7 @@ const banners = [
     highlightColor: 'text-gold',
     desc: 'Deal cực hời. Lên đồ đẹp – giá lại ngon. Chốt nhanh trước khi hết!',
     img: ao2,
-    link: '/products/o-polo-th-thao-1783925305046',
+    link: '/products/ao-polo-th-thao-1785760754013',
   },
 ]
 
@@ -37,7 +37,7 @@ const sideBanners = [
     title: 'NEW ARRIVAL',
     desc: 'Thiết kế hiện đại – dễ phối, mặc là đẹp',
     img: ao,
-    link: '/products/o-polo-xanh-en-ph-i-c-th-u-1783920144078',
+    link: '/products/o-polo-xanh-en-ph-i-c-th-u-1785760636879',
   },
   {
     id: 5,

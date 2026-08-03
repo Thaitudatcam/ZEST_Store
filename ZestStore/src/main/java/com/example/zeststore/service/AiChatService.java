@@ -64,7 +64,6 @@ public class AiChatService {
         return m;
     }
 
-    @Transactional
     public Map<String, Object> sendMessage(Integer maNguoiDung, String noiDung, Integer maHoiThoai, String hinhAnh) {
         if (maHoiThoai == null) {
             String tieuDe = (noiDung != null && !noiDung.isBlank())
