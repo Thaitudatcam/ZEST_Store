@@ -342,6 +342,17 @@ public class DonHangService {
                     order.getMaDonHang(), BigDecimal.ZERO, "ONLINE_FREESHIP");
         }
 
+        // Notify the buyer that the order has been placed (links to their own order detail).
+        try {
+            thongBaoService.taoThongBao(
+                    user.getMaNguoiDung(),
+                    "Đặt hàng thành công #" + order.getMaDonHang(),
+                    "Cảm ơn " + user.getHoTen() + "! Đơn hàng #" + order.getMaDonHang()
+                            + " đã được đặt thành công.",
+                    "DON_HANG_MOI",
+                    "/orders/" + order.getMaDonHang());
+        } catch (Exception ignored) {}
+
         // Notify all admins/staff that a new order has just been placed.
         try {
             thongBaoService.taoThongBaoChoAdmin(
