@@ -76,5 +76,12 @@ export function useNotificationStream({ onNotification } = {}) {
     }
   }, [fetchUnread, fetchList, onNotification])
 
-  return { notifications, unreadCount, connected, refresh: fetchList }
+  const markRead = useCallback((id) => {
+    setNotifications(prev => prev.map(n =>
+      n.maThongBao === id ? { ...n, daDoc: true } : n
+    ))
+    setUnreadCount(prev => Math.max(0, prev - 1))
+  }, [])
+
+  return { notifications, unreadCount, connected, refresh: fetchList, markRead }
 }

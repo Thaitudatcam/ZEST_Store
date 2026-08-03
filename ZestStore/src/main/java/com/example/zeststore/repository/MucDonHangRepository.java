@@ -4,8 +4,10 @@ import com.example.zeststore.entity.MucDonHang;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -19,4 +21,19 @@ public interface MucDonHangRepository extends JpaRepository<MucDonHang, Integer>
             + "GROUP BY m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, m.bienThe.sanPham.urlAnhDaiDien "
             + "ORDER BY totalSold DESC")
     List<Object[]> findBestSellingProducts(Pageable pageable);
+
+    @Query("SELECT m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, "
+            + "m.bienThe.sanPham.urlAnhDaiDien, SUM(m.soLuong) as totalSold "
+            + "FROM MucDonHang m "
+            + "WHERE m.donHang.trangThaiDon IN (4, 6) AND m.donHang.ngayDat BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, m.bienThe.sanPham.urlAnhDaiDien "
+            + "ORDER BY totalSold DESC")
+    List<Object[]> findBestSellingProductsInRange(@Param("tuNgay") LocalDateTime tuNgay,
+                                                  @Param("denNgay") LocalDateTime denNgay,
+                                                  Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(m.soLuong), 0) FROM MucDonHang m "
+            + "WHERE m.donHang.trangThaiDon IN (4, 6) AND m.donHang.ngayDat BETWEEN :tuNgay AND :denNgay")
+    Long countProductsSoldInRange(@Param("tuNgay") LocalDateTime tuNgay,
+                                  @Param("denNgay") LocalDateTime denNgay);
 }

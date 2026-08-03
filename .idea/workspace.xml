@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="55edc808-e804-42b6-a4f1-e80d3758edf6" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/ZEST_Store.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ZestStore/src/main/resources/application-local.example.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/NotificationBell.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/frontend/src/components/NotificationBell.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/NotificationBell.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/NotificationBell.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/hooks/useNotificationStream.js" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/frontend/src/hooks/useNotificationStream.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminOrderDetail.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminOrderDetail.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/TinNhanAi.java" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/TinNhanAi.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DanhGiaRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DanhGiaRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DonHangRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DonHangRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/MucDonHangRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/MucDonHangRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AiChatService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AiChatService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/OpenAiService.java" beforeDir="false" afterPath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/OpenAiService.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;trungtran15326&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Thaitudatcam/ZEST_Store.git&quot;,
+    &quot;accountId&quot;: &quot;53a3f788-0421-40df-9380-69bc4650b198&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="3FlxzRRf7S7G03jpFE4ReEBHuCe" />
+  <component name="ProjectViewState">
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;Application.ZestStoreApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.eZestStoreApplication.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/ZEST_Store/ZEST_Store&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.26199.169" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="55edc808-e804-42b6-a4f1-e80d3758edf6" name="Changes" comment="" />
+      <created>1782663719416</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1782663719416</updated>
+    </task>
+    <servers />
+  </component>
+</project>

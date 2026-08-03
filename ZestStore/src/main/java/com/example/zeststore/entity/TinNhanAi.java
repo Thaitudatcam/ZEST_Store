@@ -30,6 +30,9 @@ public class TinNhanAi {
     @Column(name = "nguoi_gui", length = 10, nullable = false)
     private String nguoiGui;
 
+    @Column(name = "san_pham", columnDefinition = "NVARCHAR(MAX)")
+    private String sanPham;
+
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 
