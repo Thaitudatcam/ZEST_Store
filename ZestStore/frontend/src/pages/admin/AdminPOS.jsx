@@ -133,7 +133,7 @@ export default function AdminPOS() {
     setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
     setDungDiem(false)
     setCoupon(null); setCouponCode(''); setCouponMsg('')
-    fetchAvailableCoupons(null)
+    setAvailableCoupons([])
   }
 
   useEffect(() => {
@@ -148,7 +148,8 @@ export default function AdminPOS() {
   }, [categoryId])
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchAvailableCoupons(selectedCustomer?.maNguoiDung || null), 500)
+    if (!selectedCustomer) return
+    const timer = setTimeout(() => fetchAvailableCoupons(selectedCustomer.maNguoiDung), 500)
     return () => clearTimeout(timer)
   }, [total])
 
