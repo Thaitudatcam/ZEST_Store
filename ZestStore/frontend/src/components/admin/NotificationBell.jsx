@@ -21,7 +21,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const navigate = useNavigate()
-  const { notifications, unreadCount, refresh } = useNotificationStream()
+  const { notifications, unreadCount, refresh, markRead } = useNotificationStream()
 
   useEffect(() => {
     const handler = (e) => {
@@ -32,7 +32,10 @@ export default function NotificationBell() {
   }, [])
 
   const handleClick = async (n) => {
-    if (!n.daDoc) await markAsRead(n.maThongBao).catch(() => {})
+    if (!n.daDoc) {
+      markRead(n.maThongBao)
+      await markAsRead(n.maThongBao).catch(() => {})
+    }
     setOpen(false)
     if (n.lienKet) navigate(n.lienKet)
   }

@@ -110,14 +110,24 @@ export default function AdminOrderDetail() {
 
   useEffect(() => {
     setLoading(true)
+    setError('')
     api.get(`/orders/admin/detail/${id}`)
       .then(r => setData(r.data))
-      .catch(() => setError('Không thể tải chi tiết đơn hàng'))
+      .catch(() => setError('Đơn hàng không tồn tại hoặc đã bị xóa'))
       .finally(() => setLoading(false))
   }, [id])
 
   if (loading) return <div className="text-center py-12 text-stone">Đang tải...</div>
-  if (error) return <div className="text-center py-12 text-bordeaux">{error}</div>
+  if (error) return (
+    <div className="text-center py-16">
+      <div className="text-5xl mb-4">📦</div>
+      <p className="text-stone font-medium mb-1">Không tìm thấy đơn hàng #{id}</p>
+      <p className="text-sm text-stone-light mb-6">{error}</p>
+      <Link to="/admin/orders/online" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold text-noir font-semibold hover:bg-gold-hover transition">
+        <ArrowLeft className="h-4 w-4" /> Quay lại danh sách đơn hàng
+      </Link>
+    </div>
+  )
   if (!data) return null
 
   const { order, items, payments, history } = data

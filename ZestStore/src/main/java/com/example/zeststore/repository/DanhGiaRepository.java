@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
@@ -28,4 +29,13 @@ public interface DanhGiaRepository extends JpaRepository<DanhGia, Integer> {
     @Query("SELECT d.sanPham.maSanPham, AVG(d.soSao), COUNT(d) FROM DanhGia d " +
            "WHERE d.sanPham.maSanPham IN :ids AND d.ngayXoa IS NULL GROUP BY d.sanPham.maSanPham")
     List<Object[]> avgRatingBySanPhamIds(@Param("ids") List<Integer> ids);
+
+    @Query("SELECT COUNT(d) FROM DanhGia d WHERE d.soSao = 5 AND d.ngayXoa IS NULL AND d.ngayTao BETWEEN :tuNgay AND :denNgay")
+    Long countFiveStarReviewsInRange(@Param("tuNgay") LocalDateTime tuNgay, @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("SELECT COUNT(d) FROM DanhGia d WHERE d.soSao = :soSao AND d.ngayXoa IS NULL")
+    Long countBySoSaoAndNgayXoaIsNull(@Param("soSao") Integer soSao);
+
+    @Query("SELECT COUNT(d) FROM DanhGia d WHERE d.ngayXoa IS NULL")
+    Long countAllReviews();
 }
