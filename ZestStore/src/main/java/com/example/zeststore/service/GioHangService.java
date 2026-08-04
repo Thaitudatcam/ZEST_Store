@@ -39,11 +39,19 @@ public class GioHangService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (MucGioHang item : items) {
             BienTheSanPham variant = item.getBienThe();
-            SanPham product = variant != null ? variant.getSanPham() : null;
+            if (variant == null || variant.getNgayXoa() != null) {
+                continue;
+            }
+            SanPham product = variant.getSanPham();
+            if (product == null || product.getNgayXoa() != null || (product.getTrangThai() != null && product.getTrangThai() == 0)) {
+                continue;
+            }
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("maMucGioHang", item.getMaMucGioHang());
             itemMap.put("maBienThe", variant != null ? variant.getMaBienThe() : null);
             itemMap.put("maSanPham", product != null ? product.getMaSanPham() : null);
+            itemMap.put("maSanPhamCode", product != null ? product.getMaSanPhamCode() : null);
+            itemMap.put("sku", variant != null ? variant.getSku() : null);
             itemMap.put("tenSanPham", product != null ? product.getTenSanPham() : null);
             itemMap.put("slug", product != null ? product.getSlug() : null);
             itemMap.put("kichCo", variant != null && variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);

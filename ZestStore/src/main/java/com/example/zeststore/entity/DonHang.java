@@ -90,6 +90,10 @@ public class DonHang {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
+    @Column(name = "so_lan_in", nullable = false)
+    @Builder.Default
+    private Integer soLanIn = 0;
+
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @JsonIgnore
@@ -103,11 +107,6 @@ public class DonHang {
     @ToString.Exclude
     @JsonIgnore
     private List<DanhGia> danhGias;
-
-    @OneToOne(mappedBy = "donHang", cascade = CascadeType.ALL)
-    @ToString.Exclude
-    @JsonIgnore
-    private HoaDon hoaDon;
 
     @OneToMany(mappedBy = "donHang")
     @ToString.Exclude

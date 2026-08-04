@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, FileText, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw, Gift, Coins } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, Tags, Ticket, Star, Users, UserCog, LogOut, ChevronDown, Menu, X, ShoppingCart, BarChart3, RefreshCw, Gift, Coins } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
@@ -48,14 +48,12 @@ export default function AdminLayout() {
     { label: 'Đơn hàng', icon: ShoppingBag, children: [
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
-    { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
   ] : [
     posItem,
     { label: 'Đơn hàng', icon: ShoppingBag, children: [
       { to: '/admin/orders/online', label: 'Đơn hàng online' },
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
-    { to: '/admin/invoices', label: 'Hóa đơn', icon: FileText },
     { to: '/admin/returns', label: 'Trả hàng', icon: RefreshCw, badge: pendingReturns },
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },

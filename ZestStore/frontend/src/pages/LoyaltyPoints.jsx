@@ -57,8 +57,8 @@ export default function LoyaltyPoints() {
         <div className="flex items-start gap-3">
           <Info className="h-5 w-5 text-gold mt-0.5 shrink-0" />
           <div className="text-sm text-stone space-y-1">
-            <p>• Cứ <strong>{VND(quyTac?.tiLeTich ?? 10000)}</strong> giá trị đơn hàng hợp lệ = <strong>1 điểm</strong></p>
-            <p>• <strong>1 điểm</strong> = <strong>{VND(quyTac?.tiLeDoi ?? 1000)}</strong> giảm khi thanh toán</p>
+            <p>• Cứ <strong>{VND(quyTac?.tiLeTich ?? 1)}</strong> giá trị đơn hàng hợp lệ = <strong>1 điểm</strong></p>
+            <p>• <strong>1 điểm</strong> = <strong>{VND(quyTac?.tiLeDoi ?? 1)}</strong> giảm khi thanh toán</p>
             <p>• Điểm có hạn <strong>{quyTac?.thoiHanThang ?? 12} tháng</strong> kể từ ngày tích lũy</p>
             <p>• Cần tối thiểu <strong>{quyTac?.diemToiThieu ?? 10} điểm</strong> để sử dụng</p>
             <p>• Điểm chỉ giảm tối đa <strong>{quyTac?.giamToiDaPhanTram ?? 50}%</strong> giá trị hàng hóa (sau khi trừ mã giảm giá)</p>

@@ -92,6 +92,7 @@ public class POSController {
         result.put("gia", v.getGia());
         result.put("tonKho", v.getTonKho());
         result.put("sku", v.getSku());
+        result.put("maSanPhamCode", v.getSanPham().getMaSanPhamCode());
         result.put("urlAnh", v.getUrlAnh());
         return ResponseEntity.ok(result);
     }

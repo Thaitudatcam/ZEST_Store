@@ -1,7 +1,7 @@
 import { useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const posPaths = ['/admin/pos', '/admin/orders/pos', '/admin/invoices']
+const posPaths = ['/admin/pos', '/admin/orders/pos']
 
 export default function AdminRoute({ children }) {
   const { user, loading } = useAuth()

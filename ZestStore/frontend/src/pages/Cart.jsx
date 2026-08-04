@@ -214,6 +214,7 @@ export default function Cart() {
                             {i.mauSac ? `${i.mauSac} / ${i.kichCo || ''}` : (i.kichCo || '')}
                             {i.ngayXoa && <span className="ml-1 text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium not-italic no-underline">không tồn tại</span>}
                           </p>
+                          <span className="text-[10px] text-stone">{(i.maSanPhamCode || i.sku)}</span>
                           <p className="text-gold font-semibold text-sm">{VND(i.donGia || 0)}</p>
                         </div>
                         <div className="flex items-center border rounded-lg">

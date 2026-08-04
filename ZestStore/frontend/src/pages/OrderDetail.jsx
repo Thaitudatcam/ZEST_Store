@@ -297,7 +297,7 @@ export default function OrderDetail() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
                   <p className="text-xs text-stone">{[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}</p>
-                  <p className="text-xs text-stone">x{item.soLuong}</p>
+                  <p className="text-xs text-stone">Mã SP: {product.maSanPhamCode || variant.sku || '—'} &middot; x{item.soLuong}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold">{VND(item.thanhTien)}</p>

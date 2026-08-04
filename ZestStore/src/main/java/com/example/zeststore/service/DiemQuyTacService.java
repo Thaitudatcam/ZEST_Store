@@ -13,8 +13,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DiemQuyTacService {
 
-    private static final int DEFAULT_TI_LE_TICH = 10000;
-    private static final int DEFAULT_TI_LE_DOI = 1000;
+    private static final int DEFAULT_TI_LE_TICH = 1;
+    private static final int DEFAULT_TI_LE_DOI = 1;
     private static final int DEFAULT_THOI_HAN_THANG = 12;
     private static final int DEFAULT_DIEM_TOI_THIEU = 10;
     private static final int DEFAULT_GIAM_TOI_DA_PHAN_TRAM = 50;

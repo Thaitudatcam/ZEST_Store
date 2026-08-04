@@ -32,7 +32,6 @@ public class DonHangService {
     private final NguoiDungRepository nguoiDungRepository;
     private final ThanhToanRepository thanhToanRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
-    private final HoaDonService hoaDonService;
     private final OrderSseService orderSseService;
     private final ThongBaoService thongBaoService;
     private final GhnService ghnService;
@@ -117,6 +116,97 @@ public class DonHangService {
         result.put("items", items);
         result.put("payments", payments);
         result.put("history", history);
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> registerPrint(Integer orderId, boolean isAdmin) {
+        DonHang order = getOrderById(orderId);
+        assertCanPrint(order, isAdmin);
+        order.setSoLanIn(order.getSoLanIn() == null ? 1 : order.getSoLanIn() + 1);
+        donHangRepository.save(order);
+        return buildPrintData(order, isAdmin);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getOrderPrintData(Integer orderId, boolean isAdmin) {
+        return buildPrintData(getOrderById(orderId), isAdmin);
+    }
+
+    private void assertCanPrint(DonHang order, boolean isAdmin) {
+        if (order.getLoaiDonHang() != null && order.getLoaiDonHang() == 2) {
+            return;
+        }
+        Integer status = order.getTrangThaiDon();
+        if (status != null && status == 1) {
+            throw new BadRequestException("Đơn hàng chưa được xác nhận nên chưa thể in.");
+        }
+        if (status != null && status == 5 && !isAdmin) {
+            throw new BadRequestException("Đơn hàng đã hủy. Chỉ quản lý mới được in hóa đơn.");
+        }
+    }
+
+    private Map<String, Object> buildPrintData(DonHang order, boolean isAdmin) {
+        assertCanPrint(order, isAdmin);
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(order.getMaDonHang());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("maHoaDonCode", "HD-" + order.getMaDonHang());
+        result.put("soLanIn", order.getSoLanIn() == null ? 0 : order.getSoLanIn());
+        result.put("ngayTao", order.getNgayDat());
+        result.put("emailKhachHang",
+                order.getNguoiDung() != null && order.getNguoiDung().getEmail() != null ? order.getNguoiDung().getEmail() : "");
+
+        Map<String, Object> orderInfo = new LinkedHashMap<>();
+        orderInfo.put("maDonHang", order.getMaDonHang());
+        orderInfo.put("maDonHangCode", order.getMaDonHangCode());
+        orderInfo.put("tenNguoiNhan", order.getTenNguoiNhan());
+        orderInfo.put("sdtNguoiNhan", order.getSdtNguoiNhan());
+        orderInfo.put("diaChiGiaoHang", order.getDiaChiGiaoHang());
+        orderInfo.put("ngayDat", order.getNgayDat());
+        orderInfo.put("soTienGiam", order.getSoTienGiam());
+        orderInfo.put("soTienGiamDiem", order.getSoTienGiamDiem());
+        orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
+        orderInfo.put("tongTien", order.getTongTien());
+        orderInfo.put("loaiDonHang", order.getLoaiDonHang());
+        orderInfo.put("ghiChu", order.getGhiChu());
+        orderInfo.put("khachHang", order.getNguoiDung() != null ? order.getNguoiDung().getHoTen() : order.getTenNguoiNhan());
+        result.put("donHang", orderInfo);
+
+        result.put("chiTiet", items.stream().map(item -> {
+            Map<String, Object> im = new LinkedHashMap<>();
+            im.put("maSanPhamCode", item.getBienThe().getSanPham().getMaSanPhamCode());
+            im.put("sku", item.getBienThe().getSku());
+            im.put("tenSanPham", item.getBienThe().getSanPham().getTenSanPham());
+            String thongTin = "";
+            if (item.getBienThe().getMauSac() != null) thongTin += item.getBienThe().getMauSac().getMauSac();
+            if (item.getBienThe().getKichCo() != null) thongTin += (thongTin.isEmpty() ? "" : " / ") + item.getBienThe().getKichCo().getKichCo();
+            im.put("thongTinBienThe", thongTin);
+            im.put("donGia", item.getDonGia());
+            im.put("soLuong", item.getSoLuong());
+            im.put("thanhTien", item.getThanhTien());
+            return im;
+        }).collect(java.util.stream.Collectors.toList()));
+
+        BigDecimal tamTinh = items.stream()
+                .map(MucDonHang::getThanhTien)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        result.put("tamTinh", tamTinh);
+
+        List<Map<String, Object>> paymentInfo = thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang())
+                .stream().map(t -> {
+                    Map<String, Object> pm = new LinkedHashMap<>();
+                    pm.put("phuongThuc", t.getPhuongThuc());
+                    pm.put("trangThaiThanhToan", t.getTrangThaiThanhToan());
+                    pm.put("soTien", t.getSoTien());
+                    pm.put("nhaCungCap", t.getNhaCungCap());
+                    pm.put("maGiaoDich", t.getMaGiaoDich());
+                    pm.put("thoiGianTt", t.getThoiGianTt());
+                    return pm;
+                }).collect(java.util.stream.Collectors.toList());
+        result.put("thanhToans", paymentInfo);
+
         return result;
     }
 
@@ -318,11 +408,7 @@ public class DonHangService {
                 .thoiGianTt(isWalletPayment ? LocalDateTime.now() : null)
                 .build());
 
-        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan()) || isWalletPayment) {
-            hoaDonService.generateInvoice(order.getMaDonHang());
-        }
-
-        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(null)
                 .trangThaiMoi(1)

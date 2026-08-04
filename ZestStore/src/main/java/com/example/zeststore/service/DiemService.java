@@ -26,8 +26,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DiemService {
 
-    private static final int TI_LE_TICH_DEFAULT = 10000;
-    private static final int TI_LE_DOI_DEFAULT = 1000;
+    private static final int TI_LE_TICH_DEFAULT = 1;
+    private static final int TI_LE_DOI_DEFAULT = 1;
     private static final int THOI_HAN_THANG_DEFAULT = 12;
 
     private final DiemTichLuyRepository diemTichLuyRepository;
@@ -38,12 +38,12 @@ public class DiemService {
 
     private int tiLeTich() {
         DiemQuyTac r = diemQuyTacService.getRules();
-        return r.getTiLeTich() != null ? r.getTiLeTich() : 10000;
+        return r.getTiLeTich() != null ? r.getTiLeTich() : 1;
     }
 
     private int tiLeDoi() {
         DiemQuyTac r = diemQuyTacService.getRules();
-        return r.getTiLeDoi() != null ? r.getTiLeDoi() : 1000;
+        return r.getTiLeDoi() != null ? r.getTiLeDoi() : 1;
     }
 
     private int thoiHanThang() {

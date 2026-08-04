@@ -15,10 +15,8 @@ export const createSize = (data) => api.post('/sizes', data).then((r) => r.data)
 export const updateCategory = (id, data) => api.put(`/categories/${id}`, data).then((r) => r.data)
 export const deleteCategory = (id) => api.delete(`/categories/${id}`).then((r) => r.data)
 
-export const getInvoices = (page = 0, size = 20, params = {}) => api.get('/invoices', { params: { page, size, ...params } }).then((r) => r.data)
-export const getInvoiceDetail = (id) => api.get(`/invoices/${id}`).then((r) => r.data)
-export const getInvoiceByOrderId = (orderId) => api.get(`/invoices/by-order/${orderId}`).then((r) => r.data)
-export const generateInvoice = (orderId) => api.post(`/invoices/generate/${orderId}`).then((r) => r.data)
+export const getOrderPrintData = (id) => api.get(`/orders/admin/${id}/print`).then((r) => r.data)
+export const registerOrderPrint = (id) => api.post(`/orders/admin/${id}/print`).then((r) => r.data)
 
 export const getAllReviews = () => api.get('/admin/reviews').then((r) => r.data)
 export const deleteReview = (id) => api.delete(`/admin/reviews/${id}`).then((r) => r.data)

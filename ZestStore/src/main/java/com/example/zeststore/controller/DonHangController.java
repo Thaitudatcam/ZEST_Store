@@ -111,4 +111,23 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.updateOrderStatus(
                 id, request.getTrangThai(), userService.getUserIdFromAuth(auth)));
     }
+
+    @GetMapping("/admin/{id}/print")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<?> getPrintData(@PathVariable Integer id, Authentication auth) {
+        return ResponseEntity.ok(donHangService.getOrderPrintData(id, authHasRole(auth, "ADMIN")));
+    }
+
+    @PostMapping("/admin/{id}/print")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<?> registerPrint(@PathVariable Integer id, Authentication auth) {
+        return ResponseEntity.ok(donHangService.registerPrint(id, authHasRole(auth, "ADMIN")));
+    }
+
+    private boolean authHasRole(Authentication auth, String role) {
+        if (auth == null) return false;
+        String prefix = "ROLE_" + role;
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(prefix) || a.getAuthority().equals(role));
+    }
 }

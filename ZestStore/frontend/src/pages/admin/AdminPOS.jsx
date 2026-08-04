@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
-import { createCustomer, getInvoiceByOrderId, generateInvoice, lookupSku } from '../../api/admin'
+import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from '../../api/admin'
 import { getCustomerDiem, getDiemQuyTac } from '../../api/vi'
 import { getAvailableCoupons } from '../../api/coupons'
 import { VND } from '../../components/ProductCard'
@@ -10,6 +10,7 @@ import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPl
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import InvoicePrint from '../../components/InvoicePrint'
 
 export default function AdminPOS() {
   const navigate = useNavigate()
@@ -64,6 +65,7 @@ export default function AdminPOS() {
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [tienKhachDua, setTienKhachDua] = useState('')
 
   const getQtyInCart = (maBienThe) => cart.filter(c => c.maBienThe === maBienThe).reduce((s, c) => s + c.soLuong, 0)
 
@@ -97,7 +99,7 @@ export default function AdminPOS() {
 
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
 
-  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1000
+  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
   const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
   const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
   const giaTriHangSauCoupon = Math.max(0, total - (coupon?.soTienGiam || 0))
@@ -105,6 +107,10 @@ export default function AdminPOS() {
   const maxDiemSuDung = Math.max(0, Math.min(customerDiem.soDiem, maxDiemTheoQuyTac))
   const diemDungDuoc = customerDiem.soDiem > 0 && maxDiemSuDung >= diemToiThieu
   const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
+  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi)
+  const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
+  const tienThua = tienKhachDua !== '' && !isNaN(Number(tienKhachDua)) ? Number(tienKhachDua) - thanhTien : null
+  const tienKhachDuaValueErr = paymentMethod === 5 && cart.length > 0 && tienKhachDua !== '' && (isNaN(Number(tienKhachDua)) || Number(tienKhachDua) < 0 || Number(tienKhachDua) < thanhTien)
 
   const fetchAvailableCoupons = useCallback(async (maNguoiDung) => {
     setCouponDropdownLoading(true)
@@ -218,6 +224,8 @@ export default function AdminPOS() {
           soLuong: 1,
           tonKho: variant.tonKho,
           urlAnh: variant.urlAnh || '',
+          maSanPhamCode: variant.maSanPhamCode || variant.sku || '',
+          sku: variant.sku || '',
         }]
       })
       setMsg({ type: 'success', text: `Đã thêm ${variant.tenSanPham}` })
@@ -247,16 +255,18 @@ export default function AdminPOS() {
         next[existing] = { ...next[existing], soLuong: next[existing].soLuong + vQty }
         return next
       }
-      return [...prev, {
-        maBienThe: variant.maBienThe,
-        tenSanPham: detail.product?.tenSanPham || 'SP',
-        kichCo: variant.kichCo?.kichCo || '',
-        mauSac: variant.mauSac?.mauSac || '',
-        gia: variant.gia || 0,
-        soLuong: vQty,
-        tonKho: variant.tonKho || 0,
-        urlAnh: variant.urlAnh || detail.product?.urlAnhDaiDien || '',
-      }]
+return [...prev, {
+          maBienThe: variant.maBienThe,
+          tenSanPham: detail.product?.tenSanPham || 'SP',
+          kichCo: variant.kichCo?.kichCo || '',
+          mauSac: variant.mauSac?.mauSac || '',
+          gia: variant.gia || 0,
+          soLuong: vQty,
+          tonKho: variant.tonKho || 0,
+          urlAnh: variant.urlAnh || detail.product?.urlAnhDaiDien || '',
+          maSanPhamCode: detail.product?.maSanPhamCode || variant.maSanPhamCode || '',
+          sku: variant.sku || '',
+        }]
     })
     setVariantModal(null)
   }
@@ -406,14 +416,16 @@ export default function AdminPOS() {
     if (!payResult?.maDonHang) return
     setPrintInvoice('loading')
     try {
-      await generateInvoice(payResult.maDonHang)
-    } catch {}
-    try {
-      const data = await getInvoiceByOrderId(payResult.maDonHang)
+      const data = await registerOrderPrint(payResult.maDonHang)
       setPrintInvoice(data)
     } catch {
-      setMsg({ type: 'error', text: 'Không thể tải hóa đơn' })
-      setPrintInvoice(null)
+      try {
+        const data = await getOrderPrintData(payResult.maDonHang)
+        setPrintInvoice(data)
+      } catch {
+        setMsg({ type: 'error', text: 'Không thể tải hóa đơn' })
+        setPrintInvoice(null)
+      }
     }
   }
 
@@ -515,6 +527,7 @@ export default function AdminPOS() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{c.tenSanPham}</p>
                   <p className="text-xs text-stone">{[c.mauSac, c.kichCo].filter(Boolean).join(' - ') || '—'}</p>
+                  <p className="text-[10px] text-stone/80">Mã: {c.maSanPhamCode || c.sku || '—'}</p>
                   <p className="text-xs text-gold font-semibold">{VND(c.gia)}</p>
                 </div>
                 <div className="flex items-center gap-1">
@@ -717,6 +730,10 @@ export default function AdminPOS() {
               )}
             </div>
           <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span>Tạm tính ({soLuongSanPham} SP):</span>
+              <span>{VND(total)}</span>
+            </div>
             {coupon && (
               <div className="flex justify-between text-sm text-emerald-deep">
                 <span>Giảm giá ({coupon.maCode}):</span>
@@ -731,21 +748,33 @@ export default function AdminPOS() {
             )}
             <div className="flex justify-between items-center pt-1 border-t">
               <span className="font-semibold">Phải thanh toán:</span>
-              <span className="text-lg font-bold text-gold">{VND(Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi))}</span>
+              <span className="text-lg font-bold text-gold">{VND(thanhTien)}</span>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <select value={paymentMethod} onChange={e => setPaymentMethod(Number(e.target.value))}
+            <select value={paymentMethod} onChange={e => { setPaymentMethod(Number(e.target.value)); setTienKhachDua('') }}
               className="border rounded-xl px-3 py-3 text-sm bg-ivory focus:outline-none focus:ring-2 focus:ring-gold">
               <option value={5}>💵 Tiền mặt</option>
               <option value={6}>🏦 VietQR</option>
             </select>
-            <button onClick={() => setConfirmAction('place')} disabled={cart.length === 0 || placing}
+            <button onClick={() => setConfirmAction('place')} disabled={cart.length === 0 || placing || tienKhachDuaValueErr}
               className="flex-1 bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
               {placing ? 'Đang xử lý...' : 'Thanh toán'}
             </button>
           </div>
+          {paymentMethod === 5 && (
+            <div className="space-y-1.5">
+              <input value={tienKhachDua} onChange={e => setTienKhachDua(e.target.value)} inputMode="numeric"
+                placeholder="Tiền khách đưa"
+                className="w-full border rounded-xl px-3 py-2.5 text-sm bg-ivory focus:outline-none focus:ring-2 focus:ring-gold" />
+              {tienThua !== null && (
+                <p className={`text-sm font-medium ${tienThua >= 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>
+                  {tienThua >= 0 ? `Tiền thừa trả lại: ${VND(tienThua)}` : `Thiếu ${VND(Math.abs(tienThua))}`}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -868,68 +897,7 @@ export default function AdminPOS() {
               <h2 className="font-bold text-lg">Hóa đơn {printInvoice.maHoaDonCode}</h2>
               <button onClick={goToOrders} className="p-2 text-stone hover:text-stone"><X className="h-5 w-5" /></button>
             </div>
-            <div id="invoice-print" className="p-6 space-y-6">
-              <div className="text-center border-b pb-4">
-                <h3 className="text-2xl font-bold">ZEST STORE</h3>
-                <p className="text-sm text-stone">HÓA ĐƠN BÁN HÀNG</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p><span className="font-semibold">Mã hóa đơn:</span> {printInvoice.maHoaDonCode}</p>
-                  <p><span className="font-semibold">Ngày tạo:</span> {printInvoice.ngayTao ? new Date(printInvoice.ngayTao).toLocaleDateString('vi-VN') : '-'}</p>
-                  <p><span className="font-semibold">Email:</span> {printInvoice.emailKhachHang}</p>
-                </div>
-                {printInvoice.donHang && (
-                  <div>
-                    <p><span className="font-semibold">Khách hàng:</span> {printInvoice.donHang.khachHang}</p>
-                    <p><span className="font-semibold">Người nhận:</span> {printInvoice.donHang.tenNguoiNhan}</p>
-                    <p><span className="font-semibold">SĐT:</span> {printInvoice.donHang.sdtNguoiNhan}</p>
-                    <p><span className="font-semibold">Địa chỉ:</span> {printInvoice.donHang.diaChiGiaoHang}</p>
-                  </div>
-                )}
-              </div>
-              <table className="w-full text-sm border-t">
-                <thead>
-                  <tr className="border-b bg-ivory-100">
-                    <th className="text-left px-3 py-2">Sản phẩm</th>
-                    <th className="text-center px-3 py-2">SL</th>
-                    <th className="text-right px-3 py-2">Đơn giá</th>
-                    <th className="text-right px-3 py-2">Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(printInvoice.chiTiet || []).map((item, i) => (
-                    <tr key={i} className="border-b">
-                      <td className="px-3 py-2">
-                        <p>{item.tenSanPham}</p>
-                        {item.thongTinBienThe && <p className="text-xs text-stone">{item.thongTinBienThe}</p>}
-                      </td>
-                      <td className="text-center px-3 py-2">{item.soLuong}</td>
-                      <td className="text-right px-3 py-2">{VND(item.donGia)}</td>
-                      <td className="text-right px-3 py-2 font-semibold">{VND(item.thanhTien)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {printInvoice.donHang && (() => {
-                const t = printInvoice.donHang.tongTien ?? printInvoice.tongTien ?? 0
-                const g = printInvoice.donHang.soTienGiam || 0
-                return (
-                  <div className="text-right space-y-1 text-sm">
-                    <p><span className="text-stone">Tổng:</span> <span className="font-semibold">{VND(Number(t) + Number(g))}</span></p>
-                    {Number(g) > 0 && <p><span className="text-emerald-deep">Giảm giá:</span> <span className="font-semibold text-emerald-deep">-{VND(g)}</span></p>}
-                    <p className="text-lg font-bold text-gold">Phải thanh toán: {VND(t)}</p>
-                  </div>
-                )
-              })()}
-            </div>
-            <style>{`
-              @media print {
-                body * { visibility: hidden; }
-                #invoice-print, #invoice-print * { visibility: visible; }
-                #invoice-print { position: fixed; top: 0; left: 0; width: 100%; }
-              }
-            `}</style>
+            <InvoicePrint data={printInvoice} />
           </div>
         </div>
       )}

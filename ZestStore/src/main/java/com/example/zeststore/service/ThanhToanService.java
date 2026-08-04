@@ -27,7 +27,6 @@ public class ThanhToanService {
 
     private final ThanhToanRepository thanhToanRepository;
     private final DonHangRepository donHangRepository;
-    private final HoaDonService hoaDonService;
     private final MucDonHangRepository mucDonHangRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final MucGioHangRepository mucGioHangRepository;
@@ -154,7 +153,6 @@ public class ThanhToanService {
             thanhToanRepository.save(payment);
 
             clearCartForOrder(order);
-            hoaDonService.generateInvoice(order.getMaDonHang());
         }
 
         return payment;

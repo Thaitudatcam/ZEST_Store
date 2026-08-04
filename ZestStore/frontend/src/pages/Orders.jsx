@@ -280,6 +280,7 @@ export default function Orders() {
                           <p className="font-semibold text-sm text-ink truncate">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
                           <p className="text-xs text-stone mt-0.5">
                             {[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}
+                            {product.maSanPhamCode || variant.sku ? ` &middot; Mã: ${product.maSanPhamCode || variant.sku}` : ''}
                           </p>
                         </div>
                       </div>

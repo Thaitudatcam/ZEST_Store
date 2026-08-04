@@ -434,7 +434,7 @@ export default function Checkout() {
     : 0
   const effectiveShippingFee = shippingFee - freeshipDiscount
 
-  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1000
+  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
   const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
   const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
   const giaTriHangSauCoupon = Math.max(0, rawTotal - discount)
@@ -832,7 +832,7 @@ export default function Checkout() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{i.tenSanPham}</p>
-                    <p className="text-xs text-stone">x{i.soLuong}</p>
+                    <p className="text-xs text-stone">{(i.maSanPhamCode || i.sku)} &middot; x{i.soLuong}</p>
                   </div>
                   <p className="text-sm font-semibold">{VND(i.donGia * i.soLuong)}</p>
                 </div>

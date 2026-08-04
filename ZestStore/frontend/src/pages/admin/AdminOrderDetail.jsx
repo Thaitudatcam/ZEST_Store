@@ -3,9 +3,12 @@ import { useParams, Link } from 'react-router-dom'
 import api from '../../api/axios'
 import StatusBadge from '../../components/StatusBadge'
 import SafeImg from '../../components/SafeImg'
+import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { ArrowLeft, Package, CreditCard, Truck, Clock, User, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X } from 'lucide-react'
+import { ArrowLeft, Package, CreditCard, Truck, Clock, User, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X, Printer } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import { getOrderPrintData, registerOrderPrint } from '../../api/admin'
+import InvoicePrint from '../../components/InvoicePrint'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -101,12 +104,16 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
 export default function AdminOrderDetail() {
   const { id } = useParams()
   const toast = useToast()
+  const { user } = useAuth()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState(null)
   const [confirmStatus, setConfirmStatus] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [printData, setPrintData] = useState(null)
+  const [printLoading, setPrintLoading] = useState(false)
+  const [showPrint, setShowPrint] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -116,6 +123,12 @@ export default function AdminOrderDetail() {
       .catch(() => setError('Đơn hàng không tồn tại hoặc đã bị xóa'))
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    if (!showPrint || !printData) return
+    const timer = setTimeout(() => window.print(), 300)
+    return () => clearTimeout(timer)
+  }, [showPrint, printData])
 
   if (loading) return <div className="text-center py-12 text-stone">Đang tải...</div>
   if (error) return (
@@ -143,6 +156,22 @@ export default function AdminOrderDetail() {
     return true
   })
 
+  const isAdmin = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro === 'ADMIN' : user?.vaiTro === 'ADMIN'
+  const isPos = order.loaiDonHang === 2
+  const status = order.trangThaiDon
+  const canPrint = isPos
+    ? true
+    : status === 5
+      ? isAdmin
+      : status > 1
+  const printBlockReason = !canPrint
+    ? status === 1
+      ? 'Đơn hàng chưa được xác nhận nên chưa thể in.'
+      : status === 5
+        ? 'Đơn hàng đã hủy. Chỉ quản lý mới được in hóa đơn.'
+        : ''
+    : ''
+
   const handleUpdateStatus = async (trangThai) => {
     setUpdating(trangThai)
     try {
@@ -154,6 +183,34 @@ export default function AdminOrderDetail() {
       toast.error(err.response?.data?.message || 'Cập nhật thất bại')
     } finally {
       setUpdating(null)
+    }
+  }
+
+  const handlePrintOrder = async () => {
+    setPrintLoading(true)
+    try {
+      const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
+      setData(updated)
+      const data = await registerOrderPrint(updated.order.maDonHang)
+      setPrintData(data)
+      setShowPrint(true)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể in hóa đơn')
+    } finally {
+      setPrintLoading(false)
+    }
+  }
+
+  const handlePreview = async () => {
+    setPrintLoading(true)
+    try {
+      const data = await getOrderPrintData(id)
+      setPrintData(data)
+      setShowPrint(true)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể tải dữ liệu hóa đơn')
+    } finally {
+      setPrintLoading(false)
     }
   }
 
@@ -170,8 +227,26 @@ export default function AdminOrderDetail() {
             <p className="text-sm text-stone">{order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}</p>
             {order.maDonHangCode && <p className="text-xs text-stone mt-0.5">Mã: {order.maDonHangCode}</p>}
           </div>
-          <StatusBadge status={order.trangThaiDon} loaiDonHang={order.loaiDonHang} />
-        </div>
+            <div className="flex items-center gap-3">
+              <StatusBadge status={order.trangThaiDon} loaiDonHang={order.loaiDonHang} />
+              <button onClick={handlePrintOrder} disabled={printLoading || !canPrint} title={printBlockReason}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold text-noir text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-40 disabled:cursor-not-allowed">
+                {printLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                {(order.soLanIn || 0) > 0 ? 'In lại hóa đơn' : 'In ngay'}
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-xs text-stone">
+            {!canPrint ? (
+              <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5" /> {printBlockReason}
+              </span>
+            ) : (order.soLanIn || 0) > 0 ? (
+              <>Đã in <span className="font-semibold text-gold">{order.soLanIn}</span> lần</>
+            ) : (
+              'Chưa in hóa đơn'
+            )}
+          </div>
       </div>
 
       <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
@@ -230,11 +305,11 @@ export default function AdminOrderDetail() {
                   <SafeImg src={anh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
+<p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
                   <p className="text-xs text-stone">
                     {[variant.mauSac?.mauSac, variant.kichCo?.kichCo].filter(Boolean).join(' - ') || <>&middot; {variant.sku || '—'}</>}
                   </p>
-                  <p className="text-xs text-stone">x{item.soLuong}</p>
+                  <p className="text-xs text-stone">Mã SP: {product.maSanPhamCode || variant.sku || '—'} &middot; x{item.soLuong}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold">{VND(item.thanhTien || 0)}</p>
@@ -370,6 +445,32 @@ export default function AdminOrderDetail() {
           </div>
         </div>
       )})()}
+
+      {showPrint && printData && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setShowPrint(false)}>
+          <div className="bg-ivory rounded-2xl max-w-lg w-full shadow-xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone/10 sticky top-0 bg-ivory">
+              <h3 className="font-bold flex items-center gap-2">
+                <Printer className="h-5 w-5 text-gold" /> Hóa đơn {printData.maHoaDonCode}
+              </h3>
+              <button onClick={() => setShowPrint(false)} className="text-stone hover:text-ink transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <InvoicePrint data={printData} />
+            <div className="flex gap-3 px-5 pb-5">
+              <button onClick={() => setShowPrint(false)}
+                className="flex-1 px-4 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100 transition">
+                Đóng
+              </button>
+              <button onClick={() => { handlePrintOrder() }} disabled={printLoading}
+                className="flex-1 px-4 py-2.5 bg-gold text-noir rounded-xl text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50">
+                {printLoading ? <Loader className="h-4 w-4 animate-spin" /> : (printData.soLanIn || 0) > 0 ? 'In lại' : 'In ngay'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

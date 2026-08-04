@@ -33,7 +33,6 @@ import AdminProductVariantDetail from './pages/admin/AdminProductVariantDetail'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminCoupons from './pages/admin/AdminCoupons'
-import AdminInvoices from './pages/admin/AdminInvoices'
 import AdminReturns from './pages/admin/AdminReturns'
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
@@ -63,7 +62,6 @@ export default function App() {
         <Route path="orders/online" element={<AdminOrders />} />
         <Route path="orders/pos" element={<AdminOrders />} />
         <Route path="orders/:id" element={<AdminOrderDetail />} />
-        <Route path="invoices" element={<AdminInvoices />} />
         <Route path="returns" element={<AdminReturns />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/create" element={<AdminProductForm />} />
