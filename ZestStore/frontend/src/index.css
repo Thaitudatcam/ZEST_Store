@@ -69,7 +69,13 @@
   --ring-gold: 0 0 0 3px rgba(201, 162, 39, 0.35);
 }
 
+/* Primary color variables for brand theming (overridable via --primary-color) */
 html { scroll-behavior: smooth; }
+--primary-color: #C9A227;  /* Default: Gold - sẽ được thay đổi theo thương hiệu */
+--primary-hover: #B8951F;
+--primary-active: #8B6914;
+--primary-bg: #FFF7E6;
+--primary-text: #14141A;
 
 body { font-weight: 500; font-family: 'Be Vietnam Pro', sans-serif; background: var(--color-ivory); color: var(--color-ink); }
 
