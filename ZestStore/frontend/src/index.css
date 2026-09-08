@@ -69,13 +69,38 @@
   --ring-gold: 0 0 0 3px rgba(201, 162, 39, 0.35);
 }
 
-/* Primary color variables for brand theming (overridable via --primary-color) */
 html { scroll-behavior: smooth; }
---primary-color: #C9A227;  /* Default: Gold - sẽ được thay đổi theo thương hiệu */
---primary-hover: #B8951F;
---primary-active: #8B6914;
---primary-bg: #FFF7E6;
---primary-text: #14141A;
+
+/* ============================================================
+   ADMIN DASHBOARD — Brand Theme Variables
+   Thay đổi màu ở đây để đồng bộ toàn bộ giao diện admin
+   ============================================================ */
+:root {
+  /* Màu thương hiệu chính (nút, badge, text nhấn) */
+  --primary-color: #C9A227;
+  --primary-hover: #B8951F;
+  --primary-active: #8B6914;
+  --primary-bg: #FBF6E5;
+  --primary-gradient-start: #C9A227;
+  --primary-gradient-end: #E0C158;
+
+  /* Nền tối (Banner + Sidebar) */
+  --dark-bg-start: #0F1B2D;
+  --dark-bg-end: #16233A;
+
+  /* Accent riêng cho 4 thẻ stat */
+  --accent-revenue: #C9A227;   /* Doanh thu hôm nay — cam/vàng */
+  --accent-warning: #E5484D;   /* Đơn chờ xác nhận — đỏ */
+  --accent-info: #3B82F6;      /* Tổng SP/Kho hàng — xanh dương */
+  --accent-success: #22C55E;   /* Tổng khách hàng — xanh lá */
+
+  /* Badge trạng thái đơn hàng */
+  --badge-pending: #F59E0B;
+  --badge-processing: #3B82F6;
+  --badge-shipping: #8B5CF6;
+  --badge-completed: #22C55E;
+  --badge-cancelled: #EF4444;
+}
 
 body { font-weight: 500; font-family: 'Be Vietnam Pro', sans-serif; background: var(--color-ivory); color: var(--color-ink); }
 

@@ -1,28 +1,41 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getStats, getOrderStats, getRevenueByDay } from '../../api/admin'
-import { Package, DollarSign, Users, Star } from 'lucide-react'
+import {
+  getStats, getOrderStats, getRevenueByDay,
+  getRecentOrders, getBestSellingProducts
+} from '../../api/admin'
+import {
+  DollarSign, ClipboardList, Package, Users,
+  ShoppingCart, ShoppingBag, PlusCircle, Ticket, BarChart3,
+  TrendingUp, ArrowRight, Clock, Store
+} from 'lucide-react'
 import CountUp from '../../components/ui/CountUp'
+import AdminBadge from '../../components/admin/AdminBadge'
+import { imageUrl } from '../../utils/imageUrl'
 
-const robotGreetings = [
-  ['Chào buổi sáng! ☕', 'Ngày mới tốt lành! 🌻', 'Sáng nay có đơn mới không? ✨', 'Cà phê sáng chưa admin? ☕'],
-  ['Buổi chiều năng động! ⚡', 'Ăn trưa chưa admin? 🍜', 'Chiều nay bán gì hot? 🔥', 'Tiếp tục chiến thôi! 💪'],
-  ['Buổi tối vui vẻ! 🌆', 'Tối nay đơn nhiều không? 📦', 'Về nhà chưa admin? 🏠', 'Tối rồi, nghỉ ngơi thôi! 😌'],
-  ['Khuya rồi đó! 🌙', 'Còn thức làm gì vậy? 🦉', 'Đừng thức khuya nha! 😴', 'Ngủ sớm để mai bán đắt! 💤'],
+const VND = (n) => {
+  try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) }
+  catch { return n }
+}
+
+const statusLabels = {
+  1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng',
+  4: 'Chờ giao hàng', 5: 'Đã hủy', 6: 'Đã giao hàng',
+  7: 'Yêu cầu trả', 8: 'Đã trả', 9: 'Không nhận'
+}
+const statusColors = {
+  1: 'gold', 2: 'blue', 3: 'purple', 4: 'blue',
+  5: 'red', 6: 'green', 7: 'gold', 8: 'gray', 9: 'gray'
+}
+
+const shortcuts = [
+  { icon: ShoppingCart, label: 'Bán hàng POS', to: '/admin/pos' },
+  { icon: ShoppingBag, label: 'Quản lý đơn hàng', to: '/admin/orders/online' },
+  { icon: PlusCircle, label: 'Thêm sản phẩm', to: '/admin/products/create' },
+  { icon: Ticket, label: 'Mã giảm giá', to: '/admin/coupons' },
+  { icon: BarChart3, label: 'Báo cáo thống kê', to: '/admin/thong-ke' },
 ]
-
-function getGreetingSlot() {
-  const h = new Date().getHours()
-  if (h < 5) return 3
-  if (h < 12) return 0
-  if (h < 18) return 1
-  if (h < 22) return 2
-  return 3
-}
-
-function formatTime(now) {
-  return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
-}
 
 function fmt(n) {
   if (n == null) return '0'
@@ -32,46 +45,34 @@ function fmt(n) {
   return n.toLocaleString('vi-VN')
 }
 
-function VND(n) {
-  try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n }
+function fmtDate(d) {
+  if (!d) return '-'
+  try {
+    return new Date(d).toLocaleDateString('vi-VN', {
+      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+    })
+  } catch { return d }
 }
 
-const cards = [
-  { key: 'orders',   label: 'Đơn hàng',   icon: Package,  grad: 'from-gold to-gold-dark',       shadow: 'shadow-gold/40',      hoverBg: 'hover:border-gold/40 hover:shadow-gold/20' },
-  { key: 'revenue',  label: 'Doanh thu',  icon: DollarSign, grad: 'from-emerald-deep to-[#2a6b50]', shadow: 'shadow-emerald-deep/40',    hoverBg: 'hover:border-emerald-deep/40 hover:shadow-emerald-deep/20' },
-  { key: 'users',    label: 'Người dùng', icon: Users,     grad: 'from-royal to-[#3d3580]',   shadow: 'shadow-royal/40',     hoverBg: 'hover:border-royal/40 hover:shadow-royal/20' },
-  { key: 'products', label: 'Sản phẩm',   icon: Star,     grad: 'from-noir-700 to-noir',     shadow: 'shadow-noir/40',      hoverBg: 'hover:border-noir/40 hover:shadow-noir/20' },
-]
-
-const positions = [
-  { grid: 'row-start-1 col-start-1', extra: 'rounded-b-[40px]' },
-  { grid: 'row-start-1 col-start-3', extra: 'rounded-b-[40px]' },
-  { grid: 'row-start-3 col-start-1', extra: 'rounded-t-[40px]' },
-  { grid: 'row-start-3 col-start-3', extra: 'rounded-t-[40px]' },
-]
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Chào buổi sáng'
+  if (h < 18) return 'Chào buổi chiều'
+  return 'Chào buổi tối'
+}
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { user } = useAuth()
-  const slot = getGreetingSlot()
 
-  const [now, setNow] = useState(new Date())
-  const [greetIdx, setGreetIdx] = useState(0)
   const [stats, setStats] = useState(null)
   const [orderStats, setOrderStats] = useState(null)
   const [todayRevenue, setTodayRevenue] = useState(null)
-  const [robotReply, setRobotReply] = useState(null)
+  const [recentOrders, setRecentOrders] = useState([])
+  const [bestSelling, setBestSelling] = useState([])
   const [loading, setLoading] = useState(true)
-  const replyTimer = useRef(null)
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(new Date())
-      setGreetIdx(i => (i + 1) % 4)
-    }, 30000)
-    return () => clearInterval(id)
-  }, [])
-
-  const loadStats = useCallback(() => {
+  const loadData = useCallback(() => {
     const today = new Date().toISOString().split('T')[0]
     return Promise.all([
       getStats().catch(() => null),
@@ -80,186 +81,326 @@ export default function Dashboard() {
         if (Array.isArray(r)) return r.reduce((s, d) => s + Number(d.doanhThu || 0), 0)
         return null
       }).catch(() => null),
-    ]).then(([s, os, rev]) => {
+      getRecentOrders(5).then(r => Array.isArray(r) ? r : []).catch(() => []),
+      getBestSellingProducts(5).then(r => Array.isArray(r) ? r : []).catch(() => []),
+    ]).then(([s, os, rev, recent, best]) => {
       setStats(s)
       setOrderStats(os)
       setTodayRevenue(rev)
+      setRecentOrders(recent)
+      setBestSelling(best)
     }).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    loadStats()
-    const id = setInterval(loadStats, 30000)
-    const onFocus = () => loadStats()
+    loadData()
+    const id = setInterval(loadData, 30000)
+    const onFocus = () => loadData()
     window.addEventListener('focus', onFocus)
     return () => { clearInterval(id); window.removeEventListener('focus', onFocus) }
-  }, [loadStats])
+  }, [loadData])
 
-  const mergedOrders = orderStats ? {
-    totalOrders: orderStats.totalOrders ?? 0,
-    completed: orderStats.completed ?? 0,
-    pending: (orderStats.pending ?? 0) + (orderStats.shipping ?? 0),
-    cancelled: orderStats.cancelled ?? 0,
-    todayOrders: orderStats.todayOrders ?? undefined,
-  } : null
+  const pendingOrders = orderStats?.pending ?? 0
+  const totalProducts = stats?.totalProducts ?? 0
+  const totalUsers = stats?.totalUsers ?? 0
 
-  const handleStatClick = useCallback((key) => {
-    if (!stats && !mergedOrders) return
-    let reply = ''
-    switch (key) {
-      case 'orders':
-        if (mergedOrders) {
-          reply = `📊 Có tổng cộng <b>${fmt(mergedOrders.totalOrders)}</b> đơn hàng.` +
-            ` ✅ Đã giao <b>${fmt(mergedOrders.completed)}</b>,` +
-            ` ⏳ đang xử lý <b>${fmt(mergedOrders.pending)}</b>,` +
-            ` ❌ đã hủy <b>${fmt(mergedOrders.cancelled)}</b>.`
-          if (mergedOrders.todayOrders != null) reply += ` 📅 Hôm nay có <b>${fmt(mergedOrders.todayOrders)}</b> đơn mới.`
-        }
-        break
-      case 'revenue':
-        reply = `💰 Doanh thu tháng này <b>${VND(stats?.monthlyRevenue || 0)}</b>.`
-        if (todayRevenue != null) reply += ` Hôm nay đạt <b>${VND(todayRevenue)}</b>.`
-        if (orderStats?.completed != null) reply += ` ✅ <b>${fmt(orderStats.completed)}</b> đơn đã hoàn thành.`
-        break
-      case 'users':
-        reply = `👥 Hệ thống có <b>${fmt(stats?.totalUsers || 0)}</b> người dùng.`
-        if (stats?.totalCustomers != null) reply += ` Gồm <b>${fmt(stats.totalCustomers)}</b> khách hàng`
-        if (stats?.totalEmployees != null) reply += ` và <b>${fmt(stats.totalEmployees)}</b> nhân viên.`
-        break
-      case 'products':
-        reply = `⭐ Tổng cộng <b>${fmt(stats?.totalProducts || 0)}</b> sản phẩm.`
-        if (stats?.activeProducts != null) reply += ` Hiện có <b>${fmt(stats.activeProducts)}</b> sản phẩm đang bán.`
-        break
-    }
-    setRobotReply(reply)
-    if (replyTimer.current) clearTimeout(replyTimer.current)
-    replyTimer.current = setTimeout(() => { setRobotReply(null); replyTimer.current = null }, 12000)
-  }, [stats, mergedOrders, todayRevenue, orderStats])
-
-  const getRawValue = (key) => {
-    if (loading) return null
-    switch (key) {
-      case 'orders':   return stats?.totalOrders ?? 0
-      case 'revenue':  return stats?.monthlyRevenue ?? 0
-      case 'users':    return stats?.totalUsers ?? 0
-      case 'products': return stats?.totalProducts ?? 0
-      default:         return 0
-    }
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* Skeleton banner */}
+        <div className="rounded-2xl h-44 bg-gradient-to-r from-[var(--dark-bg-start)] to-[var(--dark-bg-end)] animate-pulse" />
+        {/* Skeleton stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-5 animate-pulse">
+              <div className="h-4 w-20 bg-gray-200 rounded mb-3" />
+              <div className="h-8 w-24 bg-gray-200 rounded" />
+            </div>
+          ))}
+        </div>
+        {/* Skeleton shortcuts */}
+        <div className="grid grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-24 bg-white rounded-2xl border border-gray-200 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-7rem)] flex items-center justify-center">
-      {/* Background decorations */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-gold/8 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-royal/8 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gold/5 rounded-full blur-3xl" />
+    <div className="space-y-6">
+      {/* ═══════════════ BANNER CHÀO MỪNG ═══════════════ */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 md:p-8"
+        style={{ background: 'linear-gradient(135deg, var(--dark-bg-start), var(--dark-bg-end))' }}
+      >
+        {/* Decorative circles */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-10"
+          style={{ background: 'var(--primary-color)' }} />
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-5"
+          style={{ background: 'var(--primary-color)' }} />
+
+        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">
+              {getGreeting()}, {user?.hoTen?.split(' ').pop() || 'Admin'}! 👋
+            </h1>
+            <p className="text-white/60 text-sm mt-1">
+              ZestStore — Hệ thống quản trị bán hàng
+            </p>
+            {pendingOrders > 0 && (
+              <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                style={{ background: 'var(--accent-warning)', color: '#fff' }}>
+                <Clock className="h-4 w-4" />
+                Bạn có <strong>{pendingOrders}</strong> đơn hàng mới chờ duyệt hôm nay
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/admin/pos')}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-all duration-200 shrink-0"
+            style={{ background: 'var(--primary-color)' }}
+          >
+            <Store className="h-5 w-5" />
+            Bán hàng tại quầy
+          </button>
+        </div>
       </div>
 
-      <div className="relative w-full max-w-xl mx-auto">
-        {/* Greeting */}
-        <div className="text-center mb-8">
-          <h1 className="font-serif text-2xl font-bold text-ink">
-            Chào {user?.hoTen || 'Admin'}!
-          </h1>
-          <p className="text-sm text-stone mt-1 tabular-nums">{formatTime(now)}</p>
+      {/* ═══════════════ 4 THẺ STAT ═══════════════ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Doanh thu hôm nay */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+              style={{ background: 'color-mix(in srgb, var(--accent-revenue) 12%, transparent)' }}>
+              <DollarSign className="h-5 w-5" style={{ color: 'var(--accent-revenue)' }} />
+            </div>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: 'color-mix(in srgb, var(--accent-revenue) 12%, transparent)', color: 'var(--accent-revenue)' }}>
+              Hôm nay
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 tabular-nums">
+            {todayRevenue != null ? VND(todayRevenue) : '0'}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Doanh thu hôm nay</p>
+          <button onClick={() => navigate('/admin/thong-ke')}
+            className="flex items-center gap-1 text-xs font-semibold mt-3 transition-colors hover:opacity-80"
+            style={{ color: 'var(--accent-revenue)' }}>
+            Xem thêm <ArrowRight className="h-3 w-3" />
+          </button>
         </div>
 
-        {/* Grid */}
-        <div className="relative grid grid-cols-3 gap-8 items-center">
+        {/* Đơn chờ xác nhận */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+              style={{ background: 'color-mix(in srgb, var(--accent-warning) 12%, transparent)' }}>
+              <ClipboardList className="h-5 w-5" style={{ color: 'var(--accent-warning)' }} />
+            </div>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: 'color-mix(in srgb, var(--accent-warning) 12%, transparent)', color: 'var(--accent-warning)' }}>
+              Cần xử lý
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 tabular-nums">
+            <CountUp to={pendingOrders} duration={1.5} separator="." />
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Đơn chờ xác nhận</p>
+          <button onClick={() => navigate('/admin/orders/online')}
+            className="flex items-center gap-1 text-xs font-semibold mt-3 transition-colors hover:opacity-80"
+            style={{ color: 'var(--accent-warning)' }}>
+            Xem thêm <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
 
-          {cards.map((s, i) => {
-            const Icon = s.icon
-            const pos = positions[i]
+        {/* Tổng sản phẩm / Kho hàng */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+              style={{ background: 'color-mix(in srgb, var(--accent-info) 12%, transparent)' }}>
+              <Package className="h-5 w-5" style={{ color: 'var(--accent-info)' }} />
+            </div>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: 'color-mix(in srgb, var(--accent-info) 12%, transparent)', color: 'var(--accent-info)' }}>
+              Kho hàng
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 tabular-nums">
+            <CountUp to={totalProducts} duration={1.5} separator="." />
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Tổng sản phẩm</p>
+          <button onClick={() => navigate('/admin/products')}
+            className="flex items-center gap-1 text-xs font-semibold mt-3 transition-colors hover:opacity-80"
+            style={{ color: 'var(--accent-info)' }}>
+            Xem thêm <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+
+        {/* Tổng khách hàng */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow group">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+              style={{ background: 'color-mix(in srgb, var(--accent-success) 12%, transparent)' }}>
+              <Users className="h-5 w-5" style={{ color: 'var(--accent-success)' }} />
+            </div>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: 'color-mix(in srgb, var(--accent-success) 12%, transparent)', color: 'var(--accent-success)' }}>
+              Thành viên
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900 tabular-nums">
+            <CountUp to={totalUsers} duration={1.5} separator="." />
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Tổng khách hàng</p>
+          <button onClick={() => navigate('/admin/customers')}
+            className="flex items-center gap-1 text-xs font-semibold mt-3 transition-colors hover:opacity-80"
+            style={{ color: 'var(--accent-success)' }}>
+            Xem thêm <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+
+      {/* ═══════════════ LỐI TẮT THAO TÁC NHANH ═══════════════ */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Lối tắt thao tác nhanh</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {shortcuts.map((item, i) => {
+            const Icon = item.icon
+            const isActive = i === 0
             return (
-              <button key={s.key}
-                onClick={() => handleStatClick(s.key)}
-                className={`${pos.grid} relative group backdrop-blur-xl bg-white/80 border border-gold/15 ${s.shadow} ${s.hoverBg} ${pos.extra} transition-all duration-300 p-5 h-[120px] flex flex-col items-center justify-center`}
+              <button
+                key={item.to}
+                onClick={() => navigate(item.to)}
+                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
+                  isActive ? 'border-[var(--primary-color)] bg-[var(--primary-bg)]' : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
               >
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.grad} flex items-center justify-center shadow-lg ${s.shadow} group-hover:scale-110 group-hover:-translate-y-0.5 transition-all duration-300`}>
-                  <Icon className="h-5 w-5 text-white" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isActive
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+                  style={isActive ? { background: 'var(--primary-color)' } : {}}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                {s.key === 'orders' && getRawValue('orders') !== null ? (
-                  <CountUp to={getRawValue('orders')} duration={1.5} className="text-xl font-bold text-ink leading-tight mt-1.5 tabular-nums" separator="." />
-                ) : s.key === 'orders' ? (
-                  <span className="text-xl font-bold text-ink leading-tight mt-1.5">...</span>
-                ) : (
-                  <span className="text-xl font-bold text-ink leading-tight mt-1.5 tabular-nums">{fmt(getRawValue(s.key) ?? 0)}</span>
-                )}
-                <span className="text-[10px] text-stone font-medium">{s.label}</span>
+                <span className={`text-xs font-semibold text-center leading-tight ${
+                  isActive ? 'text-[var(--primary-color)]' : 'text-gray-700'
+                }`}>
+                  {item.label}
+                </span>
               </button>
             )
           })}
+        </div>
+      </div>
 
-          {/* Robot */}
-          <div className="col-start-2 row-start-1 row-span-3 flex flex-col items-center justify-center">
-            <div className="relative flex flex-col items-center">
-              {/* Speech bubble */}
-              <div className="absolute -top-[140px] left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl rounded-3xl shadow-lux border border-gold/20 px-6 py-4 min-w-[280px] text-center animate-fade-in z-10">
-                {robotReply ? (
-                  <>
-                    <p className="text-sm text-ink-soft leading-relaxed" dangerouslySetInnerHTML={{ __html: robotReply }} />
-                    <p className="text-[10px] text-stone mt-1.5">{formatTime(now)}</p>
-                  </>
-                ) : (
-                    <>
-                      <p className="text-2xl font-bold bg-gradient-to-r from-gold to-gold-dark bg-clip-text text-transparent tracking-wider tabular-nums leading-tight">{formatTime(now)}</p>
-                      <p className="text-sm text-stone">{robotGreetings[slot][greetIdx]}</p>
-                    </>
-                )}
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/90 border-r border-b border-gold/20 rotate-45" />
-              </div>
+      {/* ═══════════════ 2 CỘT: ĐƠN HÀNG MỚI + TOP BÁN CHẠY ═══════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Đơn hàng mới nhất */}
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800">Đơn hàng mới nhất</h3>
+            <span className="text-xs text-gray-400">{recentOrders.length} đơn</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="text-left px-5 py-2.5 font-semibold text-gray-500 text-xs">Mã đơn</th>
+                  <th className="text-left px-5 py-2.5 font-semibold text-gray-500 text-xs">Khách hàng</th>
+                  <th className="text-right px-5 py-2.5 font-semibold text-gray-500 text-xs">Tổng tiền</th>
+                  <th className="text-center px-5 py-2.5 font-semibold text-gray-500 text-xs">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8 text-gray-400 text-sm">
+                      Chưa có đơn hàng nào
+                    </td>
+                  </tr>
+                ) : recentOrders.map((order, i) => (
+                  <tr key={order.maDonHang || i}
+                    onClick={() => navigate(`/admin/orders/${order.maDonHang || order.id}`)}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer">
+                    <td className="px-5 py-3 font-medium text-gray-800">
+                      #{order.maDonHangCode || order.maDonHang || '-'}
+                    </td>
+                    <td className="px-5 py-3 text-gray-600">
+                      {order.khachHang?.hoTen || order.hoTen || order.tenNguoiNhan || 'Khách lẻ'}
+                    </td>
+                    <td className="px-5 py-3 text-right font-medium text-gray-800 tabular-nums">
+                      {VND(order.tongTien || order.total || 0)}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <AdminBadge color={statusColors[order.trangThaiDon] || 'gray'}>
+                        {statusLabels[order.trangThaiDon] || 'Unknown'}
+                      </AdminBadge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-              {/* Glow */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gold/20 rounded-full blur-3xl animate-glow-pulse" />
-
-              <div className="relative flex flex-col items-center animate-float">
-                <div className="flex flex-col items-center -mb-px">
-                  <div className="w-1.5 h-6 bg-gradient-to-b from-sky-300 to-blue-500 rounded-full" />
-                  <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-sky-200 to-blue-400 shadow-lg shadow-sky-300/60 animate-glow-pulse" />
-                </div>
-                <div className="relative w-[110px] h-[95px] rounded-[32px] bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 shadow-2xl shadow-blue-300/40 ring-[3px] ring-white/70 flex flex-col items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent pointer-events-none" />
-                  <div className="flex gap-5 items-center">
-                    <div className="relative">
-                      <div className="w-[21px] h-[21px] rounded-full bg-gradient-to-br from-cyan-200 to-cyan-400 shadow-[0_0_14px_4px_rgba(34,211,238,0.6)] flex items-center justify-center">
-                        <div className="w-[10px] h-[10px] rounded-full bg-white shadow-inner shadow-white/80" />
+        {/* Top áo bán chạy */}
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800">Top áo bán chạy</h3>
+            <span className="text-xs text-gray-400">{bestSelling.length} sản phẩm</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="text-left px-5 py-2.5 font-semibold text-gray-500 text-xs w-10">#</th>
+                  <th className="text-left px-5 py-2.5 font-semibold text-gray-500 text-xs">Sản phẩm</th>
+                  <th className="text-right px-5 py-2.5 font-semibold text-gray-500 text-xs">Đã bán</th>
+                  <th className="text-right px-5 py-2.5 font-semibold text-gray-500 text-xs">Doanh thu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {bestSelling.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8 text-gray-400 text-sm">
+                      Chưa có dữ liệu bán chạy
+                    </td>
+                  </tr>
+                ) : bestSelling.map((item, i) => (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-3 text-gray-400 font-medium">{i + 1}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                          {item.urlAnhDaiDien ? (
+                            <img src={imageUrl(item.urlAnhDaiDien)} alt=""
+                              className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                              <Package className="h-5 w-5" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium text-gray-800 line-clamp-1">
+                          {item.tenSanPham || 'Sản phẩm'}
+                        </span>
                       </div>
-                      <div className="absolute -inset-1.5 rounded-full bg-cyan-400/20 animate-glow-pulse" />
-                    </div>
-                    <div className="relative">
-                      <div className="w-[21px] h-[21px] rounded-full bg-gradient-to-br from-cyan-200 to-cyan-400 shadow-[0_0_14px_4px_rgba(34,211,238,0.6)] flex items-center justify-center">
-                        <div className="w-[10px] h-[10px] rounded-full bg-white shadow-inner shadow-white/80" />
-                      </div>
-                      <div className="absolute -inset-1.5 rounded-full bg-cyan-400/20 animate-glow-pulse" />
-                    </div>
-                  </div>
-                  <div className="mt-2 flex gap-[4px]">
-                    <div className="w-[4px] h-[4px] rounded-full bg-white/60" />
-                    <div className="w-[4px] h-[4px] rounded-full bg-white/80" />
-                    <div className="w-[4px] h-[4px] rounded-full bg-white/60" />
-                  </div>
-                  <div className="absolute left-3 bottom-4 w-4 h-2.5 rounded-full bg-gradient-to-r from-pink-300/30 to-transparent" />
-                  <div className="absolute right-3 bottom-4 w-4 h-2.5 rounded-full bg-gradient-to-l from-pink-300/30 to-transparent" />
-                </div>
-                <div className="relative -mt-[4px]">
-                  <div className="w-[84px] h-[42px] rounded-[20px] bg-gradient-to-b from-blue-600 to-indigo-700 shadow-inner shadow-blue-900/60 ring-[2px] ring-white/10">
-                    <div className="absolute inset-0 flex items-center justify-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400/70 shadow-[0_0_5px_2px_rgba(34,211,238,0.3)] animate-glow-pulse" style={{ animationDelay: '0s' }} />
-                      <div className="w-2 h-2 rounded-full bg-cyan-400/40 shadow-[0_0_5px_2px_rgba(34,211,238,0.15)]" />
-                      <div className="w-2 h-2 rounded-full bg-cyan-400/70 shadow-[0_0_5px_2px_rgba(34,211,238,0.3)] animate-glow-pulse" style={{ animationDelay: '0.5s' }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute top-[108px] -left-[20px] w-[20px] h-[28px] rounded-lg bg-gradient-to-b from-blue-500 to-indigo-600 shadow-sm ring-[1px] ring-white/20 -rotate-[18deg] origin-top" />
-                <div className="absolute top-[108px] -right-[20px] w-[20px] h-[28px] rounded-lg bg-gradient-to-b from-blue-500 to-indigo-600 shadow-sm ring-[1px] ring-white/20 rotate-[18deg] origin-top" />
-                <div className="flex gap-[20px] -mt-px">
-                  <div className="w-[25px] h-[22px] rounded-b-[12px] bg-gradient-to-b from-blue-600 to-indigo-700 ring-[1px] ring-white/10" />
-                  <div className="w-[25px] h-[22px] rounded-b-[12px] bg-gradient-to-b from-blue-600 to-indigo-700 ring-[1px] ring-white/10" />
-                </div>
-              </div>
-              <span className="text-xs text-stone font-medium mt-3 tracking-wider">TRỢ LÝ AI</span>
-            </div>
+                    </td>
+                    <td className="px-5 py-3 text-right font-semibold tabular-nums"
+                      style={{ color: 'var(--primary-color)' }}>
+                      {item.soLuongDaBan ?? 0}
+                    </td>
+                    <td className="px-5 py-3 text-right font-medium text-gray-800 tabular-nums">
+                      {VND((item.giaTrungBinh || 0) * (item.soLuongDaBan || 0))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
