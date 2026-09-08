@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { toast } from 'react-toastify'
+import { useToast } from '../../context/ToastContext'
 import api from '../../api/axios'
 import SafeImg from '../../components/SafeImg'
 import { Search, Printer, X, Eye, ChevronLeft, ChevronRight, QrCode, Download, SlidersHorizontal } from 'lucide-react'
@@ -19,6 +19,7 @@ function QRCodeImg({ sku }) {
 }
 
 export default function AdminProductVariantDetail() {
+  const toast = useToast()
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
