@@ -28,6 +28,9 @@ public class BienTheRequest {
     private BigDecimal gia;
 
     @PositiveOrZero
+    private BigDecimal giaNhap;
+
+    @PositiveOrZero
     private Integer tonKho;
 
     private String urlAnh;

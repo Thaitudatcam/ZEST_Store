@@ -45,6 +45,11 @@ public class BienTheSanPham {
     private BigDecimal gia;
 
     @PositiveOrZero
+    @Column(name = "gia_nhap", precision = 18, scale = 2)
+    @Builder.Default
+    private BigDecimal giaNhap = BigDecimal.ZERO;
+
+    @PositiveOrZero
     @Column(name = "ton_kho", nullable = false)
     @Builder.Default
     private Integer tonKho = 0;

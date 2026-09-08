@@ -377,6 +377,7 @@ public class SanPhamService {
                 .mauSac(mauSac)
                 .sku(request.getSku())
                 .gia(request.getGia())
+                .giaNhap(request.getGiaNhap() != null ? request.getGiaNhap() : BigDecimal.ZERO)
                 .urlAnh(request.getUrlAnh())
                 .tonKho(request.getTonKho() != null ? request.getTonKho() : 0)
                 .build());
@@ -402,6 +403,7 @@ public class SanPhamService {
                     .orElseThrow(() -> new ResourceNotFoundException("Color", request.getMaMauSac())));
         }
         if (request.getGia() != null) variant.setGia(request.getGia());
+        if (request.getGiaNhap() != null) variant.setGiaNhap(request.getGiaNhap());
         if (request.getTonKho() != null) variant.setTonKho(request.getTonKho());
         if (request.getUrlAnh() != null) variant.setUrlAnh(request.getUrlAnh());
         variant = bienTheRepository.save(variant);

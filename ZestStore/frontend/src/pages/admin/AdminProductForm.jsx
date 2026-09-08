@@ -61,7 +61,7 @@ export default function AdminProductForm() {
   const [confirmRemoveImage, setConfirmRemoveImage] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
-  const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
+  const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', giaNhap: '', tonKho: '0', urlAnh: '' })
   const [uploadingVimg, setUploadingVimg] = useState(false)
   const [savingVar, setSavingVar] = useState(false)
   const [savingRow, setSavingRow] = useState(null)
@@ -185,6 +185,7 @@ export default function AdminProductForm() {
               maKichCo: Number(v.maKichCo),
               maMauSac: Number(v.maMauSac),
               gia: Number(v.gia),
+              giaNhap: Number(v.giaNhap || 0),
               tonKho: Number(v.tonKho || 0),
               urlAnh: v.urlAnh || undefined,
             })
@@ -194,6 +195,7 @@ export default function AdminProductForm() {
               maMauSac: Number(v.maMauSac),
               maThuongHieu: Number(product.maThuongHieu),
               gia: Number(v.gia),
+              giaNhap: Number(v.giaNhap || 0),
               tonKho: Number(v.tonKho || 0),
               urlAnh: v.urlAnh || undefined,
               sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
@@ -208,6 +210,7 @@ export default function AdminProductForm() {
           maThuongHieu: Number(product.maThuongHieu),
           sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
           gia: Number(v.gia),
+          giaNhap: Number(v.giaNhap || 0),
           tonKho: Number(v.tonKho || 0),
           urlAnh: v.urlAnh || undefined,
         }))
@@ -236,14 +239,14 @@ export default function AdminProductForm() {
 
   const openAddForm = () => {
     setEditIdx(null)
-    setVform({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
+    setVform({ maKichCo: '', maMauSac: '', gia: '', giaNhap: '', tonKho: '0', urlAnh: '' })
     setShowForm(true)
   }
 
   const cancelForm = () => {
     setShowForm(false)
     setEditIdx(null)
-    setVform({ maKichCo: '', maMauSac: '', gia: '', tonKho: '0', urlAnh: '' })
+    setVform({ maKichCo: '', maMauSac: '', gia: '', giaNhap: '', tonKho: '0', urlAnh: '' })
   }
 
   const handleSaveVariant = async () => {
@@ -268,14 +271,14 @@ export default function AdminProductForm() {
       const updated = {
         ...v, maKichCo: Number(vform.maKichCo), maMauSac: Number(vform.maMauSac),
         kichCo: { kichCo: sizeName }, mauSac: { mauSac: colorName, maMauHex: colorHex },
-        gia: Number(vform.gia), tonKho: Number(vform.tonKho || 0), urlAnh: vform.urlAnh,
+        gia: Number(vform.gia), giaNhap: Number(vform.giaNhap || 0), tonKho: Number(vform.tonKho || 0), urlAnh: vform.urlAnh,
       }
       if (v.maBienThe) {
         try {
           await api.put(`/products/variants/${v.maBienThe}`, {
             sku: v.sku, maThuongHieu: Number(product.maThuongHieu),
             maKichCo: Number(vform.maKichCo), maMauSac: Number(vform.maMauSac),
-            gia: Number(vform.gia), tonKho: Number(vform.tonKho || 0), urlAnh: vform.urlAnh || undefined,
+            gia: Number(vform.gia), giaNhap: Number(vform.giaNhap || 0), tonKho: Number(vform.tonKho || 0), urlAnh: vform.urlAnh || undefined,
           })
         } catch (err) {
           toast.error(err.response?.data?.message || 'Lỗi cập nhật biến thể')
@@ -288,7 +291,7 @@ export default function AdminProductForm() {
       setVariants(prev => [...prev, {
         maKichCo: Number(vform.maKichCo), maMauSac: Number(vform.maMauSac),
         kichCo: { kichCo: sizeName }, mauSac: { mauSac: colorName, maMauHex: colorHex },
-        gia: Number(vform.gia), tonKho: Number(vform.tonKho || 0), urlAnh: vform.urlAnh,
+        gia: Number(vform.gia), giaNhap: Number(vform.giaNhap || 0), tonKho: Number(vform.tonKho || 0), urlAnh: vform.urlAnh,
         _tempId: Date.now(),
       }])
       toast.success('Thêm biến thể thành công')
@@ -349,13 +352,13 @@ export default function AdminProductForm() {
         await api.put(`/products/variants/${v.maBienThe}`, {
           sku: v.sku, maThuongHieu: Number(product.maThuongHieu),
           maKichCo: Number(v.maKichCo), maMauSac: Number(v.maMauSac),
-          gia: Number(v.gia), tonKho: Number(v.tonKho || 0), urlAnh: v.urlAnh || undefined,
+          gia: Number(v.gia), giaNhap: Number(v.giaNhap || 0), tonKho: Number(v.tonKho || 0), urlAnh: v.urlAnh || undefined,
         })
       } else if (id) {
         const res = await api.post(`/products/${id}/variants`, {
           maKichCo: Number(v.maKichCo), maMauSac: Number(v.maMauSac),
           maThuongHieu: Number(product.maThuongHieu), gia: Number(v.gia),
-          tonKho: Number(v.tonKho || 0), urlAnh: v.urlAnh || undefined,
+          giaNhap: Number(v.giaNhap || 0), tonKho: Number(v.tonKho || 0), urlAnh: v.urlAnh || undefined,
           sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
         })
         setVariants(prev => prev.map((x, i) => i === index ? { ...x, maBienThe: res.data.maBienThe } : x))
@@ -486,7 +489,7 @@ export default function AdminProductForm() {
           newVariants.push({
             maKichCo: Number(sId), maMauSac: Number(cId),
             kichCo: { kichCo: sizeName }, mauSac: { mauSac: colorName, maMauHex: colorHex },
-            gia: 0, tonKho: 0, urlAnh: '', _tempId: Date.now() + newVariants.length,
+            gia: 0, giaNhap: 0, tonKho: 0, urlAnh: '', _tempId: Date.now() + newVariants.length,
           })
         }
       })
@@ -735,7 +738,8 @@ export default function AdminProductForm() {
                 <thead><tr className="border-b bg-ivory-100">
                   <th className="text-center px-3 py-2 font-semibold text-stone">Màu & Ảnh</th>
                   <th className="text-center px-3 py-2 font-semibold text-stone">Size</th>
-                  <th className="text-center px-3 py-2 font-semibold text-stone">Giá</th>
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Giá bán</th>
+                  <th className="text-center px-3 py-2 font-semibold text-stone">Giá nhập</th>
                   <th className="text-center px-3 py-2 font-semibold text-stone">Tồn</th>
                   <th className="text-center px-3 py-2 font-semibold text-stone">Hành động</th>
                 </tr></thead>
@@ -767,7 +771,11 @@ export default function AdminProductForm() {
                           </td>
                           <td className="px-3 py-2">
                             <input type="text" inputMode="numeric" value={vform.gia ? Number(vform.gia).toLocaleString('vi-VN') : ''} onChange={(e) => setVform(p => ({ ...p, gia: e.target.value.replace(/[^0-9]/g, '') }))}
-                              placeholder="Giá" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gold" />
+                              placeholder="Giá bán" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gold" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="text" inputMode="numeric" value={vform.giaNhap ? Number(vform.giaNhap).toLocaleString('vi-VN') : ''} onChange={(e) => setVform(p => ({ ...p, giaNhap: e.target.value.replace(/[^0-9]/g, '') }))}
+                              placeholder="Giá nhập" className="w-full border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gold" />
                           </td>
                           <td className="px-3 py-2">
                             <input type="number" min="0" value={vform.tonKho} onChange={(e) => setVform(p => ({ ...p, tonKho: e.target.value }))}
@@ -818,6 +826,12 @@ export default function AdminProductForm() {
                                     <input type="text" inputMode="numeric" value={v.gia ? Number(v.gia).toLocaleString('vi-VN') : ''}
                                       onChange={e => handleVariantFieldChange(idx, 'gia', e.target.value.replace(/[^0-9]/g, ''))}
                                       className="w-full border border-stone/20 rounded-lg px-2 py-1.5 text-xs text-center font-semibold focus:outline-none focus:ring-2 focus:ring-gold" />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input type="text" inputMode="numeric" value={v.giaNhap ? Number(v.giaNhap).toLocaleString('vi-VN') : ''}
+                                      onChange={e => handleVariantFieldChange(idx, 'giaNhap', e.target.value.replace(/[^0-9]/g, ''))}
+                                      placeholder="0"
+                                      className="w-full border border-stone/20 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-gold" />
                                   </td>
                                   <td className="px-3 py-2">
                                     <input type="number" min="0" value={v.tonKho}
