@@ -44,6 +44,7 @@ export const toggleProductStatus = (id) => api.put(`/products/${id}/toggle-statu
 
 export const getRevenueByDate = (days = 30) => api.get('/dashboard/revenue-by-date', { params: { days } }).then((r) => r.data)
 export const getRecentOrders = (limit = 10) => api.get('/dashboard/recent-orders', { params: { limit } }).then((r) => r.data)
+export const getBestSellingProducts = (limit = 10) => api.get('/dashboard/best-selling', { params: { limit } }).then((r) => r.data)
 
 export const getShippingFees = () => api.get('/admin/shipping-fees').then((r) => r.data)
 export const createShippingFee = (data) => api.post('/admin/shipping-fees', data).then((r) => r.data)
