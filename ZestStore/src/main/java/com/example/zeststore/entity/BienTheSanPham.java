@@ -54,6 +54,10 @@ public class BienTheSanPham {
     @Builder.Default
     private Integer tonKho = 0;
 
+    @Column(name = "trang_thai")
+    @Builder.Default
+    private Integer trangThai = 1;
+
     @NotBlank @Size(max = 100)
     @Column(name = "sku", nullable = false, length = 100, unique = true)
     private String sku;

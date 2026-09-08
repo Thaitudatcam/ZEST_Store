@@ -95,6 +95,12 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.toggleStatus(id));
     }
 
+    @PatchMapping("/admin/variants/{variantId}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleVariantStatus(@PathVariable Integer variantId) {
+        return ResponseEntity.ok(sanPhamService.toggleVariantStatus(variantId));
+    }
+
     @GetMapping("/admin/list")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAdminProducts(

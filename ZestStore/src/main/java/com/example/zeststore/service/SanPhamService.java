@@ -471,6 +471,19 @@ public class SanPhamService {
         return result;
     }
 
+    @Transactional
+    public Map<String, Object> toggleVariantStatus(Integer variantId) {
+        BienTheSanPham v = bienTheRepository.findById(variantId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy biến thể"));
+        v.setTrangThai(Integer.valueOf(1).equals(v.getTrangThai()) ? 0 : 1);
+        bienTheRepository.save(v);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("maBienThe", v.getMaBienThe());
+        result.put("trangThai", v.getTrangThai());
+        result.put("message", "Cập nhật trạng thái biến thể thành công");
+        return result;
+    }
+
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllVariantsFlat() {
         List<SanPham> products = sanPhamRepository.findByNgayXoaIsNull();
@@ -479,6 +492,7 @@ public class SanPhamService {
             List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(p.getMaSanPham());
             if (variants.isEmpty()) {
                 Map<String, Object> row = new LinkedHashMap<>();
+                row.put("maBienThe", null);
                 row.put("maSanPham", p.getMaSanPham());
                 row.put("tenSanPham", p.getTenSanPham());
                 row.put("slug", p.getSlug());
@@ -487,23 +501,26 @@ public class SanPhamService {
                 row.put("mauSac", "-");
                 row.put("kichCo", "-");
                 row.put("gia", p.getGiaTrungBinh() != null ? p.getGiaTrungBinh() : 0);
+                row.put("giaNhap", 0);
                 row.put("tonKho", 0);
                 row.put("sku", "-");
                 result.add(row);
             } else {
                 for (BienTheSanPham v : variants) {
                     Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("maBienThe", v.getMaBienThe());
                     row.put("maSanPham", p.getMaSanPham());
                     row.put("tenSanPham", p.getTenSanPham());
                     row.put("slug", p.getSlug());
                     row.put("urlAnhDaiDien", p.getUrlAnhDaiDien() != null ? p.getUrlAnhDaiDien() : v.getUrlAnh());
-                    row.put("trangThai", p.getTrangThai());
+                    row.put("trangThai", v.getTrangThai() != null ? v.getTrangThai() : p.getTrangThai());
                     row.put("mauSac", v.getMauSac() != null ? v.getMauSac().getMauSac() : "-");
                     row.put("maMauSac", v.getMauSac() != null ? v.getMauSac().getMaMauSac() : null);
                     row.put("maMauHex", v.getMauSac() != null ? v.getMauSac().getMaMauHex() : null);
                     row.put("kichCo", v.getKichCo() != null ? v.getKichCo().getKichCo() : "-");
                     row.put("maKichCo", v.getKichCo() != null ? v.getKichCo().getMaKichCo() : null);
                     row.put("gia", v.getGia() != null ? v.getGia() : 0);
+                    row.put("giaNhap", v.getGiaNhap() != null ? v.getGiaNhap() : 0);
                     row.put("tonKho", v.getTonKho() != null ? v.getTonKho() : 0);
                     row.put("sku", v.getSku() != null ? v.getSku() : "-");
                     result.add(row);
