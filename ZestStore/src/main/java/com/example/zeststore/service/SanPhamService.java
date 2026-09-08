@@ -474,7 +474,7 @@ public class SanPhamService {
     @Transactional
     public Map<String, Object> toggleVariantStatus(Integer variantId) {
         BienTheSanPham v = bienTheRepository.findById(variantId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy biến thể"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể"));
         v.setTrangThai(Integer.valueOf(1).equals(v.getTrangThai()) ? 0 : 1);
         bienTheRepository.save(v);
         Map<String, Object> result = new LinkedHashMap<>();
