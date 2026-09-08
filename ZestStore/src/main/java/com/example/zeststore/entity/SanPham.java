@@ -52,6 +52,34 @@ public class SanPham {
     @Column(name = "url_anh_dai_dien", length = 500)
     private String urlAnhDaiDien;
 
+    @Size(max = 100)
+    @Column(name = "xuat_xu", length = 100)
+    private String xuatXu;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_loai_ao")
+    private ThuocTinh loaiAo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_kieu_dang")
+    private ThuocTinh kieuDang;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_chat_lieu")
+    private ThuocTinh chatLieu;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_co_ao")
+    private ThuocTinh coAo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_tay_ao")
+    private ThuocTinh tayAo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ma_vai_ao")
+    private ThuocTinh vaiAo;
+
     @JsonProperty("urlAnhDaiDien")
     public String getUrlAnhDaiDien() {
         if (urlAnhDaiDien != null) return urlAnhDaiDien;

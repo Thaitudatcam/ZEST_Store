@@ -46,6 +46,7 @@ public class SanPhamService {
     private final MauSacRepository mauSacRepository;
     private final MucGioHangRepository mucGioHangRepository;
     private final PosCartRepository posCartRepository;
+    private final ThuocTinhRepository thuocTinhRepository;
 
     public Page<SanPham> getProducts(String keyword, Integer categoryId, BigDecimal minPrice,
                                       BigDecimal maxPrice, int page, int size, String sortBy, String sortDir) {
@@ -283,6 +284,13 @@ public class SanPhamService {
                 .moTa(request.getMoTa())
                 .moTaAi(request.getMoTaAi())
                 .urlAnhDaiDien(request.getUrlAnhDaiDien())
+                .xuatXu(request.getXuatXu())
+                .loaiAo(resolveThuocTinh(request.getMaLoaiAo()))
+                .kieuDang(resolveThuocTinh(request.getMaKieuDang()))
+                .chatLieu(resolveThuocTinh(request.getMaChatLieu()))
+                .coAo(resolveThuocTinh(request.getMaCoAo()))
+                .tayAo(resolveThuocTinh(request.getMaTayAo()))
+                .vaiAo(resolveThuocTinh(request.getMaVaiAo()))
                 .trangThai(request.getTrangThai() != null ? request.getTrangThai() : 1)
                 .build());
         product.setMaSanPhamCode(String.format("SP%04d", product.getMaSanPham()));
@@ -306,8 +314,20 @@ public class SanPhamService {
         if (request.getMoTa() != null) product.setMoTa(request.getMoTa());
         if (request.getMoTaAi() != null) product.setMoTaAi(request.getMoTaAi());
         if (request.getUrlAnhDaiDien() != null) product.setUrlAnhDaiDien(request.getUrlAnhDaiDien());
+        if (request.getXuatXu() != null) product.setXuatXu(request.getXuatXu());
+        if (request.getMaLoaiAo() != null) product.setLoaiAo(resolveThuocTinh(request.getMaLoaiAo()));
+        if (request.getMaKieuDang() != null) product.setKieuDang(resolveThuocTinh(request.getMaKieuDang()));
+        if (request.getMaChatLieu() != null) product.setChatLieu(resolveThuocTinh(request.getMaChatLieu()));
+        if (request.getMaCoAo() != null) product.setCoAo(resolveThuocTinh(request.getMaCoAo()));
+        if (request.getMaTayAo() != null) product.setTayAo(resolveThuocTinh(request.getMaTayAo()));
+        if (request.getMaVaiAo() != null) product.setVaiAo(resolveThuocTinh(request.getMaVaiAo()));
         if (request.getTrangThai() != null) product.setTrangThai(request.getTrangThai());
         return sanPhamRepository.save(product);
+    }
+
+    private ThuocTinh resolveThuocTinh(Integer maThuocTinh) {
+        if (maThuocTinh == null) return null;
+        return thuocTinhRepository.findById(maThuocTinh).orElse(null);
     }
 
     @Transactional

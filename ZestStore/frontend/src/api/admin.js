@@ -62,3 +62,6 @@ export const deleteCampaign = (id) => api.delete(`/admin/campaigns/${id}`).then(
 
 export const getDiemQuyTacAdmin = () => api.get('/admin/diem-quy-tac').then((r) => r.data)
 export const updateDiemQuyTac = (data) => api.put('/admin/diem-quy-tac', data).then((r) => r.data)
+
+export const getThuocTinh = (loai) => api.get('/thuoc-tinh', { params: { loai } }).then((r) => r.data)
+export const createThuocTinh = (loaiThuocTinh, giaTri) => api.post('/thuoc-tinh', { loaiThuocTinh, giaTri }).then((r) => r.data)

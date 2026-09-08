@@ -26,5 +26,14 @@ public class SanPhamRequest {
 
     private String urlAnhDaiDien;
 
+    private String xuatXu;
+
+    private Integer maLoaiAo;
+    private Integer maKieuDang;
+    private Integer maChatLieu;
+    private Integer maCoAo;
+    private Integer maTayAo;
+    private Integer maVaiAo;
+
     private Integer trangThai;
 }
