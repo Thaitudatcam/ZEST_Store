@@ -6,7 +6,7 @@ import { uploadProductImage, uploadVariantImage, generateDescription } from '../
 import { createCategory, createBrand, createColor, createSize, getThuocTinh, createThuocTinh } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
-import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles, X } from 'lucide-react'
+import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles, X, Zap } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ReactQuill from 'react-quill-new'
@@ -82,6 +82,9 @@ export default function AdminProductForm() {
   const [showThuocTinhModal, setShowThuocTinhModal] = useState(false)
   const [thuocTinhType, setThuocTinhType] = useState('')
   const [quickThuocTinhName, setQuickThuocTinhName] = useState('')
+
+  const [showBulkApply, setShowBulkApply] = useState(false)
+  const [bulkForm, setBulkForm] = useState({ giaBan: '', giaNhap: '', tonKho: '', onlyEmpty: true })
 
   const [thuocTinhData, setThuocTinhData] = useState({})
 
@@ -472,6 +475,29 @@ export default function AdminProductForm() {
     setShowThuocTinhModal(true)
   }
 
+  const handleBulkApply = () => {
+    const gBan = Number(bulkForm.giaBan) || 0
+    const gNhap = Number(bulkForm.giaNhap) || 0
+    const sl = Number(bulkForm.tonKho) || 0
+    if (gBan === 0 && gNhap === 0 && sl === 0) { toast.error('Nhập ít nhất một giá trị để áp dụng'); return }
+
+    setVariants(prev => prev.map(v => {
+      const shouldApply = bulkForm.onlyEmpty
+        ? (Number(v.gia) === 0 && gBan > 0) || (Number(v.giaNhap) === 0 && gNhap > 0) || (Number(v.tonKho) === 0 && sl > 0)
+        : true
+      if (!shouldApply) return v
+      return {
+        ...v,
+        gia: gBan > 0 ? gBan : v.gia,
+        giaNhap: gNhap > 0 ? gNhap : v.giaNhap,
+        tonKho: sl > 0 ? sl : v.tonKho,
+      }
+    }))
+    toast.success('Đã áp dụng giá trị mặc định')
+    setShowBulkApply(false)
+    setBulkForm({ giaBan: '', giaNhap: '', tonKho: '', onlyEmpty: true })
+  }
+
   const toggleColorId = (id) => setSelectedColorIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   const toggleSizeId = (id) => setSelectedSizeIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
@@ -733,7 +759,16 @@ export default function AdminProductForm() {
               <EmptyState icon="PackageOpen" title="Chưa có biến thể" description="Chọn màu & size ở trên và nhấn 'Tạo biến thể'" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {variants.length > 0 && (
+                <div className="flex justify-end mb-3">
+                  <button type="button" onClick={() => { setBulkForm({ giaBan: '', giaNhap: '', tonKho: '', onlyEmpty: true }); setShowBulkApply(true) }}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[var(--primary-color)] text-white rounded-xl text-xs font-semibold hover:opacity-90 transition">
+                    <Zap className="h-3.5 w-3.5" /> Thêm nhanh (Bulk Apply)
+                  </button>
+                </div>
+              )}
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b bg-ivory-100">
                   <th className="text-center px-3 py-2 font-semibold text-stone">Màu & Ảnh</th>
@@ -853,6 +888,7 @@ export default function AdminProductForm() {
                 })()}
               </table>
             </div>
+            </>
           )}
         </div>
 
@@ -1010,6 +1046,54 @@ export default function AdminProductForm() {
         onConfirm={handleSaveProduct} onCancel={() => setConfirmSaveProduct(false)} />
       <ConfirmDialog open={confirmRemoveImage !== null} title="Xóa ảnh" message="Bạn chắc chắn muốn xóa ảnh này?"
         confirmText="Xóa" onConfirm={() => handleRemoveImage(confirmRemoveImage)} onCancel={() => setConfirmRemoveImage(null)} />
+
+      {/* ═══ BULK APPLY MODAL ═══ */}
+      {showBulkApply && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowBulkApply(false)}>
+          <div className="bg-ivory rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Thêm nhanh (Bulk Apply)</h3>
+            <p className="text-xs text-stone mb-4">Áp dụng giá trị mặc định cho tất cả biến thể</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-stone font-medium">Giá bán mặc định (VNĐ)</label>
+                <input type="text" inputMode="numeric"
+                  value={bulkForm.giaBan ? Number(bulkForm.giaBan).toLocaleString('vi-VN') : ''}
+                  onChange={e => setBulkForm(p => ({ ...p, giaBan: e.target.value.replace(/[^0-9]/g, '') }))}
+                  placeholder="0"
+                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
+              </div>
+              <div>
+                <label className="text-sm text-stone font-medium">Giá nhập mặc định (VNĐ)</label>
+                <input type="text" inputMode="numeric"
+                  value={bulkForm.giaNhap ? Number(bulkForm.giaNhap).toLocaleString('vi-VN') : ''}
+                  onChange={e => setBulkForm(p => ({ ...p, giaNhap: e.target.value.replace(/[^0-9]/g, '') }))}
+                  placeholder="0"
+                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
+              </div>
+              <div>
+                <label className="text-sm text-stone font-medium">Số lượng tồn kho mặc định</label>
+                <input type="number" min="0"
+                  value={bulkForm.tonKho}
+                  onChange={e => setBulkForm(p => ({ ...p, tonKho: e.target.value }))}
+                  placeholder="0"
+                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={bulkForm.onlyEmpty}
+                  onChange={e => setBulkForm(p => ({ ...p, onlyEmpty: e.target.checked }))}
+                  className="w-4 h-4 rounded border-stone/30 text-gold focus:ring-gold" />
+                <span className="text-sm text-stone">Chỉ áp dụng cho các ô trống (giá trị bằng 0)</span>
+              </label>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowBulkApply(false)}
+                className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100 transition">Đóng</button>
+              <button onClick={handleBulkApply}
+                className="flex-1 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:opacity-90 transition">Áp dụng</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
