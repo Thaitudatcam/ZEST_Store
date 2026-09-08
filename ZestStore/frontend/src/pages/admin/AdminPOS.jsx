@@ -6,7 +6,7 @@ import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from
 import { getCustomerDiem, getDiemQuyTac } from '../../api/vi'
 import { getAvailableCoupons } from '../../api/coupons'
 import { VND } from '../../components/ProductCard'
-import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins, RefreshCw, History } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, ShoppingCart, X, User, ChevronDown, UserPlus, ScanBarcode, QrCode, Coins, RefreshCw, History, CirclePlus } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -57,6 +57,70 @@ export default function AdminPOS() {
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [showCouponDropdown, setShowCouponDropdown] = useState(false)
   const [couponDropdownLoading, setCouponDropdownLoading] = useState(false)
+
+  const [orders, setOrders] = useState([{ id: 1, cart: [], customer: null, coupon: null, couponCode: '', dungDiem: false }])
+  const [currentOrderIdx, setCurrentOrderIdx] = useState(0)
+  const orderIdCounter = useRef(1)
+
+  const saveCurrentOrder = (idxOverride) => {
+    const idx = idxOverride !== undefined ? idxOverride : currentOrderIdx
+    setOrders(prev => prev.map((o, i) => i === idx ? { ...o, cart, customer: selectedCustomer, coupon, couponCode, dungDiem } : o))
+  }
+
+  const switchOrder = (idx) => {
+    if (idx === currentOrderIdx) return
+    saveCurrentOrder(currentOrderIdx)
+    const target = orders[idx]
+    setCart(target.cart)
+    setSelectedCustomer(target.customer)
+    setCoupon(target.coupon)
+    setCouponCode(target.couponCode)
+    setDungDiem(target.dungDiem)
+    if (target.customer) {
+      setCustomerSearch(target.customer.hoTen + (target.customer.soDienThoai ? ` (${target.customer.soDienThoai})` : ''))
+      getCustomerDiem(target.customer.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 }))
+    } else {
+      setCustomerSearch('')
+      setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
+    }
+    setCustomerResults([])
+    setShowCustomerDropdown(false)
+    setCurrentOrderIdx(idx)
+  }
+
+  const addNewOrder = () => {
+    saveCurrentOrder()
+    orderIdCounter.current += 1
+    const newOrder = { id: orderIdCounter.current, cart: [], customer: null, coupon: null, couponCode: '', dungDiem: false }
+    setOrders(prev => [...prev, newOrder])
+    setCart([])
+    setSelectedCustomer(null)
+    setCoupon(null)
+    setCouponCode('')
+    setCouponMsg('')
+    setDungDiem(false)
+    setCustomerSearch('')
+    setCustomerDiem({ soDiem: 0, tongTichLuy: 0, tongSuDung: 0 })
+    setAvailableCoupons([])
+    setCurrentOrderIdx(orders.length)
+  }
+
+  const removeOrder = (idx) => {
+    if (orders.length <= 1) return
+    setOrders(prev => prev.filter((_, i) => i !== idx))
+    if (idx === currentOrderIdx) {
+      const newIdx = Math.min(idx, orders.length - 2)
+      const target = orders.filter((_, i) => i !== idx)[newIdx] || orders[0]
+      setCart(target.cart)
+      setSelectedCustomer(target.customer)
+      setCoupon(target.coupon)
+      setCouponCode(target.couponCode)
+      setDungDiem(target.dungDiem)
+      setCurrentOrderIdx(newIdx)
+    } else if (idx < currentOrderIdx) {
+      setCurrentOrderIdx(prev => prev - 1)
+    }
+  }
 
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
@@ -361,10 +425,15 @@ return [...prev, {
           soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         }).then(r => r.data)
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-        setCart([])
-        setSelectedCustomer(null)
-        setCoupon(null)
-        setCouponCode('')
+        const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
+        if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, couponCode: '', dungDiem: false })
+        setOrders(newOrders)
+        setCart(newOrders[0]?.cart || [])
+        setSelectedCustomer(newOrders[0]?.customer || null)
+        setCoupon(newOrders[0]?.coupon || null)
+        setCouponCode(newOrders[0]?.couponCode || '')
+        setDungDiem(newOrders[0]?.dungDiem || false)
+        setCurrentOrderIdx(0)
         setPayResult(res)
       }
     } catch (err) {
@@ -386,10 +455,15 @@ return [...prev, {
         soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-      setCart([])
-      setSelectedCustomer(null)
-      setCoupon(null)
-      setCouponCode('')
+      const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
+      if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, couponCode: '', dungDiem: false })
+      setOrders(newOrders)
+      setCart(newOrders[0]?.cart || [])
+      setSelectedCustomer(newOrders[0]?.customer || null)
+      setCoupon(newOrders[0]?.coupon || null)
+      setCouponCode(newOrders[0]?.couponCode || '')
+      setDungDiem(newOrders[0]?.dungDiem || false)
+      setCurrentOrderIdx(0)
       setBankInfo(null)
       setQrDataUrl(null)
       setPayResult(res)
@@ -508,6 +582,29 @@ return [...prev, {
       </div>
 
       <div className="w-80 bg-ivory rounded-xl border flex flex-col">
+        <div className="border-b">
+          <div className="flex items-center gap-1 px-2 pt-2 overflow-x-auto">
+            {orders.map((o, i) => (
+              <div key={o.id}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-t-lg text-xs font-medium cursor-pointer transition whitespace-nowrap ${
+                  i === currentOrderIdx ? 'bg-gold/10 text-gold border-b-2 border-gold' : 'text-stone hover:bg-ivory-100'
+                }`} onClick={() => switchOrder(i)}>
+                <span>Đơn {i + 1}</span>
+                <span className={`text-[10px] px-1 py-0.5 rounded-full ${o.cart.length > 0 ? 'bg-gold/20 text-gold' : 'bg-ivory-100 text-stone'}`}>
+                  {VND(o.cart.reduce((s, c) => s + c.gia * c.soLuong, 0))}
+                </span>
+                {orders.length > 1 && (
+                  <button onClick={(e) => { e.stopPropagation(); removeOrder(i) }}
+                    className="ml-0.5 text-stone/50 hover:text-bordeaux transition">×</button>
+                )}
+              </div>
+            ))}
+            <button onClick={addNewOrder}
+              className="p-1.5 text-stone hover:text-gold hover:bg-gold/10 rounded-lg transition" title="Thêm đơn mới">
+              <CirclePlus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
         <div className="p-4 border-b flex items-center gap-2">
           <ShoppingCart className="h-5 w-5 text-gold" />
           <span className="font-semibold">Giỏ hàng</span>
