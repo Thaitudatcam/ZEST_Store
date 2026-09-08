@@ -17,12 +17,13 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import InvoicePrint from '../../components/InvoicePrint'
 import { Plus, ShoppingCart, X } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
+import { useAuth } from '../../context/AuthContext'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
 export default function AdminPOS() {
   const navigate = useNavigate()
-  const { user } = require('../../context/AuthContext').useAuth()
+  const { user } = useAuth()
 
   const [products, setProducts] = useState([])
   const [allVariants, setAllVariants] = useState([])
