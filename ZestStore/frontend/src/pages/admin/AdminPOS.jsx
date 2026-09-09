@@ -540,16 +540,16 @@ export default function AdminPOS() {
                 <h3 className="font-bold text-ink">Thông tin khách hàng</h3>
                 <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
               </div>
-              {customer ? (
+              {selectedCustomer ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-stone">Khách hàng:</span>
-                    <span className="text-sm font-semibold text-ink">{customer.hoTen}</span>
+                    <span className="text-sm font-semibold text-ink">{selectedCustomer.hoTen}</span>
                   </div>
-                  {customer.soDienThoai && (
+                  {selectedCustomer.soDienThoai && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-stone">SĐT:</span>
-                      <span className="text-sm text-ink">{customer.soDienThoai}</span>
+                      <span className="text-sm text-ink">{selectedCustomer.soDienThoai}</span>
                     </div>
                   )}
                   <button onClick={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
@@ -586,7 +586,7 @@ export default function AdminPOS() {
                 {couponMsg && <p className="text-[11px] text-bordeaux">{couponMsg}</p>}
 
                 {/* Points */}
-                {customer && customerDiem?.soDiem > 0 && (
+                {selectedCustomer && customerDiem?.soDiem > 0 && (
                   <div className="flex items-center justify-between gap-2 bg-gold-50 rounded-lg px-3 py-2">
                     <span className="text-xs text-stone flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-gold" /> Dùng {customerDiem.soDiem.toLocaleString()} điểm</span>
                     <button onClick={() => setDungDiem(v => !v)}
