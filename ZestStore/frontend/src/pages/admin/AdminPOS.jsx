@@ -38,9 +38,9 @@ export default function AdminPOS() {
   const [colors, setColors] = useState([])
   const [sizes, setSizes] = useState([])
 
-  const [orders, setOrders] = useState([{ id: 1, cart: [], customer: null, coupon: null, couponCode: '', dungDiem: false }])
+  const [orders, setOrders] = useState([])
   const [currentOrderIdx, setCurrentOrderIdx] = useState(0)
-  const orderIdCounter = useRef(1)
+  const orderIdCounter = useRef(0)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCustomerPicker, setShowCustomerPicker] = useState(false)
@@ -178,9 +178,14 @@ export default function AdminPOS() {
   }
 
   const addNewOrder = () => {
-    saveCurrentOrder()
+    if (orders.length >= 10) {
+      setMsg({ type: 'error', text: 'Đã đạt giới hạn 10 đơn hàng mở. Vui lòng thanh toán hoặc đóng đơn hiện tại.' })
+      return
+    }
+    if (orders.length > 0) saveCurrentOrder()
     orderIdCounter.current += 1
-    setOrders(prev => [...prev, { id: orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false }])
+    const newOrder = { id: orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false }
+    setOrders(prev => [...prev, newOrder])
     setCart([])
     setSelectedCustomer(null)
     setCoupon(null)
@@ -192,10 +197,17 @@ export default function AdminPOS() {
   }
 
   const removeOrder = (idx) => {
-    if (orders.length <= 1) return
     const newOrders = orders.filter((_, i) => i !== idx)
     setOrders(newOrders)
-    if (idx === currentOrderIdx) {
+    if (newOrders.length === 0) {
+      setCart([])
+      setSelectedCustomer(null)
+      setCoupon(null)
+      setCouponMsg('')
+      setDungDiem(false)
+      setCustomerDiem({ soDiem: 0 })
+      setCurrentOrderIdx(0)
+    } else if (idx === currentOrderIdx) {
       const newIdx = Math.min(idx, newOrders.length - 1)
       const target = newOrders[newIdx]
       setCart(target.cart)
