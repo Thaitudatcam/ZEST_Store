@@ -12,7 +12,7 @@ export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [navOpen, setNavOpen] = useState({ 'Bán hàng': true })
+  const [navOpen, setNavOpen] = useState({})
   const [pendingReturns, setPendingReturns] = useState(0)
   const [accountOpen, setAccountOpen] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
@@ -39,9 +39,7 @@ export default function AdminLayout() {
   const role = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro : user?.vaiTro
   const isStaff = role === 'STAFF'
 
-  const posItem = { label: 'Bán hàng', icon: ShoppingCart, children: [
-    { to: '/admin/pos', label: 'Bán tại quầy' },
-  ]}
+  const posItem = { to: '/admin/pos', label: 'Bán hàng', icon: ShoppingCart }
 
   const nav = isStaff ? [
     posItem,
