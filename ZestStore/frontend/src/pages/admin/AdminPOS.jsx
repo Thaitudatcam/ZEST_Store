@@ -55,6 +55,15 @@ export default function AdminPOS() {
   const [diemQuyTac, setDiemQuyTac] = useState(null)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
+  const [loaiDon, setLoaiDon] = useState('TAI_QUAY')
+  const [shippingInfo, setShippingInfo] = useState({ hoTen: '', soDienThoai: '', diaChi: '', tinhThanh: '', quanHuyen: '', phuongXa: '', phuongThuc: 'GHN' })
+  const [shippingFee, setShippingFee] = useState(0)
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [provinces, setProvinces] = useState([])
+  const [districts, setDistricts] = useState([])
+  const [wards, setWards] = useState([])
+  const [mienPhiVanChuyen, setMienPhiVanChuyen] = useState(false)
+  const shippingDebounceRef = useRef(null)
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
@@ -105,6 +114,35 @@ export default function AdminPOS() {
     getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0 }))
   }, [selectedCustomer])
 
+  useEffect(() => {
+    posApi.getProvinces().then(setProvinces).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!shippingInfo.tinhThanh) { setDistricts([]); setWards([]); return }
+    posApi.getDistricts(shippingInfo.tinhThanh).then(setDistricts).catch(() => setDistricts([]))
+  }, [shippingInfo.tinhThanh])
+
+  useEffect(() => {
+    if (!shippingInfo.quanHuyen) { setWards([]); return }
+    posApi.getWards(shippingInfo.quanHuyen).then(setWards).catch(() => setWards([]))
+  }, [shippingInfo.quanHuyen])
+
+  useEffect(() => {
+    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.tinhThanh) { setShippingFee(0); return }
+    setShippingLoading(true)
+    clearTimeout(shippingDebounceRef.current)
+    shippingDebounceRef.current = setTimeout(() => {
+      posApi.calculateShipping({
+        method: shippingInfo.phuongThuc,
+        province: shippingInfo.tinhThanh,
+        weight: cart.reduce((s, c) => s + c.soLuong, 0) || 1,
+      }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000)).finally(() => setShippingLoading(false))
+    }, 300)
+    return () => clearTimeout(shippingDebounceRef.current)
+  }, [loaiDon, shippingInfo.tinhThanh, shippingInfo.quanHuyen, shippingInfo.phuongThuc, cart])
+
+  const phiVanChuyen = loaiDon === 'GIAO_HANG' && !mienPhiVanChuyen ? shippingFee : 0
   const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
   const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
   const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
@@ -114,7 +152,7 @@ export default function AdminPOS() {
   const maxDiemSuDung = Math.max(0, Math.min(customerDiem.soDiem || 0, maxDiemTheoQuyTac))
   const diemDungDuoc = (customerDiem.soDiem || 0) > 0 && maxDiemSuDung >= diemToiThieu
   const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
-  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi)
+  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi + phiVanChuyen)
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
 
   const saveCurrentOrder = (idxOverride) => {
@@ -366,45 +404,303 @@ export default function AdminPOS() {
   }
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-6rem)]">
+    <div className="min-h-[calc(100vh-6rem)]">
       {msg && <POSToast message={msg.text} type={msg.type} onClose={() => setMsg(null)} />}
 
-      <div className="flex-1 flex flex-col bg-ivory rounded-2xl border border-stone/10 overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone/10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-ink">Bán hàng</h1>
-              <p className="text-xs text-stone mt-0.5">Người bán: <span className="font-semibold text-ink-soft">{user?.hoTen || 'Admin'}</span></p>
-            </div>
-            <button onClick={addNewOrder}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:bg-[var(--primary-hover)] transition shadow-sm">
-              <Plus className="h-4 w-4" /> Tạo đơn hàng
-            </button>
-          </div>
-          <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={removeOrder} />
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Bán hàng</h1>
+          <p className="text-sm text-stone mt-0.5">Người bán: <span className="font-semibold text-ink-soft">{user?.hoTen || 'Admin'}</span></p>
         </div>
-
-        <div className="flex-1 overflow-hidden p-4">
-          <ProductGrid products={products} loading={loading} cart={cart}
-            onAdd={addToCart} onQtyChange={updateQtyModal}
-            onScanCamera={() => setCameraOpen(true)} onSearch={setSearch} search={search}
-            onCategoryChange={setCategoryId} categories={categories} categoryId={categoryId} />
-        </div>
+        <button onClick={addNewOrder}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:bg-[var(--primary-hover)] transition shadow-sm">
+          <Plus className="h-4 w-4" /> Tạo đơn hàng
+        </button>
       </div>
 
-      <CartPanel cart={cart} customer={selectedCustomer} coupon={coupon} couponMsg={couponMsg}
-        customerDiem={customerDiem} dungDiem={dungDiem}
-        onRemoveItem={removeItem} onUpdateQty={updateQtyCart} onClearCart={clearCart}
-        onSelectCustomer={(c) => { setSelectedCustomer(c); setShowCustomerPicker(false) }}
-        onClearCustomer={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
-        onApplyCoupon={handleApplyCoupon} onClearCoupon={() => { setCoupon(null); setCouponMsg('') }}
-        onToggleDiem={() => setDungDiem(v => !v)}
-        onCheckout={() => setShowPaymentModal(true)} placing={placing}
-        thanhTien={thanhTien} total={total} soLuongSanPham={soLuongSanPham} diemQuyTac={diemQuyTac}
-        onOpenCustomerPicker={() => setShowCustomerPicker(true)}
-        onOpenPayment={() => setShowPaymentModal(true)}
-        availableCoupons={availableCoupons} onOpenCouponDropdown={() => {}} />
+      {/* Order Tabs */}
+      {orders.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          {orders.map((order, idx) => (
+            <div key={order.id} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition ${
+              idx === currentOrderIdx ? 'bg-[var(--primary-color)] text-white border-[var(--primary-color)]' : 'bg-white text-ink border-stone/20 hover:border-[var(--primary-color)]'
+            }`}>
+              <button onClick={() => switchOrder(idx)}>Đơn {idx + 1}</button>
+              {orders.length > 1 && (
+                <button onClick={() => removeOrder(idx)} className="ml-1 hover:opacity-70"><X className="h-3.5 w-3.5" /></button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
+      {/* Empty state - no orders */}
+      {orders.length === 0 && (
+        <div className="bg-white rounded-2xl border border-stone/10 p-12 text-center">
+          <ShoppingCart className="h-16 w-16 text-stone/20 mx-auto mb-4" />
+          <p className="text-stone">Chưa có đơn hàng nào được mở. Vui lòng nhấn <span className="font-semibold text-ink">"Tạo đơn hàng"</span> để bắt đầu.</p>
+        </div>
+      )}
+
+      {/* Main content when order exists */}
+      {orders.length > 0 && (
+        <div className="space-y-4">
+          {/* Product Table Section */}
+          <div className="bg-white rounded-2xl border border-stone/10 overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone/10 flex items-center justify-between">
+              <h2 className="font-bold text-ink">Sản phẩm giỏ hàng</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCameraOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-stone/30 rounded-xl text-sm font-medium text-stone hover:border-[var(--primary-color)] hover:text-[var(--primary-color)] transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                  Quét QR sản phẩm
+                </button>
+                <button onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:bg-[var(--primary-hover)] transition">
+                  <Plus className="h-4 w-4" /> Thêm sản phẩm
+                </button>
+              </div>
+            </div>
+
+            {cart.length === 0 ? (
+              <div className="p-8 text-center text-stone">
+                <p>Giỏ hàng trống! Nhấn <span className="font-semibold text-ink">"Thêm sản phẩm"</span> hoặc <span className="font-semibold text-ink">"Quét QR"</span> để chọn đồ.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-ivory-100 text-left">
+                      <th className="px-5 py-3 font-semibold text-stone w-12">STT</th>
+                      <th className="px-5 py-3 font-semibold text-stone">Sản phẩm</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-28">Đơn giá</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-32">Số lượng</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-28">Thành tiền</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-16">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((c, i) => (
+                      <tr key={i} className="border-t border-stone/5 hover:bg-ivory/50">
+                        <td className="px-5 py-3 text-stone">{i + 1}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-ivory-100 rounded-lg overflow-hidden shrink-0">
+                              <SafeImg src={c.urlAnh} alt="" className="w-full h-full object-cover" fallback="https://placehold.co/80x80/e2e8f0/475569?text=P" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-ink truncate">{c.tenSanPham}</p>
+                              <p className="text-xs text-stone">{[c.mauSac, c.kichCo].filter(Boolean).join(' - ')}</p>
+                              <p className="text-[10px] text-stone font-mono">{c.sku || c.maSanPhamCode || ''}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 font-semibold text-ink">{VND(c.gia)}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => updateQtyCart(i, -1)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-ivory-100 hover:bg-ivory text-stone transition" aria-label="Giảm">
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-bold">{c.soLuong}</span>
+                            <button onClick={() => updateQtyCart(i, 1)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-ivory-100 hover:bg-ivory text-stone transition" aria-label="Tăng">
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 font-bold text-[var(--primary-color)]">{VND(c.gia * c.soLuong)}</td>
+                        <td className="px-5 py-3">
+                          <button onClick={() => removeItem(i)} className="w-7 h-7 flex items-center justify-center rounded-lg text-stone hover:text-bordeaux hover:bg-bordeaux/10 transition" aria-label="Xóa">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {cart.length > 0 && (
+              <div className="px-5 py-3 border-t border-stone/10 flex justify-between items-center">
+                <button onClick={clearCart} className="text-xs text-bordeaux hover:text-bordeaux/80 font-medium">Xóa hết</button>
+                <div className="text-sm">
+                  <span className="text-stone">Tạm tính: </span>
+                  <span className="font-bold text-ink">{VND(total)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Section: Customer Info + Payment Info */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Customer Info */}
+            <div className="bg-white rounded-2xl border border-stone/10 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-ink">Thông tin khách hàng</h3>
+                <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
+              </div>
+              {customer ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-stone">Khách hàng:</span>
+                    <span className="text-sm font-semibold text-ink">{customer.hoTen}</span>
+                  </div>
+                  {customer.soDienThoai && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-stone">SĐT:</span>
+                      <span className="text-sm text-ink">{customer.soDienThoai}</span>
+                    </div>
+                  )}
+                  <button onClick={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
+                    className="text-xs text-bordeaux hover:text-bordeaux/80 font-medium">Bỏ chọn</button>
+                </div>
+              ) : (
+                <p className="text-sm text-stone">Đơn đang được đặt dưới dạng "Khách lẻ" (Mua ẩn danh)</p>
+              )}
+            </div>
+
+            {/* Payment Info */}
+            <div className="bg-white rounded-2xl border border-stone/10 p-5">
+              <h3 className="font-bold text-ink mb-4">Thông tin thanh toán</h3>
+              <div className="space-y-3">
+                {/* Delivery Toggle */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-stone">Tại quầy</span>
+                  <button onClick={() => setLoaiDon(loaiDon === 'TAI_QUAY' ? 'GIAO_HANG' : 'TAI_QUAY')}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${loaiDon === 'GIAO_HANG' ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${loaiDon === 'GIAO_HANG' ? 'translate-x-5' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Coupon */}
+                <div className="flex items-center gap-2">
+                  <input value={coupon?.maCode || ''} onChange={e => handleApplyCoupon(e.target.value)}
+                    placeholder="Nhập mã (Enter để áp dụng)"
+                    disabled={cart.length === 0}
+                    className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
+                    onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon(e.target.value) }} />
+                  <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
+                  <span className="text-sm font-bold text-[var(--primary-color)] w-16 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
+                </div>
+                {couponMsg && <p className="text-[11px] text-bordeaux">{couponMsg}</p>}
+
+                {/* Points */}
+                {customer && customerDiem?.soDiem > 0 && (
+                  <div className="flex items-center justify-between gap-2 bg-gold-50 rounded-lg px-3 py-2">
+                    <span className="text-xs text-stone flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-gold" /> Dùng {customerDiem.soDiem.toLocaleString()} điểm</span>
+                    <button onClick={() => setDungDiem(v => !v)}
+                      className={`relative w-9 h-5 rounded-full transition-colors ${dungDiem ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
+                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${dungDiem ? 'translate-x-4' : ''}`} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Totals */}
+                <div className="space-y-1.5 text-sm pt-2 border-t border-stone/10">
+                  <div className="flex justify-between text-stone">
+                    <span>Tiền hàng</span><span>{VND(total)}</span>
+                  </div>
+                  {coupon && (
+                    <div className="flex justify-between text-emerald-deep">
+                      <span>Giảm giá</span><span>-{VND(coupon.soTienGiam)}</span>
+                    </div>
+                  )}
+                  {loaiDon === 'GIAO_HANG' && (
+                    <div className="flex justify-between text-stone">
+                      <span>Phí vận chuyển</span>
+                      <span>{mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-2 border-t border-stone/10">
+                    <span className="font-bold text-ink">Tổng số tiền</span>
+                    <span className="text-xl font-bold text-[var(--primary-color)]">{VND(thanhTien)}</span>
+                  </div>
+                </div>
+
+                {/* Checkout */}
+                <button onClick={() => setShowPaymentModal(true)} disabled={cart.length === 0 || placing}
+                  className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
+                  {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shipping Info (when Giao hàng) */}
+      {loaiDon === 'GIAO_HANG' && orders.length > 0 && (
+        <div className="bg-white rounded-2xl border border-stone/10 p-5 mt-4">
+          <h3 className="font-bold text-ink mb-4">Thông tin giao hàng</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-stone mb-1 block">Họ tên <span className="text-bordeaux">*</span></label>
+              <input value={shippingInfo?.hoTen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, hoTen: e.target.value }))}
+                placeholder="Nguyễn Văn A" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-stone mb-1 block">Số điện thoại <span className="text-bordeaux">*</span></label>
+              <input value={shippingInfo?.soDienThoai || ''} onChange={e => setShippingInfo(prev => ({ ...prev, soDienThoai: e.target.value }))}
+                placeholder="0912345678" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-semibold text-stone mb-1 block">Địa chỉ <span className="text-bordeaux">*</span></label>
+              <input value={shippingInfo?.diaChi || ''} onChange={e => setShippingInfo(prev => ({ ...prev, diaChi: e.target.value }))}
+                placeholder="Số nhà, đường..." className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-stone mb-1 block">Tỉnh/TP <span className="text-bordeaux">*</span></label>
+              <select value={shippingInfo?.tinhThanh || ''} onChange={e => setShippingInfo(prev => ({ ...prev, tinhThanh: e.target.value, quanHuyen: '', phuongXa: '' }))}
+                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
+                <option value="">Chọn</option>
+                {provinces?.map(p => <option key={p.ma || p} value={p.ma || p}>{p.ten || p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-stone mb-1 block">Quận/Huyện <span className="text-bordeaux">*</span></label>
+              <select value={shippingInfo?.quanHuyen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, quanHuyen: e.target.value, phuongXa: '' }))}
+                disabled={!shippingInfo?.tinhThanh}
+                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
+                <option value="">Chọn</option>
+                {districts?.map(d => <option key={d.ma || d} value={d.ma || d}>{d.ten || d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-stone mb-1 block">Phường/Xã <span className="text-bordeaux">*</span></label>
+              <select value={shippingInfo?.phuongXa || ''} onChange={e => setShippingInfo(prev => ({ ...prev, phuongXa: e.target.value }))}
+                disabled={!shippingInfo?.quanHuyen}
+                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
+                <option value="">Chọn</option>
+                {wards?.map(w => <option key={w.ma || w} value={w.ma || w}>{w.ten || w}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-stone mb-1 block">Phương thức</label>
+              <select value={shippingInfo?.phuongThuc || 'GHN'} onChange={e => setShippingInfo(prev => ({ ...prev, phuongThuc: e.target.value }))}
+                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
+                <option value="GHN">Giao hàng nhanh</option>
+                <option value="GHTK">Giao hàng tiết kiệm</option>
+              </select>
+            </div>
+          </div>
+          {mienPhiThreshold && total >= mienPhiThreshold && (
+            <label className="flex items-center gap-2 text-xs text-emerald-deep cursor-pointer mt-3">
+              <input type="checkbox" checked={mienPhiVanChuyen} onChange={() => setMienPhiVanChuyen(v => !v)}
+                className="rounded border-stone/30 text-emerald-deep focus:ring-emerald-deep" />
+              Miễn phí vận chuyển (đơn từ {VND(mienPhiThreshold)})
+            </label>
+          )}
+          <div className="flex justify-between items-center text-sm bg-ivory-100 rounded-lg px-3 py-2 mt-3">
+            <span className="text-stone">Phí vận chuyển</span>
+            <span className="font-semibold text-ink">
+              {shippingLoading ? 'Đang tính...' : (mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0))}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
       <AddProductModal open={showAddModal} onClose={() => setShowAddModal(false)}
         variants={allVariants} colors={colors} sizes={sizes} cart={cart}
         onAdd={addToCart} onQtyChange={updateQtyModal} />

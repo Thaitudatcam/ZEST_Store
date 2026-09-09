@@ -45,4 +45,16 @@ export const posApi = {
 
   registerOrderPrint: (id) =>
     api.post(`/orders/admin/${id}/print`).then(r => r.data),
+
+  calculateShipping: (params) =>
+    api.get('/shipping/calc', { params }).then(r => r.data).catch(() => ({ fee: 30000 })),
+
+  getProvinces: () =>
+    api.get('/shipping/provinces').then(r => r.data).catch(() => []),
+
+  getDistricts: (provinceId) =>
+    api.get(`/shipping/districts/${provinceId}`).then(r => r.data).catch(() => []),
+
+  getWards: (districtId) =>
+    api.get(`/shipping/wards/${districtId}`).then(r => r.data).catch(() => []),
 }
