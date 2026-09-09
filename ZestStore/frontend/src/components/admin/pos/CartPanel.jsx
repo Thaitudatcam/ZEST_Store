@@ -7,10 +7,9 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 export default function CartPanel({
   cart, customer, coupon, couponMsg, customerDiem, dungDiem,
   onRemoveItem, onUpdateQty, onClearCart, onSelectCustomer, onClearCustomer,
-  onApplyCoupon, onClearCoupon, onToggleDiem, paymentMethod, onPaymentMethodChange,
-  tienKhachDua, onTienKhachDuaChange, tienThua,
+  onApplyCoupon, onClearCoupon, onToggleDiem,
   onCheckout, placing, thanhTien, total, soLuongSanPham, diemQuyTac,
-  onOpenCustomerPicker, availableCoupons, onOpenCouponDropdown,
+  onOpenCustomerPicker, onOpenPayment, availableCoupons, onOpenCouponDropdown,
 }) {
   const [couponCode, setCouponCode] = useState(coupon?.maCode || '')
 
@@ -140,30 +139,10 @@ export default function CartPanel({
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <select value={paymentMethod} onChange={e => onPaymentMethodChange(Number(e.target.value))}
-            className="border border-stone/20 rounded-xl px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
-            <option value={5}>💵 Tiền mặt</option>
-            <option value={6}>🏦 VietQR</option>
-          </select>
-          <button onClick={onCheckout} disabled={cart.length === 0 || placing}
-            className="flex-1 py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-50 text-sm tracking-wide">
-            {placing ? 'Đang xử lý...' : paymentMethod === 6 ? 'XÁC NHẬN THANH TOÁN' : 'Thanh toán'}
-          </button>
-        </div>
-
-        {paymentMethod === 5 && (
-          <div className="space-y-1.5">
-            <input value={tienKhachDua} onChange={e => onTienKhachDuaChange(e.target.value)} inputMode="numeric"
-              placeholder="Tiền khách đưa"
-              className="w-full border border-stone/20 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-            {tienThua !== null && (
-              <p className={`text-sm font-semibold ${tienThua >= 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>
-                {tienThua >= 0 ? `Tiền thừa: ${VND(tienThua)}` : `Thiếu ${VND(Math.abs(tienThua))}`}
-              </p>
-            )}
-          </div>
-        )}
+        <button onClick={onOpenPayment} disabled={cart.length === 0 || placing}
+          className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-50 text-sm tracking-wide">
+          {placing ? 'Đang xử lý...' : 'Thanh toán'}
+        </button>
       </div>
     </div>
   )

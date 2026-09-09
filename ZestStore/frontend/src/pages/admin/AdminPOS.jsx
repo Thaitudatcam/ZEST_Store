@@ -11,6 +11,7 @@ import ProductGrid from '../../components/admin/pos/ProductGrid'
 import CartPanel from '../../components/admin/pos/CartPanel'
 import AddProductModal from '../../components/admin/pos/AddProductModal'
 import CustomerPickerModal from '../../components/admin/pos/CustomerPickerModal'
+import PaymentModal from '../../components/admin/pos/PaymentModal'
 import POSToast from '../../components/admin/pos/POSToast'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -43,6 +44,7 @@ export default function AdminPOS() {
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCustomerPicker, setShowCustomerPicker] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerDiem, setCustomerDiem] = useState({ soDiem: 0 })
@@ -51,8 +53,6 @@ export default function AdminPOS() {
   const [couponMsg, setCouponMsg] = useState('')
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [diemQuyTac, setDiemQuyTac] = useState(null)
-  const [paymentMethod, setPaymentMethod] = useState(5)
-  const [tienKhachDua, setTienKhachDua] = useState('')
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [payResult, setPayResult] = useState(null)
@@ -116,7 +116,6 @@ export default function AdminPOS() {
   const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
   const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi)
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
-  const tienThua = tienKhachDua !== '' && !isNaN(Number(tienKhachDua)) ? Number(tienKhachDua) - thanhTien : null
 
   const saveCurrentOrder = (idxOverride) => {
     const idx = idxOverride !== undefined ? idxOverride : currentOrderIdx
@@ -250,8 +249,19 @@ export default function AdminPOS() {
 
   const [couponCodeState, setCouponCodeState] = useState('')
 
-  const handleCheckout = async () => {
-    setConfirmAction(null)
+  const resetOrderState = () => {
+    const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
+    if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false })
+    setOrders(newOrders)
+    setCart(newOrders[0]?.cart || [])
+    setSelectedCustomer(newOrders[0]?.customer || null)
+    setCoupon(newOrders[0]?.coupon || null)
+    setDungDiem(newOrders[0]?.dungDiem || false)
+    setCurrentOrderIdx(0)
+  }
+
+  const handleCheckout = async (paymentMethod = 5) => {
+    setShowPaymentModal(false)
     if (cart.length === 0) return
     setPlacing(true)
     try {
@@ -260,7 +270,6 @@ export default function AdminPOS() {
         const vqRes = await posApi.vietQRPreview(totalAmount)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
-        setPayResult({ thanhToan: totalAmount })
       } else {
         const res = await posApi.createOrder({
           items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
@@ -270,14 +279,7 @@ export default function AdminPOS() {
           soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         })
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-        const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
-        if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false })
-        setOrders(newOrders)
-        setCart(newOrders[0]?.cart || [])
-        setSelectedCustomer(newOrders[0]?.customer || null)
-        setCoupon(newOrders[0]?.coupon || null)
-        setDungDiem(newOrders[0]?.dungDiem || false)
-        setCurrentOrderIdx(0)
+        resetOrderState()
         setPayResult(res)
       }
     } catch (err) {
@@ -287,6 +289,7 @@ export default function AdminPOS() {
 
   const handleConfirmQR = async () => {
     if (cart.length === 0) return
+    setShowPaymentModal(false)
     setPlacing(true)
     try {
       const res = await posApi.createOrder({
@@ -297,14 +300,7 @@ export default function AdminPOS() {
         soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       })
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-      const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
-      if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false })
-      setOrders(newOrders)
-      setCart(newOrders[0]?.cart || [])
-      setSelectedCustomer(newOrders[0]?.customer || null)
-      setCoupon(newOrders[0]?.coupon || null)
-      setDungDiem(newOrders[0]?.dungDiem || false)
-      setCurrentOrderIdx(0)
+      resetOrderState()
       setBankInfo(null)
       setQrDataUrl(null)
       setPayResult(res)
@@ -403,11 +399,10 @@ export default function AdminPOS() {
         onClearCustomer={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
         onApplyCoupon={handleApplyCoupon} onClearCoupon={() => { setCoupon(null); setCouponMsg('') }}
         onToggleDiem={() => setDungDiem(v => !v)}
-        paymentMethod={paymentMethod} onPaymentMethodChange={(v) => { setPaymentMethod(v); setTienKhachDua('') }}
-        tienKhachDua={tienKhachDua} onTienKhachDuaChange={setTienKhachDua} tienThua={tienThua}
-        onCheckout={() => setConfirmAction('place')} placing={placing}
+        onCheckout={() => setShowPaymentModal(true)} placing={placing}
         thanhTien={thanhTien} total={total} soLuongSanPham={soLuongSanPham} diemQuyTac={diemQuyTac}
         onOpenCustomerPicker={() => setShowCustomerPicker(true)}
+        onOpenPayment={() => setShowPaymentModal(true)}
         availableCoupons={availableCoupons} onOpenCouponDropdown={() => {}} />
 
       <AddProductModal open={showAddModal} onClose={() => setShowAddModal(false)}
@@ -416,6 +411,10 @@ export default function AdminPOS() {
 
       <CustomerPickerModal open={showCustomerPicker} onClose={() => setShowCustomerPicker(false)}
         onSelect={(c) => { setSelectedCustomer(c); getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => {}) }} />
+
+      <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
+        thanhTien={thanhTien} onCheckout={() => handleCheckout(5)} onConfirmQR={handleConfirmQR}
+        placing={placing} bankInfo={bankInfo} />
 
       {cameraOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70" onClick={() => setCameraOpen(false)}>
@@ -566,7 +565,6 @@ export default function AdminPOS() {
       )}
 
       <ConfirmDialog open={typeof confirmAction === 'number'} title="Xóa sản phẩm" message="Bạn chắc chắn muốn xóa sản phẩm này?" confirmText="Xóa" onConfirm={() => { removeItem(confirmAction); setConfirmAction(null) }} onCancel={() => setConfirmAction(null)} />
-      <ConfirmDialog open={confirmAction === 'place'} title="Xác nhận thanh toán" message="Tạo đơn bán hàng với giỏ hiện tại?" confirmText="Thanh toán" variant="gold" onConfirm={handleCheckout} onCancel={() => setConfirmAction(null)} />
     </div>
   )
 }
