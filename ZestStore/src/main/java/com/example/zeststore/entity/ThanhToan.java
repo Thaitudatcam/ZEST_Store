@@ -15,6 +15,13 @@ import java.time.LocalDateTime;
 @Table(name = "thanh_toan")
 public class ThanhToan {
 
+    @Column(name = "gateway_transaction_id", length = 100)
+    private String gatewayTransactionId;
+
+    @Column(name = "refunded", nullable = false)
+    @Builder.Default
+    private boolean refunded = false;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ma_thanh_toan")

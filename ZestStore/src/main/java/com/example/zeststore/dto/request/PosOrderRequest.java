@@ -12,7 +12,11 @@ import java.util.List;
 @Builder
 public class PosOrderRequest {
 
+    @Valid
     private List<PosItem> items;
+
+    @NotBlank @Size(max = 64)
+    private String checkoutKey;
 
     private Integer maNguoiDung;
 
@@ -40,7 +44,7 @@ public class PosOrderRequest {
         @NotNull
         private Integer maBienThe;
 
-        @Min(1)
+        @NotNull @Min(1)
         private Integer soLuong;
     }
 }

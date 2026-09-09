@@ -6,7 +6,7 @@ import { uploadProductImage, uploadVariantImage, generateDescription } from '../
 import { createCategory, createBrand, createColor, createSize } from '../../api/admin'
 import { useToast } from '../../context/ToastContext'
 import SafeImg from '../../components/SafeImg'
-import { Loader, Plus, Trash2, Upload, Check, FolderPlus, Tag, Palette, Sparkles, X } from 'lucide-react'
+import { Loader, Plus, Upload, Check, FolderPlus, Tag, Palette, Sparkles, X, EyeOff } from 'lucide-react'
 import EmptyState from '../../components/EmptyState'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
@@ -115,15 +115,17 @@ export default function AdminProductForm() {
         await api.put(`/products/${id}`, { ...product, maDanhMuc: Number(product.maDanhMuc), slug })
         for (const v of variants) {
           if (v.maBienThe) {
-            await api.put(`/products/variants/${v.maBienThe}`, {
+            const savedVariant = await api.put(`/products/variants/${v.maBienThe}`, {
               sku: v.sku || `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
               maThuongHieu: Number(product.maThuongHieu),
               maKichCo: Number(v.maKichCo),
               maMauSac: Number(v.maMauSac),
               gia: Number(v.gia),
               tonKho: Number(v.tonKho || 0),
+              version: v.version,
               urlAnh: v.urlAnh || undefined,
             })
+            v.version = savedVariant.data.version
           } else {
             const res = await api.post(`/products/${id}/variants`, {
               maKichCo: Number(v.maKichCo),
@@ -131,10 +133,12 @@ export default function AdminProductForm() {
               maThuongHieu: Number(product.maThuongHieu),
               gia: Number(v.gia),
               tonKho: Number(v.tonKho || 0),
+              version: v.version,
               urlAnh: v.urlAnh || undefined,
               sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
             })
             v.maBienThe = res.data.maBienThe
+            v.version = res.data.version
           }
         }
       } else {
@@ -145,6 +149,7 @@ export default function AdminProductForm() {
           sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
           gia: Number(v.gia),
           tonKho: Number(v.tonKho || 0),
+              version: v.version,
           urlAnh: v.urlAnh || undefined,
         }))
         const res = await api.post('/products/with-variants', { product: { ...product, maDanhMuc: Number(product.maDanhMuc), slug }, variants: variantReqs })
@@ -218,15 +223,17 @@ export default function AdminProductForm() {
       }
       if (v.maBienThe) {
         try {
-          await api.put(`/products/variants/${v.maBienThe}`, {
+          const savedVariant = await api.put(`/products/variants/${v.maBienThe}`, {
             sku: v.sku,
             maThuongHieu: Number(product.maThuongHieu),
             maKichCo: Number(vform.maKichCo),
             maMauSac: Number(vform.maMauSac),
             gia: Number(vform.gia),
             tonKho: Number(vform.tonKho || 0),
+            version: v.version,
             urlAnh: vform.urlAnh || undefined,
           })
+          updated.version = savedVariant.data.version
         } catch (err) {
           toast.error(err.response?.data?.message || 'Lỗi cập nhật biến thể')
           setSavingVar(false)
@@ -266,8 +273,8 @@ export default function AdminProductForm() {
       setConfirmDelete(null)
       return
     }
-    api.delete(`/products/variants/${v.maBienThe}`).then(() => {
-      toast.success('Đã xóa biến thể')
+    api.put(`/products/variants/${v.maBienThe}/toggle`).then(() => {
+      toast.success('Đã ẩn biến thể')
       setConfirmDelete(null)
       return api.get(`/products/detail/${id}`).then(r => r.data)
     }).then(detail => setVariants((detail.variants || []).map(v => ({
@@ -275,7 +282,7 @@ export default function AdminProductForm() {
       maKichCo: v.maKichCo || v.kichCo?.maKichCo || '',
       maMauSac: v.maMauSac || v.mauSac?.maMauSac || '',
     }))))
-    .catch(err => toast.error(err.response?.data?.message || 'Xóa thất bại'))
+    .catch(err => toast.error(err.response?.data?.message || 'Ẩn biến thể thất bại'))
   }
 
   const handleUploadVariantImage = async (files) => {
@@ -314,15 +321,17 @@ export default function AdminProductForm() {
     setSavingRow(index)
     try {
       if (v.maBienThe) {
-        await api.put(`/products/variants/${v.maBienThe}`, {
+        const savedVariant = await api.put(`/products/variants/${v.maBienThe}`, {
           sku: v.sku,
           maThuongHieu: Number(product.maThuongHieu),
           maKichCo: Number(v.maKichCo),
           maMauSac: Number(v.maMauSac),
           gia: Number(v.gia),
           tonKho: Number(v.tonKho || 0),
+              version: v.version,
           urlAnh: v.urlAnh || undefined,
         })
+        setVariants(prev => prev.map(x => x.maBienThe === v.maBienThe ? { ...x, version: savedVariant.data.version } : x))
       } else if (id) {
         const res = await api.post(`/products/${id}/variants`, {
           maKichCo: Number(v.maKichCo),
@@ -330,10 +339,11 @@ export default function AdminProductForm() {
           maThuongHieu: Number(product.maThuongHieu),
           gia: Number(v.gia),
           tonKho: Number(v.tonKho || 0),
+              version: v.version,
           urlAnh: v.urlAnh || undefined,
           sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
         })
-        setVariants(prev => prev.map((x, i) => i === index ? { ...x, maBienThe: res.data.maBienThe } : x))
+        setVariants(prev => prev.map((x, i) => i === index ? { ...x, maBienThe: res.data.maBienThe, version: res.data.version } : x))
       }
       toast.success('Đã lưu biến thể')
     } catch (err) {
@@ -358,7 +368,7 @@ export default function AdminProductForm() {
   const handleRemoveImage = (fileId) => {
     setConfirmRemoveImage(null)
     if (fileId !== 'main') {
-      api.delete(`/products/images/${fileId}`).catch(() => {})
+      api.put(`/products/images/${fileId}/toggle`).catch(() => {})
     }
     setUploadedImages(prev => prev.filter(img => img.fileId !== fileId))
   }
@@ -574,7 +584,7 @@ export default function AdminProductForm() {
                     ) : null}
                     <button type="button" onClick={() => setConfirmRemoveImage(img.fileId)}
                       className="absolute top-2 right-2 p-1.5 bg-ivory/80 rounded-full hover:bg-ivory transition opacity-0 group-hover:opacity-100">
-                      <Trash2 className="h-4 w-4 text-bordeaux" />
+                      <EyeOff className="h-4 w-4 text-bordeaux" />
                     </button>
                   </div>
                 ))}
@@ -712,7 +722,7 @@ export default function AdminProductForm() {
                               <button type="button" onClick={handleSaveVariant} disabled={savingVar}
                                 className="p-1.5 text-emerald-deep hover:bg-emerald-deep/10 rounded-lg"><Check className="h-4 w-4" /></button>
                               <button type="button" onClick={() => setConfirmDelete(editIdx)}
-                                className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg"><Trash2 className="h-4 w-4" /></button>
+                                className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg" title="Ẩn biến thể"><EyeOff className="h-4 w-4" /></button>
                             </div>
                           </td>
                         </tr>
@@ -763,7 +773,7 @@ export default function AdminProductForm() {
                                   </td>
                                   <td className="px-3 py-2 text-center">
                                     <button type="button" onClick={() => setConfirmDelete(idx)}
-                                      className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg" title="Xóa biến thể"><Trash2 className="h-3.5 w-3.5" /></button>
+                                      className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg" title="Ẩn biến thể"><EyeOff className="h-3.5 w-3.5" /></button>
                                   </td>
                                 </tr>
                               )
@@ -915,16 +925,16 @@ export default function AdminProductForm() {
 
       <ConfirmDialog
         open={confirmDelete !== null}
-        title="Xác nhận xóa"
-        message="Bạn chắc chắn muốn xóa biến thể này?"
-        confirmText="Xóa"
+        title="Ẩn biến thể"
+        message="Bạn chắc chắn muốn ẩn biến thể này?"
+        confirmText="Ẩn"
         onConfirm={() => handleDeleteVariant(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
       />
 
       <ConfirmDialog
         open={confirmDeleteColor !== null}
-        title="Xác nhận xóa"
+        title="Xóa màu"
         message={<>Xóa tất cả biến thể màu <strong>{confirmDeleteColor?.mauSac}</strong>?</>}
         confirmText="Xóa"
         onConfirm={() => handleDeleteVariantsByColor(confirmDeleteColor.maMauSac)}
@@ -944,9 +954,9 @@ export default function AdminProductForm() {
 
       <ConfirmDialog
         open={confirmRemoveImage !== null}
-        title="Xóa ảnh"
-        message="Bạn chắc chắn muốn xóa ảnh này?"
-        confirmText="Xóa"
+        title="Ẩn ảnh"
+        message="Bạn chắc chắn muốn ẩn ảnh này?"
+        confirmText="Ẩn"
         onConfirm={() => handleRemoveImage(confirmRemoveImage)}
         onCancel={() => setConfirmRemoveImage(null)}
       />

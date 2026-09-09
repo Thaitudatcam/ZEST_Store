@@ -14,6 +14,16 @@ import InvoicePrint from '../../components/InvoicePrint'
 
 export default function AdminPOS() {
   const navigate = useNavigate()
+  const checkoutKey = useRef(sessionStorage.getItem('posCheckoutKey') || crypto.randomUUID())
+  const pendingCheckout = useRef(false)
+  const persistCheckoutKey = () => {
+    sessionStorage.setItem('posCheckoutKey', checkoutKey.current)
+    return checkoutKey.current
+  }
+  const finishCheckout = () => {
+    sessionStorage.removeItem('posCheckoutKey')
+    checkoutKey.current = crypto.randomUUID()
+  }
   const [products, setProducts] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -65,9 +75,45 @@ export default function AdminPOS() {
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
-  const [tienKhachDua, setTienKhachDua] = useState('')
 
   const getQtyInCart = (maBienThe) => cart.filter(c => c.maBienThe === maBienThe).reduce((s, c) => s + c.soLuong, 0)
+
+  const loadServerCart = useCallback(async () => {
+    try {
+      const res = await api.get('/admin/pos/cart').then(r => r.data)
+      setCart((res || []).map(c => ({
+        maBienThe: c.maBienThe,
+        tenSanPham: c.tenSanPham,
+        kichCo: c.kichCo || '',
+        mauSac: c.mauSac || '',
+        gia: c.gia,
+        soLuong: c.soLuong,
+        tonKho: c.tonKhoKhaDung,
+        urlAnh: c.urlAnh || '',
+        sku: c.sku || '',
+        maSanPhamCode: c.maSanPhamCode || '',
+      })))
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    loadServerCart()
+    const timer = setInterval(async () => {
+      if (pendingCheckout.current || document.visibilityState !== 'visible') return
+      try {
+        await api.post('/admin/pos/cart/heartbeat')
+        await loadServerCart()
+      } catch { setMsg({ type: 'error', text: 'Không thể gia hạn giữ hàng. Kiểm tra kết nối trước khi thu tiền.' }) }
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [loadServerCart])
+
+  const posAdd = async (maBienThe, soLuong) => {
+    await api.post('/admin/pos/cart/add', { maBienThe, soLuong })
+  }
+  const posRelease = async (maBienThe, soLuong) => {
+    await api.post('/admin/pos/cart/release', { maBienThe, soLuong })
+  }
 
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -109,8 +155,6 @@ export default function AdminPOS() {
   const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
   const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi)
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
-  const tienThua = tienKhachDua !== '' && !isNaN(Number(tienKhachDua)) ? Number(tienKhachDua) - thanhTien : null
-  const tienKhachDuaValueErr = paymentMethod === 5 && cart.length > 0 && tienKhachDua !== '' && (isNaN(Number(tienKhachDua)) || Number(tienKhachDua) < 0 || Number(tienKhachDua) < thanhTien)
 
   const fetchAvailableCoupons = useCallback(async (maNguoiDung) => {
     setCouponDropdownLoading(true)
@@ -206,87 +250,58 @@ export default function AdminPOS() {
     const sku = rawSku.trim().toUpperCase()
     try {
       const variant = await lookupSku(sku)
-      const qtyInCart = getQtyInCart(variant.maBienThe)
-      if (qtyInCart >= variant.tonKho) { setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' }); return }
-      setCart(prev => {
-        const existing = prev.findIndex(c => c.maBienThe === variant.maBienThe)
-        if (existing >= 0) {
-          const next = [...prev]
-          next[existing] = { ...next[existing], soLuong: next[existing].soLuong + 1 }
-          return next
-        }
-        return [...prev, {
-          maBienThe: variant.maBienThe,
-          tenSanPham: variant.tenSanPham,
-          kichCo: variant.kichCo || '',
-          mauSac: variant.mauSac || '',
-          gia: variant.gia,
-          soLuong: 1,
-          tonKho: variant.tonKho,
-          urlAnh: variant.urlAnh || '',
-          maSanPhamCode: variant.maSanPhamCode || variant.sku || '',
-          sku: variant.sku || '',
-        }]
-      })
-      setMsg({ type: 'success', text: `Đã thêm ${variant.tenSanPham}` })
+      try {
+        await posAdd(variant.maBienThe, 1)
+        setMsg({ type: 'success', text: `Đã thêm ${variant.tenSanPham}` })
+      } catch (err) {
+        const m = (err.response?.data?.message || '').toLowerCase()
+        setMsg({ type: 'error', text: m.includes('insufficient') ? 'Sản phẩm đã hết hàng' : (err.response?.data?.message || 'Không đủ hàng') })
+      }
+      await loadServerCart()
     } catch {
       doSearch(sku)
     }
   }
 
-  const addToCart = () => {
+  const addToCart = async () => {
     const detail = variantModal
     const variant = detail.variants?.find(v => v.kichCo?.kichCo === selectedSize && v.mauSac?.mauSac === selectedColor)
     if (!variant) return
-    const qtyInCart = getQtyInCart(variant.maBienThe)
-    const availStock = (variant.tonKho || 0) - qtyInCart
-    if (availStock <= 0) {
-      setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' })
-      return
+    try {
+      await posAdd(variant.maBienThe, vQty)
+      setMsg({ type: 'success', text: 'Đã thêm vào giỏ' })
+      setVariantModal(null)
+      await loadServerCart()
+    } catch (err) {
+      const m = (err.response?.data?.message || '').toLowerCase()
+      setMsg({ type: 'error', text: m.includes('insufficient') ? 'Sản phẩm đã hết hàng' : (err.response?.data?.message || 'Không đủ hàng') })
+      await loadServerCart().catch(() => {})
     }
-    if (vQty > availStock) {
-      setMsg({ type: 'error', text: `Chỉ còn ${availStock} sản phẩm trong kho` })
-      return
-    }
-    setCart(prev => {
-      const existing = prev.findIndex(c => c.maBienThe === variant.maBienThe)
-      if (existing >= 0) {
-        const next = [...prev]
-        next[existing] = { ...next[existing], soLuong: next[existing].soLuong + vQty }
-        return next
-      }
-return [...prev, {
-          maBienThe: variant.maBienThe,
-          tenSanPham: detail.product?.tenSanPham || 'SP',
-          kichCo: variant.kichCo?.kichCo || '',
-          mauSac: variant.mauSac?.mauSac || '',
-          gia: variant.gia || 0,
-          soLuong: vQty,
-          tonKho: variant.tonKho || 0,
-          urlAnh: variant.urlAnh || detail.product?.urlAnhDaiDien || '',
-          maSanPhamCode: detail.product?.maSanPhamCode || variant.maSanPhamCode || '',
-          sku: variant.sku || '',
-        }]
-    })
-    setVariantModal(null)
   }
 
-  const updateQty = (idx, delta) => {
-    setCart(prev => prev.map((c, i) => {
-      if (i !== idx) return c
-      const newQty = Math.max(1, c.soLuong + delta)
-      const availStock = c.tonKho - (getQtyInCart(c.maBienThe) - c.soLuong)
-      if (delta > 0 && newQty > availStock) {
-        setMsg({ type: 'error', text: `Chỉ còn ${availStock} sản phẩm trong kho` })
-        return c
-      }
-      return { ...c, soLuong: newQty }
-    }))
+  const updateQty = async (idx, delta) => {
+    const c = cart[idx]
+    if (!c) return
+    const newQty = c.soLuong + delta
+    if (newQty < 1) { await removeItem(idx); return }
+    try {
+      if (delta > 0) await posAdd(c.maBienThe, delta)
+      else await posRelease(c.maBienThe, -delta)
+      await loadServerCart()
+    } catch (err) {
+      const m = (err.response?.data?.message || '').toLowerCase()
+      setMsg({ type: 'error', text: m.includes('insufficient') ? 'Không đủ hàng' : (err.response?.data?.message || 'Không đủ hàng') })
+      await loadServerCart().catch(() => {})
+    }
   }
 
-  const removeItem = (idx) => {
+  const removeItem = async (idx) => {
     setConfirmAction(null)
-    setCart(prev => prev.filter((_, i) => i !== idx))
+    const c = cart[idx]
+    if (c) {
+      try { await posRelease(c.maBienThe, c.soLuong) } catch { /* ignore */ }
+    }
+    await loadServerCart()
   }
 
   const applyCouponCode = async (code) => {
@@ -342,18 +357,20 @@ return [...prev, {
 
   const handlePlace = async () => {
     setConfirmAction(null)
-    if (cart.length === 0) return
+    if (cart.length === 0 || pendingCheckout.current) return
     if (soDiemSuDung > 0 && soDiemSuDung < diemToiThieu) { setMsg({ type: 'error', text: `Tối thiểu ${diemToiThieu} điểm để sử dụng` }); return }
+    pendingCheckout.current = true
     setPlacing(true)
     try {
       if (paymentMethod === 6) {
-        const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
+        const totalAmount = thanhTien
         const vqRes = await api.post('/admin/pos/vietqr/preview', { amount: totalAmount }).then(r => r.data)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
         setPayResult({ thanhToan: totalAmount })
       } else {
         const res = await api.post('/admin/pos/orders', {
+          checkoutKey: persistCheckoutKey(),
           items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
           maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
           maCode: coupon?.maCode || undefined,
@@ -361,7 +378,8 @@ return [...prev, {
           soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         }).then(r => r.data)
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-        setCart([])
+        finishCheckout()
+        await loadServerCart()
         setSelectedCustomer(null)
         setCoupon(null)
         setCouponCode('')
@@ -370,23 +388,27 @@ return [...prev, {
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
     } finally {
+      pendingCheckout.current = false
       setPlacing(false)
     }
   }
 
   const handleConfirmReceived = async () => {
-    if (cart.length === 0) return
+    if (cart.length === 0 || pendingCheckout.current) return
+    pendingCheckout.current = true
     setPlacing(true)
     try {
       const res = await api.post('/admin/pos/orders', {
-        items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
+        checkoutKey: persistCheckoutKey(),
+          items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
         phuongThucThanhToan: 6,
         soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       }).then(r => r.data)
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-      setCart([])
+        finishCheckout()
+      await loadServerCart()
       setSelectedCustomer(null)
       setCoupon(null)
       setCouponCode('')
@@ -396,6 +418,7 @@ return [...prev, {
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Xác nhận thất bại' })
     } finally {
+      pendingCheckout.current = false
       setPlacing(false)
     }
   }
@@ -753,28 +776,16 @@ return [...prev, {
           </div>
 
           <div className="flex gap-2">
-            <select value={paymentMethod} onChange={e => { setPaymentMethod(Number(e.target.value)); setTienKhachDua('') }}
+            <select value={paymentMethod} onChange={e => setPaymentMethod(Number(e.target.value))}
               className="border rounded-xl px-3 py-3 text-sm bg-ivory focus:outline-none focus:ring-2 focus:ring-gold">
               <option value={5}>💵 Tiền mặt</option>
               <option value={6}>🏦 VietQR</option>
             </select>
-            <button onClick={() => setConfirmAction('place')} disabled={cart.length === 0 || placing || tienKhachDuaValueErr}
+            <button onClick={() => setConfirmAction('place')} disabled={cart.length === 0 || placing}
               className="flex-1 bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
               {placing ? 'Đang xử lý...' : 'Thanh toán'}
             </button>
           </div>
-          {paymentMethod === 5 && (
-            <div className="space-y-1.5">
-              <input value={tienKhachDua} onChange={e => setTienKhachDua(e.target.value)} inputMode="numeric"
-                placeholder="Tiền khách đưa"
-                className="w-full border rounded-xl px-3 py-2.5 text-sm bg-ivory focus:outline-none focus:ring-2 focus:ring-gold" />
-              {tienThua !== null && (
-                <p className={`text-sm font-medium ${tienThua >= 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>
-                  {tienThua >= 0 ? `Tiền thừa trả lại: ${VND(tienThua)}` : `Thiếu ${VND(Math.abs(tienThua))}`}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

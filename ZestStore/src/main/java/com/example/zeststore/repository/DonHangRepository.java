@@ -15,6 +15,12 @@ import java.util.List;
 @Repository
 public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT d FROM DonHang d WHERE d.maDonHang = :id")
+    java.util.Optional<DonHang> findByIdForUpdate(@Param("id") Integer id);
+
+    java.util.Optional<DonHang> findByCheckoutKey(String checkoutKey);
+
     List<DonHang> findByLoaiDonHangOrderByNgayDatDesc(Integer loaiDonHang);
 
     List<DonHang> findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(Integer maNguoiDung);

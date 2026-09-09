@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getBrands, createBrand, updateBrand, deleteBrand } from '../../api/admin'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { getBrands, createBrand, updateBrand, toggleBrand } from '../../api/admin'
+import { Plus, Pencil, Check, X, Eye, EyeOff } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminBrands() {
@@ -9,7 +9,6 @@ export default function AdminBrands() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmSave, setConfirmSave] = useState(false)
   const [confirmEdit, setConfirmEdit] = useState(null)
 
@@ -32,10 +31,9 @@ export default function AdminBrands() {
     catch { alert('Lỗi khi cập nhật thương hiệu') }
   }
 
-  const handleDelete = async (id) => {
-    setConfirmDelete(null)
-    try { await deleteBrand(id); load() }
-    catch { alert('Không thể xóa (thương hiệu đang được dùng cho sản phẩm)') }
+  const handleToggle = async (id) => {
+    try { await toggleBrand(id); load() }
+    catch { alert('Lỗi khi đổi trạng thái thương hiệu') }
   }
 
   return (
@@ -61,8 +59,11 @@ export default function AdminBrands() {
               ) : (
                 <>
                   <span className="flex-1 text-sm font-medium">{b.tenThuongHieu}</span>
+                  {b.ngayXoa && <span className="text-[10px] font-semibold text-stone-light bg-stone/10 border border-stone/20 px-1.5 py-0.5 rounded-full">Ẩn</span>}
                   <button onClick={() => startEdit(b)} className="p-1 text-gold hover:bg-gold/10 rounded"><Pencil className="h-3.5 w-3.5" /></button>
-                  <button onClick={() => setConfirmDelete(b.maThuongHieu)} className="p-1 text-bordeaux hover:bg-bordeaux/10 rounded"><Trash2 className="h-3.5 w-3.5" /></button>                </>
+                  <button onClick={() => handleToggle(b.maThuongHieu)} className={`p-1 rounded ${b.ngayXoa ? 'text-emerald-600 hover:bg-emerald-50' : 'text-stone hover:bg-ivory-100'}`} title={b.ngayXoa ? 'Hiện' : 'Ẩn'}>
+                    {b.ngayXoa ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  </button>                </>
               )}
             </div>
           ))}
@@ -86,14 +87,6 @@ export default function AdminBrands() {
         )}
       </div>
 
-      <ConfirmDialog
-        open={confirmDelete !== null}
-        title="Xác nhận xóa"
-        message="Bạn chắc chắn muốn xóa thương hiệu này?"
-        confirmText="Xóa"
-        onConfirm={() => handleDelete(confirmDelete)}
-        onCancel={() => setConfirmDelete(null)}
-      />
       <ConfirmDialog
         open={confirmSave}
         title="Thêm thương hiệu"

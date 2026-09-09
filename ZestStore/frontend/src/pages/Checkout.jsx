@@ -428,6 +428,11 @@ export default function Checkout() {
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const shippingFee = ghnFee !== null ? Number(ghnFee) : 0
+  const suggestedCoupons = (availableDiscount || [])
+    .filter(v => v.kieuGiamGia !== 3 && (!discountCoupon || v.maCode !== discountCoupon.maCode))
+  const suggestedDiscount = suggestedCoupons.length
+    ? suggestedCoupons.reduce((a, b) => (Number(b.soTienGiam || 0) > Number(a.soTienGiam || 0) ? b : a))
+    : null
   const discount = discountCoupon?.soTienGiam || 0
   const freeshipDiscount = freeshipVoucher?.kieuGiamGia === 3
     ? (freeshipVoucher.giaTriGiam === 0 ? shippingFee : Math.min(freeshipVoucher.giaTriGiam, shippingFee))
@@ -445,9 +450,12 @@ export default function Checkout() {
   const tienGiamDiem = diemSuDung * tiLeDoi
   const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee - tienGiamDiem)
 
+  const validatePhone = (phone) => /^[0-9]{10,11}$/.test(phone)
+
   const goToStep = (s) => {
     if (s === 'payment' || s === 'review') {
-      if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) return
+      if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { toast.error('Vui lòng điền đầy đủ thông tin giao hàng'); return }
+      if (!validatePhone(form.sdtNguoiNhan)) { toast.error('Số điện thoại phải có 10-11 chữ số'); return }
       if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn Tỉnh/Thành phố, Quận/Huyện và Phường/Xã'); return }
       if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
     }
@@ -456,6 +464,7 @@ export default function Checkout() {
 
   const requestPlace = () => {
     if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { toast.error('Vui lòng điền đầy đủ thông tin giao hàng'); return }
+    if (!validatePhone(form.sdtNguoiNhan)) { toast.error('Số điện thoại phải có 10-11 chữ số'); return }
     if (cart.length === 0) { return }
     if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn đầy đủ địa chỉ giao hàng'); return }
     if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
@@ -664,6 +673,19 @@ export default function Checkout() {
                 <div>
                   <h2 className="font-semibold mb-2 flex items-center gap-2 text-sm"><Tag className="h-4 w-4 text-gold" /> Mã giảm giá (Coupon)</h2>
                   <p className="text-xs text-stone mb-2">Nhập mã giảm giá công khai</p>
+                  {suggestedDiscount && (
+                    <div className="flex items-center justify-between gap-2 bg-gold/10 border border-gold/30 rounded-lg px-3 py-2 mb-2">
+                      <div className="text-sm">
+                        <span className="text-noir font-medium">Bạn đủ điều kiện dùng mã </span>
+                        <span className="font-mono font-semibold text-gold">{suggestedDiscount.maCode}</span>
+                        <span className="text-emerald-deep font-medium"> — Giảm {VND(suggestedDiscount.soTienGiam || 0)}</span>
+                      </div>
+                      <button onClick={() => handleSelectDiscountVoucher(suggestedDiscount)}
+                        className="shrink-0 px-3 py-1 bg-gold text-noir text-xs font-medium rounded-lg hover:bg-gold-hover transition">
+                        Áp dụng
+                      </button>
+                    </div>
+                  )}
                   {discountCoupon ? (
                     <div className="inline-flex items-center gap-2 bg-emerald-deep/10 border border-emerald-deep/20 px-3 py-1.5 rounded-full text-sm">
                       <span className="text-emerald-deep font-medium">{discountCoupon.maCode} — Giảm {VND(discount)}</span>

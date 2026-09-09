@@ -5,6 +5,7 @@ import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
+import com.example.zeststore.util.VndUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +40,7 @@ public class DonHangService {
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final ViService viService;
     private final DiemService diemService;
+    private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -105,7 +107,8 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getOrderDetail(Integer orderId) {
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
 
@@ -121,7 +124,8 @@ public class DonHangService {
 
     @Transactional
     public Map<String, Object> registerPrint(Integer orderId, boolean isAdmin) {
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         assertCanPrint(order, isAdmin);
         order.setSoLanIn(order.getSoLanIn() == null ? 1 : order.getSoLanIn() + 1);
         donHangRepository.save(order);
@@ -212,7 +216,8 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getOrderDetailForUser(Integer orderId, Integer userId) {
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to current user");
         }
@@ -383,6 +388,8 @@ public class DonHangService {
                     .build());
         }
 
+        inventoryService.reserve(order);
+
         String paymentRef = "ORD-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         String nhaCungCap = switch (request.getPhuongThucThanhToan()) {
             case 2 -> "VNPay";
@@ -394,6 +401,7 @@ public class DonHangService {
         boolean isWalletPayment = Integer.valueOf(7).equals(request.getPhuongThucThanhToan());
 
         if (isWalletPayment) {
+            inventoryService.deduct(order);
             viService.truTien(user.getMaNguoiDung(), finalTotal,
                     "Thanh toán đơn hàng #" + order.getMaDonHang(), order.getMaDonHang());
         }
@@ -444,7 +452,7 @@ public class DonHangService {
             thongBaoService.taoThongBaoChoAdmin(
                     "Đơn hàng mới #" + order.getMaDonHang(),
                     "Khách hàng " + user.getHoTen() + " vừa đặt đơn #" + order.getMaDonHang()
-                            + " — tổng " + finalTotal + "₫.",
+                            + " — tổng " + VndUtil.format(finalTotal) + "₫.",
                     "DON_HANG_MOI",
                     "/admin/orders/" + order.getMaDonHang());
         } catch (Exception ignored) {}
@@ -466,8 +474,18 @@ public class DonHangService {
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
         }
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         Integer oldStatus = order.getTrangThaiDon();
+        if (Objects.equals(oldStatus, status)) return order;
+        Map<Integer, List<Integer>> transitions = Map.of(
+                1, List.of(2, 5), 2, List.of(3, 5), 3, List.of(4, 5),
+                4, List.of(6, 9));
+        if (!transitions.getOrDefault(oldStatus, List.of()).contains(status))
+            throw new BadRequestException("Không thể chuyển trạng thái đơn hàng; trả hàng phải qua yêu cầu trả hàng");
+        if (Integer.valueOf(5).equals(status)) {
+            cancelLockedOrder(order);
+        }
 
         if (Integer.valueOf(2).equals(status) || Integer.valueOf(6).equals(status)
                 || Integer.valueOf(3).equals(status) || Integer.valueOf(4).equals(status)) {
@@ -479,46 +497,13 @@ public class DonHangService {
         }
 
         if (Integer.valueOf(2).equals(status)) {
-            boolean isCOD = thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
-                    .anyMatch(t -> Integer.valueOf(1).equals(t.getPhuongThuc()));
-            if (isCOD) {
-                deductStockNow(orderId);
-            }
+            inventoryService.deduct(order);
         }
-
-        if (Integer.valueOf(8).equals(status)) {
-            boolean wasStockDeducted = oldStatus >= 2;
-            if (wasStockDeducted) {
-                restoreStock(orderId);
-            }
-            if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {
-                PhieuGiamGia coupon = order.getPhieuGiamGia();
-                coupon.setSoLuong(coupon.getSoLuong() + 1);
-                phieuGiamGiaRepository.save(coupon);
-            }
-            thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
-                    .filter(t -> Integer.valueOf(2).equals(t.getTrangThaiThanhToan()))
-                    .forEach(t -> {
-                        t.setTrangThaiThanhToan(3);
-                        thanhToanRepository.save(t);
-                    });
-        }
-
         if (Integer.valueOf(9).equals(status)) {
-            boolean wasStockDeducted = oldStatus >= 2;
-            if (wasStockDeducted) {
-                restoreStock(orderId);
-            }
-            thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
-                    .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
-                    .findFirst()
-                    .ifPresent(t -> {
-                        t.setTrangThaiThanhToan(3);
-                        thanhToanRepository.save(t);
-                    });
+            cancelLockedOrder(order);
         }
 
-        if (Integer.valueOf(4).equals(status) || Integer.valueOf(6).equals(status)) {
+        if (Integer.valueOf(6).equals(status)) {
             thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
                     .filter(t -> Integer.valueOf(1).equals(t.getPhuongThuc()))
                     .findFirst()
@@ -571,7 +556,8 @@ public class DonHangService {
 
     @Transactional
     public Map<String, String> confirmReceived(Integer orderId, Integer userId) {
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
@@ -619,7 +605,8 @@ public class DonHangService {
 
     @Transactional
     public Map<String, String> requestReturn(Integer orderId, Integer userId, String lyDo) {
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
@@ -684,74 +671,37 @@ public class DonHangService {
         throw new BadRequestException("GHN trả về dữ liệu phí vận chuyển không hợp lệ");
     }
 
-    private void deductStockNow(Integer orderId) {
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
-            if (variant.getTonKho() < item.getSoLuong()) {
-                throw new BadRequestException("Insufficient stock for " + variant.getSku()
-                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+    private void cancelLockedOrder(DonHang order) {
+        inventoryService.release(order);
+        if (order.getPhieuGiamGia() != null) phieuGiamGiaService.restoreCoupon(order.getPhieuGiamGia());
+        BigDecimal refund = BigDecimal.ZERO;
+        for (ThanhToan payment : thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang())) {
+            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan()) && !payment.isRefunded()) {
+                refund = refund.add(payment.getSoTien());
+                payment.setRefunded(true);
             }
-            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
-            bienTheRepository.save(variant);
+            payment.setTrangThaiThanhToan(3);
+            thanhToanRepository.save(payment);
         }
-    }
-
-    private boolean wasStockDeductedForOrder(DonHang order) {
-        if (order.getTrangThaiDon() < 2) return false;
-        return thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang()).stream()
-                .anyMatch(t -> Integer.valueOf(1).equals(t.getPhuongThuc())
-                        ? order.getTrangThaiDon() >= 2
-                        : Integer.valueOf(2).equals(t.getTrangThaiThanhToan()));
-    }
-
-    private void restoreStock(Integer orderId) {
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
-            variant.setTonKho(variant.getTonKho() + item.getSoLuong());
-            bienTheRepository.save(variant);
-        }
+        if (refund.signum() > 0 && order.getNguoiDung() != null)
+            viService.napTien(order.getNguoiDung().getMaNguoiDung(), refund,
+                    "Hoàn tiền hủy/không nhận đơn #" + order.getMaDonHang(), order.getMaDonHang());
     }
 
     @Transactional
     public Map<String, String> cancelOrder(Integer orderId, Integer userId) {
-        DonHang order = getOrderById(orderId);
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
         Integer stt = order.getTrangThaiDon();
+        if (Integer.valueOf(5).equals(stt)) return Map.of("message", "Order cancelled");
         if (!Integer.valueOf(1).equals(stt) && !Integer.valueOf(2).equals(stt) && !Integer.valueOf(3).equals(stt)) {
             throw new BadRequestException("Chỉ có thể hủy đơn ở trạng thái chờ xác nhận, đã xác nhận hoặc chờ giao hàng");
         }
 
-        if (wasStockDeductedForOrder(order)) {
-            List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-            for (MucDonHang item : items) {
-                BienTheSanPham variant = item.getBienThe();
-                variant.setTonKho(variant.getTonKho() + item.getSoLuong());
-                bienTheRepository.save(variant);
-            }
-        }
-
-        if (order.getPhieuGiamGia() != null) {
-            phieuGiamGiaService.restoreCoupon(order.getPhieuGiamGia());
-        }
-
-        BigDecimal refundAmount = BigDecimal.ZERO;
-        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
-        for (ThanhToan payment : payments) {
-            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())
-                    && !Integer.valueOf(1).equals(payment.getPhuongThuc())) {
-                refundAmount = refundAmount.add(payment.getSoTien());
-                payment.setTrangThaiThanhToan(3);
-                thanhToanRepository.save(payment);
-            }
-        }
-        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
-            viService.napTien(userId, refundAmount,
-                    "Hoàn tiền hủy đơn #" + order.getMaDonHang(), orderId);
-        }
+        cancelLockedOrder(order);
 
         Integer oldStatus = order.getTrangThaiDon();
         order.setTrangThaiDon(5);

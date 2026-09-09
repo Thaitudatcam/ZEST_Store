@@ -3,7 +3,7 @@ import { getProducts } from '../../api/products'
 import { toggleProductStatus } from '../../api/admin'
 import { searchSuggestions } from '../../api/products'
 import api from '../../api/axios'
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, Loader } from 'lucide-react'
+import { Plus, Pencil, Search, Eye, EyeOff, Loader } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -16,7 +16,6 @@ export default function AdminProducts() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmToggle, setConfirmToggle] = useState(null)
   const [error, setError] = useState('')
   const [suggestions, setSuggestions] = useState([])
@@ -61,15 +60,6 @@ export default function AdminProducts() {
     setSearch(val)
     setPage(0)
     load(0, val)
-  }
-
-  const handleDelete = async () => {
-    if (!confirmDelete) return
-    try {
-      await api.delete(`/products/${confirmDelete}`)
-      setConfirmDelete(null)
-      load(page, search)
-    } catch {}
   }
 
   const handleToggle = async (id) => {
@@ -160,7 +150,6 @@ export default function AdminProducts() {
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1">
                       <Link to={`/admin/products/${p.maSanPham}/edit`} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Pencil className="h-4 w-4" /></Link>
-                      <button onClick={() => setConfirmDelete(p.maSanPham)} className="p-1.5 text-bordeaux hover:bg-bordeaux/10 rounded-lg"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -180,15 +169,6 @@ export default function AdminProducts() {
           </div>
         )}
       </div>
-
-      <ConfirmDialog
-        open={confirmDelete !== null}
-        title="Xác nhận xóa"
-        message="Bạn chắc chắn muốn xóa sản phẩm này?"
-        confirmText="Xóa"
-        onConfirm={handleDelete}
-        onCancel={() => setConfirmDelete(null)}
-      />
 
       <ConfirmDialog
         open={confirmToggle !== null}

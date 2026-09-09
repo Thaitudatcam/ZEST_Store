@@ -138,6 +138,12 @@ public class SanPhamController {
         return ResponseEntity.ok(sanPhamService.deleteVariant(variantId));
     }
 
+    @PutMapping("/variants/{variantId}/toggle")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleVariant(@PathVariable Integer variantId) {
+        return ResponseEntity.ok(sanPhamService.toggleVariant(variantId));
+    }
+
     @DeleteMapping("/{id}/variants/by-color/{colorId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteVariantsByColor(@PathVariable Integer id, @PathVariable Integer colorId) {
@@ -168,6 +174,12 @@ public class SanPhamController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteImage(@PathVariable Integer imageId) {
         return ResponseEntity.ok(sanPhamService.deleteImage(imageId));
+    }
+
+    @PutMapping("/images/{imageId}/toggle")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleImage(@PathVariable Integer imageId) {
+        return ResponseEntity.ok(sanPhamService.toggleImage(imageId));
     }
 
     private Integer toInteger(Object value) {

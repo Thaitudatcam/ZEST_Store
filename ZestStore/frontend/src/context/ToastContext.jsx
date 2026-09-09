@@ -70,7 +70,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="fixed top-4 right-4 z-[999] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-20 right-4 z-[999] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => {
           const cfg = typeMap[t.type] || typeMap.info
           const Icon = cfg.icon
