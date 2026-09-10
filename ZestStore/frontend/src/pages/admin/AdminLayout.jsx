@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, RefreshCw, Gift, Coins, MessageSquare, ClipboardList } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
 import NotificationBell from '../../components/admin/NotificationBell'
 import AskAi from '../../components/admin/AskAi'
@@ -15,8 +15,18 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navOpen, setNavOpen] = useState({})
   const [pendingReturns, setPendingReturns] = useState(0)
+  const [accountOpen, setAccountOpen] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const accountRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (accountRef.current && !accountRef.current.contains(e.target)) setAccountOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   useEffect(() => {
     if (!user || user.vaiTro === 'STAFF') return
@@ -166,17 +176,44 @@ export default function AdminLayout() {
         </nav>
 
         {/* Bottom */}
-        <div className="shrink-0 border-t border-gold/10 px-3 py-3 space-y-1">
+        <div className="shrink-0 border-t border-gold/10 px-3 py-3 space-y-1" ref={accountRef}>
           <button onClick={() => setCollapsed(v => !v)}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-light/60 hover:bg-white/5 hover:text-ivory transition-all duration-200">
             <ChevronLeft className={`h-[18px] w-[18px] shrink-0 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} />
             {!collapsed && <span>Thu gọn</span>}
           </button>
-          <button onClick={() => setConfirmLogout(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-light/60 hover:bg-bordeaux/10 hover:text-bordeaux transition-all duration-200">
-            <LogOut className="h-[18px] w-[18px] shrink-0" />
-            {!collapsed && <span>Đăng xuất</span>}
-          </button>
+
+          <div className="relative">
+            <button onClick={() => setAccountOpen(v => !v)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-light/60 hover:bg-white/5 hover:text-ivory transition-all duration-200 ${collapsed ? 'justify-center' : ''}`}>
+              <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold text-xs font-bold shrink-0">
+                {user?.hoTen?.charAt(0) || 'A'}
+              </div>
+              {!collapsed && (
+                <>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium text-ivory truncate">{user?.hoTen || 'Admin'}</p>
+                    <p className="text-[10px] text-stone-light/50 truncate">{isStaff ? 'Nhân viên' : 'Admin'}</p>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${accountOpen ? 'rotate-180 text-gold' : ''}`} />
+                </>
+              )}
+            </button>
+
+            <div className={`absolute bottom-full left-0 right-0 mb-1 bg-noir-800 border border-gold/15 rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ${accountOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-2 pointer-events-none'} ${collapsed ? 'w-56 left-0' : ''}`}>
+              <Link to="/" onClick={() => { setAccountOpen(false); setSidebarOpen(false) }}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-stone-light/70 hover:text-gold hover:bg-ivory/5 transition-all">
+                <Home className="h-4 w-4" />
+                Về trang chủ
+              </Link>
+              <div className="border-t border-gold/10" />
+              <button onClick={(e) => { e.stopPropagation(); setAccountOpen(false); setConfirmLogout(true) }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-stone-light/70 hover:text-bordeaux hover:bg-bordeaux/5 transition-all">
+                <LogOut className="h-4 w-4" />
+                Đăng xuất
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
