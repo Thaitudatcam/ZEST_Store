@@ -135,9 +135,10 @@ export default function AdminPOS() {
     clearTimeout(shippingDebounceRef.current)
     shippingDebounceRef.current = setTimeout(() => {
       posApi.calculateShipping({
-        method: shippingInfo.phuongThuc,
-        province: shippingInfo.tinhThanh,
-        weight: cart.reduce((s, c) => s + c.soLuong, 0) || 1,
+        serviceTypeId: shippingInfo.phuongThuc === 'GHTK' ? 1 : 2,
+        toDistrictId: shippingInfo.quanHuyen,
+        toWardCode: shippingInfo.phuongXa,
+        weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
       }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000)).finally(() => setShippingLoading(false))
     }, 300)
     return () => clearTimeout(shippingDebounceRef.current)
