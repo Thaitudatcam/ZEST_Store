@@ -34,27 +34,32 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-ink truncate">{name}</p>
           <p className="text-[11px] text-stone mt-0.5">
-            Màu: <span className="font-medium text-ink-soft">{color}</span> | Kích cỡ: <span className="font-medium text-ink-soft">{size}</span>
+            Màu <span className="font-medium text-ink-soft">{color}</span> | Kích cỡ <span className="font-medium text-ink-soft">{size}</span>
           </p>
           <p className="text-[11px] text-stone">Mã: <span className="font-mono font-semibold">{sku}</span></p>
-          <p className="text-[10px] text-stone font-mono">CTSP: {variant.maCTSP || sku || '—'}</p>
           <p className="text-[11px] text-stone">Kho: <span className={`font-semibold ${ton > 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{ton}</span></p>
           <div className="flex items-center justify-between mt-1.5">
             <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
             {cartQty > 0 ? (
-              <div className="flex items-center gap-1 bg-[var(--primary-bg)] rounded-lg px-1">
-                <button onClick={() => onQtyChange?.(variant, -1)} className="p-1 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded transition" aria-label="Giảm">
-                  <Minus className="h-3 w-3" />
-                </button>
-                <span className="w-6 text-center text-xs font-bold text-[var(--primary-color)]">{cartQty}</span>
-                <button onClick={() => onQtyChange?.(variant, 1)} className="p-1 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded transition" aria-label="Tăng">
-                  <Plus className="h-3 w-3" />
+              <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 bg-[var(--primary-bg)] rounded-lg px-1">
+                  <button onClick={() => onQtyChange?.(variant, -1)} className="p-1 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded transition" aria-label="Giảm">
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-6 text-center text-xs font-bold text-[var(--primary-color)]">{cartQty}</span>
+                  <button onClick={() => onQtyChange?.(variant, 1)} className="p-1 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded transition" aria-label="Tăng">
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+                <button onClick={() => onQtyChange?.(variant, -cartQty)}
+                  className="px-2 py-1 text-[11px] font-medium text-bordeaux hover:bg-bordeaux/10 rounded transition">
+                  Xóa
                 </button>
               </div>
             ) : (
               <button onClick={handleAdd} disabled={ton <= 0}
                 className="flex items-center gap-1 px-3 py-1.5 bg-[var(--primary-color)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed">
-                {added ? <><Check className="h-3 w-3" /> Thêm</> : <><Plus className="h-3 w-3" /> Thêm vào giỏ</>}
+                {added ? <><Check className="h-3 w-3" /> Thêm</> : 'Thêm vào giỏ'}
               </button>
             )}
           </div>
