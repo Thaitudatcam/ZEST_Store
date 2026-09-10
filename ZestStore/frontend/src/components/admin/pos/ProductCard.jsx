@@ -26,24 +26,29 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
 
   if (mode === 'modal') {
     return (
-      <div data-testid={`product-card-${sku || 'unknown'}`} className={`flex items-center gap-3 bg-white rounded-xl border p-3 transition-all hover:shadow-md relative ${cartQty > 0 ? 'border-[var(--primary-color)] ring-1 ring-[var(--primary-color)]/20' : 'border-stone/10'}`}>
-        <div className="w-16 h-16 rounded-lg overflow-hidden bg-ivory-100 shrink-0">
+      <div data-testid={`product-card-${sku || 'unknown'}`} className={`flex items-center gap-3 bg-white rounded-xl border p-3 transition-all relative ${cartQty > 0 ? 'border-[var(--primary-color)] ring-1 ring-[var(--primary-color)]/20' : 'border-stone/10 hover:border-stone/20 hover:shadow-sm'}`}>
+        <div className="w-14 h-14 rounded-lg overflow-hidden bg-ivory-100 shrink-0">
           <SafeImg src={img} className="w-full h-full object-cover" fallback="https://placehold.co/100x100/e2e8f0/475569?text=P" />
         </div>
-        {isSale && <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-bordeaux text-white text-[9px] font-bold rounded-full">GIẢM</span>}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-ink truncate">{name}</p>
+          <p className="text-sm font-bold text-ink truncate">{name}</p>
           <p className="text-[11px] text-stone mt-0.5">
-            {color} {size ? `| ${size}` : ''}
+            Màu <span className="font-medium text-ink-soft">{color}</span> | Kích cỡ <span className="font-medium text-ink-soft">{size}</span>
           </p>
+          <p className="text-[11px] text-stone">Mã: <span className="font-mono font-medium text-ink-soft">{sku}</span></p>
+          <p className="text-[11px] text-stone">Kho: <span className={`font-semibold ${ton > 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{ton}</span></p>
           <div className="flex items-center gap-2 mt-1">
             {isSale && <span className="text-[11px] text-stone line-through">{VND(giaNhap)}</span>}
             <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col items-end gap-1.5">
           {cartQty > 0 ? (
-            <div className="flex items-center gap-1.5">
+            <>
+              <div className="flex items-center gap-1.5 text-emerald-deep">
+                <Check className="h-3.5 w-3.5" />
+                <span className="text-xs font-semibold">Đã thêm</span>
+              </div>
               <div className="flex items-center gap-1 bg-[var(--primary-bg)] rounded-lg px-1">
                 <button onClick={() => onQtyChange?.(variant, -1)} className="p-1 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded transition" aria-label="Giảm">
                   <Minus className="h-3.5 w-3.5" />
@@ -53,11 +58,15 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </div>
+              <button onClick={() => onQtyChange?.(variant, -cartQty)}
+                className="text-[10px] font-medium text-bordeaux hover:underline transition">
+                Xóa
+              </button>
+            </>
           ) : (
             <button onClick={handleAdd} disabled={ton <= 0}
-              className="flex items-center gap-1 px-3 py-1.5 bg-[var(--primary-color)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed">
-              {added ? <><Check className="h-3 w-3" /> Thêm</> : 'Thêm'}
+              className="px-3 py-1.5 bg-[var(--primary-color)] text-white text-xs font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+              Thêm vào giỏ
             </button>
           )}
         </div>
