@@ -1,30 +1,31 @@
-import { X, CirclePlus } from 'lucide-react'
+import { X, CirclePlus, User } from 'lucide-react'
 
 export default function OrderTabs({ orders, currentIdx, onSwitch, onAdd, onRemove }) {
   return (
-    <div className="flex items-center gap-1 px-1 pt-2 overflow-x-auto scrollbar-hide">
+    <div className="flex items-center gap-2 flex-wrap">
       {orders.map((o, i) => {
-        const total = o.cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
         const isActive = i === currentIdx
+        const orderCode = `HD${String(i + 1).padStart(3, '0')}`
+        const customerName = o.customer?.hoTen || 'Khách lẻ'
         return (
           <div key={o.id}
             onClick={() => onSwitch(i)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-t-xl text-xs font-semibold cursor-pointer transition-all whitespace-nowrap border-b-2 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all whitespace-nowrap border ${
               isActive
-                ? 'bg-white text-[var(--primary-color)] border-[var(--primary-color)] shadow-sm'
-                : 'bg-transparent text-stone border-transparent hover:bg-white/60 hover:text-ink'
+                ? 'bg-[var(--primary-color)] text-white border-[var(--primary-color)] shadow-sm'
+                : 'bg-white text-ink border-stone/20 hover:border-[var(--primary-color)]'
             }`}>
-            <span className="max-w-[80px] truncate">Đơn {i + 1}</span>
-            {o.cart.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--primary-bg)] text-[var(--primary-color)] font-bold">
-                {new Intl.NumberFormat('vi-VN').format(total)}đ
+            <span className="max-w-[200px] truncate">{orderCode} - {customerName}</span>
+            {o.customer && (
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isActive ? 'bg-white/20' : 'bg-[var(--primary-bg)] text-[var(--primary-color)]'}`}>
+                <User className="h-3 w-3" />
               </span>
             )}
             {orders.length > 1 && (
               <button onClick={(e) => { e.stopPropagation(); onRemove(i) }}
-                className="ml-1 text-stone/50 hover:text-bordeaux transition p-0.5 rounded hover:bg-bordeaux/10"
+                className={`ml-1 transition p-0.5 rounded ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone/50 hover:text-bordeaux hover:bg-bordeaux/10'}`}
                 aria-label="Đóng đơn">
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
