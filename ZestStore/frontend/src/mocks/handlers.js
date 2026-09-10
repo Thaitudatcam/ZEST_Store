@@ -149,10 +149,129 @@ export const handlers = [
   }),
 
   http.post('/api/auth/login', () => {
-    return HttpResponse.json({ token: 'mock-jwt-token', user: { hoTen: 'Admin', vaiTro: 'ADMIN', email: 'admin@zeststore.vn' } })
+    return HttpResponse.json({ token: 'mock-jwt-token', hoTen: 'Admin', vaiTro: 'ADMIN', email: 'admin@zeststore.vn', maNguoiDung: 1, choPhepBanHang: true, tokenType: 'Bearer' })
+  }),
+
+  http.post('/api/auth/refresh', () => {
+    return HttpResponse.json({ token: 'mock-jwt-token-refreshed', hoTen: 'Admin', vaiTro: 'ADMIN', email: 'admin@zeststore.vn', maNguoiDung: 1, choPhepBanHang: true, tokenType: 'Bearer' })
   }),
 
   http.get('/api/auth/me', () => {
-    return HttpResponse.json({ hoTen: 'Admin', vaiTro: 'ADMIN', email: 'admin@zeststore.vn' })
+    return HttpResponse.json({ hoTen: 'Admin', vaiTro: 'ADMIN', email: 'admin@zeststore.vn', maNguoiDung: 1, choPhepBanHang: true })
   }),
+
+  // Dashboard endpoints
+  http.get('/api/dashboard/stats', () => {
+    return HttpResponse.json({ tongDoanhThu: 125000000, tongDonHang: 342, tongKhachHang: 1205, donHangCho: 18 })
+  }),
+  http.get('/api/dashboard/recent-orders', () => {
+    return HttpResponse.json([])
+  }),
+  http.get('/api/dashboard/best-selling', () => {
+    return HttpResponse.json([])
+  }),
+  http.get('/api/dashboard/revenue-by-date', () => {
+    return HttpResponse.json([])
+  }),
+  http.get('/api/dashboard/revenue/day', () => {
+    return HttpResponse.json([])
+  }),
+  http.get('/api/dashboard/revenue/month', () => {
+    return HttpResponse.json([])
+  }),
+  http.get('/api/dashboard/revenue/year', () => {
+    return HttpResponse.json([])
+  }),
+  http.get('/api/dashboard/order-stats', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Orders
+  http.get('/api/orders/admin/all', () => {
+    return HttpResponse.json({ content: [], totalElements: 0 })
+  }),
+  http.get('/api/orders', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Coupons
+  http.get('/api/coupons', () => {
+    return HttpResponse.json(coupons)
+  }),
+
+  // Categories
+  http.get('/api/categories', () => {
+    return HttpResponse.json(categories)
+  }),
+
+  // Brands
+  http.get('/api/brands', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Admin customers
+  http.get('/api/admin/customers', () => {
+    return HttpResponse.json(customers)
+  }),
+
+  // Admin employees
+  http.get('/api/admin/employees', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Admin campaigns
+  http.get('/api/admin/campaigns', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Admin reviews
+  http.get('/api/admin/reviews', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Admin return requests
+  http.get('/api/admin/return-requests', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Admin shipping fees
+  http.get('/api/admin/shipping-fees', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Points
+  http.get('/api/vi/so-du', () => {
+    return HttpResponse.json({ soDu: 0 })
+  }),
+  http.get('/api/diem/so-du', () => {
+    return HttpResponse.json({ soDiem: 0 })
+  }),
+  http.get('/api/vi/lich-su', () => {
+    return HttpResponse.json({ content: [], totalElements: 0 })
+  }),
+  http.get('/api/diem/lich-su', () => {
+    return HttpResponse.json({ content: [], totalElements: 0 })
+  }),
+
+  // User vouchers
+  http.get('/api/user-vouchers', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Thuoc tinh
+  http.get('/api/thuoc-tinh', () => {
+    return HttpResponse.json([])
+  }),
+
+  // AI
+  http.get('/api/ai/conversations', () => {
+    return HttpResponse.json([])
+  }),
+
+  // Catch-all: return 200 with null for any unmocked endpoint (prevents 403 → auto logout)
+  http.get(/\/api\/.*/, () => HttpResponse.json(null)),
+  http.post(/\/api\/.*/, () => HttpResponse.json(null)),
+  http.put(/\/api\/.*/, () => HttpResponse.json(null)),
+  http.delete(/\/api\/.*/, () => HttpResponse.json(null)),
+  http.patch(/\/api\/.*/, () => HttpResponse.json(null)),
 ]
