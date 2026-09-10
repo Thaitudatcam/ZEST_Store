@@ -16,7 +16,7 @@ import POSToast from '../../components/admin/pos/POSToast'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import InvoicePrint from '../../components/InvoicePrint'
-import { Plus, ShoppingCart, X } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Trash2, X } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import { useAuth } from '../../context/AuthContext'
 
@@ -435,17 +435,8 @@ export default function AdminPOS() {
 
       {/* Order Tabs */}
       {orders.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          {orders.map((order, idx) => (
-            <div key={order.id} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition ${
-              idx === currentOrderIdx ? 'bg-[var(--primary-color)] text-white border-[var(--primary-color)]' : 'bg-white text-ink border-stone/20 hover:border-[var(--primary-color)]'
-            }`}>
-              <button onClick={() => switchOrder(idx)}>Đơn {idx + 1}</button>
-              {orders.length > 1 && (
-                <button onClick={() => removeOrder(idx)} className="ml-1 hover:opacity-70"><X className="h-3.5 w-3.5" /></button>
-              )}
-            </div>
-          ))}
+        <div className="mb-4">
+          <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={removeOrder} />
         </div>
       )}
 
