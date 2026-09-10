@@ -267,28 +267,18 @@ export default function Dashboard() {
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Lối tắt thao tác nhanh</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {shortcuts.map((item, i) => {
+          {shortcuts.map((item) => {
             const Icon = item.icon
-            const isActive = i === 0
             return (
               <button
                 key={item.to}
                 onClick={() => navigate(item.to)}
-                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
-                  isActive ? 'border-[var(--primary-color)] bg-[var(--primary-bg)]' : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
+                className="group flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 border-gray-200 bg-white transition-all duration-200 hover:border-[var(--primary-color)] hover:bg-[var(--primary-bg)] hover:shadow-md"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isActive
-                    ? 'text-white'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-                  style={isActive ? { background: 'var(--primary-color)' } : {}}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-100 text-gray-500 transition-all duration-200 group-hover:text-white group-hover:bg-[var(--primary-color)]">
                   <Icon className="h-5 w-5" />
                 </div>
-                <span className={`text-xs font-semibold text-center leading-tight ${
-                  isActive ? 'text-[var(--primary-color)]' : 'text-gray-700'
-                }`}>
+                <span className="text-xs font-semibold text-center leading-tight text-gray-700 transition-colors duration-200 group-hover:text-[var(--primary-color)]">
                   {item.label}
                 </span>
               </button>
