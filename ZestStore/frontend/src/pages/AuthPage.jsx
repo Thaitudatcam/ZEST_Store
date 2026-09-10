@@ -108,7 +108,7 @@ export default function AuthPage() {
         <div className="relative w-1/2 h-full bg-ivory overflow-hidden">
           <div className="absolute -top-20 -left-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
           <div className="relative z-10 w-full h-full flex flex-col justify-center px-10"
-            aria-hidden={showSignUp} {...(showSignUp && { inert: '' })}>
+            aria-hidden={showSignUp} {...(showSignUp && { inert: true })}>
             <LoginForm onSuccess={(data) => {
               if (data.vaiTro === 'ADMIN') navigate('/admin')
               else if (data.vaiTro === 'STAFF') navigate('/admin/pos')
@@ -121,7 +121,7 @@ export default function AuthPage() {
         <div className="relative w-1/2 h-full bg-ivory overflow-hidden">
           <div className="absolute -top-20 -right-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
           <div className="relative z-10 w-full h-full flex flex-col justify-center px-10"
-            aria-hidden={!showSignUp} {...(!showSignUp && { inert: '' })}>
+            aria-hidden={!showSignUp} {...(!showSignUp && { inert: true })}>
             <RegisterForm onSuccess={() => navigate('/')} />
           </div>
         </div>

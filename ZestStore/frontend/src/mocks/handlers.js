@@ -268,6 +268,18 @@ export const handlers = [
     return HttpResponse.json([])
   }),
 
+  // SSE notification stream — return empty event-stream
+  http.get('/api/notifications/stream', () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(':\n\n'))
+      },
+    })
+    return new HttpResponse(stream, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
+    })
+  }),
+
   // Catch-all: return 200 with null for any unmocked endpoint (prevents 403 → auto logout)
   http.get(/\/api\/.*/, () => HttpResponse.json(null)),
   http.post(/\/api\/.*/, () => HttpResponse.json(null)),

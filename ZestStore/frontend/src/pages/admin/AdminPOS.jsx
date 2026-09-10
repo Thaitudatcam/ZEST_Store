@@ -67,6 +67,7 @@ export default function AdminPOS() {
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [customerPaid, setCustomerPaid] = useState(0)
   const [variantModal, setVariantModal] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
@@ -308,6 +309,7 @@ export default function AdminPOS() {
     setCoupon(newOrders[0]?.coupon || null)
     setDungDiem(newOrders[0]?.dungDiem || false)
     setCurrentOrderIdx(0)
+    setCustomerPaid(0)
   }
 
   const handleCheckout = async (paymentMethod = 5) => {
@@ -574,28 +576,31 @@ export default function AdminPOS() {
 
             {/* Payment Info */}
             <div className="bg-white rounded-2xl border border-stone/10 p-5">
-              <h3 className="font-bold text-ink mb-4">Thông tin thanh toán</h3>
-              <div className="space-y-3">
-                {/* Delivery Toggle */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-stone">Tại quầy</span>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-ink">Thông tin thanh toán</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone">Tại quầy</span>
                   <button onClick={() => setLoaiDon(loaiDon === 'TAI_QUAY' ? 'GIAO_HANG' : 'TAI_QUAY')}
                     className={`relative w-11 h-6 rounded-full transition-colors ${loaiDon === 'GIAO_HANG' ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${loaiDon === 'GIAO_HANG' ? 'translate-x-5' : ''}`} />
                   </button>
                 </div>
-
+              </div>
+              <div className="space-y-3">
                 {/* Coupon */}
-                <div className="flex items-center gap-2">
-                  <input value={coupon?.maCode || ''} onChange={e => handleApplyCoupon(e.target.value)}
-                    placeholder="Nhập mã (Enter để áp dụng)"
-                    disabled={cart.length === 0}
-                    className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
-                    onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon(e.target.value) }} />
-                  <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
-                  <span className="text-sm font-bold text-[var(--primary-color)] w-16 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
+                <div>
+                  <label className="text-xs font-semibold text-stone mb-1.5 block">Mã phiếu giảm giá</label>
+                  <div className="flex items-center gap-2">
+                    <input value={coupon?.maCode || ''} onChange={e => handleApplyCoupon(e.target.value)}
+                      placeholder="Nhập mã (Enter để áp dụng)"
+                      disabled={cart.length === 0}
+                      className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
+                      onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon(e.target.value) }} />
+                    <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
+                    <span className="text-sm font-bold text-[var(--primary-color)] w-20 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
+                  </div>
+                  {couponMsg && <p className="text-[11px] text-bordeaux mt-1">{couponMsg}</p>}
                 </div>
-                {couponMsg && <p className="text-[11px] text-bordeaux">{couponMsg}</p>}
 
                 {/* Points */}
                 {selectedCustomer && customerDiem?.soDiem > 0 && (
@@ -609,7 +614,7 @@ export default function AdminPOS() {
                 )}
 
                 {/* Totals */}
-                <div className="space-y-1.5 text-sm pt-2 border-t border-stone/10">
+                <div className="space-y-2 text-sm pt-2 border-t border-stone/10">
                   <div className="flex justify-between text-stone">
                     <span>Tiền hàng</span><span>{VND(total)}</span>
                   </div>
@@ -630,8 +635,33 @@ export default function AdminPOS() {
                   </div>
                 </div>
 
+                {/* Customer Payment Input */}
+                <div className="pt-2 border-t border-stone/10">
+                  <label className="text-xs font-semibold text-stone mb-1.5 block">Khách thanh toán</label>
+                  <div className="relative">
+                    <input type="text" inputMode="numeric"
+                      value={customerPaid === 0 ? '' : customerPaid.toLocaleString('vi-VN')}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '')
+                        setCustomerPaid(Number(raw) || 0)
+                      }}
+                      placeholder="0"
+                      className="w-full border border-stone/20 rounded-lg pl-8 pr-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] text-right font-semibold"
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone text-sm">đ</span>
+                  </div>
+                </div>
+
+                {/* Change */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-stone">Tiền thừa trả khách</span>
+                  <span className={`font-bold ${customerPaid - thanhTien >= 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>
+                    {VND(Math.max(0, customerPaid - thanhTien))}
+                  </span>
+                </div>
+
                 {/* Checkout */}
-                <button onClick={() => setShowPaymentModal(true)} disabled={cart.length === 0 || placing}
+                <button onClick={() => handleCheckout(5)} disabled={cart.length === 0 || placing}
                   className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
                   {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
                 </button>

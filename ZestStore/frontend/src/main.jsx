@@ -9,7 +9,9 @@ import App from './App'
 import './index.css'
 
 async function enableMocking() {
-  if (import.meta.env.DEV) {
+  // Tắt MSW để chạy BE thật. Muốn bật lại thì đổi thành true
+  const USE_MSW = false
+  if (import.meta.env.DEV && USE_MSW) {
     const { worker } = await import('./mocks/browser')
     return worker.start({ onUnhandledRequest: 'bypass' })
   }

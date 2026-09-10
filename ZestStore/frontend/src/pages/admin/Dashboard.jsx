@@ -30,7 +30,7 @@ const statusColors = {
 }
 
 const shortcuts = [
-  { icon: ShoppingCart, label: 'Bán hàng POS', to: '/admin/pos' },
+  { icon: ShoppingCart, label: 'Bán hàng', to: '/admin/pos' },
   { icon: ShoppingBag, label: 'Quản lý đơn hàng', to: '/admin/orders/online' },
   { icon: PlusCircle, label: 'Thêm sản phẩm', to: '/admin/products/create' },
   { icon: Ticket, label: 'Mã giảm giá', to: '/admin/coupons' },
@@ -163,7 +163,7 @@ export default function Dashboard() {
             style={{ background: 'var(--primary-color)' }}
           >
             <Store className="h-5 w-5" />
-            Bán hàng tại quầy
+            Bán hàng
           </button>
         </div>
       </div>
