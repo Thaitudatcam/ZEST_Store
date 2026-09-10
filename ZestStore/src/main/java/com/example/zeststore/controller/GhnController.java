@@ -38,7 +38,7 @@ public class GhnController {
     public ResponseEntity<?> calculateFee(@RequestBody Map<String, Object> request) {
         int serviceTypeId = ((Number) request.getOrDefault("serviceTypeId", 2)).intValue();
         int toDistrictId = ((Number) request.get("toDistrictId")).intValue();
-        String toWardCode = (String) request.get("toWardCode");
+        String toWardCode = String.valueOf(request.get("toWardCode"));
         int weight = ((Number) request.getOrDefault("weight", 500)).intValue();
         return ResponseEntity.ok(ghnService.calculateFee(serviceTypeId, toDistrictId, toWardCode, weight));
     }

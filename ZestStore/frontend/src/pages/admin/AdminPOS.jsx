@@ -130,19 +130,19 @@ export default function AdminPOS() {
   }, [shippingInfo.quanHuyen])
 
   useEffect(() => {
-    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.tinhThanh) { setShippingFee(0); return }
+    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.tinhThanh || !shippingInfo.quanHuyen || !shippingInfo.phuongXa) { setShippingFee(0); return }
     setShippingLoading(true)
     clearTimeout(shippingDebounceRef.current)
     shippingDebounceRef.current = setTimeout(() => {
       posApi.calculateShipping({
         serviceTypeId: shippingInfo.phuongThuc === 'GHTK' ? 1 : 2,
-        toDistrictId: shippingInfo.quanHuyen,
-        toWardCode: shippingInfo.phuongXa,
+        toDistrictId: parseInt(shippingInfo.quanHuyen, 10),
+        toWardCode: String(shippingInfo.phuongXa),
         weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
       }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000)).finally(() => setShippingLoading(false))
     }, 300)
     return () => clearTimeout(shippingDebounceRef.current)
-  }, [loaiDon, shippingInfo.tinhThanh, shippingInfo.quanHuyen, shippingInfo.phuongThuc, cart])
+  }, [loaiDon, shippingInfo.tinhThanh, shippingInfo.quanHuyen, shippingInfo.phuongXa, shippingInfo.phuongThuc, cart])
 
   const phiVanChuyen = loaiDon === 'GIAO_HANG' && !mienPhiVanChuyen ? shippingFee : 0
   const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
@@ -688,7 +688,7 @@ export default function AdminPOS() {
               <select value={shippingInfo?.tinhThanh || ''} onChange={e => setShippingInfo(prev => ({ ...prev, tinhThanh: e.target.value, quanHuyen: '', phuongXa: '' }))}
                 className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
                 <option value="">Chọn</option>
-                {provinces?.map(p => <option key={p.ma || p} value={p.ma || p}>{p.ten || p}</option>)}
+                {provinces?.map(p => <option key={p.ProvinceID || p.ma} value={p.ProvinceID || p.ma}>{p.ProvinceName || p.ten}</option>)}
               </select>
             </div>
             <div>
@@ -697,7 +697,7 @@ export default function AdminPOS() {
                 disabled={!shippingInfo?.tinhThanh}
                 className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
                 <option value="">Chọn</option>
-                {districts?.map(d => <option key={d.ma || d} value={d.ma || d}>{d.ten || d}</option>)}
+                {districts?.map(d => <option key={d.DistrictID || d.ma} value={d.DistrictID || d.ma}>{d.DistrictName || d.ten}</option>)}
               </select>
             </div>
             <div>
@@ -706,7 +706,7 @@ export default function AdminPOS() {
                 disabled={!shippingInfo?.quanHuyen}
                 className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
                 <option value="">Chọn</option>
-                {wards?.map(w => <option key={w.ma || w} value={w.ma || w}>{w.ten || w}</option>)}
+                {wards?.map(w => <option key={w.WardCode || w.ma} value={w.WardCode || w.ma}>{w.WardName || w.ten}</option>)}
               </select>
             </div>
             <div>
