@@ -9,6 +9,14 @@ export const variants = [
   { maBienThe: 8, maSanPham: 5, tenSanPham: 'Áo Polo', mauSac: 'Đỏ', kichCo: 'S', gia: 90000, giaNhap: 50000, tonKho: 50, sku: 'CTSP008', maCTSP: 'CTSP008', urlAnhDaiDien: 'https://placehold.co/200x200/e2e8f0/475569?text=Polo', trangThai: 1 },
 ]
 
+export const products = [
+  { maSanPham: 1, tenSanPham: 'Áo Polo Nike', gia: 350000, urlAnhDaiDien: 'https://placehold.co/200x200/e2e8f0/475569?text=Polo', trangThai: 1 },
+  { maSanPham: 2, tenSanPham: 'Áo Polo Nike', gia: 360000, urlAnhDaiDien: 'https://placehold.co/200x200/e2e8f0/475569?text=Polo', trangThai: 1 },
+  { maSanPham: 3, tenSanPham: 'Áo Thun Adidas', gia: 234000, urlAnhDaiDien: 'https://placehold.co/200x200/e2e8f0/475569?text=Thun', trangThai: 1 },
+  { maSanPham: 4, tenSanPham: 'Áo Thun Adidas', gia: 290000, urlAnhDaiDien: 'https://placehold.co/200x200/e2e8f0/475569?text=Thun', trangThai: 1 },
+  { maSanPham: 5, tenSanPham: 'Áo Polo', gia: 90000, urlAnhDaiDien: 'https://placehold.co/200x200/e2e8f0/475569?text=Polo', trangThai: 1 },
+]
+
 export const categories = [
   { maDanhMuc: 1, tenDanhMuc: 'Áo Polo' },
   { maDanhMuc: 2, tenDanhMuc: 'Áo Thun' },

@@ -1,0 +1,22 @@
+# Logs
+*.log
+*.err
+logs/
+
+# IDE
+.idea/
+*.iml
+
+# Vite build cache
+frontend/.vite/
+
+# Build output
+target/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Runtime data
+uploads/

@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { variants, categories, colors, sizes, coupons, customers, pointsRule } from './data'
+import { variants, products, categories, colors, sizes, coupons, customers, pointsRule } from './data'
 
 let orderCounter = 100
 
@@ -115,7 +115,37 @@ export const handlers = [
   }),
 
   http.get('/api/products', () => {
-    return HttpResponse.json({ content: variants, totalElements: variants.length })
+    return HttpResponse.json({ content: products, totalElements: products.length })
+  }),
+
+  http.get('/api/cart', () => {
+    return HttpResponse.json({ items: [], tongTien: 0 })
+  }),
+
+  http.get('/api/wishlist', () => {
+    return HttpResponse.json([])
+  }),
+
+  http.get('/api/recommendations/personalized', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') || '8')
+    return HttpResponse.json(products.slice(0, limit))
+  }),
+
+  http.get('/api/recommendations/best-selling', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') || '8')
+    return HttpResponse.json(products.slice(0, limit))
+  }),
+
+  http.get('/api/recommendations/popular', ({ request }) => {
+    const url = new URL(request.url)
+    const limit = parseInt(url.searchParams.get('limit') || '8')
+    return HttpResponse.json(products.slice(0, limit))
+  }),
+
+  http.get('/api/user-vouchers/unclaimed-count', () => {
+    return HttpResponse.json(0)
   }),
 
   http.post('/api/auth/login', () => {
