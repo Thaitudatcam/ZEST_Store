@@ -68,6 +68,14 @@ public class GhnService {
     }
 
     public Map<String, Object> getProvinces() {
+        if (config.getToken() == null || config.getToken().isBlank()) {
+            log.warn("GHN token not configured, returning mock provinces");
+            return Map.of("data", List.of(
+                Map.of("ProvinceID", 1, "ProvinceName", "Hà Nội"),
+                Map.of("ProvinceID", 2, "ProvinceName", "Hồ Chí Minh"),
+                Map.of("ProvinceID", 3, "ProvinceName", "Đà Nẵng")
+            ));
+        }
         return cachedGet("provinces", () -> {
             try {
                 String url = config.getBaseUrl() + "/master-data/province";
@@ -82,6 +90,13 @@ public class GhnService {
     }
 
     public Map<String, Object> getDistricts(int provinceId) {
+        if (config.getToken() == null || config.getToken().isBlank()) {
+            return Map.of("data", List.of(
+                Map.of("DistrictID", 1, "DistrictName", "Hoàn Kiếm"),
+                Map.of("DistrictID", 2, "DistrictName", "Ba Đình"),
+                Map.of("DistrictID", 3, "DistrictName", "Đống Đa")
+            ));
+        }
         return cachedGet("districts:" + provinceId, () -> {
             try {
                 String url = config.getBaseUrl() + "/master-data/district?province_id=" + provinceId;
@@ -96,6 +111,12 @@ public class GhnService {
     }
 
     public Map<String, Object> getWards(int districtId) {
+        if (config.getToken() == null || config.getToken().isBlank()) {
+            return Map.of("data", List.of(
+                Map.of("WardCode", "13010", "WardName", "Phúc Xá"),
+                Map.of("WardCode", "13011", "WardName", "Trúc Bạch")
+            ));
+        }
         return cachedGet("wards:" + districtId, () -> {
             try {
                 String url = config.getBaseUrl() + "/master-data/ward?district_id=" + districtId;
@@ -126,6 +147,9 @@ public class GhnService {
     }
 
     public Map<String, Object> calculateFee(int serviceTypeId, int toDistrictId, String toWardCode, int weight) {
+        if (config.getToken() == null || config.getToken().isBlank()) {
+            return Map.of("data", Map.of("total", 30000));
+        }
         try {
             String url = config.getBaseUrl() + "/v2/shipping-order/fee";
             Map<String, Object> body = new LinkedHashMap<>();
