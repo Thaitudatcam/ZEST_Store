@@ -3,6 +3,7 @@ package com.example.zeststore.service;
 import com.example.zeststore.dto.request.PosOrderRequest;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
+import com.example.zeststore.exception.TooManyRequestsException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -97,6 +98,12 @@ public class POSService {
     public Map<String, Object> createPosOrder(PosOrderRequest request, Integer adminUserId) {
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        Long todayPosCount = donHangRepository.countTodayPosOrders(startOfDay);
+        if (todayPosCount >= 10) {
+            throw new TooManyRequestsException("Đã đạt giới hạn 10 đơn hàng POS trong ngày");
+        }
 
         List<Map<String, Object>> orderItems = new ArrayList<>();
         BigDecimal tongTien = BigDecimal.ZERO;
