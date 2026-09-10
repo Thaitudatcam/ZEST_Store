@@ -71,9 +71,9 @@ public class GhnService {
         if (config.getToken() == null || config.getToken().isBlank()) {
             log.warn("GHN token not configured, returning mock provinces");
             return Map.of("data", List.of(
-                Map.of("ProvinceID", 1, "ProvinceName", "Hà Nội"),
-                Map.of("ProvinceID", 2, "ProvinceName", "Hồ Chí Minh"),
-                Map.of("ProvinceID", 3, "ProvinceName", "Đà Nẵng")
+                Map.of("ProvinceID", 201, "ProvinceName", "Hà Nội"),
+                Map.of("ProvinceID", 202, "ProvinceName", "Hồ Chí Minh"),
+                Map.of("ProvinceID", 203, "ProvinceName", "Đà Nẵng")
             ));
         }
         return cachedGet("provinces", () -> {
@@ -92,9 +92,9 @@ public class GhnService {
     public Map<String, Object> getDistricts(int provinceId) {
         if (config.getToken() == null || config.getToken().isBlank()) {
             return Map.of("data", List.of(
-                Map.of("DistrictID", 1, "DistrictName", "Hoàn Kiếm"),
-                Map.of("DistrictID", 2, "DistrictName", "Ba Đình"),
-                Map.of("DistrictID", 3, "DistrictName", "Đống Đa")
+                Map.of("DistrictID", 1542, "DistrictName", "Quận Hà Đông"),
+                Map.of("DistrictID", 1484, "DistrictName", "Quận Ba Đình"),
+                Map.of("DistrictID", 1489, "DistrictName", "Quận Hoàn Kiếm")
             ));
         }
         return cachedGet("districts:" + provinceId, () -> {
@@ -113,8 +113,9 @@ public class GhnService {
     public Map<String, Object> getWards(int districtId) {
         if (config.getToken() == null || config.getToken().isBlank()) {
             return Map.of("data", List.of(
-                Map.of("WardCode", "13010", "WardName", "Phúc Xá"),
-                Map.of("WardCode", "13011", "WardName", "Trúc Bạch")
+                Map.of("WardCode", "1B1510", "WardName", "Phường Phú Lâm"),
+                Map.of("WardCode", "1B1505", "WardName", "Phường Kiến Hưng"),
+                Map.of("WardCode", "1B1503", "WardName", "Phường Dương Nội")
             ));
         }
         return cachedGet("wards:" + districtId, () -> {
