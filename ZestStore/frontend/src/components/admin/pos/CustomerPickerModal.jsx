@@ -67,7 +67,7 @@ export default function CustomerPickerModal({ open, onClose, onSelect }) {
               {filtered.map(c => (
                 <button key={c.maNguoiDung} onClick={() => { onSelect(c); onClose() }}
                   className="w-full flex items-center justify-between px-2 py-3.5 hover:bg-[var(--primary-bg)] rounded-lg transition group">
-                  <div className="min-w-0">
+                  <div className="min-w-0 text-left">
                     <p className="text-sm font-semibold text-ink truncate">{c.hoTen}</p>
                     {c.soDienThoai && <p className="text-xs text-stone mt-0.5">SĐT: {c.soDienThoai}</p>}
                   </div>
