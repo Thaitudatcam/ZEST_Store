@@ -566,22 +566,31 @@ export default function AdminPOS() {
             <div className="bg-white rounded-2xl border border-stone/10 p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-ink">Thông tin khách hàng</h3>
-                <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
+                  {selectedCustomer && (
+                    <>
+                      <button className="text-xs text-stone hover:underline">Sửa địa chỉ</button>
+                      <button onClick={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
+                        className="text-xs text-bordeaux hover:underline font-medium">Giữ khách</button>
+                    </>
+                  )}
+                </div>
               </div>
               {selectedCustomer ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-stone">Khách hàng:</span>
-                    <span className="text-sm font-semibold text-ink">{selectedCustomer.hoTen}</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-ink">{selectedCustomer.hoTen}</p>
+                    <span className="w-5 h-5 rounded-full bg-emerald-deep/10 flex items-center justify-center">
+                      <svg className="h-3 w-3 text-emerald-deep" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span>
                   </div>
                   {selectedCustomer.soDienThoai && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-stone">SĐT:</span>
-                      <span className="text-sm text-ink">{selectedCustomer.soDienThoai}</span>
-                    </div>
+                    <p className="text-xs text-stone mt-1">SĐT: {selectedCustomer.soDienThoai}</p>
                   )}
-                  <button onClick={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
-                    className="text-xs text-bordeaux hover:text-bordeaux/80 font-medium">Bỏ chọn</button>
+                  {selectedCustomer.email && (
+                    <p className="text-xs text-stone mt-0.5">Email: {selectedCustomer.email}</p>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-stone">Đơn đang được đặt dưới dạng "Khách lẻ" (Mua ẩn danh)</p>
