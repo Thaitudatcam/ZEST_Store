@@ -249,15 +249,19 @@ export default function AdminPOS() {
   }
 
   const updateQtyCart = (idx, delta) => {
-    setCart(prev => prev.map((c, i) => {
-      if (i !== idx) return c
-      const newQty = Math.max(1, c.soLuong + delta)
-      if (delta > 0 && newQty > c.tonKho) {
-        setMsg({ type: 'error', text: `Chỉ còn ${c.tonKho} sản phẩm trong kho` })
-        return c
-      }
-      return { ...c, soLuong: newQty }
-    }))
+    setCart(prev => {
+      const updated = prev.map((c, i) => {
+        if (i !== idx) return c
+        const newQty = c.soLuong + delta
+        if (newQty <= 0) return null
+        if (delta > 0 && newQty > c.tonKho) {
+          setMsg({ type: 'error', text: `Chỉ còn ${c.tonKho} sản phẩm trong kho` })
+          return c
+        }
+        return { ...c, soLuong: newQty }
+      }).filter(Boolean)
+      return updated
+    })
   }
 
   const updateQtyModal = (variant, delta) => {
