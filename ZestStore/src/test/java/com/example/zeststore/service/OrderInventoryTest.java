@@ -31,7 +31,6 @@ class OrderInventoryTest {
     @Mock VoucherNguoiDungRepository vouchers;
     @Mock PhieuGiamGiaService couponService;
     @Mock ViService wallet;
-    @Mock DiemService points;
     @Mock InventoryService inventory;
     @InjectMocks DonHangService service;
     DonHang order;
