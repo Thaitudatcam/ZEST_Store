@@ -13,6 +13,9 @@ export const posApi = {
   lookupSku: (sku) =>
     api.get('/admin/pos/scan', { params: { sku } }).then(r => r.data),
 
+  getCustomers: () =>
+    api.get('/admin/customers').then(r => r.data).catch(() => []),
+
   searchCustomers: (q) =>
     api.get('/admin/customers/search', { params: { q } }).then(r => r.data),
 

@@ -4,16 +4,19 @@ import { posApi } from './apiClient'
 
 export default function CustomerPickerModal({ open, onClose, onSelect }) {
   const [search, setSearch] = useState('')
-  const [results, setResults] = useState([])
-  const [searching, setSearching] = useState(false)
+  const [allCustomers, setAllCustomers] = useState([])
+  const [loading, setLoading] = useState(false)
   const inputRef = useRef(null)
-  const debounceRef = useRef(null)
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => inputRef.current?.focus(), 200)
       setSearch('')
-      setResults([])
+      setLoading(true)
+      posApi.getCustomers().then(data => {
+        setAllCustomers(Array.isArray(data) ? data : [])
+        setLoading(false)
+      }).catch(() => { setAllCustomers([]); setLoading(false) })
+      setTimeout(() => inputRef.current?.focus(), 200)
     }
   }, [open])
 
@@ -24,19 +27,14 @@ export default function CustomerPickerModal({ open, onClose, onSelect }) {
     return () => window.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!search.trim() || search.trim().length < 2) { setResults([]); return }
-    setSearching(true)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await posApi.searchCustomers(search.trim())
-        setResults(Array.isArray(res) ? res : [])
-      } catch { setResults([]) }
-      setSearching(false)
-    }, 300)
-    return () => clearTimeout(debounceRef.current)
-  }, [search, open])
+  const filtered = search.trim()
+    ? allCustomers.filter(c => {
+        const q = search.toLowerCase()
+        return (c.hoTen || '').toLowerCase().includes(q) ||
+               (c.soDienThoai || '').includes(q) ||
+               (c.email || '').toLowerCase().includes(q)
+      })
+    : allCustomers
 
   if (!open) return null
 
@@ -62,11 +60,11 @@ export default function CustomerPickerModal({ open, onClose, onSelect }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-2 min-h-[120px] max-h-[340px]">
-          {searching && <p className="text-xs text-stone text-center py-4">Đang tìm...</p>}
+          {loading && <p className="text-xs text-stone text-center py-4">Đang tải...</p>}
 
-          {!searching && results.length > 0 && (
+          {!loading && filtered.length > 0 && (
             <div className="divide-y divide-stone/10">
-              {results.map(c => (
+              {filtered.map(c => (
                 <button key={c.maNguoiDung} onClick={() => { onSelect(c); onClose() }}
                   className="w-full flex items-center justify-between px-2 py-3.5 hover:bg-[var(--primary-bg)] rounded-lg transition group">
                   <div className="min-w-0">
@@ -79,12 +77,8 @@ export default function CustomerPickerModal({ open, onClose, onSelect }) {
             </div>
           )}
 
-          {search.trim().length >= 2 && !searching && results.length === 0 && (
+          {!loading && search.trim() && filtered.length === 0 && (
             <p className="text-xs text-stone text-center py-4">Không tìm thấy khách hàng</p>
-          )}
-
-          {!search.trim() && results.length === 0 && !searching && (
-            <p className="text-xs text-stone text-center py-4">Nhập tên hoặc SĐT để tìm kiếm</p>
           )}
         </div>
 
