@@ -28,12 +28,6 @@ export const posApi = {
   getAvailableCoupons: (total, productIds, userId) =>
     api.get('/coupons/available', { params: { tongTien: total, maSanPhamIds: productIds?.join(','), maNguoiDung: userId } }).then(r => r.data).catch(() => []),
 
-  getCustomerDiem: (userId) =>
-    api.get(`/vi-zeststore/diem/${userId}`).then(r => r.data).catch(() => ({ soDiem: 0 })),
-
-  getDiemQuyTac: () =>
-    api.get('/diem-quy-tac').then(r => r.data).catch(() => ({ tiLeDoi: 1, giamToiDaPhanTram: 50, diemToiThieu: 10 })),
-
   createOrder: (data) =>
     api.post('/admin/pos/orders', data).then(r => r.data),
 

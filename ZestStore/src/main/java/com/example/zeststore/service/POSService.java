@@ -27,7 +27,6 @@ public class POSService {
     private final PosCartRepository posCartRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
-    private final DiemService diemService;
     private final InventoryService inventoryService;
 
     public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien) {
@@ -105,7 +104,7 @@ public class POSService {
         String checkoutKey = "POS:" + adminUserId + ":" + request.getCheckoutKey();
         DonHang previous = donHangRepository.findByCheckoutKey(checkoutKey).orElse(null);
         if (previous != null) return Map.of("maDonHang", previous.getMaDonHang(),
-                "thanhToan", previous.getTongTien().subtract(previous.getSoTienGiamDiem()),
+                "thanhToan", previous.getTongTien(),
                 "message", "Đơn đã được tạo trước đó");
         if (!Integer.valueOf(5).equals(request.getPhuongThucThanhToan())
                 && !Integer.valueOf(6).equals(request.getPhuongThucThanhToan()))
@@ -204,30 +203,12 @@ public class POSService {
 
         BigDecimal thanhToanTong = tongTien.subtract(soTienGiam).max(BigDecimal.ZERO);
 
-        BigDecimal tienGiamDiem = BigDecimal.ZERO;
-        Integer soDiemSuDung = request.getSoDiemSuDung();
-        if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
-            int maxDiem = diemService.maxDiemChoPhep(thanhToanTong);
-            if (soDiemSuDung > maxDiem) {
-                soDiemSuDung = maxDiem;
-            }
-            if (soDiemSuDung > 0 && soDiemSuDung < diemService.diemToiThieu()) {
-                throw new BadRequestException("Tối thiểu " + diemService.diemToiThieu() + " điểm để sử dụng");
-            }
-            tienGiamDiem = BigDecimal.valueOf(diemService.tinhTienGiam(soDiemSuDung));
-            if (tienGiamDiem.compareTo(thanhToanTong) > 0) {
-                throw new BadRequestException("Số điểm giảm không được vượt quá tổng tiền thanh toán");
-            }
-            thanhToanTong = thanhToanTong.subtract(tienGiamDiem);
-        }
-
         DonHang order = DonHang.builder()
                 .nguoiDung(customer)
                 .loaiDonHang(2)
                 .checkoutKey(checkoutKey)
                 .maDonHangCode(code)
-                .tongTien(thanhToanTong.add(tienGiamDiem))
-                .soTienGiamDiem(tienGiamDiem)
+                .tongTien(thanhToanTong)
                 .trangThaiDon(6)
                 .tenNguoiNhan(tenNguoiNhan)
                 .sdtNguoiNhan(sdtNguoiNhan)
@@ -239,14 +220,6 @@ public class POSService {
                 .phieuGiamGia(coupon)
                 .build();
         order = donHangRepository.save(order);
-
-        if (customer != null) {
-            BigDecimal tichDiemBase = diemService.tichTienTrenTienMat() ? thanhToanTong : thanhToanTong.add(tienGiamDiem);
-            diemService.tichDiem(customer.getMaNguoiDung(), order.getMaDonHang(), tichDiemBase, "POS");
-        }
-        if (soDiemSuDung != null && soDiemSuDung > 0 && customer != null) {
-            diemService.truDiem(customer.getMaNguoiDung(), soDiemSuDung, order.getMaDonHang(), "POS");
-        }
 
         if (coupon != null) {
             phieuGiamGiaService.useCoupon(coupon.getMaCode(),

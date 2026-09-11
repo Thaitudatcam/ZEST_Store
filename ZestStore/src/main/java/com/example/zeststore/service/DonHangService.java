@@ -39,7 +39,6 @@ public class DonHangService {
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final ViService viService;
-    private final DiemService diemService;
     private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
@@ -169,7 +168,6 @@ public class DonHangService {
         orderInfo.put("diaChiGiaoHang", order.getDiaChiGiaoHang());
         orderInfo.put("ngayDat", order.getNgayDat());
         orderInfo.put("soTienGiam", order.getSoTienGiam());
-        orderInfo.put("soTienGiamDiem", order.getSoTienGiamDiem());
         orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
         orderInfo.put("tongTien", order.getTongTien());
         orderInfo.put("loaiDonHang", order.getLoaiDonHang());
@@ -339,32 +337,13 @@ public class DonHangService {
             finalTotal = BigDecimal.ZERO;
         }
 
-        BigDecimal tienGiamDiem = BigDecimal.ZERO;
-        Integer soDiemSuDung = request.getSoDiemSuDung();
-        if (soDiemSuDung != null && soDiemSuDung > 0) {
-            int maxDiem = diemService.maxDiemChoPhep(tongTien.subtract(soTienGiam).max(BigDecimal.ZERO));
-            if (soDiemSuDung > maxDiem) {
-                soDiemSuDung = maxDiem;
-            }
-            if (soDiemSuDung > 0 && soDiemSuDung < diemService.diemToiThieu()) {
-                throw new BadRequestException("Tối thiểu " + diemService.diemToiThieu() + " điểm để sử dụng");
-            }
-            tienGiamDiem = BigDecimal.valueOf(diemService.tinhTienGiam(soDiemSuDung));
-            if (tienGiamDiem.compareTo(finalTotal) > 0) {
-                throw new BadRequestException("Số điểm giảm không được vượt quá tổng tiền thanh toán");
-            }
-        }
-        BigDecimal tienSauVoucher = finalTotal;
-        finalTotal = finalTotal.subtract(tienGiamDiem).max(BigDecimal.ZERO);
-
         DonHang order = DonHang.builder()
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
                 .maDonHangCode("ORD-" + System.currentTimeMillis())
                 .soTienGiam(soTienGiam)
                 .phiVanChuyen(phiVanChuyen)
-                .tongTien(tienSauVoucher)
-                .soTienGiamDiem(tienGiamDiem)
+                .tongTien(finalTotal)
                 .trangThaiDon(1)
                 .tenNguoiNhan(request.getTenNguoiNhan())
                 .sdtNguoiNhan(request.getSdtNguoiNhan())
@@ -372,10 +351,6 @@ public class DonHangService {
                 .ghiChu(request.getGhiChu())
                 .build();
         order = donHangRepository.save(order);
-
-        if (soDiemSuDung != null && soDiemSuDung > 0) {
-            diemService.truDiem(userId, soDiemSuDung, order.getMaDonHang(), "ONLINE");
-        }
 
         for (Map<String, Object> item : orderItems) {
             BienTheSanPham variant = (BienTheSanPham) item.get("bienThe");
@@ -517,10 +492,6 @@ public class DonHangService {
         order.setTrangThaiDon(status);
         order = donHangRepository.save(order);
 
-        if (Integer.valueOf(6).equals(status) && order.getNguoiDung() != null) {
-            tichDiemChoDonHang(order);
-        }
-
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
         lichSuDonHangRepository.save(LichSuDonHang.builder()
@@ -584,10 +555,6 @@ public class DonHangService {
                 });
 
         donHangRepository.save(order);
-
-        if (order.getNguoiDung() != null) {
-            tichDiemChoDonHang(order);
-        }
 
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
@@ -719,13 +686,5 @@ public class DonHangService {
         orderSseService.sendOrderStatusUpdate(orderId, 5, oldStatus, "user", null);
 
         return Map.of("message", "Order cancelled");
-    }
-
-    private void tichDiemChoDonHang(DonHang order) {
-        BigDecimal base = order.getTongTien();
-        if (diemService.tichTienTrenTienMat() && order.getSoTienGiamDiem() != null) {
-            base = base.subtract(order.getSoTienGiamDiem()).max(BigDecimal.ZERO);
-        }
-        diemService.tichDiem(order.getNguoiDung().getMaNguoiDung(), order.getMaDonHang(), base, "ONLINE");
     }
 }

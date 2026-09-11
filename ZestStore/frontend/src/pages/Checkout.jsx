@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
-import { getSoDu, getSoDuDiem, getLichSuDiem, getDiemQuyTac } from '../api/vi'
+import { getSoDu } from '../api/vi'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
 import { getUserVouchers } from '../api/userVoucher'
@@ -12,7 +12,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet, Coins, RefreshCw, History } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, Wallet } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 
@@ -96,12 +96,6 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false)
   const [soDuVi, setSoDuVi] = useState(0)
   const [vietQrData, setVietQrData] = useState(null)
-  const [dungDiem, setDungDiem] = useState(false)
-  const [soDiemHienCo, setSoDiemHienCo] = useState(0)
-  const [diemQuyTac, setDiemQuyTac] = useState(null)
-  const [showDiemHistory, setShowDiemHistory] = useState(false)
-  const [diemHistoryData, setDiemHistoryData] = useState([])
-  const [diemHistoryLoading, setDiemHistoryLoading] = useState(false)
   const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
   const [discountMsg, setDiscountMsg] = useState('')
@@ -152,23 +146,8 @@ export default function Checkout() {
   const [confirmOrder, setConfirmOrder] = useState(false)
   const [confirmAddr, setConfirmAddr] = useState(false)
 
-  const refreshDiem = () => {
-    getSoDuDiem().then(d => setSoDiemHienCo(d.soDiem || 0)).catch(() => {})
-    getDiemQuyTac().then(setDiemQuyTac).catch(() => {})
-  }
-
-  const loadDiemHistory = async () => {
-    setDiemHistoryLoading(true)
-    try {
-      const res = await getLichSuDiem(0, 10)
-      setDiemHistoryData(Array.isArray(res.content) ? res.content : [])
-      setShowDiemHistory(true)
-    } catch {} finally { setDiemHistoryLoading(false) }
-  }
-
   useEffect(() => {
     getSoDu().then(d => setSoDuVi(d.soDu || 0)).catch(() => {})
-    refreshDiem()
     const provPromise = getProvinces().catch(() => [])
     Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses()])
       .then(([cartData, addrData]) => {
@@ -439,16 +418,7 @@ export default function Checkout() {
     : 0
   const effectiveShippingFee = shippingFee - freeshipDiscount
 
-  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
-  const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
-  const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
-  const giaTriHangSauCoupon = Math.max(0, rawTotal - discount)
-  const maxDiemTheoQuyTac = Math.floor(giaTriHangSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
-  const maxDiemSuDung = Math.max(0, Math.min(soDiemHienCo, maxDiemTheoQuyTac))
-  const diemDungDuoc = soDiemHienCo > 0 && maxDiemSuDung >= diemToiThieu
-  const diemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
-  const tienGiamDiem = diemSuDung * tiLeDoi
-  const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee - tienGiamDiem)
+  const finalTotal = Math.max(0, rawTotal - discount + effectiveShippingFee)
 
   const validatePhone = (phone) => /^[0-9]{10,11}$/.test(phone)
 
@@ -468,7 +438,6 @@ export default function Checkout() {
     if (cart.length === 0) { return }
     if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn đầy đủ địa chỉ giao hàng'); return }
     if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
-    if (diemSuDung > 0 && diemSuDung < diemToiThieu) { toast.error(`Tối thiểu ${diemToiThieu} điểm để sử dụng`); return }
     setConfirmOrder(true)
   }
 
@@ -489,7 +458,6 @@ export default function Checkout() {
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
         weight: Math.max(weight, 500),
-        soDiemSuDung: diemSuDung > 0 ? diemSuDung : undefined,
       }
       if (selectedItems) {
         orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
@@ -785,50 +753,6 @@ export default function Checkout() {
                   )}
                   {freeshipMsg && <p className="text-bordeaux text-xs mt-1">{freeshipMsg}</p>}
                 </div>
-                <div className="border-t pt-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="font-semibold flex items-center gap-2 text-sm"><Coins className="h-4 w-4 text-gold" /> Điểm tích lũy</h2>
-                    <div className="flex items-center gap-1">
-                      <button onClick={refreshDiem} className="p-1.5 text-stone hover:text-gold hover:bg-gold/10 rounded-lg transition" title="Cập nhật số dư">
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={loadDiemHistory} className="p-1.5 text-stone hover:text-gold hover:bg-gold/10 rounded-lg transition" title="Lịch sử giao dịch">
-                        <History className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  {soDiemHienCo > 0 ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-stone">
-                        <span>Số dư: <strong className="text-gold-hover">{soDiemHienCo.toLocaleString()} điểm</strong></span>
-                        <span className="text-xs text-stone">Giảm tối đa {giamToiDaPhanTram}% giá trị hàng</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm">Dùng điểm tích lũy giảm giá</span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={dungDiem}
-                          disabled={!diemDungDuoc}
-                          onClick={() => setDungDiem(v => !v)}
-                          className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${dungDiem ? 'bg-gold' : 'bg-ivory-100 border border-stone/30'}`}>
-                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${dungDiem ? 'translate-x-5' : ''}`} />
-                        </button>
-                      </div>
-                      {diemDungDuoc ? (
-                        dungDiem && (
-                          <p className="text-xs text-gold">
-                            Sẽ dùng {maxDiemSuDung.toLocaleString()} điểm (giảm {VND(maxDiemSuDung * tiLeDoi)})
-                          </p>
-                        )
-                      ) : (
-                        <p className="text-xs text-stone">Cần tối thiểu {diemToiThieu} điểm để sử dụng</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-stone">Bạn chưa có điểm tích lũy. <a href="/tich-diem" className="text-gold underline">Xem chi tiết</a></p>
-                  )}
-                </div>
               </div>
 
               {ghnError && <p className="text-bordeaux text-xs text-center">Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại sau.</p>}
@@ -872,12 +796,6 @@ export default function Checkout() {
                 <div className="flex justify-between text-emerald-deep">
                   <span>Miễn phí vận chuyển</span>
                   <span>-{VND(freeshipDiscount)}</span>
-                </div>
-              )}
-              {tienGiamDiem > 0 && (
-                <div className="flex justify-between text-gold">
-                  <span>Giảm điểm</span>
-                  <span>-{VND(tienGiamDiem)}</span>
                 </div>
               )}
               <div className="flex justify-between text-stone">
@@ -945,54 +863,6 @@ export default function Checkout() {
           )}
       </div>
     </div>
-      )}
-
-      {showDiemHistory && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
-          onClick={() => setShowDiemHistory(false)}>
-          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 animate-scale-in max-h-[80vh] flex flex-col"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b shrink-0">
-              <h3 className="font-bold flex items-center gap-2"><History className="h-5 w-5 text-gold" /> Lịch sử giao dịch điểm</h3>
-              <button onClick={() => setShowDiemHistory(false)} className="text-stone hover:text-stone">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {diemHistoryLoading ? (
-                <div className="flex items-center justify-center py-8"><Loader className="h-6 w-6 animate-spin text-gold" /></div>
-              ) : diemHistoryData.length === 0 ? (
-                <p className="text-center text-stone py-8 text-sm">Chưa có giao dịch nào</p>
-              ) : (
-                diemHistoryData.map(gd => {
-                  const isTich = gd.loaiGiaoDich === 1
-                  const isDung = gd.loaiGiaoDich === 2
-                  const isHetHan = gd.loaiGiaoDich === 3
-                  return (
-                    <div key={gd.maGiaoDich} className={`border rounded-lg px-3 py-2.5 ${isTich ? 'bg-emerald-deep/10 border-emerald-deep/20' : isDung ? 'bg-gold/10 border-gold/20' : 'bg-bordeaux/10 border-bordeaux/20'}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{isTich ? 'Tích lũy' : isDung ? 'Đã dùng' : 'Hết hạn'}</span>
-                        <span className={`font-semibold text-sm ${isTich ? 'text-emerald-deep' : 'text-bordeaux'}`}>
-                          {isTich ? '+' : '-'}{gd.soDiem?.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs text-stone mt-0.5">
-                        <span>{new Date(gd.thoiGian).toLocaleString('vi-VN')}</span>
-                        <span>Số dư: {gd.soDuSau?.toLocaleString()}</span>
-                      </div>
-                      {gd.donHang?.maDonHang && (
-                        <p className="text-xs text-stone mt-0.5">Đơn hàng #{gd.donHang.maDonHang}</p>
-                      )}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-            <div className="border-t p-4 shrink-0">
-              <a href="/tich-diem" className="block w-full text-center text-sm text-gold font-medium hover:underline">Xem tất cả lịch sử →</a>
-            </div>
-          </div>
-        </div>
       )}
 
       {showAddrModal && (

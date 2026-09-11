@@ -324,8 +324,7 @@ export default function AdminOrderDetail() {
           <div className="flex justify-between text-stone"><span>Tạm tính</span><span>{VND(items.reduce((s, i) => s + Number(i.thanhTien), 0))}</span></div>
           {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm giá</span><span>-{VND(order.soTienGiam)}</span></div>}
           {(order.phiVanChuyen || 0) > 0 && <div className="flex justify-between text-stone"><span>Phí vận chuyển</span><span>{VND(order.phiVanChuyen)}</span></div>}
-          {(order.soTienGiamDiem || 0) > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm điểm</span><span>-{VND(order.soTienGiamDiem)}</span></div>}
-          <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-gold">{VND((order.tongTien || 0) - (order.soTienGiamDiem || 0))}</span></div>
+          <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-gold">{VND(order.tongTien || 0)}</span></div>
         </div>
       </div>
 

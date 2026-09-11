@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { ShoppingCart, Trash2, Minus, Plus, User, Ticket, Coins, X, ChevronDown, Truck, Store } from 'lucide-react'
+import { ShoppingCart, Trash2, Minus, Plus, User, Ticket, X, ChevronDown, Truck, Store } from 'lucide-react'
 import SafeImg from '../../../components/SafeImg'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
 export default function CartPanel({
-  cart, customer, coupon, couponMsg, customerDiem, dungDiem,
+  cart, customer, coupon, couponMsg,
   onRemoveItem, onUpdateQty, onClearCart, onSelectCustomer, onClearCustomer,
-  onApplyCoupon, onClearCoupon, onToggleDiem,
-  onCheckout, placing, thanhTien, total, soLuongSanPham, diemQuyTac,
+  onApplyCoupon, onClearCoupon,
+  onCheckout, placing, thanhTien, total, soLuongSanPham,
   onOpenCustomerPicker, onOpenPayment, availableCoupons, onOpenCouponDropdown,
   loaiDon, onLoaiDonChange, shippingInfo, onShippingInfoChange, shippingFee, shippingLoading,
   provinces, districts, wards, onProvinceChange, onDistrictChange, onWardChange,
@@ -215,16 +215,6 @@ export default function CartPanel({
             </div>
           )}
         </div>
-
-        {customer && customerDiem?.soDiem > 0 && (
-          <div className="flex items-center justify-between gap-2 bg-gold-50 rounded-xl px-3 py-2">
-            <span className="text-xs text-stone flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-gold" /> Dùng {customerDiem.soDiem.toLocaleString()} điểm</span>
-            <button onClick={onToggleDiem}
-              className={`relative w-9 h-5 rounded-full transition-colors ${dungDiem ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${dungDiem ? 'translate-x-4' : ''}`} />
-            </button>
-          </div>
-        )}
 
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between text-stone">

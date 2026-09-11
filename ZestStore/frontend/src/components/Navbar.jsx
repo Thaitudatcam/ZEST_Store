@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Shirt, User, Menu, X, ChevronDown, Search, Loader, Ticket, Coins, Heart, ShoppingCart } from 'lucide-react'
+import { Shirt, User, Menu, X, ChevronDown, Search, Loader, Ticket, Heart, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useWishlist } from '../context/WishlistContext'
@@ -7,7 +7,7 @@ import { useVoucher } from '../context/VoucherContext'
 import { useState, useRef, useEffect } from 'react'
 import { searchSuggestions } from '../api/products'
 import { getActiveCategories } from '../api/categories'
-import { getSoDuDiem } from '../api/vi'
+
 import { useToast } from '../context/ToastContext'
 import SafeImg from './SafeImg'
 import NotificationBell from './NotificationBell'
@@ -43,7 +43,6 @@ export default function Navbar() {
   const dropdownRef = useRef(null)
   const searchRef = useRef(null)
   const debounceRef = useRef(null)
-  const [diemHienCo, setDiemHienCo] = useState(null)
   const [confirmLogout, setConfirmLogout] = useState(false)
 
   const pathname = location.pathname
@@ -95,14 +94,6 @@ export default function Navbar() {
       setSearchQuery('')
     }
   }
-
-  useEffect(() => {
-    if (user) {
-      getSoDuDiem().then(d => setDiemHienCo(d.soDiem ?? null)).catch(() => setDiemHienCo(null))
-    } else {
-      setDiemHienCo(null)
-    }
-  }, [user])
 
   const handleLogout = () => { logout(); navigate('/login') }
   const requestLogout = () => setConfirmLogout(true)
@@ -163,10 +154,6 @@ export default function Navbar() {
                       {voucherCount > 0 && <span className="text-xs font-semibold text-gold-dark tabular-nums">{voucherCount}</span>}
                     </Link>
                     <Link to="/vi-zeststore" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-ink-soft hover:bg-noir/5 hover:text-noir transition">Ví ZestStore</Link>
-                    <Link to="/tich-diem" onClick={() => setDropdownOpen(false)} className="flex items-center justify-between px-4 py-2 text-sm text-ink-soft hover:bg-noir/5 hover:text-noir transition">
-                      <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-gold-dark" /> Điểm tích lũy</span>
-                      {diemHienCo !== null && <span className="text-xs font-semibold text-gold-dark tabular-nums">{diemHienCo.toLocaleString()}</span>}
-                    </Link>
                     <hr className="my-1 border-beige-deep/40" />
                     {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                       <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gold-dark font-semibold hover:bg-noir/5 transition">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
@@ -239,10 +226,6 @@ export default function Navbar() {
               <Link to="/cart" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Giỏ hàng</Link>
               <Link to="/orders" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Đơn hàng</Link>
               <Link to="/vi-zeststore" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Ví ZestStore</Link>
-              <Link to="/tich-diem" onClick={() => setOpen(false)} className="flex items-center justify-between py-2 text-ink-soft hover:text-noir transition">
-                <span className="flex items-center gap-2"><Coins className="h-4 w-4 text-gold-dark" /> Điểm tích lũy</span>
-                {diemHienCo !== null && <span className="text-xs font-semibold text-gold-dark tabular-nums">{diemHienCo.toLocaleString()}</span>}
-              </Link>
               <Link to="/profile" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Tài khoản</Link>
               {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                 <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setOpen(false)} className="block py-2 text-gold-dark font-semibold">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>

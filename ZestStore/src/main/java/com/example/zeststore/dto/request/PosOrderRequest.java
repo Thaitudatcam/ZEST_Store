@@ -33,8 +33,6 @@ public class PosOrderRequest {
     @Max(6)
     private Integer phuongThucThanhToan;
 
-    private Integer soDiemSuDung;
-
     @Getter
     @Setter
     @NoArgsConstructor
