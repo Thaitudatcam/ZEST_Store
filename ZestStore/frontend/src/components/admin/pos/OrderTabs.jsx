@@ -21,7 +21,7 @@ export default function OrderTabs({ orders, currentIdx, onSwitch, onAdd, onRemov
                 <User className="h-3 w-3" />
               </span>
             )}
-            {orders.length > 1 && (
+            {orders.length > 0 && (
               <button onClick={(e) => { e.stopPropagation(); onRemove(i) }}
                 className={`ml-1 transition p-0.5 rounded ${isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-stone/50 hover:text-bordeaux hover:bg-bordeaux/10'}`}
                 aria-label="Đóng đơn">
