@@ -25,7 +25,16 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 export default function AdminPOS() {
   const navigate = useNavigate()
   const { user } = useAuth()
-
+  const checkoutKey = useRef(sessionStorage.getItem('posCheckoutKey') || crypto.randomUUID())
+  const pendingCheckout = useRef(false)
+  const persistCheckoutKey = () => {
+    sessionStorage.setItem('posCheckoutKey', checkoutKey.current)
+    return checkoutKey.current
+  }
+  const finishCheckout = () => {
+    sessionStorage.removeItem('posCheckoutKey')
+    checkoutKey.current = crypto.randomUUID()
+  }
   const [products, setProducts] = useState([])
   const [allVariants, setAllVariants] = useState([])
   const [search, setSearch] = useState('')
@@ -319,7 +328,9 @@ export default function AdminPOS() {
 
   const handleCheckout = async (paymentMethod = 5) => {
     setShowPaymentModal(false)
-    if (cart.length === 0) return
+    if (cart.length === 0 || pendingCheckout.current) return
+    if (soDiemSuDung > 0 && soDiemSuDung < diemToiThieu) { setMsg({ type: 'error', text: `Tối thiểu ${diemToiThieu} điểm để sử dụng` }); return }
+    pendingCheckout.current = true
     setPlacing(true)
     try {
       if (paymentMethod === 6) {
@@ -341,11 +352,15 @@ export default function AdminPOS() {
       }
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
-    } finally { setPlacing(false) }
+    } finally {
+      pendingCheckout.current = false
+      setPlacing(false)
+    }
   }
 
   const handleConfirmQR = async () => {
-    if (cart.length === 0) return
+    if (cart.length === 0 || pendingCheckout.current) return
+    pendingCheckout.current = true
     setShowPaymentModal(false)
     setPlacing(true)
     try {
@@ -363,7 +378,10 @@ export default function AdminPOS() {
       setPayResult(res)
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Xác nhận thất bại' })
-    } finally { setPlacing(false) }
+    } finally {
+      pendingCheckout.current = false
+      setPlacing(false)
+    }
   }
 
   const handlePrintInvoice = async () => {

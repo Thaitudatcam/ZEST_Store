@@ -12,6 +12,8 @@ import com.example.zeststore.repository.ThuongHieuRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class LookupService {
@@ -35,6 +37,13 @@ public class LookupService {
         ThuongHieu brand = thuongHieuRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Brand", id));
         brand.setTenThuongHieu(tenThuongHieu);
+        return thuongHieuRepository.save(brand);
+    }
+
+    public ThuongHieu toggleBrand(Integer id) {
+        ThuongHieu brand = thuongHieuRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand", id));
+        brand.setNgayXoa(brand.getNgayXoa() == null ? LocalDateTime.now() : null);
         return thuongHieuRepository.save(brand);
     }
 
@@ -74,6 +83,7 @@ public class LookupService {
         if (bienTheRepository.existsByThuongHieu_MaThuongHieuAndNgayXoaIsNull(id)) {
             throw new BadRequestException("Cannot delete brand because it is in use by existing variants");
         }
-        thuongHieuRepository.delete(brand);
+        brand.setNgayXoa(LocalDateTime.now());
+        thuongHieuRepository.save(brand);
     }
 }

@@ -33,5 +33,7 @@ public class BienTheRequest {
     @PositiveOrZero
     private Integer tonKho;
 
+    private Integer version;
+
     private String urlAnh;
 }

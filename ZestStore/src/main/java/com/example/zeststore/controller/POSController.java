@@ -58,6 +58,12 @@ public class POSController {
         return ResponseEntity.ok(posService.createPosOrder(request, userService.getUserIdFromAuth(auth)));
     }
 
+    @PostMapping("/cart/heartbeat")
+    public ResponseEntity<?> heartbeat(Authentication auth) {
+        posCartService.heartbeat(userService.getUserIdFromAuth(auth));
+        return ResponseEntity.ok(Map.of("message", "OK"));
+    }
+
     @GetMapping("/cart")
     public ResponseEntity<?> getCart(Authentication auth) {
         return ResponseEntity.ok(posCartService.getCart(userService.getUserIdFromAuth(auth)));

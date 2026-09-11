@@ -4,6 +4,7 @@ import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.*;
+import com.example.zeststore.util.VndUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +30,12 @@ public class YeuCauTraHangService {
     private final OrderSseService orderSseService;
     private final ThongBaoService thongBaoService;
     private final ViService viService;
+    private final InventoryService inventoryService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Transactional
     public Map<String, Object> createReturnRequest(Integer orderId, Integer userId, String lyDo, String hinhAnh) {
-        DonHang order = donHangRepository.findById(orderId)
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
@@ -96,20 +99,28 @@ public class YeuCauTraHangService {
     public Map<String, Object> approveReturn(Integer requestId, Integer adminUserId) {
         YeuCauTraHang yeuCau = yeuCauTraHangRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Return request", requestId));
+        DonHang lockedOrder = donHangRepository.findByIdForUpdate(yeuCau.getDonHang().getMaDonHang())
+                .orElseThrow(() -> new ResourceNotFoundException("Order", yeuCau.getDonHang().getMaDonHang()));
+        entityManager.refresh(lockedOrder);
+        entityManager.refresh(yeuCau);
         if (!Integer.valueOf(1).equals(yeuCau.getTrangThai())) {
             throw new BadRequestException("Yêu cầu này đã được xử lý");
         }
 
-        DonHang order = yeuCau.getDonHang();
+        DonHang order = lockedOrder;
+        if (!Integer.valueOf(7).equals(order.getTrangThaiDon()))
+            throw new BadRequestException("Đơn hàng không còn chờ trả hàng");
         Integer oldStatus = order.getTrangThaiDon();
 
         yeuCau.setTrangThai(2);
         yeuCau.setNgayCapNhat(LocalDateTime.now());
 
+        inventoryService.release(order);
         BigDecimal refundAmount = BigDecimal.ZERO;
         List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang());
         for (ThanhToan payment : payments) {
-            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) {
+            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan()) && !payment.isRefunded()) {
+                payment.setRefunded(true);
                 refundAmount = refundAmount.add(payment.getSoTien());
                 payment.setTrangThaiThanhToan(3);
                 thanhToanRepository.save(payment);
@@ -122,11 +133,6 @@ public class YeuCauTraHangService {
         }
 
         yeuCau.setSoTienHoan(refundAmount);
-
-        boolean wasStockDeducted = wasStockDeductedForOrder(order);
-        if (wasStockDeducted) {
-            restoreStock(order.getMaDonHang());
-        }
 
         if (order.getPhieuGiamGia() != null && order.getPhieuGiamGia().getSoLuong() != null) {
             PhieuGiamGia coupon = order.getPhieuGiamGia();
@@ -155,7 +161,7 @@ public class YeuCauTraHangService {
             thongBaoService.taoThongBao(
                     order.getNguoiDung().getMaNguoiDung(),
                     "Yêu cầu trả hàng #" + order.getMaDonHang() + " đã được chấp nhận",
-                    "Đơn hàng #" + order.getMaDonHang() + " hoàn tiền " + refundAmount + "₫.",
+                    "Đơn hàng #" + order.getMaDonHang() + " hoàn tiền " + VndUtil.format(refundAmount) + "₫.",
                     "TRA_HANG_DUOC_CHAP_NHAN",
                     "/orders/" + order.getMaDonHang());
         } catch (Exception ignored) {}
@@ -170,11 +176,17 @@ public class YeuCauTraHangService {
     public Map<String, Object> rejectReturn(Integer requestId, Integer adminUserId, String lyDoTuChoi) {
         YeuCauTraHang yeuCau = yeuCauTraHangRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Return request", requestId));
+        DonHang lockedOrder = donHangRepository.findByIdForUpdate(yeuCau.getDonHang().getMaDonHang())
+                .orElseThrow(() -> new ResourceNotFoundException("Order", yeuCau.getDonHang().getMaDonHang()));
+        entityManager.refresh(lockedOrder);
+        entityManager.refresh(yeuCau);
         if (!Integer.valueOf(1).equals(yeuCau.getTrangThai())) {
             throw new BadRequestException("Yêu cầu này đã được xử lý");
         }
 
-        DonHang order = yeuCau.getDonHang();
+        DonHang order = lockedOrder;
+        if (!Integer.valueOf(7).equals(order.getTrangThaiDon()))
+            throw new BadRequestException("Đơn hàng không còn chờ trả hàng");
         Integer oldStatus = order.getTrangThaiDon();
         Integer revertStatus = lichSuDonHangRepository
                 .findByDonHang_MaDonHangOrderByThoiGianDesc(order.getMaDonHang())
@@ -238,20 +250,4 @@ public class YeuCauTraHangService {
         return yeuCauTraHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayTaoDesc(userId);
     }
 
-    private boolean wasStockDeductedForOrder(DonHang order) {
-        if (order.getTrangThaiDon() < 2) return false;
-        return thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang()).stream()
-                .anyMatch(t -> Integer.valueOf(1).equals(t.getPhuongThuc())
-                        ? order.getTrangThaiDon() >= 2
-                        : Integer.valueOf(2).equals(t.getTrangThaiThanhToan()));
-    }
-
-    private void restoreStock(Integer orderId) {
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
-            variant.setTonKho(variant.getTonKho() + item.getSoLuong());
-            bienTheRepository.save(variant);
-        }
-    }
 }

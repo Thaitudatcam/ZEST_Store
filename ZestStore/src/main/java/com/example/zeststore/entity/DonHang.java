@@ -17,6 +17,14 @@ import java.util.List;
 @Table(name = "don_hang")
 public class DonHang {
 
+    // NONE -> RESERVED -> DEDUCTED -> RELEASED. LEGACY requires stock reconciliation.
+    @Column(name = "stock_state", length = 16, nullable = false)
+    @Builder.Default
+    private String stockState = "NONE";
+
+    @Column(name = "checkout_key", length = 100)
+    private String checkoutKey;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ma_don_hang")

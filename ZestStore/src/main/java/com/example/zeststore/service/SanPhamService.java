@@ -47,6 +47,7 @@ public class SanPhamService {
     private final MucGioHangRepository mucGioHangRepository;
     private final PosCartRepository posCartRepository;
     private final ThuocTinhRepository thuocTinhRepository;
+    private final InventoryService inventoryService;
 
     public Page<SanPham> getProducts(String keyword, Integer categoryId, BigDecimal minPrice,
                                       BigDecimal maxPrice, int page, int size, String sortBy, String sortDir) {
@@ -86,13 +87,12 @@ public class SanPhamService {
 
     @Transactional(readOnly = true)
     public Page<SanPham> getAdminProducts(String keyword, int page, int size, String sortBy, String sortDir) {
-        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = PageRequest.of(page, size);
         Page<SanPham> result;
         if (keyword != null && !keyword.isBlank()) {
-            result = sanPhamRepository.searchAdminByKeyword(keyword, pageable);
+            result = sanPhamRepository.searchAdminProductsOrderByLastUpdated(keyword, pageable);
         } else {
-            result = sanPhamRepository.findByNgayXoaIsNull(pageable);
+            result = sanPhamRepository.findAdminProductsOrderByLastUpdated(pageable);
         }
         populateStock(result);
         return result;
@@ -387,8 +387,7 @@ public class SanPhamService {
 
     @Transactional
     public BienTheSanPham updateVariant(Integer variantId, BienTheRequest request) {
-        BienTheSanPham variant = bienTheRepository.findById(variantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Variant", variantId));
+        BienTheSanPham variant = inventoryService.lockVariant(variantId);
         if (request.getSku() != null) variant.setSku(request.getSku());
         if (request.getMaThuongHieu() != null) {
             variant.setThuongHieu(thuongHieuRepository.findById(request.getMaThuongHieu())
@@ -404,7 +403,13 @@ public class SanPhamService {
         }
         if (request.getGia() != null) variant.setGia(request.getGia());
         if (request.getGiaNhap() != null) variant.setGiaNhap(request.getGiaNhap());
-        if (request.getTonKho() != null) variant.setTonKho(request.getTonKho());
+        if (request.getTonKho() != null) {
+            if (request.getVersion() == null || request.getVersion() != variant.getVersion())
+                throw new org.springframework.orm.ObjectOptimisticLockingFailureException(BienTheSanPham.class, variantId);
+            if (request.getTonKho() < inventoryService.reserved(variantId, null, null))
+                throw new BadRequestException("Tồn kho không được thấp hơn số hàng đang giữ cho đơn/POS");
+            variant.setTonKho(request.getTonKho());
+        }
         if (request.getUrlAnh() != null) variant.setUrlAnh(request.getUrlAnh());
         variant = bienTheRepository.save(variant);
         recalculateGiaTrungBinh(variant.getSanPham());
@@ -413,8 +418,8 @@ public class SanPhamService {
 
     @Transactional
     public Map<String, String> deleteVariant(Integer variantId) {
-        BienTheSanPham variant = bienTheRepository.findById(variantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Variant", variantId));
+        BienTheSanPham variant = inventoryService.lockVariant(variantId);
+        assertNoReservation(variantId);
         variant.setNgayXoa(LocalDateTime.now());
         bienTheRepository.save(variant);
         mucGioHangRepository.findByBienThe_MaBienThe(variantId).forEach(mucGioHangRepository::delete);
@@ -429,7 +434,12 @@ public class SanPhamService {
         if (variants.isEmpty()) {
             throw new ResourceNotFoundException("No variants found for color " + colorId);
         }
-        variants.forEach(v -> v.setNgayXoa(LocalDateTime.now()));
+        variants.sort(java.util.Comparator.comparing(BienTheSanPham::getMaBienThe));
+        for (BienTheSanPham v : variants) {
+            inventoryService.lockVariant(v.getMaBienThe());
+            assertNoReservation(v.getMaBienThe());
+            v.setNgayXoa(LocalDateTime.now());
+        }
         bienTheRepository.saveAll(variants);
         for (BienTheSanPham v : variants) {
             mucGioHangRepository.findByBienThe_MaBienThe(v.getMaBienThe()).forEach(mucGioHangRepository::delete);
@@ -455,8 +465,34 @@ public class SanPhamService {
 
     @Transactional
     public Map<String, String> deleteImage(Integer imageId) {
-        anhSanPhamRepository.deleteById(imageId);
-        return Map.of("message", "Image deleted");
+        AnhSanPham image = anhSanPhamRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image", imageId));
+        image.setNgayXoa(LocalDateTime.now());
+        anhSanPhamRepository.save(image);
+        return Map.of("message", "Image hidden");
+    }
+
+    @Transactional
+    public Map<String, String> toggleImage(Integer imageId) {
+        AnhSanPham image = anhSanPhamRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image", imageId));
+        image.setNgayXoa(image.getNgayXoa() == null ? LocalDateTime.now() : null);
+        anhSanPhamRepository.save(image);
+        return Map.of("message", image.getNgayXoa() == null ? "Đã hiện ảnh" : "Đã ẩn ảnh");
+    }
+
+    @Transactional
+    public Map<String, String> toggleVariant(Integer variantId) {
+        BienTheSanPham variant = inventoryService.lockVariant(variantId);
+        if (variant.getNgayXoa() == null) assertNoReservation(variantId);
+        variant.setNgayXoa(variant.getNgayXoa() == null ? LocalDateTime.now() : null);
+        bienTheRepository.save(variant);
+        return Map.of("message", variant.getNgayXoa() == null ? "Đã hiện biến thể" : "Đã ẩn biến thể");
+    }
+
+    private void assertNoReservation(Integer variantId) {
+        if (inventoryService.reserved(variantId, null, null) > 0)
+            throw new BadRequestException("Biến thể đang được giữ cho đơn/POS, chưa thể xóa hoặc ẩn");
     }
 
     @Transactional

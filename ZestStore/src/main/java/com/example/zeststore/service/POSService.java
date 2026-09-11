@@ -28,6 +28,7 @@ public class POSService {
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final DiemService diemService;
+    private final InventoryService inventoryService;
 
     public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien) {
         Optional<PhieuGiamGia> opt = phieuGiamGiaRepository.findByMaCode(maCode);
@@ -96,8 +97,19 @@ public class POSService {
 
     @Transactional
     public Map<String, Object> createPosOrder(PosOrderRequest request, Integer adminUserId) {
-        NguoiDung admin = nguoiDungRepository.findById(adminUserId)
+        NguoiDung admin = nguoiDungRepository.findByIdForUpdate(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        if (request.getCheckoutKey() == null || request.getCheckoutKey().isBlank())
+            throw new BadRequestException("Thiếu mã phiên thanh toán");
+        String checkoutKey = "POS:" + adminUserId + ":" + request.getCheckoutKey();
+        DonHang previous = donHangRepository.findByCheckoutKey(checkoutKey).orElse(null);
+        if (previous != null) return Map.of("maDonHang", previous.getMaDonHang(),
+                "thanhToan", previous.getTongTien().subtract(previous.getSoTienGiamDiem()),
+                "message", "Đơn đã được tạo trước đó");
+        if (!Integer.valueOf(5).equals(request.getPhuongThucThanhToan())
+                && !Integer.valueOf(6).equals(request.getPhuongThucThanhToan()))
+            throw new BadRequestException("POS chỉ nhận tiền mặt hoặc chuyển khoản đã được nhân viên xác nhận");
 
         LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
         Long todayPosCount = donHangRepository.countTodayPosOrders(startOfDay);
@@ -105,41 +117,36 @@ public class POSService {
             throw new TooManyRequestsException("Đã đạt giới hạn 10 đơn hàng POS trong ngày");
         }
 
+
         List<Map<String, Object>> orderItems = new ArrayList<>();
         BigDecimal tongTien = BigDecimal.ZERO;
 
+        SortedMap<Integer, Integer> quantities = new TreeMap<>();
         if (request.getItems() != null && !request.getItems().isEmpty()) {
-            for (PosOrderRequest.PosItem req : request.getItems()) {
-                BienTheSanPham variant = bienTheRepository.findById(req.getMaBienThe())
-                        .orElseThrow(() -> new BadRequestException("Variant not found: " + req.getMaBienThe()));
-                if (variant.getTonKho() < req.getSoLuong()) {
-                    throw new BadRequestException("Insufficient stock for " + variant.getSku());
-                }
-                BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(req.getSoLuong()));
-                tongTien = tongTien.add(thanhTien);
-                Map<String, Object> itemMap = new LinkedHashMap<>();
-                itemMap.put("bienThe", variant);
-                itemMap.put("donGia", variant.getGia());
-                itemMap.put("soLuong", req.getSoLuong());
-                itemMap.put("thanhTien", thanhTien);
-                orderItems.add(itemMap);
+            for (PosOrderRequest.PosItem item : request.getItems()) {
+                if (item == null || item.getMaBienThe() == null || item.getSoLuong() == null || item.getSoLuong() <= 0)
+                    throw new BadRequestException("Số lượng sản phẩm không hợp lệ");
+                quantities.merge(item.getMaBienThe(), item.getSoLuong(), Math::addExact);
             }
         } else {
-            List<PosCartItem> cartItems = posCartRepository.findByAdmin_MaNguoiDung(adminUserId);
-            if (cartItems.isEmpty()) {
-                throw new BadRequestException("Cart is empty");
-            }
-            for (PosCartItem cartItem : cartItems) {
-                BienTheSanPham variant = cartItem.getBienThe();
-                BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
-                tongTien = tongTien.add(thanhTien);
-                Map<String, Object> itemMap = new LinkedHashMap<>();
-                itemMap.put("bienThe", variant);
-                itemMap.put("donGia", variant.getGia());
-                itemMap.put("soLuong", cartItem.getSoLuong());
-                itemMap.put("thanhTien", thanhTien);
-                orderItems.add(itemMap);
-            }
+            for (PosCartItem item : posCartRepository.findByAdmin_MaNguoiDung(adminUserId))
+                quantities.merge(item.getBienThe().getMaBienThe(), item.getSoLuong(), Math::addExact);
+        }
+        if (quantities.isEmpty()) throw new BadRequestException("Giỏ hàng trống");
+        for (var entry : quantities.entrySet()) {
+            BienTheSanPham variant = inventoryService.lockVariant(entry.getKey());
+            PosCartItem reservation = posCartRepository
+                    .findByAdmin_MaNguoiDungAndBienThe_MaBienThe(adminUserId, entry.getKey()).orElse(null);
+            if (reservation == null || reservation.getNgayTao().isBefore(LocalDateTime.now().minusMinutes(30))
+                    || reservation.getSoLuong() < entry.getValue())
+                throw new BadRequestException("Giữ hàng đã hết hạn hoặc thay đổi. Vui lòng tải lại giỏ hàng trước khi thu tiền");
+            if (variant.getNgayXoa() != null || variant.getTonKho()
+                    - inventoryService.reserved(entry.getKey(), null, adminUserId) < entry.getValue())
+                throw new BadRequestException("Không đủ hàng khả dụng cho " + variant.getSku());
+            BigDecimal lineTotal = variant.getGia().multiply(BigDecimal.valueOf(entry.getValue()));
+            tongTien = tongTien.add(lineTotal);
+            orderItems.add(Map.of("bienThe", variant, "donGia", variant.getGia(),
+                    "soLuong", entry.getValue(), "thanhTien", lineTotal));
         }
 
         NguoiDung customer = null;
@@ -188,13 +195,6 @@ public class POSService {
             }
         }
 
-        for (Map<String, Object> item : orderItems) {
-            BienTheSanPham variant = (BienTheSanPham) item.get("bienThe");
-            Integer soLuong = (Integer) item.get("soLuong");
-            variant.setTonKho(variant.getTonKho() - soLuong);
-            bienTheRepository.save(variant);
-        }
-
         String tenNguoiNhan = customer != null ? customer.getHoTen()
                 : (request.getTenKhachHang() != null ? request.getTenKhachHang() : "Khách lẻ");
         String sdtNguoiNhan = customer != null ? customer.getSoDienThoai()
@@ -224,6 +224,7 @@ public class POSService {
         DonHang order = DonHang.builder()
                 .nguoiDung(customer)
                 .loaiDonHang(2)
+                .checkoutKey(checkoutKey)
                 .maDonHangCode(code)
                 .tongTien(thanhToanTong.add(tienGiamDiem))
                 .soTienGiamDiem(tienGiamDiem)
@@ -264,16 +265,11 @@ public class POSService {
                     .build());
         }
 
+        inventoryService.deductPos(order, adminUserId);
+
         Integer phuongThuc = request.getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
-        String nhaCungCap;
-        Integer trangThaiThanhToan;
-        if (Integer.valueOf(4).equals(phuongThuc)) {
-            nhaCungCap = "ZaloPay";
-            trangThaiThanhToan = 1;
-        } else {
-            nhaCungCap = "Tiền mặt";
-            trangThaiThanhToan = 2;
-        }
+        String nhaCungCap = Integer.valueOf(6).equals(phuongThuc) ? "VietQR" : "Tiền mặt";
+        Integer trangThaiThanhToan = 2;
 
         String paymentRef = "POS-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         thanhToanRepository.save(ThanhToan.builder()
@@ -281,6 +277,7 @@ public class POSService {
                 .phuongThuc(phuongThuc)
                 .nhaCungCap(nhaCungCap)
                 .trangThaiThanhToan(trangThaiThanhToan)
+                .thoiGianTt(LocalDateTime.now())
                 .soTien(thanhToanTong)
                 .maGiaoDich(paymentRef)
                 .build());

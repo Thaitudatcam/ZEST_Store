@@ -117,4 +117,17 @@ public class CategoryService {
         danhMucRepository.save(category);
         return Map.of("message", "Category deleted");
     }
+
+    @Transactional
+    public Map<String, Object> toggleHienThi(Integer id) {
+        DanhMuc category = getById(id);
+        boolean next = !Boolean.TRUE.equals(category.getHienThi());
+        category.setHienThi(next);
+        danhMucRepository.save(category);
+        Map<String, Object> result = new HashMap<>();
+        result.put("maDanhMuc", id);
+        result.put("hienThi", next);
+        result.put("message", next ? "Đã hiện danh mục" : "Đã ẩn danh mục");
+        return result;
+    }
 }

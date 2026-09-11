@@ -1,7 +1,9 @@
 package com.example.zeststore.repository;
 
 import com.example.zeststore.entity.BienTheSanPham;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,10 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
     List<BienTheSanPham> findBySanPham_MaSanPham(Integer maSanPham);
 
     Optional<BienTheSanPham> findBySku(String sku);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM BienTheSanPham b WHERE b.maBienThe = :id")
+    Optional<BienTheSanPham> findByIdForUpdate(@Param("id") Integer id);
 
     @Query("SELECT b FROM BienTheSanPham b WHERE UPPER(b.sku) = UPPER(:sku)")
     Optional<BienTheSanPham> findBySkuIgnoreCase(@Param("sku") String sku);

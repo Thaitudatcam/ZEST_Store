@@ -69,4 +69,10 @@ public class LookupController {
     public ResponseEntity<?> updateBrand(@PathVariable Integer id, @Valid @RequestBody BrandRequest request) {
         return ResponseEntity.ok(lookupService.updateBrand(id, request.getTenThuongHieu()));
     }
+
+    @PutMapping("/brands/{id}/toggle")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleBrand(@PathVariable Integer id) {
+        return ResponseEntity.ok(lookupService.toggleBrand(id));
+    }
 }
