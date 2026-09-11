@@ -43,7 +43,7 @@ export default function AboutPage() {
           <ul className="text-stone leading-relaxed text-sm space-y-2">
             <li>Form áo được đo may theo số liệu thực tế người Việt.</li>
             <li>Cam kết đổi trả trong 7 ngày nếu lỗi từ nhà sản xuất.</li>
-            <li>Tích điểm thành viên, ưu đãi độc quyền.</li>
+            <li>Ưu đãi độc quyền dành cho khách hàng thân thiết.</li>
           </ul>
         </section>
 

@@ -52,5 +52,3 @@ export const customers = [
   { maNguoiDung: 2, hoTen: 'Trần Thị B', soDienThoai: '0987654321', email: 'b@gmail.com' },
   { maNguoiDung: 3, hoTen: 'Lê Văn C', soDienThoai: '0905123456', email: 'c@gmail.com' },
 ]
-
-export const pointsRule = { tiLeDoi: 1, giamToiDaPhanTram: 50, diemToiThieu: 10 }

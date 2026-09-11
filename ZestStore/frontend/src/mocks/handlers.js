@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { variants, products, categories, colors, sizes, coupons, customers, pointsRule } from './data'
+import { variants, products, categories, colors, sizes, coupons, customers } from './data'
 
 let orderCounter = 100
 
@@ -55,13 +55,7 @@ export const handlers = [
     return HttpResponse.json(coupons)
   }),
 
-  http.get('/api/vi-zeststore/diem/:userId', ({ params }) => {
-    return HttpResponse.json({ soDiem: 150 })
-  }),
 
-  http.get('/api/diem-quy-tac', () => {
-    return HttpResponse.json(pointsRule)
-  }),
 
   http.post('/api/admin/pos/orders', async ({ request }) => {
     const body = await request.json()
@@ -239,19 +233,7 @@ export const handlers = [
     return HttpResponse.json([])
   }),
 
-  // Points
-  http.get('/api/vi/so-du', () => {
-    return HttpResponse.json({ soDu: 0 })
-  }),
-  http.get('/api/diem/so-du', () => {
-    return HttpResponse.json({ soDiem: 0 })
-  }),
-  http.get('/api/vi/lich-su', () => {
-    return HttpResponse.json({ content: [], totalElements: 0 })
-  }),
-  http.get('/api/diem/lich-su', () => {
-    return HttpResponse.json({ content: [], totalElements: 0 })
-  }),
+
 
   // User vouchers
   http.get('/api/user-vouchers', () => {
