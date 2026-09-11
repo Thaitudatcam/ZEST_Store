@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, RefreshCw, Gift, Coins, MessageSquare, ClipboardList } from 'lucide-react'
+import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, RefreshCw, Gift, ClipboardList } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import api from '../../api/axios'
@@ -71,9 +71,7 @@ export default function AdminLayout() {
       { to: '/admin/employees', label: 'Nhân viên' },
     ]},
     { to: '/admin/campaigns', label: 'Quà tặng', icon: Gift },
-    { to: '/admin/diem-quy-tac', label: 'Quy tắc điểm', icon: Coins },
     { to: '/admin/reviews', label: 'Đánh giá', icon: Star },
-    { to: '/admin/chat', label: 'Quản lý Chat', icon: MessageSquare },
   ]
 
   const toggleNav = (label) => setNavOpen(prev => ({ ...prev, [label]: !prev[label] }))

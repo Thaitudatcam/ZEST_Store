@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from '../../api/admin'
-import { getCustomerDiem, getDiemQuyTac } from '../../api/vi'
 import { getAvailableCoupons } from '../../api/coupons'
 import { posApi } from '../../components/admin/pos/apiClient'
 import OrderTabs from '../../components/admin/pos/OrderTabs'
@@ -16,7 +15,7 @@ import POSToast from '../../components/admin/pos/POSToast'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import InvoicePrint from '../../components/InvoicePrint'
-import { Plus, Minus, ShoppingCart, Trash2, X, Coins } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Trash2, X } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import { useAuth } from '../../context/AuthContext'
 
@@ -56,12 +55,9 @@ export default function AdminPOS() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [customerDiem, setCustomerDiem] = useState({ soDiem: 0 })
-  const [dungDiem, setDungDiem] = useState(false)
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
   const [availableCoupons, setAvailableCoupons] = useState([])
-  const [diemQuyTac, setDiemQuyTac] = useState(null)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [loaiDon, setLoaiDon] = useState('TAI_QUAY')
@@ -86,7 +82,6 @@ export default function AdminPOS() {
 
   useEffect(() => {
     getActiveCategories().then(r => setCategories(Array.isArray(r) ? r : [])).catch(() => {})
-    getDiemQuyTac().then(setDiemQuyTac).catch(() => {})
     posApi.getColors().then(setColors).catch(() => {})
     posApi.getSizes().then(setSizes).catch(() => {})
     posApi.getVariants().then(r => {
@@ -120,11 +115,6 @@ export default function AdminPOS() {
   }, [categoryId])
 
   useEffect(() => {
-    if (!selectedCustomer) return
-    getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0 }))
-  }, [selectedCustomer])
-
-  useEffect(() => {
     posApi.getProvinces().then(setProvinces).catch(() => {})
   }, [])
 
@@ -154,21 +144,13 @@ export default function AdminPOS() {
   }, [loaiDon, shippingInfo.tinhThanh, shippingInfo.quanHuyen, shippingInfo.phuongXa, shippingInfo.phuongThuc, cart])
 
   const phiVanChuyen = loaiDon === 'GIAO_HANG' && !mienPhiVanChuyen ? shippingFee : 0
-  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
-  const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
-  const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
-  const giaTriSauCoupon = Math.max(0, total - (coupon?.soTienGiam || 0))
-  const maxDiemTheoQuyTac = Math.floor(giaTriSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
-  const maxDiemSuDung = Math.max(0, Math.min(customerDiem.soDiem || 0, maxDiemTheoQuyTac))
-  const diemDungDuoc = (customerDiem.soDiem || 0) > 0 && maxDiemSuDung >= diemToiThieu
-  const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
-  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi + phiVanChuyen)
+  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) + phiVanChuyen)
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
 
   const saveCurrentOrder = (idxOverride) => {
     const idx = idxOverride !== undefined ? idxOverride : currentOrderIdx
-    setOrders(prev => prev.map((o, i) => i === idx ? { ...o, cart, customer: selectedCustomer, coupon, dungDiem } : o))
+    setOrders(prev => prev.map((o, i) => i === idx ? { ...o, cart, customer: selectedCustomer, coupon } : o))
   }
 
   const switchOrder = (idx) => {
@@ -178,13 +160,8 @@ export default function AdminPOS() {
     setCart(target.cart)
     setSelectedCustomer(target.customer)
     setCoupon(target.coupon)
-    setDungDiem(target.dungDiem)
-    setCustomerDiem({ soDiem: 0 })
     setAvailableCoupons([])
     setCouponMsg('')
-    if (target.customer) {
-      getCustomerDiem(target.customer.maNguoiDung).then(setCustomerDiem).catch(() => {})
-    }
     setCurrentOrderIdx(idx)
   }
 
@@ -195,14 +172,12 @@ export default function AdminPOS() {
     }
     if (orders.length > 0) saveCurrentOrder()
     orderIdCounter.current += 1
-    const newOrder = { id: orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false }
+    const newOrder = { id: orderIdCounter.current, cart: [], customer: null, coupon: null }
     setOrders(prev => [...prev, newOrder])
     setCart([])
     setSelectedCustomer(null)
     setCoupon(null)
     setCouponMsg('')
-    setDungDiem(false)
-    setCustomerDiem({ soDiem: 0 })
     setAvailableCoupons([])
     setCurrentOrderIdx(orders.length)
   }
@@ -215,8 +190,6 @@ export default function AdminPOS() {
       setSelectedCustomer(null)
       setCoupon(null)
       setCouponMsg('')
-      setDungDiem(false)
-      setCustomerDiem({ soDiem: 0 })
       setCurrentOrderIdx(0)
     } else if (idx === currentOrderIdx) {
       const newIdx = Math.min(idx, newOrders.length - 1)
@@ -224,7 +197,6 @@ export default function AdminPOS() {
       setCart(target.cart)
       setSelectedCustomer(target.customer)
       setCoupon(target.coupon)
-      setDungDiem(target.dungDiem)
       setCurrentOrderIdx(newIdx)
     } else if (idx < currentOrderIdx) {
       setCurrentOrderIdx(prev => prev - 1)
@@ -316,12 +288,11 @@ export default function AdminPOS() {
 
   const resetOrderState = () => {
     const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
-    if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false })
+    if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null })
     setOrders(newOrders)
     setCart(newOrders[0]?.cart || [])
     setSelectedCustomer(newOrders[0]?.customer || null)
     setCoupon(newOrders[0]?.coupon || null)
-    setDungDiem(newOrders[0]?.dungDiem || false)
     setCurrentOrderIdx(0)
     setCustomerPaid(0)
   }
@@ -329,7 +300,6 @@ export default function AdminPOS() {
   const handleCheckout = async (paymentMethod = 5) => {
     setShowPaymentModal(false)
     if (cart.length === 0 || pendingCheckout.current) return
-    if (soDiemSuDung > 0 && soDiemSuDung < diemToiThieu) { setMsg({ type: 'error', text: `Tối thiểu ${diemToiThieu} điểm để sử dụng` }); return }
     pendingCheckout.current = true
     setPlacing(true)
     try {
@@ -344,7 +314,6 @@ export default function AdminPOS() {
           maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
           maCode: coupon?.maCode || undefined,
           phuongThucThanhToan: 5,
-          soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         })
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
         resetOrderState()
@@ -369,7 +338,6 @@ export default function AdminPOS() {
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
         phuongThucThanhToan: 6,
-        soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       })
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       resetOrderState()
@@ -571,7 +539,7 @@ export default function AdminPOS() {
                   {selectedCustomer && (
                     <>
                       <button className="text-xs text-stone hover:underline">Sửa địa chỉ</button>
-                      <button onClick={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
+                      <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponMsg('') }}
                         className="text-xs text-bordeaux hover:underline font-medium">Giữ khách</button>
                     </>
                   )}
@@ -624,17 +592,6 @@ export default function AdminPOS() {
                   </div>
                   {couponMsg && <p className="text-[11px] text-bordeaux mt-1">{couponMsg}</p>}
                 </div>
-
-                {/* Points */}
-                {selectedCustomer && customerDiem?.soDiem > 0 && (
-                  <div className="flex items-center justify-between gap-2 bg-gold-50 rounded-lg px-3 py-2">
-                    <span className="text-xs text-stone flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-gold" /> Dùng {customerDiem.soDiem.toLocaleString()} điểm</span>
-                    <button onClick={() => setDungDiem(v => !v)}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${dungDiem ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
-                      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${dungDiem ? 'translate-x-4' : ''}`} />
-                    </button>
-                  </div>
-                )}
 
                 {/* Totals */}
                 <div className="space-y-2 text-sm pt-2 border-t border-stone/10">
@@ -771,7 +728,7 @@ export default function AdminPOS() {
         onAdd={addToCart} onQtyChange={updateQtyModal} />
 
       <CustomerPickerModal open={showCustomerPicker} onClose={() => setShowCustomerPicker(false)}
-        onSelect={(c) => { setSelectedCustomer(c); getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => {}) }} />
+        onSelect={(c) => setSelectedCustomer(c)} />
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
         thanhTien={thanhTien} onCheckout={() => handleCheckout(5)} onConfirmQR={handleConfirmQR}
