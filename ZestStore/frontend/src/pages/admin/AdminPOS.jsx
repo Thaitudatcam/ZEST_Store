@@ -16,7 +16,7 @@ import POSToast from '../../components/admin/pos/POSToast'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import InvoicePrint from '../../components/InvoicePrint'
-import { Plus, Minus, ShoppingCart, Trash2, X } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Trash2, X, Coins } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import { useAuth } from '../../context/AuthContext'
 
