@@ -44,7 +44,11 @@ export const posApi = {
     api.post(`/orders/admin/${id}/print`).then(r => r.data),
 
   calculateShipping: (body) =>
-    api.post('/shipping/ghn/fee', body).then(r => r.data).catch(() => ({ fee: 30000 })),
+    api.post('/shipping/ghn/fee', body).then(r => {
+      const d = r.data
+      const total = d?.data?.total ?? d?.fee ?? 0
+      return { fee: total }
+    }).catch(() => ({ fee: 30000 })),
 
   getProvinces: () =>
     api.get('/shipping/ghn/provinces').then(r => r.data?.data || r.data || []).catch(() => []),
