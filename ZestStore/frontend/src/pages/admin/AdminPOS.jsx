@@ -59,6 +59,7 @@ export default function AdminPOS() {
   const [couponMsg, setCouponMsg] = useState('')
   const [couponInput, setCouponInput] = useState('')
   const [availableCoupons, setAvailableCoupons] = useState([])
+  const [showCouponPicker, setShowCouponPicker] = useState(false)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [loaiDon, setLoaiDon] = useState('TAI_QUAY')
@@ -316,6 +317,31 @@ export default function AdminPOS() {
   }, [autoApplyBestCoupon])
 
   const [couponCodeState, setCouponCodeState] = useState('')
+
+  const fetchAvailableCoupons = useCallback(async () => {
+    if (cart.length === 0) { setAvailableCoupons([]); return }
+    try {
+      const res = await getBestOffer(total, [], selectedCustomer?.maNguoiDung)
+      if (res.found) {
+        setAvailableCoupons([res])
+      } else {
+        setAvailableCoupons([])
+      }
+    } catch { setAvailableCoupons([]) }
+  }, [cart.length, total, selectedCustomer?.maNguoiDung])
+
+  useEffect(() => {
+    if (showCouponPicker) fetchAvailableCoupons()
+  }, [showCouponPicker, fetchAvailableCoupons])
+
+  useEffect(() => {
+    if (!showCouponPicker) return
+    const handler = (e) => {
+      if (!e.target.closest('[data-coupon-picker]')) setShowCouponPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showCouponPicker])
 
   const resetOrderState = () => {
     const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
@@ -678,25 +704,47 @@ export default function AdminPOS() {
               </div>
               <div className="space-y-3">
                 {/* Coupon */}
-                <div>
+                <div className="relative" data-coupon-picker>
                   <label className="text-xs font-semibold text-stone mb-1.5 block">Mã phiếu giảm giá</label>
                   <div className="flex items-center gap-2">
-                    <input value={couponInput} onChange={e => setCouponInput(e.target.value)}
-                      placeholder="Nhập mã (Enter để áp dụng)"
-                      disabled={cart.length === 0}
-                      className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
-                      onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon(e.target.value) }} />
-                    {coupon ? (
-                      <button onClick={() => { setCoupon(null); setCouponInput(''); setCouponMsg('') }}
-                        className="text-xs text-bordeaux hover:underline font-medium whitespace-nowrap">Gỡ bỏ</button>
-                    ) : (
-                      <button onClick={() => handleApplyCoupon(couponInput)} disabled={!couponInput.trim() || cart.length === 0}
-                        className="text-xs font-semibold text-white bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] px-3 py-1.5 rounded-lg whitespace-nowrap disabled:opacity-40 transition">Áp dụng</button>
-                    )}
+                    <div className="relative flex-1">
+                      <input value={couponInput} onChange={e => { setCouponInput(e.target.value); setShowCouponPicker(true) }}
+                        onFocus={() => { if (cart.length > 0) setShowCouponPicker(true) }}
+                        placeholder="Nhập mã (Enter để áp dụng)"
+                        disabled={cart.length === 0}
+                        className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
+                        onKeyDown={e => { if (e.key === 'Enter') { handleApplyCoupon(e.target.value); setShowCouponPicker(false) } }} />
+                    </div>
                     <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
                     <span className="text-sm font-bold text-[var(--primary-color)] w-20 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
                   </div>
                   {couponMsg && <p className="text-[11px] text-bordeaux mt-1">{couponMsg}</p>}
+
+                  {/* Coupon picker dropdown */}
+                  {showCouponPicker && cart.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-stone/20 rounded-xl shadow-lg max-h-52 overflow-auto">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-stone/10">
+                        <span className="text-xs font-bold text-ink">Mã giảm giá khả dụng</span>
+                        <button onClick={() => setShowCouponPicker(false)} className="text-stone hover:text-ink"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                      </div>
+                      {availableCoupons.length === 0 ? (
+                        <p className="px-3 py-4 text-xs text-stone text-center">Không có mã giảm giá phù hợp</p>
+                      ) : (
+                        availableCoupons.map((c, i) => (
+                          <button key={i} onClick={() => {
+                            handleApplyCoupon(c.maCode)
+                            setShowCouponPicker(false)
+                          }} className="w-full text-left px-3 py-2.5 hover:bg-ivory-100 transition flex items-center justify-between border-b border-stone/5 last:border-0">
+                            <div>
+                              <p className="text-xs font-bold text-ink">{c.maCode}</p>
+                              <p className="text-[11px] text-stone mt-0.5">{c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam || 10}%` : `Giảm ${VND(c.soTienGiam)}`}</p>
+                            </div>
+                            <span className="text-xs font-bold text-[var(--primary-color)]">{VND(c.soTienGiam)}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Applied coupon badge */}
@@ -734,7 +782,14 @@ export default function AdminPOS() {
 
                 {/* Customer Payment Input */}
                 <div className="pt-2 border-t border-stone/10">
-                  <label className="text-xs font-semibold text-stone mb-1.5 block">Khách thanh toán</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-stone">Khách thanh toán</label>
+                    <button onClick={() => setShowPaymentModal(true)}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--primary-color)] hover:underline transition">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+                      Chọn phương thức
+                    </button>
+                  </div>
                   <div className="relative">
                     <input type="text" inputMode="numeric"
                       value={customerPaid === 0 ? '' : customerPaid.toLocaleString('vi-VN')}
@@ -795,7 +850,7 @@ export default function AdminPOS() {
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
         thanhTien={thanhTien} onCheckout={() => handleCheckout(5)} onConfirmQR={handleConfirmQR}
-        placing={placing} bankInfo={bankInfo} />
+        placing={placing} bankInfo={bankInfo} onConfirmPaid={(amount) => setCustomerPaid(amount)} />
 
       {cameraOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70" onClick={() => setCameraOpen(false)}>
