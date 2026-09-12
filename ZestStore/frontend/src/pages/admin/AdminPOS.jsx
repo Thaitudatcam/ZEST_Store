@@ -571,7 +571,7 @@ export default function AdminPOS() {
                   {selectedCustomer && (
                     <>
                       <button className="text-xs text-stone hover:underline">Sửa địa chỉ</button>
-                      <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponMsg('') }}
+                      <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponInput(''); setCouponMsg('') }}
                         className="text-xs text-bordeaux hover:underline font-medium">Gỡ khách</button>
                     </>
                   )}
@@ -595,6 +595,73 @@ export default function AdminPOS() {
               ) : (
                 <p className="text-sm text-stone">Đơn đang được đặt dưới dạng "Khách lẻ" (Mua ẩn danh)</p>
               )}
+
+              {/* Shipping Address (when delivery mode) */}
+              {loaiDon === 'GIAO_HANG' && (
+                <div className="mt-4 pt-4 border-t border-stone/10">
+                  <p className="text-xs font-bold text-ink mb-3">Địa chỉ nhận hàng</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone mb-1 block">Họ và tên người nhận</label>
+                      <input value={shippingInfo?.hoTen || selectedCustomer?.hoTen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, hoTen: e.target.value }))}
+                        placeholder="Nguyễn Văn A" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone mb-1 block">Số điện thoại</label>
+                      <input value={shippingInfo?.soDienThoai || selectedCustomer?.soDienThoai || ''} onChange={e => setShippingInfo(prev => ({ ...prev, soDienThoai: e.target.value }))}
+                        placeholder="0912345678" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone mb-1 block">Địa chỉ cụ thể</label>
+                      <input value={shippingInfo?.diaChi || ''} onChange={e => setShippingInfo(prev => ({ ...prev, diaChi: e.target.value }))}
+                        placeholder="Ký túc xá khu B, Đại học Quốc gia" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select value={shippingInfo?.tinhThanh || ''} onChange={e => setShippingInfo(prev => ({ ...prev, tinhThanh: e.target.value, quanHuyen: '', phuongXa: '' }))}
+                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
+                        <option value="">Tỉnh/TP</option>
+                        {provinces?.map(p => <option key={p.ProvinceID || p.ma} value={p.ProvinceID || p.ma}>{p.ProvinceName || p.ten}</option>)}
+                      </select>
+                      <select value={shippingInfo?.quanHuyen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, quanHuyen: e.target.value, phuongXa: '' }))}
+                        disabled={!shippingInfo?.tinhThanh}
+                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
+                        <option value="">Quận/Huyện</option>
+                        {districts?.map(d => <option key={d.DistrictID || d.ma} value={d.DistrictID || d.ma}>{d.DistrictName || d.ten}</option>)}
+                      </select>
+                      <select value={shippingInfo?.phuongXa || ''} onChange={e => setShippingInfo(prev => ({ ...prev, phuongXa: e.target.value }))}
+                        disabled={!shippingInfo?.quanHuyen}
+                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
+                        <option value="">Phường/Xã</option>
+                        {wards?.map(w => <option key={w.WardCode || w.ma} value={w.WardCode || w.ma}>{w.WardName || w.ten}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between bg-ivory-100 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-stone">Phí vận chuyển</span>
+                        <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-semibold">GHN</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {shippingLoading ? (
+                          <span className="text-xs text-stone">Đang tính...</span>
+                        ) : (
+                          <span className="text-xs font-bold text-ink">{mienPhiVanChuyen ? 'Miễn phí' : VND(shippingFee || 0)}</span>
+                        )}
+                        <button onClick={() => {
+                          shippingDebounceRef.current = setTimeout(() => {
+                            calcShippingFee({
+                              toWard: shippingInfo.phuongXa, toDistrict: shippingInfo.quanHuyen,
+                              weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
+                            }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000))
+                          }, 100)
+                        }} className="text-stone hover:text-ink transition p-0.5" title="Tính lại phí">
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-stone italic">Phí cập nhật theo thời gian thực.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment Info */}
@@ -602,7 +669,7 @@ export default function AdminPOS() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-ink">Thông tin thanh toán</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-stone">Tại quầy</span>
+                  <span className="text-xs text-stone">{loaiDon === 'GIAO_HANG' ? 'Giao hàng' : 'Tại quầy'}</span>
                   <button onClick={() => setLoaiDon(loaiDon === 'TAI_QUAY' ? 'GIAO_HANG' : 'TAI_QUAY')}
                     className={`relative w-11 h-6 rounded-full transition-colors ${loaiDon === 'GIAO_HANG' ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${loaiDon === 'GIAO_HANG' ? 'translate-x-5' : ''}`} />
@@ -619,9 +686,12 @@ export default function AdminPOS() {
                       disabled={cart.length === 0}
                       className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
                       onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon(e.target.value) }} />
-                    {coupon && (
+                    {coupon ? (
                       <button onClick={() => { setCoupon(null); setCouponInput(''); setCouponMsg('') }}
-                        className="text-xs text-bordeaux hover:underline font-medium whitespace-nowrap">Xóa</button>
+                        className="text-xs text-bordeaux hover:underline font-medium whitespace-nowrap">Gỡ bỏ</button>
+                    ) : (
+                      <button onClick={() => handleApplyCoupon(couponInput)} disabled={!couponInput.trim() || cart.length === 0}
+                        className="text-xs font-semibold text-white bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] px-3 py-1.5 rounded-lg whitespace-nowrap disabled:opacity-40 transition">Áp dụng</button>
                     )}
                     <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
                     <span className="text-sm font-bold text-[var(--primary-color)] w-20 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
@@ -629,20 +699,31 @@ export default function AdminPOS() {
                   {couponMsg && <p className="text-[11px] text-bordeaux mt-1">{couponMsg}</p>}
                 </div>
 
+                {/* Applied coupon badge */}
+                {coupon && (
+                  <div className="flex items-start gap-2 bg-emerald-deep/5 border border-emerald-deep/20 rounded-lg px-3 py-2">
+                    <svg className="h-4 w-4 text-emerald-deep mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-emerald-deep">Áp dụng thành công phiếu giảm giá {coupon.maCode} ({coupon.kieuGiamGia === 1 ? `${coupon.giaTriGiam || 10}%` : VND(coupon.soTienGiam)})</p>
+                      <p className="text-[11px] text-emerald-deep/70 mt-0.5">Giảm {VND(coupon.soTienGiam)}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Totals */}
                 <div className="space-y-2 text-sm pt-2 border-t border-stone/10">
                   <div className="flex justify-between text-stone">
                     <span>Tiền hàng</span><span>{VND(total)}</span>
                   </div>
+                  {loaiDon === 'GIAO_HANG' && (
+                    <div className="flex justify-between text-stone">
+                      <span>Phí vận chuyển (GHN)</span>
+                      <span>{mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0)}</span>
+                    </div>
+                  )}
                   {coupon && (
                     <div className="flex justify-between text-emerald-deep">
                       <span>Giảm giá</span><span>-{VND(coupon.soTienGiam)}</span>
-                    </div>
-                  )}
-                  {loaiDon === 'GIAO_HANG' && (
-                    <div className="flex justify-between text-stone">
-                      <span>Phí vận chuyển</span>
-                      <span>{mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-2 border-t border-stone/10">
@@ -683,77 +764,6 @@ export default function AdminPOS() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Shipping Info (when Giao hàng) */}
-      {loaiDon === 'GIAO_HANG' && orders.length > 0 && (
-        <div className="bg-white rounded-2xl border border-stone/10 p-5 mt-4">
-          <h3 className="font-bold text-ink mb-4">Thông tin giao hàng</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-stone mb-1 block">Họ tên <span className="text-bordeaux">*</span></label>
-              <input value={shippingInfo?.hoTen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, hoTen: e.target.value }))}
-                placeholder="Nguyễn Văn A" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-stone mb-1 block">Số điện thoại <span className="text-bordeaux">*</span></label>
-              <input value={shippingInfo?.soDienThoai || ''} onChange={e => setShippingInfo(prev => ({ ...prev, soDienThoai: e.target.value }))}
-                placeholder="0912345678" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-            </div>
-            <div className="col-span-2">
-              <label className="text-xs font-semibold text-stone mb-1 block">Địa chỉ <span className="text-bordeaux">*</span></label>
-              <input value={shippingInfo?.diaChi || ''} onChange={e => setShippingInfo(prev => ({ ...prev, diaChi: e.target.value }))}
-                placeholder="Số nhà, đường..." className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-stone mb-1 block">Tỉnh/TP <span className="text-bordeaux">*</span></label>
-              <select value={shippingInfo?.tinhThanh || ''} onChange={e => setShippingInfo(prev => ({ ...prev, tinhThanh: e.target.value, quanHuyen: '', phuongXa: '' }))}
-                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
-                <option value="">Chọn</option>
-                {provinces?.map(p => <option key={p.ProvinceID || p.ma} value={p.ProvinceID || p.ma}>{p.ProvinceName || p.ten}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-stone mb-1 block">Quận/Huyện <span className="text-bordeaux">*</span></label>
-              <select value={shippingInfo?.quanHuyen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, quanHuyen: e.target.value, phuongXa: '' }))}
-                disabled={!shippingInfo?.tinhThanh}
-                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
-                <option value="">Chọn</option>
-                {districts?.map(d => <option key={d.DistrictID || d.ma} value={d.DistrictID || d.ma}>{d.DistrictName || d.ten}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-stone mb-1 block">Phường/Xã <span className="text-bordeaux">*</span></label>
-              <select value={shippingInfo?.phuongXa || ''} onChange={e => setShippingInfo(prev => ({ ...prev, phuongXa: e.target.value }))}
-                disabled={!shippingInfo?.quanHuyen}
-                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
-                <option value="">Chọn</option>
-                {wards?.map(w => <option key={w.WardCode || w.ma} value={w.WardCode || w.ma}>{w.WardName || w.ten}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-stone mb-1 block">Phương thức</label>
-              <select value={shippingInfo?.phuongThuc || 'GHN'} onChange={e => setShippingInfo(prev => ({ ...prev, phuongThuc: e.target.value }))}
-                className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
-                <option value="GHN">Giao hàng nhanh</option>
-                <option value="GHTK">Giao hàng tiết kiệm</option>
-              </select>
-            </div>
-          </div>
-          {mienPhiThreshold && total >= mienPhiThreshold && (
-            <label className="flex items-center gap-2 text-xs text-emerald-deep cursor-pointer mt-3">
-              <input type="checkbox" checked={mienPhiVanChuyen} onChange={() => setMienPhiVanChuyen(v => !v)}
-                className="rounded border-stone/30 text-emerald-deep focus:ring-emerald-deep" />
-              Miễn phí vận chuyển (đơn từ {VND(mienPhiThreshold)})
-            </label>
-          )}
-          <div className="flex justify-between items-center text-sm bg-ivory-100 rounded-lg px-3 py-2 mt-3">
-            <span className="text-stone">Phí vận chuyển</span>
-            <span className="font-semibold text-ink">
-              {shippingLoading ? 'Đang tính...' : (mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0))}
-            </span>
           </div>
         </div>
       )}
