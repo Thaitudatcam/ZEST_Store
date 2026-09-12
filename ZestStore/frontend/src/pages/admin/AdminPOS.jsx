@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from '../../api/admin'
-import { getAvailableCoupons } from '../../api/coupons'
+import { getBestOffer } from '../../api/coupons'
 import { posApi } from '../../components/admin/pos/apiClient'
 import OrderTabs from '../../components/admin/pos/OrderTabs'
 import ProductGrid from '../../components/admin/pos/ProductGrid'
@@ -57,6 +57,7 @@ export default function AdminPOS() {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
+  const [couponInput, setCouponInput] = useState('')
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
@@ -160,6 +161,7 @@ export default function AdminPOS() {
     setCart(target.cart)
     setSelectedCustomer(target.customer)
     setCoupon(target.coupon)
+    setCouponInput(target.coupon?.maCode || '')
     setAvailableCoupons([])
     setCouponMsg('')
     setCurrentOrderIdx(idx)
@@ -177,9 +179,10 @@ export default function AdminPOS() {
     setCart([])
     setSelectedCustomer(null)
     setCoupon(null)
+    setCouponInput('')
     setCouponMsg('')
     setAvailableCoupons([])
-    setCurrentOrderIdx(orders.length)
+    setCurrentOrderIdx(0)
   }
 
   const removeOrder = (idx) => {
@@ -189,6 +192,7 @@ export default function AdminPOS() {
       setCart([])
       setSelectedCustomer(null)
       setCoupon(null)
+      setCouponInput('')
       setCouponMsg('')
       setCurrentOrderIdx(0)
     } else if (idx === currentOrderIdx) {
@@ -197,6 +201,7 @@ export default function AdminPOS() {
       setCart(target.cart)
       setSelectedCustomer(target.customer)
       setCoupon(target.coupon)
+      setCouponInput(target.coupon?.maCode || '')
       setCurrentOrderIdx(newIdx)
     } else if (idx < currentOrderIdx) {
       setCurrentOrderIdx(prev => prev - 1)
@@ -277,12 +282,38 @@ export default function AdminPOS() {
         tongTien: total,
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       })
-      if (res.hopLe) { setCoupon(res); setCouponCodeState(code) }
+      if (res.hopLe) { setCoupon(res); setCouponInput(code); setCouponCodeState(code) }
       else { setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không hợp lệ') }
     } catch (err) {
       setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
     }
   }
+
+  const autoApplyBestCoupon = useCallback(async () => {
+    if (cart.length === 0) {
+      setCoupon(null)
+      setCouponMsg('')
+      return
+    }
+    try {
+      const res = await getBestOffer(total, [], selectedCustomer?.maNguoiDung)
+      if (res.found) {
+        setCoupon({ hopLe: true, maCode: res.maCode, soTienGiam: res.soTienGiam, kieuGiamGia: res.kieuGiamGia, loaiMa: res.loaiMa || 'COUPON' })
+        setCouponInput(res.maCode)
+        setCouponMsg('')
+      } else {
+        setCoupon(null)
+        setCouponInput('')
+        setCouponMsg('')
+      }
+    } catch {
+      // silently ignore
+    }
+  }, [cart.length, total, selectedCustomer?.maNguoiDung])
+
+  useEffect(() => {
+    autoApplyBestCoupon()
+  }, [autoApplyBestCoupon])
 
   const [couponCodeState, setCouponCodeState] = useState('')
 
@@ -293,6 +324,7 @@ export default function AdminPOS() {
     setCart(newOrders[0]?.cart || [])
     setSelectedCustomer(newOrders[0]?.customer || null)
     setCoupon(newOrders[0]?.coupon || null)
+    setCouponInput(newOrders[0]?.coupon?.maCode || '')
     setCurrentOrderIdx(0)
     setCustomerPaid(0)
   }
@@ -540,7 +572,7 @@ export default function AdminPOS() {
                     <>
                       <button className="text-xs text-stone hover:underline">Sửa địa chỉ</button>
                       <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponMsg('') }}
-                        className="text-xs text-bordeaux hover:underline font-medium">Giữ khách</button>
+                        className="text-xs text-bordeaux hover:underline font-medium">Gỡ khách</button>
                     </>
                   )}
                 </div>
@@ -582,11 +614,15 @@ export default function AdminPOS() {
                 <div>
                   <label className="text-xs font-semibold text-stone mb-1.5 block">Mã phiếu giảm giá</label>
                   <div className="flex items-center gap-2">
-                    <input value={coupon?.maCode || ''} onChange={e => handleApplyCoupon(e.target.value)}
+                    <input value={couponInput} onChange={e => setCouponInput(e.target.value)}
                       placeholder="Nhập mã (Enter để áp dụng)"
                       disabled={cart.length === 0}
                       className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
                       onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon(e.target.value) }} />
+                    {coupon && (
+                      <button onClick={() => { setCoupon(null); setCouponInput(''); setCouponMsg('') }}
+                        className="text-xs text-bordeaux hover:underline font-medium whitespace-nowrap">Xóa</button>
+                    )}
                     <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
                     <span className="text-sm font-bold text-[var(--primary-color)] w-20 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
                   </div>
