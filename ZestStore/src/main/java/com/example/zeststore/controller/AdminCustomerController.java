@@ -42,6 +42,11 @@ public class AdminCustomerController {
         return ResponseEntity.ok(adminCustomerService.getCustomerDetail(id));
     }
 
+    @GetMapping("/{id}/addresses")
+    public ResponseEntity<?> getCustomerAddresses(@PathVariable Integer id) {
+        return ResponseEntity.ok(adminCustomerService.getCustomerAddresses(id));
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<?> toggleStatus(@PathVariable Integer id) {
         return ResponseEntity.ok(adminCustomerService.toggleStatus(id));

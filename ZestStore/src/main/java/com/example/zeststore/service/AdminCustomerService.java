@@ -4,6 +4,7 @@ import com.example.zeststore.entity.NguoiDung;
 import com.example.zeststore.entity.VaiTro;
 import com.example.zeststore.repository.NguoiDungRepository;
 import com.example.zeststore.repository.VaiTroRepository;
+import com.example.zeststore.repository.DiaChiNguoiDungRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class AdminCustomerService {
     private final NguoiDungRepository nguoiDungRepository;
     private final VaiTroRepository vaiTroRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DiaChiNguoiDungRepository diaChiNguoiDungRepository;
 
     public List<Map<String, Object>> getAllCustomers() {
         return nguoiDungRepository.findAll().stream()
@@ -56,6 +58,26 @@ public class AdminCustomerService {
         m.put("anhDaiDien", u.getAnhDaiDien());
         m.put("ngayDangNhapCuoi", u.getNgayDangNhapCuoi());
         return m;
+    }
+
+    public List<Map<String, Object>> getCustomerAddresses(Integer userId) {
+        return diaChiNguoiDungRepository.findByNguoiDung_MaNguoiDung(userId).stream()
+                .filter(d -> d.getNgayXoa() == null)
+                .map(d -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("maDiaChi", d.getMaDiaChi());
+                    m.put("tenNguoiNhan", d.getTenNguoiNhan());
+                    m.put("soDienThoai", d.getSoDienThoai());
+                    m.put("tinhThanhPho", d.getTinhThanhPho());
+                    m.put("quanHuyen", d.getQuanHuyen());
+                    m.put("phuongXa", d.getPhuongXa());
+                    m.put("provinceId", d.getProvinceId());
+                    m.put("districtId", d.getDistrictId());
+                    m.put("wardCode", d.getWardCode());
+                    m.put("chiTietDiaChi", d.getChiTietDiaChi());
+                    m.put("laMacDinh", d.getLaMacDinh());
+                    return m;
+                }).collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> searchCustomers(String q) {

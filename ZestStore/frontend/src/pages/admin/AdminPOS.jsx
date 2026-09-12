@@ -774,7 +774,24 @@ export default function AdminPOS() {
         onAdd={addToCart} onQtyChange={updateQtyModal} />
 
       <CustomerPickerModal open={showCustomerPicker} onClose={() => setShowCustomerPicker(false)}
-        onSelect={(c) => setSelectedCustomer(c)} />
+        onSelect={async (c) => {
+          setSelectedCustomer(c)
+          try {
+            const addrs = await posApi.getCustomerAddresses(c.maNguoiDung)
+            const defaultAddr = addrs.find(a => a.laMacDinh) || addrs[0]
+            if (defaultAddr) {
+              setShippingInfo(prev => ({
+                ...prev,
+                hoTen: defaultAddr.tenNguoiNhan || c.hoTen || '',
+                soDienThoai: defaultAddr.soDienThoai || c.soDienThoai || '',
+                diaChi: defaultAddr.chiTietDiaChi || '',
+                tinhThanh: defaultAddr.provinceId ? String(defaultAddr.provinceId) : (defaultAddr.tinhThanhPho || ''),
+                quanHuyen: defaultAddr.districtId ? String(defaultAddr.districtId) : (defaultAddr.quanHuyen || ''),
+                phuongXa: defaultAddr.wardCode || (defaultAddr.phuongXa || ''),
+              }))
+            }
+          } catch {}
+        }} />
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
         thanhTien={thanhTien} onCheckout={() => handleCheckout(5)} onConfirmQR={handleConfirmQR}

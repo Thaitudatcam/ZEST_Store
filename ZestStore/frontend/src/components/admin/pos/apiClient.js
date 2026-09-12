@@ -54,4 +54,7 @@ export const posApi = {
 
   getWards: (districtId) =>
     api.get('/shipping/ghn/wards', { params: { districtId } }).then(r => r.data?.data || r.data || []).catch(() => []),
+
+  getCustomerAddresses: (customerId) =>
+    api.get(`/admin/customers/${customerId}/addresses`).then(r => r.data).catch(() => []),
 }
