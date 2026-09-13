@@ -410,6 +410,19 @@ export default function AdminPOS() {
     }
   }
 
+  const handleTransferTabActive = async () => {
+    if (!bankInfo && cart.length > 0) {
+      try {
+        const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
+        const vqRes = await posApi.vietQRPreview(totalAmount)
+        setQrDataUrl(vqRes.qrUrl)
+        setBankInfo(vqRes)
+      } catch (err) {
+        setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Không thể tạo mã QR' })
+      }
+    }
+  }
+
   const handlePrintInvoice = async () => {
     if (!payResult?.maDonHang) return
     setPrintInvoice('loading')
@@ -780,28 +793,16 @@ export default function AdminPOS() {
                   </div>
                 </div>
 
-                {/* Customer Payment Input */}
+                {/* Customer Payment */}
                 <div className="pt-2 border-t border-stone/10">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-stone">Khách thanh toán</label>
-                    <button onClick={() => setShowPaymentModal(true)}
-                      className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--primary-color)] hover:underline transition">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
-                      Chọn phương thức
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input type="text" inputMode="numeric"
-                      value={customerPaid === 0 ? '' : customerPaid.toLocaleString('vi-VN')}
-                      onChange={e => {
-                        const raw = e.target.value.replace(/[^0-9]/g, '')
-                        setCustomerPaid(Number(raw) || 0)
-                      }}
-                      placeholder="0"
-                      className="w-full border border-stone/20 rounded-lg pl-8 pr-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] text-right font-semibold"
-                    />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone text-sm">đ</span>
-                  </div>
+                  <button onClick={() => setShowPaymentModal(true)}
+                    className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-ivory-100 transition group">
+                    <span className="text-xs font-semibold text-stone">Khách thanh toán</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-ink">{customerPaid > 0 ? VND(customerPaid) : '0 đ'}</span>
+                      <svg className="h-4 w-4 text-stone group-hover:text-[var(--primary-color)] transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                    </div>
+                  </button>
                 </div>
 
                 {/* Change */}
@@ -850,7 +851,8 @@ export default function AdminPOS() {
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
         thanhTien={thanhTien} onCheckout={() => handleCheckout(5)} onConfirmQR={handleConfirmQR}
-        placing={placing} bankInfo={bankInfo} onConfirmPaid={(amount) => setCustomerPaid(amount)} />
+        placing={placing} bankInfo={bankInfo} onConfirmPaid={(amount) => setCustomerPaid(amount)}
+        onTransferTabActive={handleTransferTabActive} />
 
       {cameraOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70" onClick={() => setCameraOpen(false)}>

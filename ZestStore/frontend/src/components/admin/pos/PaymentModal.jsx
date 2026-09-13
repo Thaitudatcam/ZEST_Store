@@ -7,7 +7,7 @@ const formatCurrency = (n) => { if (!n && n !== 0) return ''; return new Intl.Nu
 
 const QUICK_AMOUNTS = [100000, 200000, 500000, 1000000, 2000000, 5000000]
 
-export default function PaymentModal({ open, onClose, thanhTien, onCheckout, placing, bankInfo, onConfirmQR, onConfirmPaid }) {
+export default function PaymentModal({ open, onClose, thanhTien, onCheckout, placing, bankInfo, onConfirmQR, onConfirmPaid, onTransferTabActive }) {
   const [activeTab, setActiveTab] = useState('cash')
   const [tienKhachDua, setTienKhachDua] = useState('')
   const inputRef = useRef(null)
@@ -23,6 +23,13 @@ export default function PaymentModal({ open, onClose, thanhTien, onCheckout, pla
       setTimeout(() => inputRef.current?.focus(), 200)
     }
   }, [open])
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    if (tab === 'transfer' && onTransferTabActive) {
+      onTransferTabActive()
+    }
+  }
 
   useEffect(() => {
     if (!open) return
@@ -64,7 +71,7 @@ export default function PaymentModal({ open, onClose, thanhTien, onCheckout, pla
 
         <div role="tablist" className="flex border-b border-stone/10">
           <button role="tab" aria-selected={activeTab === 'cash'}
-            onClick={() => setActiveTab('cash')}
+            onClick={() => handleTabChange('cash')}
             className={`flex-1 py-3 text-sm font-semibold transition relative ${
               activeTab === 'cash' ? 'text-[var(--primary-color)]' : 'text-stone hover:text-ink'
             }`}>
@@ -72,7 +79,7 @@ export default function PaymentModal({ open, onClose, thanhTien, onCheckout, pla
             {activeTab === 'cash' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary-color)]" />}
           </button>
           <button role="tab" aria-selected={activeTab === 'transfer'}
-            onClick={() => setActiveTab('transfer')}
+            onClick={() => handleTabChange('transfer')}
             className={`flex-1 py-3 text-sm font-semibold transition relative ${
               activeTab === 'transfer' ? 'text-[var(--primary-color)]' : 'text-stone hover:text-ink'
             }`}>
