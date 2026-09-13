@@ -11,6 +11,7 @@ import CartPanel from '../../components/admin/pos/CartPanel'
 import AddProductModal from '../../components/admin/pos/AddProductModal'
 import CustomerPickerModal from '../../components/admin/pos/CustomerPickerModal'
 import PaymentModal from '../../components/admin/pos/PaymentModal'
+import POSConfirmDialog from '../../components/admin/pos/POSConfirmDialog'
 import POSToast from '../../components/admin/pos/POSToast'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -75,6 +76,8 @@ export default function AdminPOS() {
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
   const [customerPaid, setCustomerPaid] = useState(0)
+  const [showConfirmOrder, setShowConfirmOrder] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState(5)
   const [variantModal, setVariantModal] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
@@ -353,6 +356,8 @@ export default function AdminPOS() {
     setCouponInput(newOrders[0]?.coupon?.maCode || '')
     setCurrentOrderIdx(0)
     setCustomerPaid(0)
+    setShowConfirmOrder(false)
+    setPaymentMethod(5)
   }
 
   const handleCheckout = async (paymentMethod = 5) => {
@@ -811,7 +816,7 @@ export default function AdminPOS() {
                 </div>
 
                 {/* Checkout */}
-                <button onClick={() => handleCheckout(5)} disabled={cart.length === 0 || placing}
+                <button onClick={() => setShowConfirmOrder(true)} disabled={cart.length === 0 || placing}
                   className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
                   {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
                 </button>
@@ -847,8 +852,9 @@ export default function AdminPOS() {
         }} />
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
-        thanhTien={thanhTien} onCheckout={() => handleCheckout(5)} onConfirmQR={handleConfirmQR}
-        placing={placing} bankInfo={bankInfo} onConfirmPaid={(amount) => setCustomerPaid(amount)}
+        thanhTien={thanhTien} placing={placing} bankInfo={bankInfo}
+        onConfirmPaid={(amount) => { setCustomerPaid(amount); setPaymentMethod(5) }}
+        onConfirmTransfer={(amount) => { setCustomerPaid(amount); setPaymentMethod(6) }}
         onTransferTabActive={handleTransferTabActive} />
 
       {cameraOpen && (
@@ -1000,6 +1006,26 @@ export default function AdminPOS() {
       )}
 
       <ConfirmDialog open={typeof confirmAction === 'number'} title="Xóa sản phẩm" message="Bạn chắc chắn muốn xóa sản phẩm này?" confirmText="Xóa" onConfirm={() => { removeItem(confirmAction); setConfirmAction(null) }} onCancel={() => setConfirmAction(null)} />
+
+      <POSConfirmDialog
+        open={showConfirmOrder}
+        loaiDon={loaiDon}
+        tienHang={total}
+        giamGia={coupon?.soTienGiam || 0}
+        tongPhaiTra={thanhTien}
+        hinhThucThanhToan={paymentMethod === 6 ? 'Chuyển khoản' : 'Tiền mặt'}
+        khachThanhToan={customerPaid || thanhTien}
+        loading={placing}
+        onConfirm={() => {
+          setShowConfirmOrder(false)
+          if (paymentMethod === 6) {
+            handleConfirmQR()
+          } else {
+            handleCheckout(5)
+          }
+        }}
+        onCancel={() => setShowConfirmOrder(false)}
+      />
     </div>
   )
 }

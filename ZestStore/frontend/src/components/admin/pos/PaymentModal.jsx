@@ -7,7 +7,7 @@ const formatCurrency = (n) => { if (!n && n !== 0) return ''; return new Intl.Nu
 
 const QUICK_AMOUNTS = [100000, 200000, 500000, 1000000, 2000000, 5000000]
 
-export default function PaymentModal({ open, onClose, thanhTien, onCheckout, placing, bankInfo, onConfirmQR, onConfirmPaid, onTransferTabActive }) {
+export default function PaymentModal({ open, onClose, thanhTien, placing, bankInfo, onConfirmPaid, onConfirmTransfer, onTransferTabActive }) {
   const [activeTab, setActiveTab] = useState('cash')
   const [tienKhachDua, setTienKhachDua] = useState('')
   const inputRef = useRef(null)
@@ -35,11 +35,11 @@ export default function PaymentModal({ open, onClose, thanhTien, onCheckout, pla
     if (!open) return
     const handler = (e) => {
       if (e.key === 'Escape') onClose()
-      if (e.key === 'Enter' && isValid && activeTab === 'cash' && !placing) onCheckout()
+      if (e.key === 'Enter' && isValid && activeTab === 'cash' && !placing) { if (onConfirmPaid) onConfirmPaid(paidAmount); onClose() }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open, onClose, isValid, activeTab, placing, onCheckout])
+  }, [open, onClose, isValid, activeTab, placing, onConfirmPaid, paidAmount])
 
   const handleQuickAmount = (amount) => {
     if (amount === 'exact') {
@@ -152,12 +152,12 @@ export default function PaymentModal({ open, onClose, thanhTien, onCheckout, pla
             Hủy
           </button>
           {activeTab === 'cash' ? (
-            <button onClick={() => { if (onConfirmPaid) onConfirmPaid(paidAmount); onCheckout() }} disabled={!isValid || placing}
+            <button onClick={() => { if (onConfirmPaid) onConfirmPaid(paidAmount); onClose() }} disabled={!isValid || placing}
               className="flex-1 py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed text-sm tracking-wide">
-              {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
+              {placing ? 'Đang xử lý...' : 'XÁC NHẬN'}
             </button>
           ) : (
-            <button onClick={onConfirmQR} disabled={!bankInfo || placing}
+            <button onClick={() => { if (onConfirmTransfer) onConfirmTransfer(thanhTien); onClose() }} disabled={!bankInfo || placing}
               className="flex-1 py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed text-sm tracking-wide">
               {placing ? 'Đang xử lý...' : 'Đã nhận tiền'}
             </button>
