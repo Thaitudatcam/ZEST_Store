@@ -707,14 +707,14 @@ export default function AdminPOS() {
                 <div className="relative" data-coupon-picker>
                   <label className="text-xs font-semibold text-stone mb-1.5 block">Mã phiếu giảm giá</label>
                   <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <input value={couponInput} onChange={e => { setCouponInput(e.target.value); setShowCouponPicker(true) }}
-                        onFocus={() => { if (cart.length > 0) setShowCouponPicker(true) }}
-                        placeholder="Nhập mã (Enter để áp dụng)"
-                        disabled={cart.length === 0}
-                        className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
-                        onKeyDown={e => { if (e.key === 'Enter') { handleApplyCoupon(e.target.value); setShowCouponPicker(false) } }} />
-                    </div>
+                    <input value={couponInput} onChange={e => setCouponInput(e.target.value)}
+                      placeholder="Nhập mã (Enter để áp dụng)"
+                      disabled={cart.length === 0}
+                      className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
+                      onKeyDown={e => { if (e.key === 'Enter') { handleApplyCoupon(e.target.value); setShowCouponPicker(false) } }} />
+                    <button onClick={() => { fetchAvailableCoupons(); setShowCouponPicker(v => !v) }}
+                      disabled={cart.length === 0}
+                      className="text-xs font-semibold text-white bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] px-3 py-2 rounded-lg whitespace-nowrap disabled:opacity-40 transition">Chọn mã</button>
                     <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
                     <span className="text-sm font-bold text-[var(--primary-color)] w-20 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
                   </div>
