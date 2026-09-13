@@ -120,8 +120,6 @@ public class ThanhToanService {
                 || (dto.getEmailNguoiDung() != null && dto.getEmailNguoiDung().toLowerCase().contains(k));
     }
 
-    private final ViService viService;
-
     private ThanhToan lockPayment(Integer id) {
         ThanhToan snapshot = getPaymentById(id);
         if (snapshot.getDonHang() != null) {
@@ -138,7 +136,7 @@ public class ThanhToanService {
     @Transactional
     public ThanhToan completePayment(Integer paymentId, String maGiaoDich) {
         ThanhToan payment = lockPayment(paymentId);
-        if (payment.isRefunded() || Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) return payment;
+        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) return payment;
         if (payment.getDonHang() != null && "LEGACY".equals(payment.getDonHang().getStockState()))
             throw new BadRequestException("Thanh toán đơn cũ cần đối soát kho và hoàn tiền trước khi xử lý");
         // Keep maGiaoDich as the stable merchant reference for repeated gateway callbacks.
@@ -147,16 +145,10 @@ public class ThanhToanService {
         DonHang order = payment.getDonHang();
         if (order == null) {
             payment.setTrangThaiThanhToan(2);
-            viService.napTien(payment.getMaNguoiDung(), payment.getSoTien(),
-                    "Nạp tiền qua " + payment.getNhaCungCap(), paymentId);
         } else if (java.util.Set.of(5, 8, 9).contains(order.getTrangThaiDon())) {
             // A provider can settle after the local reservation has expired. Do not ship twice.
             if (order.getNguoiDung() == null)
                 throw new BadRequestException("Thanh toán đến muộn cần đối soát thủ công cho khách lẻ");
-            if (payment.getSoTien().signum() > 0)
-                viService.napTien(order.getNguoiDung().getMaNguoiDung(), payment.getSoTien(),
-                        "Hoàn thanh toán đến sau khi hủy đơn #" + order.getMaDonHang(), order.getMaDonHang());
-            payment.setRefunded(true);
             payment.setTrangThaiThanhToan(3);
         } else {
             inventoryService.deduct(order);
@@ -185,8 +177,8 @@ public class ThanhToanService {
     }
 
     private ThanhToan failLocked(ThanhToan payment) {
-        // Failure notifications must never overwrite a successful/refunded settlement.
-        if (payment.isRefunded() || !Integer.valueOf(1).equals(payment.getTrangThaiThanhToan())) return payment;
+        // Failure notifications must never overwrite a successful settlement.
+        if (!Integer.valueOf(1).equals(payment.getTrangThaiThanhToan())) return payment;
         DonHang order = payment.getDonHang();
         if (order != null && Integer.valueOf(1).equals(order.getTrangThaiDon())) {
             inventoryService.release(order);
@@ -230,7 +222,7 @@ public class ThanhToanService {
         if (order == null || order.getNguoiDung() == null
                 || !order.getNguoiDung().getMaNguoiDung().equals(userId))
             throw new BadRequestException("Payment does not belong to current user");
-        if (!Integer.valueOf(1).equals(order.getTrangThaiDon()) || payment.isRefunded()
+        if (!Integer.valueOf(1).equals(order.getTrangThaiDon())
                 || !Integer.valueOf(1).equals(payment.getTrangThaiThanhToan()))
             throw new BadRequestException("Đơn đã hủy/đã xử lý. Vui lòng tạo đơn mới");
         // Preserve the original deadline and reference; retries do not extend stock holds.

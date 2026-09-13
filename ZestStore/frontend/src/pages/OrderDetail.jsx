@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getOrderDetail, cancelOrder, requestReturn, confirmReceived } from '../api/orders'
+import { getOrderDetail, cancelOrder, confirmReceived } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, retryPayment } from '../api/payment'
 import { useOrderStream } from '../hooks/useOrderStream'
 import { useToast } from '../context/ToastContext'
@@ -9,16 +9,7 @@ import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, RefreshCw, Clock, Phone, MessageCircle, Loader, X, Image, Camera } from 'lucide-react'
-
-const RETURN_REASONS = [
-  { value: 'Sản phẩm bị lỗi/hư hỏng', label: 'Sản phẩm bị lỗi/hư hỏng' },
-  { value: 'Sai kích cỡ/màu sắc', label: 'Sai kích cỡ/màu sắc' },
-  { value: 'Không giống mô tả', label: 'Không giống mô tả' },
-  { value: 'Giao sai sản phẩm', label: 'Giao sai sản phẩm' },
-  { value: 'Hết nhu cầu sử dụng', label: 'Hết nhu cầu sử dụng' },
-  { value: 'Khác', label: 'Lý do khác' },
-]
+import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, Clock, Loader, X } from 'lucide-react'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -30,10 +21,10 @@ const STATUS_STEPS = [
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Đã giao hàng', 7: 'Yêu cầu trả hàng', 8: 'Đã trả hàng', 9: 'Không nhận hàng',
+  5: 'Đã hủy', 6: 'Đã giao hàng', 9: 'Không nhận hàng',
 }
 
-const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR', 7: 'Ví' }
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
 
 function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
@@ -46,12 +37,12 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
 
   const steps = isPos ? [1, 6] : [1, 2, 3, 4, 6];
   const stepDefs = isPos ? POS_STEPS : STATUS_STEPS;
-  const isSpecial = [5, 7, 8, 9].includes(currentStatus);
+  const isSpecial = [5, 9].includes(currentStatus);
 
   let maxNormalStatus = currentStatus;
   if (isSpecial) {
     const normalHistory = (history || [])
-      .filter(h => ![5, 7, 8, 9].includes(h.trangThaiMoi))
+      .filter(h => ![5, 9].includes(h.trangThaiMoi))
       .map(h => h.trangThaiMoi);
     maxNormalStatus = normalHistory.length > 0 ? Math.max(...normalHistory) : -1;
   }
@@ -99,10 +90,10 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
           <div className="flex items-center ml-2">
             <div className="w-8 sm:w-12 h-0.5 bg-bordeaux/30 mx-1 sm:mx-2" />
             <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${currentStatus === 8 ? 'bg-emerald-deep/20 text-emerald-deep' : 'bg-bordeaux/20 text-bordeaux'}`}>
-                {currentStatus === 5 || currentStatus === 9 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStatus === 8 ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-bordeaux/20 text-bordeaux">
+                {currentStatus === 5 || currentStatus === 9 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
               </div>
-              <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap ${currentStatus === 8 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{STATUS_LABELS[currentStatus]}</p>
+              <p className="text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap text-bordeaux">{STATUS_LABELS[currentStatus]}</p>
               <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{getTimeForStatus(currentStatus)}</p>
             </div>
           </div>
@@ -119,16 +110,9 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
   const [paying, setPaying] = useState(false)
-  const [returnOpen, setReturnOpen] = useState(false)
-  const [returnLyDo, setReturnLyDo] = useState('')
-  const [returnReason, setReturnReason] = useState('')
-  const [returnImages, setReturnImages] = useState([])
-  const [returning, setReturning] = useState(false)
   const [confirmingReceived, setConfirmingReceived] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
-  const returnFileRef = useRef(null)
-  const returnCameraRef = useRef(null)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -170,39 +154,6 @@ export default function OrderDetail() {
       toast.success('Xác nhận đã nhận hàng thành công')
     } catch (err) { toast.error(err?.response?.data?.message || 'Xác nhận thất bại') }
     finally { setConfirmingReceived(false) }
-  }
-
-  const handleRequestReturn = async () => {
-    const reason = returnReason === 'Khác' ? returnLyDo.trim() : returnReason
-    if (!reason) return toast.error('Vui lòng chọn lý do trả hàng')
-    setReturning(true)
-    try {
-      const hinhAnh = returnImages.length > 0 ? returnImages.join(',') : undefined
-      await requestReturn(id, reason, hinhAnh)
-      setReturnOpen(false)
-      setReturnReason('')
-      setReturnLyDo('')
-      setReturnImages([])
-      await load()
-      toast.success('Yêu cầu trả hàng đã gửi')
-    } catch (err) { toast.error(err?.response?.data?.message || 'Yêu cầu trả hàng thất bại') }
-    finally { setReturning(false) }
-  }
-
-  const handleReturnImageSelect = async (e) => {
-    const files = Array.from(e.target.files || [])
-    const newImages = []
-    for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) continue
-      const base64 = await new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result)
-        reader.readAsDataURL(file)
-      })
-      newImages.push(base64)
-    }
-    setReturnImages(prev => [...prev, ...newImages].slice(0, 3))
-    e.target.value = ''
   }
 
   const handlePayNow = async (payment) => {
@@ -257,8 +208,6 @@ export default function OrderDetail() {
   const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
   const canConfirmReceived = order.trangThaiDon === 4 && !hasUnpaidOnline
-  const hasRequestedReturn = history?.some(h => h.trangThaiMoi === 7)
-  const canRequestReturn = order.trangThaiDon === 6 && !hasRequestedReturn
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)
 
   return (
@@ -403,12 +352,6 @@ export default function OrderDetail() {
             Thanh toán ngay
           </button>
         )}
-        {canRequestReturn && (
-          <button onClick={() => setReturnOpen(true)}
-            className="flex items-center gap-2 bg-ivory border border-gold/20 text-gold px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold/10 transition shadow-sm">
-            <RefreshCw className="h-4 w-4" /> Yêu cầu trả hàng
-          </button>
-        )}
       </div>
 
       {/* Mobile sticky bottom action bar */}
@@ -434,88 +377,7 @@ export default function OrderDetail() {
             Thanh toán ngay
           </button>
         )}
-        {canRequestReturn && (
-          <button onClick={() => setReturnOpen(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 border border-gold/20 text-gold py-3 rounded-xl text-sm font-medium hover:bg-gold/10 transition">
-            <RefreshCw className="h-4 w-4" /> Trả hàng
-          </button>
-        )}
       </div>
-
-      {returnOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setReturnOpen(false)}>
-          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gold px-6 py-4">
-              <h3 className="font-bold text-lg text-white">Yêu cầu trả hàng</h3>
-              <p className="text-gold/20 text-sm">Đơn hàng #{order.maDonHang}</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-ink-soft mb-2">Lý do trả hàng</p>
-                <div className="space-y-2">
-                  {RETURN_REASONS.map((r) => (
-                    <label key={r.value}
-                      className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition text-sm
-                        ${returnReason === r.value ? 'border-gold/40 bg-gold/10' : 'border-stone/20 hover:border-stone/30'}`}>
-                      <input type="radio" name="returnReason" value={r.value}
-                        checked={returnReason === r.value}
-                        onChange={(e) => setReturnReason(e.target.value)}
-                        className="accent-orange-600" />
-                      {r.label}
-                    </label>
-                  ))}
-                </div>
-                {returnReason === 'Khác' && (
-                  <textarea value={returnLyDo} onChange={e => setReturnLyDo(e.target.value)}
-                    placeholder="Mô tả chi tiết lý do trả hàng..."
-                    className="w-full border rounded-lg p-3 text-sm min-h-[80px] mt-2 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-                )}
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-ink-soft mb-2">Hình ảnh minh chứng (tối đa 3 ảnh)</p>
-                <div className="flex gap-2 flex-wrap">
-                  {returnImages.map((img, i) => (
-                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                      <button onClick={() => setReturnImages(prev => prev.filter((_, j) => j !== i))}
-                        className="absolute -top-1 -right-1 bg-bordeaux/100 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-bordeaux">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {returnImages.length < 3 && (
-                    <>
-                      <button onClick={() => returnFileRef.current?.click()}
-                        className="w-20 h-20 border-2 border-dashed border-stone/30 rounded-lg flex flex-col items-center justify-center text-stone hover:border-gold/40 hover:text-gold transition">
-                        <Image className="h-5 w-5" />
-                        <span className="text-[10px] mt-0.5">Tải ảnh</span>
-                      </button>
-                      <button onClick={() => returnCameraRef.current?.click()}
-                        className="w-20 h-20 border-2 border-dashed border-stone/30 rounded-lg flex flex-col items-center justify-center text-stone hover:border-gold/40 hover:text-gold transition">
-                        <Camera className="h-5 w-5" />
-                        <span className="text-[10px] mt-0.5">Chụp ảnh</span>
-                      </button>
-                      <input type="file" accept="image/*" ref={returnFileRef} onChange={handleReturnImageSelect} className="hidden" multiple />
-                      <input type="file" accept="image/*" capture="environment" ref={returnCameraRef} onChange={handleReturnImageSelect} className="hidden" />
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => { setReturnOpen(false); setReturnReason(''); setReturnLyDo(''); setReturnImages([]) }}
-                  className="flex-1 border-2 border-stone/20 rounded-xl py-3 text-sm font-semibold hover:bg-ivory-100 transition">Hủy</button>
-                <button onClick={() => { if (returnReason) setConfirmAction('return') }} disabled={returning || !returnReason}
-                  className="flex-1 bg-gold text-noir rounded-xl py-3 text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
-                  {returning ? <Loader className="h-4 w-4 animate-spin" /> : null}
-                  {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {selectedItem && (() => {
         const v = selectedItem.bienThe || {}
@@ -585,15 +447,6 @@ export default function OrderDetail() {
         confirmText="Đã nhận hàng"
         variant="gold"
         onConfirm={() => { setConfirmAction(null); handleConfirmReceived() }}
-        onCancel={() => setConfirmAction(null)}
-      />
-      <ConfirmDialog
-        open={confirmAction === 'return'}
-        title="Gửi yêu cầu trả hàng"
-        message={`Bạn chắc chắn muốn gửi yêu cầu trả hàng với lý do "${returnReason === 'Khác' ? returnLyDo.trim() : returnReason}"?`}
-        confirmText="Gửi yêu cầu"
-        variant="gold"
-        onConfirm={() => { setConfirmAction(null); handleRequestReturn() }}
         onCancel={() => setConfirmAction(null)}
       />
     </div>

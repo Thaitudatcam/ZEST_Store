@@ -20,10 +20,10 @@ const STATUS_STEPS = [
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Đã giao hàng', 7: 'Yêu cầu trả hàng', 8: 'Đã trả hàng', 9: 'Không nhận hàng',
+  5: 'Đã hủy', 6: 'Đã giao hàng', 9: 'Không nhận hàng',
 }
 
-const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR', 7: 'Ví' }
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
 function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
   const isPos = loaiDonHang === 2;
@@ -35,12 +35,12 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
 
   const steps = isPos ? [1, 6] : [1, 2, 3, 4, 6];
   const stepDefs = isPos ? POS_STEPS : STATUS_STEPS;
-  const isSpecial = [5, 7, 8, 9].includes(currentStatus);
+  const isSpecial = [5, 9].includes(currentStatus);
 
   let maxNormalStatus = currentStatus;
   if (isSpecial) {
     const normalHistory = (history || [])
-      .filter(h => ![5, 7, 8, 9].includes(h.trangThaiMoi))
+      .filter(h => ![5, 9].includes(h.trangThaiMoi))
       .map(h => h.trangThaiMoi);
     maxNormalStatus = normalHistory.length > 0 ? Math.max(...normalHistory) : -1;
   }
@@ -88,10 +88,10 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
           <div className="flex items-center ml-2">
             <div className="w-8 sm:w-12 h-0.5 bg-bordeaux/30 mx-1 sm:mx-2" />
             <div className="flex flex-col items-center">
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center ${currentStatus === 8 ? 'bg-emerald-deep/20 text-emerald-deep' : 'bg-bordeaux/20 text-bordeaux'}`}>
-                {currentStatus === 5 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStatus === 8 ? <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <XCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-bordeaux/20 text-bordeaux">
+                <XCircle className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <p className={`text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap ${currentStatus === 8 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{STATUS_LABELS[currentStatus]}</p>
+              <p className="text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap text-bordeaux">{STATUS_LABELS[currentStatus]}</p>
               <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{getTimeForStatus(currentStatus)}</p>
             </div>
           </div>

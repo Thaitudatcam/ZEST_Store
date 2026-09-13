@@ -38,12 +38,6 @@ public class ZaloPayService {
         return buildZaloOrder(payment, "user_" + orderId, orderId, "Thanh toan don hang #" + orderId);
     }
 
-    public Map<String, String> createOrderByMaGiaoDich(String maGiaoDich) {
-        ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
-        return buildZaloOrder(payment, "user_" + payment.getMaNguoiDung(), 0, "Nạp tiền Ví ZestStore");
-    }
-
     @SuppressWarnings("unchecked")
     private Map<String, String> buildZaloOrder(ThanhToan payment, String appUser, Integer orderId, String description) {
         PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
@@ -146,12 +140,10 @@ public class ZaloPayService {
         }
 
         String maGiaoDich = appTransId.contains("_") ? appTransId.split("_", 2)[1] : appTransId;
-        boolean isNapTien = maGiaoDich.startsWith("NAPVI");
         Map<String, Object> queryResult = queryOrder(appTransId);
 
         boolean processing = queryResult.get("is_processing") == Boolean.TRUE;
         if (processing) {
-            if (isNapTien) return paymentConfig.getRedirectBaseUrl() + "/vi-zeststore?status=pending";
             Integer orderId = null;
             String[] parts = maGiaoDich.split("-", 3);
             if (parts.length >= 2) try { orderId = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) {}
@@ -173,8 +165,6 @@ public class ZaloPayService {
                 thanhToanService.failPayment(payment.getMaThanhToan());
             }
         }
-
-        if (isNapTien) return paymentConfig.getRedirectBaseUrl() + "/vi-zeststore?status=pending";
 
         Integer orderId = null;
         String[] parts = maGiaoDich.split("-", 3);

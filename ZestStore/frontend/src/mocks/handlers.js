@@ -223,11 +223,6 @@ export const handlers = [
     return HttpResponse.json([])
   }),
 
-  // Admin return requests
-  http.get('/api/admin/return-requests', () => {
-    return HttpResponse.json([])
-  }),
-
   // Admin shipping fees
   http.get('/api/admin/shipping-fees', () => {
     return HttpResponse.json([])

@@ -38,7 +38,6 @@ public class DonHangService {
     private final GhnService ghnService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
-    private final ViService viService;
     private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
@@ -370,16 +369,9 @@ public class DonHangService {
             case 2 -> "VNPay";
             case 3 -> "MoMo";
             case 4 -> "ZaloPay";
-            case 7 -> "Ví ZestStore";
             default -> "Tiền mặt";
         };
-        boolean isWalletPayment = Integer.valueOf(7).equals(request.getPhuongThucThanhToan());
-
-        if (isWalletPayment) {
-            inventoryService.deduct(order);
-            viService.truTien(user.getMaNguoiDung(), finalTotal,
-                    "Thanh toán đơn hàng #" + order.getMaDonHang(), order.getMaDonHang());
-        }
+        boolean isWalletPayment = false;
 
         thanhToanRepository.save(ThanhToan.builder()
                 .donHang(order)
@@ -398,7 +390,7 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
-        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan()) || isWalletPayment) {
+        if (Integer.valueOf(1).equals(request.getPhuongThucThanhToan())) {
             mucGioHangRepository.deleteAll(cartItems);
         }
 
@@ -570,50 +562,6 @@ public class DonHangService {
         return Map.of("message", "Order confirmed as received");
     }
 
-    @Transactional
-    public Map<String, String> requestReturn(Integer orderId, Integer userId, String lyDo) {
-        DonHang order = donHangRepository.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
-            throw new BadRequestException("Order does not belong to user");
-        }
-        Integer currentStatus = order.getTrangThaiDon();
-        if (!Integer.valueOf(4).equals(currentStatus) && !Integer.valueOf(6).equals(currentStatus)) {
-            throw new BadRequestException("Can only request return for delivered or completed orders");
-        }
-        if (lyDo == null || lyDo.isBlank()) {
-            throw new BadRequestException("Return reason is required");
-        }
-
-        Integer oldStatus = order.getTrangThaiDon();
-        order.setTrangThaiDon(7);
-        donHangRepository.save(order);
-
-        NguoiDung user = nguoiDungRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-        lichSuDonHangRepository.save(LichSuDonHang.builder()
-                .donHang(order)
-                .trangThaiCu(oldStatus)
-                .trangThaiMoi(7)
-                .nguoiCapNhat(user)
-                .ghiChu(lyDo)
-                .build());
-
-        orderSseService.sendOrderStatusUpdate(orderId, 7, oldStatus, "user", lyDo);
-
-        // Notify admins/staff that a return has been requested.
-        try {
-            thongBaoService.taoThongBaoChoAdmin(
-                    "Yêu cầu trả hàng #" + orderId,
-                    "Khách " + user.getHoTen() + " yêu cầu trả đơn #" + orderId
-                            + ". Lý do: " + lyDo + ".",
-                    "YEU_CAU_TRA_HANG",
-                    "/admin/returns");
-        } catch (Exception ignored) {}
-
-        return Map.of("message", "Return requested");
-    }
-
     private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
         if (request.getToDistrictId() == null || request.getToWardCode() == null) {
             return request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
@@ -641,18 +589,10 @@ public class DonHangService {
     private void cancelLockedOrder(DonHang order) {
         inventoryService.release(order);
         if (order.getPhieuGiamGia() != null) phieuGiamGiaService.restoreCoupon(order.getPhieuGiamGia());
-        BigDecimal refund = BigDecimal.ZERO;
         for (ThanhToan payment : thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang())) {
-            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan()) && !payment.isRefunded()) {
-                refund = refund.add(payment.getSoTien());
-                payment.setRefunded(true);
-            }
             payment.setTrangThaiThanhToan(3);
             thanhToanRepository.save(payment);
         }
-        if (refund.signum() > 0 && order.getNguoiDung() != null)
-            viService.napTien(order.getNguoiDung().getMaNguoiDung(), refund,
-                    "Hoàn tiền hủy/không nhận đơn #" + order.getMaDonHang(), order.getMaDonHang());
     }
 
     @Transactional

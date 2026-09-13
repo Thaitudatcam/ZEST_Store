@@ -24,37 +24,6 @@ public class VietQrService {
     private final ThanhToanRepository thanhToanRepository;
     private final ThanhToanService thanhToanService;
 
-    public Map<String, Object> createQrNapTien(ThanhToan payment) {
-        if (!Integer.valueOf(8).equals(payment.getPhuongThuc())) {
-            throw new BadRequestException("Payment method is not VietQR");
-        }
-
-        PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();
-        BigDecimal amount = payment.getSoTien();
-
-        String addInfo = "Nap+tien+vi+ZestStore+" + payment.getMaThanhToan();
-        String qrUrl = String.format(
-                "https://img.vietqr.io/image/%s-%s-%s.jpg?amount=%s&addInfo=%s&accountName=%s",
-                config.getBankBin(),
-                config.getBankNumber(),
-                config.getTemplate(),
-                amount.longValue(),
-                addInfo,
-                URLEncoder.encode(config.getBankName(), StandardCharsets.UTF_8)
-        );
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("qrUrl", qrUrl);
-        result.put("bankName", "MB Bank");
-        result.put("accountNumber", config.getBankNumber());
-        result.put("accountName", config.getBankName());
-        result.put("amount", amount);
-        result.put("paymentId", payment.getMaThanhToan());
-        result.put("maThanhToan", payment.getMaThanhToan());
-        result.put("message", "Scan QR to deposit");
-        return result;
-    }
-
     public Map<String, Object> createQrPayment(Integer orderId) {
         ThanhToan payment = thanhToanRepository
                 .findByDonHang_MaDonHangAndTrangThaiThanhToan(orderId, 1)
@@ -98,7 +67,7 @@ public class VietQrService {
         if (payment.getDonHang() != null) {
             txId = "VIETQR-" + payment.getDonHang().getMaDonHang() + "-" + System.currentTimeMillis();
         } else {
-            txId = "VIETQR-NAPVI-" + payment.getMaThanhToan() + "-" + System.currentTimeMillis();
+            txId = "VIETQR-" + payment.getMaThanhToan() + "-" + System.currentTimeMillis();
         }
         thanhToanService.completePayment(paymentId, txId);
     }

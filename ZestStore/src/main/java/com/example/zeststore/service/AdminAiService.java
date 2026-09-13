@@ -77,8 +77,6 @@ public class AdminAiService {
             return "/admin/customers";
         if (question.contains("doanh thu") || question.contains("thong ke") || question.contains("thống kê") || question.contains("revenue") || question.contains("stat"))
             return "/admin/thong-ke";
-        if (question.contains("tra hang") || question.contains("trả hàng") || question.contains("return"))
-            return "/admin/returns";
         return "/admin/thong-ke";
     }
 }

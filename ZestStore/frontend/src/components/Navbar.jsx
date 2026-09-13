@@ -153,7 +153,7 @@ export default function Navbar() {
                       <span className="flex items-center gap-2"><Ticket className="h-4 w-4" /> Voucher</span>
                       {voucherCount > 0 && <span className="text-xs font-semibold text-gold-dark tabular-nums">{voucherCount}</span>}
                     </Link>
-                    <Link to="/vi-zeststore" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-ink-soft hover:bg-noir/5 hover:text-noir transition">Ví ZestStore</Link>
+
                     <hr className="my-1 border-beige-deep/40" />
                     {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                       <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-gold-dark font-semibold hover:bg-noir/5 transition">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
@@ -225,7 +225,7 @@ export default function Navbar() {
               <Link to="/vouchers" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Voucher</Link>
               <Link to="/cart" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Giỏ hàng</Link>
               <Link to="/orders" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Đơn hàng</Link>
-              <Link to="/vi-zeststore" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Ví ZestStore</Link>
+
               <Link to="/profile" onClick={() => setOpen(false)} className="block py-2 text-ink-soft hover:text-noir transition">Tài khoản</Link>
               {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
                 <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setOpen(false)} className="block py-2 text-gold-dark font-semibold">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>

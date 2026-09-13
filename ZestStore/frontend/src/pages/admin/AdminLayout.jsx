@@ -1,8 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, RefreshCw, Gift, ClipboardList } from 'lucide-react'
+import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, Gift, ClipboardList } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
-import api from '../../api/axios'
 import NotificationBell from '../../components/admin/NotificationBell'
 import AskAi from '../../components/admin/AskAi'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -14,7 +13,6 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [navOpen, setNavOpen] = useState({})
-  const [pendingReturns, setPendingReturns] = useState(0)
   const [accountOpen, setAccountOpen] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -27,14 +25,6 @@ export default function AdminLayout() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
-
-  useEffect(() => {
-    if (!user || user.vaiTro === 'STAFF') return
-    const fetch = () => api.get('/admin/return-requests/count').then(r => setPendingReturns(r.data.count)).catch(() => {})
-    fetch()
-    const interval = setInterval(fetch, 30000)
-    return () => clearInterval(interval)
-  }, [user])
 
   const role = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro : user?.vaiTro
   const isStaff = role === 'STAFF'
@@ -54,7 +44,6 @@ export default function AdminLayout() {
       { to: '/admin/orders/online', label: 'Đơn hàng online' },
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
-    { to: '/admin/returns', label: 'Trả hàng', icon: RefreshCw, badge: pendingReturns },
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
       { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },

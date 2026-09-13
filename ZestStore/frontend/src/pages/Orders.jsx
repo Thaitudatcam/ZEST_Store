@@ -14,7 +14,7 @@ const STEP_ICONS = { 1: ShoppingBag, 2: CheckCircle, 3: Package, 4: Truck, 6: Ho
 function OrderMiniStepper({ status }) {
   const steps = [1, 2, 3, 4, 6];
   const currentIdx = steps.indexOf(status);
-  const isSpecial = [5, 7, 8].includes(status);
+  const isSpecial = [5].includes(status);
 
   return (
     <div className="flex items-center gap-0.5">
@@ -33,7 +33,7 @@ function OrderMiniStepper({ status }) {
         );
       })}
       {isSpecial && (
-        <span className="ml-2 text-xs font-semibold text-bordeaux">{status === 5 ? 'Đã hủy' : status === 7 ? 'Trả hàng' : 'Đã trả hàng'}</span>
+        <span className="ml-2 text-xs font-semibold text-bordeaux">{status === 5 ? 'Đã hủy' : 'Không nhận hàng'}</span>
       )}
     </div>
   );
