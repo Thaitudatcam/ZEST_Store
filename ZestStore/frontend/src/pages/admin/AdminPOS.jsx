@@ -608,11 +608,8 @@ export default function AdminPOS() {
                 <div className="flex items-center gap-3">
                   <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
                   {selectedCustomer && (
-                    <>
-                      <button className="text-xs text-stone hover:underline">Sửa địa chỉ</button>
-                      <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponInput(''); setCouponMsg('') }}
-                        className="text-xs text-bordeaux hover:underline font-medium">Gỡ khách</button>
-                    </>
+                    <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponInput(''); setCouponMsg('') }}
+                      className="text-xs text-bordeaux hover:underline font-medium">Gỡ khách</button>
                   )}
                 </div>
               </div>
