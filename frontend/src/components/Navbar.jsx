@@ -1,9 +1,9 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { User, Menu, X, Search, ShoppingCart, ArrowRight } from 'lucide-react'
+import { User, Menu, X, Search, ShoppingCart, ArrowRight, LogOut, UserCircle, ShoppingBag } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useState, useRef, useEffect } from 'react'
-import { searchSuggestions } from '../api/products'
+import { searchSuggestions, getProducts } from '../api/products'
 
 import SafeImg from './SafeImg'
 import NotificationBell from './NotificationBell'
@@ -36,11 +36,22 @@ export default function Navbar() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [defaultProducts, setDefaultProducts] = useState([])
+  const [defaultLoading, setDefaultLoading] = useState(false)
   const dropdownRef = useRef(null)
   const searchRef = useRef(null)
   const debounceRef = useRef(null)
 
   const pathname = location.pathname
+
+  const fetchDefaultProducts = () => {
+    if (defaultProducts.length > 0) return
+    setDefaultLoading(true)
+    getProducts({ page: 0, size: 6, sortBy: 'maSanPham', sortDir: 'desc' })
+      .then((res) => setDefaultProducts(res?.content || []))
+      .catch(() => {})
+      .finally(() => setDefaultLoading(false))
+  }
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -55,7 +66,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!searchQuery.trim()) { setSuggestions([]); setShowSuggestions(false); return }
+    if (!searchQuery.trim()) { setSuggestions([]); return }
     const q = searchQuery.trim()
     setSearchLoading(true)
     debounceRef.current = setTimeout(() => {
@@ -105,7 +116,7 @@ export default function Navbar() {
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => searchQuery.trim() && suggestions.length > 0 && setShowSuggestions(true)}
+                  onFocus={() => { setShowSuggestions(true); if (!searchQuery.trim()) fetchDefaultProducts() }}
                   placeholder="Tìm kiếm áo polo, sơ mi, 1 shirt..."
                   className="w-full pl-4 pr-10 py-2 border border-stone/20 rounded-full text-sm bg-ivory-50 text-ink placeholder-stone focus:outline-none focus:border-[var(--primary-color)] focus:ring-1 focus:ring-[var(--primary-color)]/20 transition"
                 />
@@ -113,7 +124,7 @@ export default function Navbar() {
                   <Search className="h-4 w-4" />
                 </button>
               </form>
-              {showSuggestions && suggestions.length > 0 && (
+              {showSuggestions && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[640px] border border-stone/10 rounded-2xl bg-white shadow-2xl z-50 overflow-hidden">
                   <div className="px-5 pt-4 pb-2">
                     <div className="flex items-center gap-2 mb-3">
@@ -135,7 +146,7 @@ export default function Navbar() {
                   <div className="px-5 pb-2">
                     <p className="text-xs font-bold text-ink tracking-wide mb-3">SẢN PHẨM NỔI BẬT GỢI Ý</p>
                     <div className="grid grid-cols-3 gap-3">
-                      {suggestions.slice(0, 6).map((p) => (
+                      {(searchQuery.trim() ? suggestions : defaultProducts).slice(0, 6).map((p) => (
                         <Link key={p.maSanPham} to={`/products/${p.slug}`}
                           onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
                           className="group rounded-xl border border-stone/10 overflow-hidden hover:shadow-md transition">
@@ -148,17 +159,24 @@ export default function Navbar() {
                           </div>
                         </Link>
                       ))}
+                      {(searchQuery.trim() ? searchLoading : defaultLoading) && (
+                        <div className="col-span-3 py-6 text-center">
+                          <div className="inline-block w-5 h-5 border-2 border-stone/20 border-t-[var(--primary-color)] rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <Link to={`/?keyword=${encodeURIComponent(searchQuery.trim())}`}
-                    onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
-                    className="flex items-center justify-between px-5 py-3 border-t border-stone/10 bg-ivory-50 hover:bg-ivory-100 transition">
-                    <span className="text-xs text-stone">Tìm thấy {suggestions.length} sản phẩm</span>
-                    <span className="text-xs font-semibold text-[var(--primary-color)] flex items-center gap-1">
-                      Xem tất cả ({suggestions.length})
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
-                  </Link>
+                  {((searchQuery.trim() && suggestions.length > 0) || (!searchQuery.trim() && defaultProducts.length > 0)) && (
+                    <Link to={`/?keyword=${encodeURIComponent(searchQuery.trim())}`}
+                      onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
+                      className="flex items-center justify-between px-5 py-3 border-t border-stone/10 bg-ivory-50 hover:bg-ivory-100 transition">
+                      <span className="text-xs text-stone">Tìm thấy {(searchQuery.trim() ? suggestions : defaultProducts).length} sản phẩm</span>
+                      <span className="text-xs font-semibold text-[var(--primary-color)] flex items-center gap-1">
+                        Xem tất cả ({(searchQuery.trim() ? suggestions : defaultProducts).length})
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -189,15 +207,37 @@ export default function Navbar() {
                       <User className="h-5 w-5" />
                     </button>
                     {dropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-stone/10 py-2 z-50">
-                        <Link to="/profile" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-ink hover:bg-ivory-100 transition">Tài khoản</Link>
-                        <Link to="/orders" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-ink hover:bg-ivory-100 transition">Đơn hàng</Link>
-                        <Link to="/wishlist" onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-ink hover:bg-ivory-100 transition">Yêu thích</Link>
-                        {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
-                          <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="block px-4 py-2 text-sm text-[var(--primary-color)] font-semibold hover:bg-ivory-100 transition">{user?.vaiTro === 'ADMIN' ? 'Quản trị' : 'Bán hàng'}</Link>
-                        )}
-                        <hr className="my-1 border-stone/10" />
-                        <button onClick={() => { setDropdownOpen(false); logout(); navigate('/login') }} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">Đăng xuất</button>
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-stone/10 z-50 overflow-hidden">
+                        <div className="px-5 pt-5 pb-4">
+                          <p className="text-gold text-xs font-semibold tracking-wider uppercase mb-1">Xin chào</p>
+                          <p className="text-ink font-bold text-base truncate">{user?.hoTen || 'Khách hàng'}</p>
+                          <p className="text-stone text-xs mt-0.5">Vai trò: {user?.vaiTro === 'ADMIN' ? 'Quản trị viên' : user?.vaiTro === 'STAFF' ? 'Nhân viên' : 'Khách hàng'}</p>
+                        </div>
+                        <hr className="border-stone/10" />
+                        <div className="py-2 px-2">
+                          <Link to="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink hover:bg-ivory rounded-lg transition">
+                            <UserCircle className="h-4.5 w-4.5 text-stone" />
+                            Hồ sơ
+                          </Link>
+                          <Link to="/orders" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-ink hover:bg-ivory rounded-lg transition">
+                            <ShoppingBag className="h-4.5 w-4.5 text-stone" />
+                            Đơn hàng của tôi
+                          </Link>
+                          {(user?.vaiTro === 'ADMIN' || (user?.vaiTro === 'STAFF' && user?.choPhepBanHang)) && (
+                            <Link to={user?.vaiTro === 'ADMIN' ? '/admin' : '/admin/pos'} onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[var(--primary-color)] font-semibold hover:bg-ivory rounded-lg transition">
+                              Quản trị
+                            </Link>
+                          )}
+                        </div>
+                        <div className="px-3 pb-3">
+                          <button
+                            onClick={() => { setDropdownOpen(false); logout(); navigate('/login') }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gold text-noir font-semibold text-sm rounded-xl hover:bg-gold-light transition"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Đăng xuất
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
