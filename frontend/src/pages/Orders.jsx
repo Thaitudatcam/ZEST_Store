@@ -1,49 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getOrders, getOrderDetail, cancelOrder } from "../api/orders";
 import { addToCart } from "../api/cart";
 import { addReview } from "../api/reviews";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { Package, XCircle, ChevronRight, ShoppingBag, CheckCircle, Truck, Home, ShoppingCart, Loader, Star, MessageSquare } from "lucide-react";
+import StatusBadge from "../components/StatusBadge";
+import { Package, XCircle, ShoppingBag, CheckCircle, Truck, Home, ShoppingCart, Loader, Star, MessageSquare, Clock, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { VND } from "../components/ProductCard";
 import { useToast } from "../context/ToastContext";
 import ConfirmDialog from "../components/ConfirmDialog";
 
-const STEP_ICONS = { 1: ShoppingBag, 2: CheckCircle, 3: Package, 4: Truck, 6: Home };
-
-function OrderMiniStepper({ status }) {
-  const steps = [1, 2, 3, 4, 6];
-  const currentIdx = steps.indexOf(status);
-  const isSpecial = [5].includes(status);
-
-  return (
-    <div className="flex items-center gap-0.5">
-      {steps.map((s, i) => {
-        const Icon = STEP_ICONS[s];
-        const filled = isSpecial || i <= currentIdx;
-        const isCurrent = !isSpecial && i === currentIdx;
-        return (
-          <div key={s} className="flex items-center">
-            {i > 0 && <div className={`w-3 sm:w-5 h-0.5 ${filled ? 'bg-gold/100' : 'bg-ivory-100'}`} />}
-            <div className={`flex items-center justify-center w-5 h-5 rounded-full transition-all duration-300
-              ${isCurrent ? 'bg-gold text-noir ring-2 ring-blue-300' : filled ? 'bg-gold text-noir' : 'bg-ivory-100 text-stone'}`}>
-              <Icon className="h-3 w-3" />
-            </div>
-          </div>
-        );
-      })}
-      {isSpecial && (
-        <span className="ml-2 text-xs font-semibold text-bordeaux">{status === 5 ? 'Đã hủy' : 'Không nhận hàng'}</span>
-      )}
-    </div>
-  );
-}
+const FILTER_TABS = [
+  { key: 'all', label: 'Tất cả' },
+  { key: 1, label: 'Chờ xác nhận' },
+  { key: 2, label: 'Đã xác nhận' },
+  { key: 4, label: 'Chờ giao' },
+  { key: 'delivering', label: 'Đang giao' },
+  { key: 6, label: 'Hoàn thành' },
+  { key: 5, label: 'Đã hủy' },
+  { key: 9, label: 'Giao thất bại' },
+];
 
 export default function Orders() {
   const toast = useToast();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchCode, setSearchCode] = useState('');
   const [buyingOrders, setBuyingOrders] = useState(new Set());
   const [reviewModal, setReviewModal] = useState({ open: false, orderId: null, items: [], loading: false });
   const [reviewData, setReviewData] = useState({});
@@ -58,6 +42,26 @@ export default function Orders() {
   useEffect(() => {
     load();
   }, []);
+
+  const filteredOrders = useMemo(() => {
+    let list = orders;
+    if (activeFilter !== 'all') {
+      if (activeFilter === 'delivering') {
+        list = list.filter(o => o.trangThaiDon === 3 || o.trangThaiDon === 4);
+      } else {
+        list = list.filter(o => o.trangThaiDon === activeFilter);
+      }
+    }
+    if (searchCode.trim()) {
+      const q = searchCode.trim().toLowerCase();
+      list = list.filter(o => {
+        const code = (o.maDonHangCode || '').toLowerCase();
+        const id = String(o.maDonHang);
+        return code.includes(q) || id.includes(q);
+      });
+    }
+    return list;
+  }, [orders, activeFilter, searchCode]);
 
   const handleCancel = async (id) => {
     setConfirmCancel(null);
@@ -162,53 +166,109 @@ export default function Orders() {
   if (loading) return <LoadingSpinner className="py-20" />;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Đơn hàng của tôi</h1>
-      {orders.length === 0 ? (
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-noir via-noir/95 to-noir/80 rounded-2xl p-6 md:p-8 mb-6 text-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gold/10 rounded-full blur-[100px]" />
+        </div>
+        <div className="relative z-10">
+          <h1 className="text-xl md:text-2xl font-bold text-ivory mb-1">ĐƠN HÀNG CỦA TÔI</h1>
+          <p className="text-stone-light/60 text-sm">Quản lý và theo dõi trạng thái đơn hàng của bạn</p>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
+        {FILTER_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveFilter(tab.key)}
+            className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 border
+              ${activeFilter === tab.key
+                ? 'bg-gold text-noir border-gold shadow-sm'
+                : 'bg-white text-stone border-stone/15 hover:border-gold/40 hover:text-ink'
+              }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <div className="relative ml-2 shrink-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone" />
+          <input
+            type="text"
+            value={searchCode}
+            onChange={(e) => setSearchCode(e.target.value)}
+            placeholder="Tra cứu đơn"
+            className="pl-8 pr-3 py-2 text-xs border border-stone/15 rounded-full w-32 focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/40"
+          />
+        </div>
+      </div>
+
+      {filteredOrders.length === 0 ? (
         <div className="text-center py-20 text-stone">
           <Package className="h-16 w-16 mx-auto mb-4 text-stone" />
-          <p className="mb-4">Chưa có đơn hàng</p>
-          <Link
-            to="/products"
-            className="text-gold font-semibold hover:underline"
-          >
-            Mua sắm ngay
-          </Link>
+          <p className="mb-4">{orders.length === 0 ? 'Chưa có đơn hàng' : 'Không tìm thấy đơn hàng phù hợp'}</p>
+          {orders.length === 0 && (
+            <Link to="/products" className="text-gold font-semibold hover:underline">Mua sắm ngay</Link>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((o) => (
+          {filteredOrders.map((o) => (
             <Link
               to={`/orders/${o.maDonHang}`}
               key={o.maDonHang}
-              className="bg-ivory rounded-xl border p-4 block hover:shadow-md transition"
+              className="bg-white rounded-xl border border-stone/10 p-5 block hover:shadow-md transition group"
             >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="text-sm text-stone">
-                    Đơn hàng #{o.maDonHang}
-                  </p>
-                  <p className="text-xs text-stone">
-                    {o.ngayDat
-                      ? new Date(o.ngayDat).toLocaleDateString("vi-VN")
-                      : ""}
-                  </p>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-ivory flex items-center justify-center">
+                    <Package className="h-5 w-5 text-stone" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-ink">{o.maDonHangCode || `#${o.maDonHang}`}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <Clock className="h-3 w-3 text-stone" />
+                      <span className="text-[11px] text-stone">
+                        {o.ngayDat ? new Date(o.ngayDat).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs font-semibold text-gold px-2 py-0.5 rounded-full bg-gold/10">
-                  {VND(o.tongTien || 0)}
-                </span>
+                <StatusBadge status={o.trangThaiDon} loaiDonHang={o.loaiDonHang} />
               </div>
-              <div className="mb-2">
-                <OrderMiniStepper status={o.trangThaiDon} />
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm mb-3 pl-[52px]">
+                <div className="flex items-center gap-2">
+                  <span className="text-stone text-xs">Người nhận:</span>
+                  <span className="font-medium text-ink text-xs">{o.tenNguoiNhan || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-stone text-xs">Số điện thoại:</span>
+                  <span className="font-medium text-ink text-xs">{o.sdtNguoiNhan || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-stone text-xs">Sản phẩm:</span>
+                  <span className="font-medium text-ink text-xs">{o.soLuongSanPham || o.items?.length || 1} loại sản phẩm</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-stone text-xs">Thanh toán:</span>
+                  <span className="font-medium text-xs">
+                    {o.phuongThucThanhToan === 1 ? 'COD' : 'Online'}{' '}
+                    {o.trangThaiThanhToan === 2
+                      ? <span className="text-emerald-deep">Đã thanh toán</span>
+                      : <span className="text-gold">Chưa thanh toán</span>
+                    }
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
+
+              <div className="flex items-center justify-between pl-[52px] pt-2 border-t border-stone/10">
                 <div className="flex items-center gap-2">
                   {(o.trangThaiDon === 1 || o.trangThaiDon === 2 || o.trangThaiDon === 3) && (
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setConfirmCancel(o.maDonHang);
-                      }}
+                      onClick={(e) => { e.preventDefault(); setConfirmCancel(o.maDonHang); }}
                       className="text-xs text-bordeaux hover:underline flex items-center gap-1"
                     >
                       <XCircle className="h-3.5 w-3.5" /> Hủy đơn
@@ -221,11 +281,7 @@ export default function Orders() {
                         disabled={buyingOrders.has(o.maDonHang)}
                         className="text-xs text-gold hover:underline flex items-center gap-1 disabled:opacity-50"
                       >
-                        {buyingOrders.has(o.maDonHang) ? (
-                          <Loader className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                        )}
+                        {buyingOrders.has(o.maDonHang) ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <ShoppingCart className="h-3.5 w-3.5" />}
                         Mua lại
                       </button>
                       <button
@@ -238,7 +294,10 @@ export default function Orders() {
                     </>
                   )}
                 </div>
-                <ChevronRight className="h-5 w-5 text-stone" />
+                <div className="text-right">
+                  <p className="text-xs text-stone">Tổng số tiền:</p>
+                  <p className="text-sm font-bold text-gold">{VND(o.tongTien || 0)}</p>
+                </div>
               </div>
             </Link>
           ))}
@@ -280,7 +339,6 @@ export default function Orders() {
                           <p className="font-semibold text-sm text-ink truncate">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
                           <p className="text-xs text-stone mt-0.5">
                             {[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}
-                            {product.maSanPhamCode || variant.sku ? ` &middot; Mã: ${product.maSanPhamCode || variant.sku}` : ''}
                           </p>
                         </div>
                       </div>

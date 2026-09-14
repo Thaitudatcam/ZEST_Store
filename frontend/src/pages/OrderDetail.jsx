@@ -9,15 +9,7 @@ import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { Package, MapPin, CreditCard, ArrowLeft, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, Clock, Loader, X } from 'lucide-react'
-
-const STATUS_STEPS = [
-  { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
-  { status: 2, label: 'Đã xác nhận', icon: CheckCircle },
-  { status: 3, label: 'Chờ lấy hàng', icon: Package },
-  { status: 4, label: 'Chờ giao hàng', icon: Truck },
-  { status: 6, label: 'Đã giao hàng', icon: Home },
-]
+import { Package, MapPin, CreditCard, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, Clock, Loader, X } from 'lucide-react'
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
@@ -26,82 +18,6 @@ const STATUS_LABELS = {
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
-
-function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
-  const isPos = loaiDonHang === 2;
-
-  const POS_STEPS = [
-    { status: 1, label: 'Tạo đơn', icon: ShoppingBag },
-    { status: 6, label: 'Hoàn thành', icon: CheckCircle },
-  ];
-
-  const steps = isPos ? [1, 6] : [1, 2, 3, 4, 6];
-  const stepDefs = isPos ? POS_STEPS : STATUS_STEPS;
-  const isSpecial = [5, 9].includes(currentStatus);
-
-  let maxNormalStatus = currentStatus;
-  if (isSpecial) {
-    const normalHistory = (history || [])
-      .filter(h => ![5, 9].includes(h.trangThaiMoi))
-      .map(h => h.trangThaiMoi);
-    maxNormalStatus = normalHistory.length > 0 ? Math.max(...normalHistory) : -1;
-  }
-  const maxIdx = steps.indexOf(maxNormalStatus);
-  const visibleSteps = maxIdx >= 0 ? steps.slice(0, maxIdx + 1) : [];
-
-  const getTimeForStatus = (status) => {
-    const h = history?.find(item => item.trangThaiMoi === status);
-    return h ? new Date(h.thoiGian).toLocaleString('vi-VN') : null;
-  };
-
-  return (
-    <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6 overflow-x-auto">
-      <div className="flex items-center min-w-fit">
-        {visibleSteps.map((s, i) => {
-          const stepDef = stepDefs.find(st => st.status === s);
-          const Icon = stepDef.icon;
-          const isCurrent = !isSpecial && s === currentStatus;
-          const time = getTimeForStatus(s);
-
-          return (
-            <div key={s} className="flex items-center">
-              {i > 0 && (
-                <div className="w-8 sm:w-12 h-0.5 bg-gold/100 mx-1 sm:mx-2" />
-              )}
-              <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-300
-                  ${isCurrent ? 'bg-gold text-noir ring-4 ring-blue-200 animate-pulse' : 'bg-gold text-noir'}`}>
-                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <p className="text-[10px] sm:text-xs font-semibold mt-1.5 text-center whitespace-nowrap text-ink">
-                  {stepDef.label}
-                </p>
-                {time && (
-                  <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{time}</p>
-                )}
-                {isCurrent && !time && (
-                  <p className="text-[9px] sm:text-[10px] text-gold font-medium mt-0.5">Đang xử lý...</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        {isSpecial && (
-          <div className="flex items-center ml-2">
-            <div className="w-8 sm:w-12 h-0.5 bg-bordeaux/30 mx-1 sm:mx-2" />
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-bordeaux/20 text-bordeaux">
-                {currentStatus === 5 || currentStatus === 9 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
-              </div>
-              <p className="text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap text-bordeaux">{STATUS_LABELS[currentStatus]}</p>
-              <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{getTimeForStatus(currentStatus)}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function OrderDetail() {
   const { id } = useParams()
@@ -203,7 +119,6 @@ export default function OrderDetail() {
   const order = data.order || data
   const items = data.items || []
   const payments = data.payments || []
-  const history = data.history || []
 
   const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
@@ -211,173 +126,171 @@ export default function OrderDetail() {
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 pb-28 lg:pb-8">
-      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-stone hover:text-ink-soft mb-4">
-        <ArrowLeft className="h-4 w-4" /> Quay lại đơn hàng
-      </Link>
-
-      <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
-        <div className="flex items-start justify-between">
+    <div className="max-w-3xl mx-auto px-4 py-6 pb-28 lg:pb-8">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-noir via-noir/95 to-noir/80 rounded-2xl p-6 md:p-8 mb-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-gold/10 rounded-full blur-[80px]" />
+        </div>
+        <div className="relative z-10 flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold">Đơn hàng #{order.maDonHang}</h1>
-            <p className="text-sm text-stone">{order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}</p>
-            {order.maDonHangCode && <p className="text-xs text-stone mt-0.5">Mã: {order.maDonHangCode}</p>}
+            <h1 className="text-xl md:text-2xl font-bold text-ivory mb-1">CHI TIẾT ĐƠN HÀNG</h1>
+            <p className="text-stone-light/60 text-sm">
+              Mã đơn <span className="font-semibold text-gold">{order.maDonHangCode || `#${order.maDonHang}`}</span>
+              {order.ngayDat && <span className="ml-2">• {new Date(order.ngayDat).toLocaleString('vi-VN')}</span>}
+            </p>
           </div>
           <StatusBadge status={order.trangThaiDon || order.trangThai} loaiDonHang={order.loaiDonHang} />
         </div>
       </div>
 
-      <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
-
-      <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
-        <h2 className="text-base font-semibold text-ink flex items-center gap-2 mb-4">
-          <Package className="h-5 w-5 text-gold" /> Sản phẩm
+      {/* Recipient Info */}
+      <div className="bg-white rounded-xl border border-stone/10 p-5 mb-4">
+        <h2 className="text-sm font-bold text-ink uppercase tracking-wide mb-3 flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-gold" /> THÔNG TIN NHẬN HÀNG
         </h2>
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          <div>
+            <span className="text-stone text-xs">Người nhận:</span>
+            <p className="font-medium text-ink">{order.tenNguoiNhan}</p>
+          </div>
+          <div>
+            <span className="text-stone text-xs">Số điện thoại:</span>
+            <p className="font-medium text-ink">{order.sdtNguoiNhan}</p>
+          </div>
+          <div>
+            <span className="text-stone text-xs">Email:</span>
+            <p className="font-medium text-ink">{order.email || '—'}</p>
+          </div>
+          <div className="sm:col-span-2">
+            <span className="text-stone text-xs">Địa chỉ giao hàng:</span>
+            <p className="font-medium text-ink">{order.diaChiGiaoHang}</p>
+          </div>
+          {order.ghiChu && (
+            <div className="sm:col-span-2">
+              <span className="text-stone text-xs">Ghi chú:</span>
+              <p className="font-medium text-ink">{order.ghiChu}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Product List */}
+      <div className="bg-white rounded-xl border border-stone/10 p-5 mb-4">
+        <h2 className="text-sm font-bold text-ink uppercase tracking-wide mb-3 flex items-center gap-2">
+          <Package className="h-4 w-4 text-gold" /> DANH SÁCH SẢN PHẨM ({items.length})
+        </h2>
+        <div className="space-y-3">
           {items.map((item) => {
             const variant = item.bienThe || {}
             const product = variant.sanPham || {}
             const anh = variant.urlAnh || product.urlAnhDaiDien || ''
             return (
-              <div key={item.maMucDonHang} className="flex items-center gap-4 cursor-pointer hover:bg-ivory-100 -mx-2 px-2 rounded-lg transition" onClick={() => setSelectedItem(item)}>
-                <div className="w-16 h-16 bg-ivory-100 rounded-lg overflow-hidden shrink-0">
+              <div key={item.maMucDonHang} className="flex items-center gap-4 cursor-pointer hover:bg-ivory/50 -mx-2 px-2 py-2 rounded-lg transition" onClick={() => setSelectedItem(item)}>
+                <div className="w-16 h-16 bg-ivory rounded-lg overflow-hidden shrink-0">
                   <SafeImg src={anh} alt="" className="w-full h-full object-cover object-center" fallback="https://placehold.co/100x100/e2e8f0/475569?text=Polo" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
-                  <p className="text-xs text-stone">{[variant.kichCo?.kichCo, variant.mauSac?.mauSac].filter(Boolean).join(' - ') || '—'}</p>
-                  <p className="text-xs text-stone">Mã SP: {product.maSanPhamCode || variant.sku || '—'} &middot; x{item.soLuong}</p>
+                  <p className="font-semibold text-sm text-ink">{product.tenSanPham || `SP #${product.maSanPham}`}</p>
+                  <p className="text-xs text-stone">Phân loại: {variant.mauSac?.mauSac || '—'}, Size {variant.kichCo?.kichCo || '—'}</p>
+                  <p className="text-xs text-stone">Mã: {product.maSanPhamCode || variant.sku || '—'} · Số lượng: {item.soLuong}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{VND(item.thanhTien)}</p>
-                  <p className="text-xs text-stone">{VND(item.donGia)} / cái</p>
+                <div className="text-right shrink-0">
+                  {item.giaGoc && Number(item.giaGoc) > Number(item.donGia) && (
+                    <p className="text-xs text-stone line-through">{VND(item.giaGoc)}</p>
+                  )}
+                  <p className="text-sm font-bold text-gold">{VND(item.donGia)}</p>
                 </div>
               </div>
             )
           })}
         </div>
-        <hr className="border-t mt-4" />
-        <div className="pt-4 space-y-1 text-sm">
-          <div className="flex justify-between text-stone"><span>Tạm tính</span><span>{VND(items.reduce((s, i) => s + Number(i.thanhTien), 0))}</span></div>
-          {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm giá</span><span>-{VND(order.soTienGiam)}</span></div>}
-          {(order.phiVanChuyen || 0) > 0 && <div className="flex justify-between text-stone"><span>Phí vận chuyển</span><span>{VND(order.phiVanChuyen)}</span></div>}
-          <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-gold">{VND(order.tongTien)}</span></div>
+      </div>
+
+      {/* Financial Summary */}
+      <div className="bg-white rounded-xl border border-stone/10 p-5 mb-4">
+        <h2 className="text-sm font-bold text-ink uppercase tracking-wide mb-3 flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-gold" /> TỔNG KẾT TÀI CHÍNH
+        </h2>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-stone">Tạm tính hàng</span>
+            <span className="font-medium text-ink">{VND(items.reduce((s, i) => s + Number(i.thanhTien || i.donGia * (i.soLuong || 1)), 0))}</span>
+          </div>
+          {(order.soTienGiam || 0) > 0 && (
+            <div className="flex justify-between text-emerald-deep">
+              <span>Giảm giá Voucher / Điểm giảm giá</span>
+              <span className="font-medium">-{VND(order.soTienGiam)}</span>
+            </div>
+          )}
+          {(order.phiVanChuyen || 0) > 0 && (
+            <div className="flex justify-between">
+              <span className="text-stone">Phí vận chuyển</span>
+              <span className="font-medium text-ink">+{VND(order.phiVanChuyen)}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-stone">Loại đơn hàng</span>
+            <span className="font-medium text-ink">{order.loaiDonHang === 2 ? 'Tại quầy' : 'Online'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-stone">Phương thức thanh toán</span>
+            <span className="font-medium text-ink">{PAYMENT_LABELS[order.phuongThucThanhToan] || 'COD'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-stone">Trạng thái thanh toán</span>
+            <span className={`font-semibold ${order.trangThaiThanhToan === 2 ? 'text-emerald-deep' : 'text-gold'}`}>
+              {PAYMENT_STATUS[order.trangThaiThanhToan] || 'Chưa thanh toán'}
+            </span>
+          </div>
+          <div className="flex justify-between font-bold text-lg border-t border-stone/10 pt-3 mt-2">
+            <span>TỔNG CỘNG THANH TOÁN:</span>
+            <span className="text-gold">{VND(order.tongTien)}</span>
+          </div>
         </div>
       </div>
 
-      {payments.length > 0 && (
-        <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
-          <h2 className="text-base font-semibold text-ink flex items-center gap-2 mb-4">
-            <CreditCard className="h-5 w-5 text-gold" /> Thanh toán
-          </h2>
-          <div className="space-y-3 text-sm">
-            {payments.map((p) => {
-              const isOnline = p.phuongThuc > 1
-              const canRetry = p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3) && order.trangThaiDon === 1
-              return (
-                <div key={p.maThanhToan} className="flex items-center justify-between p-3 bg-ivory-100 rounded-lg">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-ink-soft">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
-                      {p.trangThaiThanhToan === 2 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-deep bg-emerald-deep/20 px-2 py-0.5 rounded-full">
-                          <CheckCircle className="h-3 w-3" /> Đã thanh toán
-                        </span>
-                      )}
-                      {p.trangThaiThanhToan === 1 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-gold-hover bg-gold/20 px-2 py-0.5 rounded-full">
-                          <Clock className="h-3 w-3" /> Chờ thanh toán
-                        </span>
-                      )}
-                      {p.trangThaiThanhToan === 3 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-bordeaux bg-bordeaux/20 px-2 py-0.5 rounded-full">
-                          <XCircle className="h-3 w-3" /> Thất bại
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-stone mt-0.5">{VND(p.soTien)}</p>
-                    {p.maGiaoDich && p.trangThaiThanhToan === 2 && (
-                      <p className="text-xs text-stone mt-0.5">GD: {p.maGiaoDich}</p>
-                    )}
-                    {p.thoiGianTt && p.trangThaiThanhToan === 2 && (
-                      <p className="text-xs text-stone">{new Date(p.thoiGianTt).toLocaleString('vi-VN')}</p>
-                    )}
-                  </div>
-                  {canRetry && (
-                    <button onClick={() => handlePayNow(p)} disabled={paying}
-                      className="flex items-center gap-1 text-xs bg-gold text-noir px-3 py-2 rounded-lg hover:bg-gold-hover transition disabled:opacity-50 shrink-0">
-                      {paying ? <Loader className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
-                      {paying ? 'Đang xử lý...' : p.trangThaiThanhToan === 3 ? 'Thử lại' : 'Thanh toán ngay'}
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+      {/* Cancel Button */}
+      {canCancel && (
+        <div className="text-center">
+          <button
+            onClick={() => setConfirmAction('cancel')}
+            disabled={cancelling}
+            className="inline-flex items-center gap-2 border-2 border-bordeaux/30 text-bordeaux px-8 py-3 rounded-xl text-sm font-semibold hover:bg-bordeaux/5 transition disabled:opacity-50"
+          >
+            {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+            YÊU CẦU HỦY ĐƠN HÀNG NÀY
+          </button>
         </div>
       )}
 
-      <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
-        <h2 className="text-base font-semibold text-ink flex items-center gap-2 mb-4">
-          <MapPin className="h-5 w-5 text-gold" /> Thông tin giao hàng
-        </h2>
-        <div className="text-sm space-y-1">
-          <p><span className="text-stone">Người nhận:</span> {order.tenNguoiNhan}</p>
-          <p><span className="text-stone">SĐT:</span> {order.sdtNguoiNhan}</p>
-          <p><span className="text-stone">Địa chỉ:</span> {order.diaChiGiaoHang}</p>
-          {order.ghiChu && <p><span className="text-stone">Ghi chú:</span> {order.ghiChu}</p>}
+      {/* Confirm Received Button */}
+      {canConfirmReceived && (
+        <div className="text-center mt-3">
+          <button
+            onClick={() => setConfirmAction('received')}
+            disabled={confirmingReceived}
+            className="inline-flex items-center gap-2 bg-gold text-noir px-8 py-3 rounded-xl text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50"
+          >
+            {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+            ĐÃ NHẬN HÀNG
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* Desktop action buttons */}
-      <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 flex-col gap-2">
-        {canCancel && (
-          <button onClick={() => setConfirmAction('cancel')} disabled={cancelling}
-            className="flex items-center gap-2 bg-ivory border border-bordeaux/20 text-bordeaux px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-bordeaux/10 transition disabled:opacity-50 shadow-sm">
-            {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-            Hủy đơn
-          </button>
-        )}
-        {canConfirmReceived && (
-          <button onClick={() => setConfirmAction('received')} disabled={confirmingReceived}
-            className="flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 shadow-sm">
-            {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-            Đã nhận hàng
-          </button>
-        )}
-        {canPayNow && (
-          <button onClick={() => handlePayNow(payments.find(p => p.phuongThuc > 1))} disabled={paying}
-            className="flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50 shadow-sm">
+      {/* Pay Now Button */}
+      {canPayNow && (
+        <div className="text-center mt-3">
+          <button
+            onClick={() => handlePayNow(payments.find(p => p.phuongThuc > 1))}
+            disabled={paying}
+            className="inline-flex items-center gap-2 bg-gold text-noir px-8 py-3 rounded-xl text-sm font-semibold hover:bg-gold-hover transition disabled:opacity-50"
+          >
             {paying ? <Loader className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-            Thanh toán ngay
+            THANH TOÁN NGAY
           </button>
-        )}
-      </div>
-
-      {/* Mobile sticky bottom action bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-ivory border-t shadow-2xl p-4 z-50 flex gap-2">
-        {canCancel && (
-          <button onClick={() => setConfirmAction('cancel')} disabled={cancelling}
-            className="flex-1 flex items-center justify-center gap-1.5 border border-bordeaux/20 text-bordeaux py-3 rounded-xl text-sm font-medium hover:bg-bordeaux/10 transition disabled:opacity-50">
-            {cancelling ? <Loader className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-            Hủy đơn
-          </button>
-        )}
-        {canConfirmReceived && (
-          <button onClick={() => setConfirmAction('received')} disabled={confirmingReceived}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-gold text-noir py-3 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
-            {confirmingReceived ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-            Đã nhận hàng
-          </button>
-        )}
-        {canPayNow && (
-          <button onClick={() => handlePayNow(payments.find(p => p.phuongThuc > 1))} disabled={paying}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-gold text-noir py-3 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
-            {paying ? <Loader className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-            Thanh toán ngay
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {selectedItem && (() => {
         const v = selectedItem.bienThe || {}
@@ -415,12 +328,6 @@ export default function OrderDetail() {
                   </span>
                 )}
               </div>
-              {p.moTa && (
-                <div>
-                  <p className="text-xs font-semibold text-stone uppercase tracking-wide mb-1">Mô tả</p>
-                  <p className="text-sm text-stone line-clamp-4">{p.moTa}</p>
-                </div>
-              )}
               {(p.slug || p.maSanPham) && (
                 <a href={`/products/${p.slug || p.maSanPham}`} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-sm text-gold font-medium hover:underline mt-1">
