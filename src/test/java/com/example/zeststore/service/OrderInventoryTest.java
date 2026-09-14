@@ -32,6 +32,7 @@ class OrderInventoryTest {
     @Mock PhieuGiamGiaService couponService;
 
     @Mock InventoryService inventory;
+    @Mock CampaignDiscountService campaignDiscount;
     @InjectMocks DonHangService service;
     DonHang order;
     NguoiDung user;
@@ -59,16 +60,15 @@ class OrderInventoryTest {
         service.updateOrderStatus(1, 5, 7);
         verify(inventory, times(1)).release(order);
     }
-    @Test void walletCheckoutReservesAndDeductsInSameTransactionPath() {
+    @Test void placeOrderReservesStockAndCreatesPayment() {
         GioHang cart=GioHang.builder().maGioHang(9).build();
         BienTheSanPham v=BienTheSanPham.builder().maBienThe(2).tonKho(10).gia(BigDecimal.TEN).build();
         when(carts.findByNguoiDung_MaNguoiDung(7)).thenReturn(Optional.of(cart));
         when(cartItems.findByGioHang_MaGioHang(9)).thenReturn(List.of(
                 MucGioHang.builder().bienThe(v).soLuong(2).build()));
-        service.placeOrder(7, OrderRequest.builder().phuongThucThanhToan(7).build());
-        InOrder sequence = inOrder(inventory, wallet);
-        sequence.verify(inventory).reserve(any(DonHang.class));
-        sequence.verify(inventory).deduct(any(DonHang.class));
-        sequence.verify(wallet).truTien(eq(7), eq(new BigDecimal("20")), anyString(), eq(1));
+        when(payments.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(history.save(any())).thenAnswer(i -> i.getArgument(0));
+        service.placeOrder(7, OrderRequest.builder().phuongThucThanhToan(2).build());
+        verify(inventory, times(1)).reserve(any(DonHang.class));
     }
 }

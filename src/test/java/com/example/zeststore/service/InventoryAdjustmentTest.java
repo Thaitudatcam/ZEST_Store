@@ -39,7 +39,7 @@ class InventoryAdjustmentTest {
     @Test void heartbeatRenewsActiveHoldsButNeverResurrectsExpiredHolds() {
         PosCartRepository carts=mock(PosCartRepository.class);
         NguoiDungRepository users=mock(NguoiDungRepository.class);
-        PosCartService service=new PosCartService(carts,mock(BienTheSanPhamRepository.class),users,mock(InventoryService.class));
+        PosCartService service=new PosCartService(carts,mock(BienTheSanPhamRepository.class),users,mock(InventoryService.class),mock(CampaignDiscountService.class));
         LocalDateTime expiredAt=LocalDateTime.now().minusHours(1);
         PosCartItem expired=PosCartItem.builder().ngayTao(expiredAt).build();
         PosCartItem active=PosCartItem.builder().ngayTao(LocalDateTime.now().minusMinutes(20)).build();

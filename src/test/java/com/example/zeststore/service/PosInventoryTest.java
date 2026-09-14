@@ -28,6 +28,7 @@ class PosInventoryTest {
     @Mock PhieuGiamGiaService couponService;
     @Mock VoucherNguoiDungRepository vouchers;
     @Mock InventoryService inventory;
+    @Mock CampaignDiscountService campaignDiscount;
     @InjectMocks POSService service;
     PosOrderRequest request;
     BienTheSanPham variant;
