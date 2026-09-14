@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { User, Menu, X, Search, ShoppingCart } from 'lucide-react'
+import { User, Menu, X, Search, ShoppingCart, ArrowRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useState, useRef, useEffect } from 'react'
@@ -9,6 +9,14 @@ import SafeImg from './SafeImg'
 import NotificationBell from './NotificationBell'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
+
+const SEARCH_CHIPS = [
+  { label: 'Áo Polo Nam', keyword: 'áo polo nam' },
+  { label: 'Áo T-Shirt', keyword: 'áo t-shirt' },
+  { label: 'Áo Sơ Mi', keyword: 'áo sơ mi' },
+  { label: 'Áo Thun Nam', keyword: 'áo thun nam' },
+  { label: 'Ưu Đãi Hè', keyword: 'ưu đãi' },
+]
 
 const NAV_LINKS = [
   { to: '/', label: 'TRANG CHỦ' },
@@ -51,7 +59,7 @@ export default function Navbar() {
     const q = searchQuery.trim()
     setSearchLoading(true)
     debounceRef.current = setTimeout(() => {
-      searchSuggestions(q, 5)
+      searchSuggestions(q, 6)
         .then((data) => {
           if (q === searchQuery.trim()) { setSuggestions(data || []); setShowSuggestions(true) }
         })
@@ -92,7 +100,7 @@ export default function Navbar() {
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden lg:flex flex-1 max-w-md" ref={searchRef}>
+            <div className="hidden lg:flex flex-1 max-w-md relative" ref={searchRef}>
               <form onSubmit={handleSearchSubmit} className="w-full relative">
                 <input
                   value={searchQuery}
@@ -106,16 +114,51 @@ export default function Navbar() {
                 </button>
               </form>
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border border-stone/10 rounded-xl bg-white shadow-lg max-h-60 overflow-y-auto z-50">
-                  {suggestions.map((p) => (
-                    <Link key={p.maSanPham} to={`/products/${p.slug}`}
-                      onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
-                      className="flex items-center gap-3 px-3 py-2 hover:bg-ivory-100 transition">
-                      <SafeImg src={p.urlAnhDaiDien} className="w-8 h-8 rounded object-cover bg-ivory-200 shrink-0" fallback="https://placehold.co/32x32/ece7da/8B6914?text=Z" />
-                      <span className="text-sm truncate flex-1 text-ink">{p.tenSanPham}</span>
-                      <span className="text-xs text-[var(--primary-color)] font-semibold tabular-nums">{VND(p.gia || 0)}</span>
-                    </Link>
-                  ))}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[640px] border border-stone/10 rounded-2xl bg-white shadow-2xl z-50 overflow-hidden">
+                  <div className="px-5 pt-4 pb-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+                        <Search className="w-3.5 h-3.5 text-red-500" />
+                      </div>
+                      <span className="text-sm font-bold text-ink tracking-wide">TÌM KIẾM GỢI Ý</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-1">
+                      {SEARCH_CHIPS.map((chip) => (
+                        <button key={chip.keyword}
+                          onClick={() => { setSearchQuery(chip.keyword) }}
+                          className="px-3 py-1 text-xs font-medium rounded-full border border-stone/20 text-ink hover:border-[var(--primary-color)] hover:text-[var(--primary-color)] hover:bg-[var(--primary-bg)] transition">
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="px-5 pb-2">
+                    <p className="text-xs font-bold text-ink tracking-wide mb-3">SẢN PHẨM NỔI BẬT GỢI Ý</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {suggestions.slice(0, 6).map((p) => (
+                        <Link key={p.maSanPham} to={`/products/${p.slug}`}
+                          onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
+                          className="group rounded-xl border border-stone/10 overflow-hidden hover:shadow-md transition">
+                          <div className="aspect-square bg-ivory-100 overflow-hidden">
+                            <SafeImg src={p.urlAnhDaiDien} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" fallback="https://placehold.co/200x200/ece7da/8B6914?text=Z" />
+                          </div>
+                          <div className="p-2.5">
+                            <p className="text-xs font-medium text-ink truncate leading-snug">{p.tenSanPham}</p>
+                            <p className="text-sm font-bold text-[var(--primary-color)] mt-1 tabular-nums">{VND(p.gia || 0)}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  <Link to={`/?keyword=${encodeURIComponent(searchQuery.trim())}`}
+                    onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
+                    className="flex items-center justify-between px-5 py-3 border-t border-stone/10 bg-ivory-50 hover:bg-ivory-100 transition">
+                    <span className="text-xs text-stone">Tìm thấy {suggestions.length} sản phẩm</span>
+                    <span className="text-xs font-semibold text-[var(--primary-color)] flex items-center gap-1">
+                      Xem tất cả ({suggestions.length})
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
                 </div>
               )}
             </div>
