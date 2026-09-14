@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import Home from './pages/Home'
 import ProductDetail from './pages/ProductDetail'
+import ProductListing from './pages/ProductListing'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import AuthPage from './pages/AuthPage'
@@ -93,7 +94,7 @@ export default function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Navigate to="/" replace />} />
+              <Route path="/products" element={<ProductListing />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/policies/:slug" element={<PolicyPage />} />
               <Route path="/gioi-thieu" element={<AboutPage />} />
