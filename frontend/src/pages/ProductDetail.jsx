@@ -356,9 +356,6 @@ export default function ProductDetail() {
                   <button onClick={() => setQty(Math.min(selectedStock || 99, qty + 1))} disabled={qty >= (selectedStock || 99)}
                     className="px-3.5 py-2 text-ink hover:bg-gray-100 transition font-medium text-lg disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                 </div>
-                <button className="flex items-center gap-1.5 text-sm text-stone hover:text-[var(--primary-color)] transition cursor-pointer">
-                  <span className="underline">Hướng dẫn kích thước</span>
-                </button>
               </div>
             </div>
 
