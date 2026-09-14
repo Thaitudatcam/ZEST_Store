@@ -195,7 +195,7 @@ export default function Profile() {
             </div>
             <div>
               <p className="text-sm font-medium">
-                Xin chào, <span className="font-bold">{profile?.hoTen || 'User'}</span> • <span className="opacity-90">Member Bee Stylish</span>
+                Xin chào, <span className="font-bold">{profile?.hoTen || 'User'}</span> • <span className="opacity-90">Thành viên ZestStore</span>
               </p>
             </div>
           </div>
