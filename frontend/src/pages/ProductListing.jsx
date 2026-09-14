@@ -151,12 +151,12 @@ export default function ProductListing() {
                 : 'bg-ivory text-ink-soft border-noir-600/15 hover:border-gold/50'
             }`}>Tất cả</button>
           {sizes.map(s => (
-            <button key={s.maKichCo || s} onClick={() => setFilterSize(s.tenKichCo || s)}
+            <button key={s.maKichCo || s} onClick={() => setFilterSize(s.kichCo || s)}
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
-                filterSize === (s.tenKichCo || s)
+                filterSize === (s.kichCo || s)
                   ? 'bg-gold text-noir border-gold'
                   : 'bg-ivory text-ink-soft border-noir-600/15 hover:border-gold/50'
-              }`}>{s.tenKichCo || s}</button>
+              }`}>{s.kichCo || s}</button>
           ))}
         </div>
       </FilterSection>
