@@ -3,13 +3,11 @@ import { getCart, removeCartItem, updateCartItem, clearCart, validateCart } from
 import { useCart } from '../context/CartContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Toast from '../components/Toast'
-import { Trash2, ShoppingBag, Plus, Minus, X, Truck, ShieldCheck, RotateCcw, Tag, CheckCircle } from 'lucide-react'
+import { Trash2, ShoppingBag, Plus, Minus, X, ShieldCheck, RotateCcw, Tag } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const FREE_SHIP_THRESHOLD = 399000
 
 const STEPS = [
   { label: 'Giỏ hàng', active: true },
@@ -141,7 +139,6 @@ export default function Cart() {
 
   const selectedTotal = items.filter(i => selectedIds.has(i.maBienThe)).reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const allSelected = items.length > 0 && selectedIds.size === items.length
-  const amountToFreeShip = Math.max(0, FREE_SHIP_THRESHOLD - selectedTotal)
 
   if (loading) return <LoadingSpinner className="py-20" />
 
@@ -177,26 +174,6 @@ export default function Cart() {
           {/* Left: Cart Items */}
           <div className="flex-1">
             {/* Free Ship Banner */}
-            {amountToFreeShip > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 flex items-start gap-3">
-                <Truck className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="text-blue-800">
-                    Mua thêm <span className="font-bold">{VND(amountToFreeShip)}</span> để nhận ngay{' '}
-                    <span className="font-bold text-[var(--primary-color)] cursor-pointer hover:underline">Ưu đãi miễn phí vận chuyển.</span>
-                  </p>
-                  <p className="text-blue-500 text-xs mt-0.5">(Có thể thay đổi nếu áp dụng mã ưu đãi)</p>
-                </div>
-              </div>
-            )}
-            {amountToFreeShip <= 0 && selectedTotal > 0 && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-5 flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="text-emerald-700 font-semibold">Bạn đã được miễn phí vận chuyển!</p>
-                </div>
-              </div>
-            )}
 
             {/* Trust */}
             <div className="bg-ivory rounded-xl border border-stone/10 p-4 mb-5">
@@ -334,18 +311,10 @@ export default function Cart() {
                   <span>Tạm tính ({selectedIds.size} sản phẩm)</span>
                   <span className="font-semibold text-ink">{VND(selectedTotal)}</span>
                 </div>
-                {amountToFreeShip > 0 && (
-                  <div className="flex justify-between text-stone">
-                    <span>Phí vận chuyển</span>
-                    <span className="text-stone">Tính khi thanh toán</span>
-                  </div>
-                )}
-                {amountToFreeShip <= 0 && selectedTotal > 0 && (
-                  <div className="flex justify-between text-emerald-deep">
-                    <span>Phí vận chuyển</span>
-                    <span className="font-semibold">Miễn phí</span>
-                  </div>
-                )}
+                <div className="flex justify-between text-stone">
+                  <span>Phí vận chuyển</span>
+                  <span className="text-stone">Tính khi thanh toán</span>
+                </div>
               </div>
 
               <hr className="border-stone/15 my-4" />

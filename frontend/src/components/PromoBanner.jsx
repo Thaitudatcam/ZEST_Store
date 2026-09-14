@@ -39,15 +39,6 @@ const sideBanners = [
     img: ao,
     link: '/products/o-polo-xanh-en-ph-i-c-th-u-1785760636879',
   },
-  {
-    id: 5,
-    badge: 'Limited',
-    title: 'MIỄN PHÍ VẬN CHUYỂN',
-
-    desc: 'Giao hàng toàn quốc',
-    img: ao3,
-    link: '#all-products',
-  },
 ]
 
 function getTimeLeft(target) {

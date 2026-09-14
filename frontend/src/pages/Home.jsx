@@ -5,7 +5,7 @@ import { getActiveCategories } from '../api/categories'
 import { getBestSelling, getPopular, getPersonalized } from '../api/recommendations'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
-import { Truck, Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles, Filter, ChevronDown } from 'lucide-react'
+import { Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles, Filter, ChevronDown } from 'lucide-react'
 import ZS from '../pictures/ZS.png'
 import PromoBanner from '../components/PromoBanner'
 import Aurora from '../components/ui/Aurora'
@@ -126,7 +126,6 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap gap-6 text-sm justify-center md:justify-start">
               {[
-                { icon: Truck, label: 'Miễn phí vận chuyển' },
                 { icon: RefreshCw, label: 'Đổi trả 30 ngày' },
                 { icon: Shield, label: 'Chính hãng 100%' },
               ].map(({ icon: Icon, label }) => (

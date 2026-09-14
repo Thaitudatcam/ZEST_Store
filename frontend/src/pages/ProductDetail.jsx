@@ -277,17 +277,6 @@ export default function ProductDetail() {
 
           {/* RIGHT: Info */}
           <div className="flex flex-col">
-            {/* Promotions */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-2.5">
-                <Tag className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-bold text-emerald-800 mb-1">KHUYẾN MÃI</p>
-                  <p className="text-sm text-emerald-700">Giao hàng và miễn phí vận chuyển toàn quốc cho đơn hàng từ 399.000đ</p>
-                </div>
-              </div>
-            </div>
-
             <h1 className="text-xl font-bold text-ink mb-4">{product.tenSanPham}</h1>
 
             {/* Price */}
