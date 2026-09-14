@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export function useOrderStream(orderId, { onUpdate, onError } = {}) {
   const [connected, setConnected] = useState(false)
   const esRef = useRef(null)
   const pollRef = useRef(null)
+  const lastStatusRef = useRef(null)
 
   useEffect(() => {
     if (!orderId) return
@@ -25,7 +26,10 @@ export function useOrderStream(orderId, { onUpdate, onError } = {}) {
       es.addEventListener('order-update', (e) => {
         try {
           const data = JSON.parse(e.data)
-          onUpdate?.(data)
+          if (data.trangThaiMoi && data.trangThaiMoi !== lastStatusRef.current) {
+            lastStatusRef.current = data.trangThaiMoi
+            onUpdate?.(data)
+          }
         } catch {}
       })
 
@@ -39,7 +43,11 @@ export function useOrderStream(orderId, { onUpdate, onError } = {}) {
             fetch(`/api/orders/${orderId}`)
               .then((r) => r.json())
               .then((data) => {
-                onUpdate?.({ trangThaiMoi: data.order?.trangThaiDon, source: 'poll' })
+                const newStatus = data.order?.trangThaiDon
+                if (newStatus && newStatus !== lastStatusRef.current) {
+                  lastStatusRef.current = newStatus
+                  onUpdate?.({ trangThaiMoi: newStatus, source: 'poll' })
+                }
               })
               .catch(() => {})
           }, 15000)
