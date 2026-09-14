@@ -164,8 +164,24 @@ public class SanPhamService {
 
         List<SanPham> top = results.size() > limit
                 ? results.subList(0, limit) : results;
-        Page<SanPham> stockPage = new PageImpl<>(top, PageRequest.of(0, limit), top.size());
-        populateStock(stockPage);
+
+        List<Integer> ids = top.stream().map(SanPham::getMaSanPham).collect(Collectors.toList());
+        Map<Integer, BigDecimal> minGiaMap = Map.of();
+        Map<Integer, Integer> stockMap = Map.of();
+        if (!ids.isEmpty()) {
+            minGiaMap = bienTheRepository.minGiaBySanPhamIds(ids).stream()
+                    .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                            row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
+            stockMap = bienTheRepository.sumTonKhoBySanPhamIds(ids).stream()
+                    .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                            row -> ((Number) row[1]).intValue()));
+        }
+        Map<Integer, BigDecimal> finalMinGiaMap = minGiaMap;
+        Map<Integer, Integer> finalStockMap = stockMap;
+        top.forEach(sp -> {
+            sp.setGiaThapNhat(finalMinGiaMap.get(sp.getMaSanPham()));
+            sp.setTongTonKho(finalStockMap.getOrDefault(sp.getMaSanPham(), 0));
+        });
 
         return top.stream().map(sp -> {
             Map<String, Object> m = new LinkedHashMap<>();

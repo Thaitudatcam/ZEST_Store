@@ -155,7 +155,7 @@ export default function Navbar() {
                           </div>
                           <div className="p-2">
                             <p className="text-[11px] font-medium text-ink truncate leading-snug">{p.tenSanPham}</p>
-                            <p className="text-xs font-bold text-[var(--primary-color)] mt-0.5 tabular-nums">{VND(p.gia || 0)}</p>
+                            <p className="text-xs font-bold text-[var(--primary-color)] mt-0.5 tabular-nums">{VND(p.gia || p.giaThapNhat || 0)}</p>
                           </div>
                         </Link>
                       ))}
