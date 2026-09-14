@@ -22,6 +22,7 @@ import OrderDetail from './pages/OrderDetail'
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
 import AboutPage from './pages/AboutPage'
+import TraCuu from './pages/TraCuu'
 import ErrorBoundary from './components/ErrorBoundary'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
@@ -98,6 +99,7 @@ export default function App() {
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/policies/:slug" element={<PolicyPage />} />
               <Route path="/gioi-thieu" element={<AboutPage />} />
+              <Route path="/tra-cuu" element={<TraCuu />} />
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><ErrorBoundary><Checkout /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

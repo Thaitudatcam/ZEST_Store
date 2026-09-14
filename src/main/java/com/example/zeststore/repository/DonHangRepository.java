@@ -146,6 +146,9 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
                                                    @Param("tuNgay") LocalDateTime tuNgay,
                                                    @Param("denNgay") LocalDateTime denNgay);
 
+    @Query("SELECT d FROM DonHang d WHERE d.maDonHangCode = :maDonHangCode AND d.nguoiDung.email = :email")
+    java.util.Optional<DonHang> findByMaDonHangCodeAndEmail(@Param("maDonHangCode") String maDonHangCode, @Param("email") String email);
+
     List<DonHang> findTop10ByOrderByNgayDatDesc();
     @Query("SELECT COUNT(d) FROM DonHang d WHERE d.loaiDonHang = 2 AND d.ngayDat >= :startOfDay")
     Long countTodayPosOrders(@Param("startOfDay") LocalDateTime startOfDay);

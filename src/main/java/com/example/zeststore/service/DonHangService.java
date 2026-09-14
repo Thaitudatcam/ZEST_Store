@@ -121,6 +121,22 @@ public class DonHangService {
         return result;
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> lookupOrder(String maDonHangCode, String email) {
+        DonHang order = donHangRepository.findByMaDonHangCodeAndEmail(maDonHangCode, email)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", maDonHangCode));
+        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(order.getMaDonHang());
+        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang());
+        List<LichSuDonHang> history = lichSuDonHangRepository.findByDonHang_MaDonHangOrderByThoiGianDesc(order.getMaDonHang());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("order", order);
+        result.put("items", items);
+        result.put("payments", payments);
+        result.put("history", history);
+        return result;
+    }
+
     @Transactional
     public Map<String, Object> registerPrint(Integer orderId, boolean isAdmin) {
         DonHang order = donHangRepository.findByIdForUpdate(orderId)

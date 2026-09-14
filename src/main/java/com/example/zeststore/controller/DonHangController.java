@@ -36,6 +36,11 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.getOrdersByUser(userService.getUserIdFromAuth(auth)));
     }
 
+    @GetMapping("/lookup")
+    public ResponseEntity<?> lookupOrder(@RequestParam String maDonHangCode, @RequestParam String email) {
+        return ResponseEntity.ok(donHangService.lookupOrder(maDonHangCode, email));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrderDetail(@PathVariable Integer id, Authentication auth) {
         return ResponseEntity.ok(donHangService.getOrderDetailForUser(id, userService.getUserIdFromAuth(auth)));
