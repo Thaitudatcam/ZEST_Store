@@ -13,8 +13,6 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 const NAV_LINKS = [
   { to: '/', label: 'TRANG CHỦ' },
   { to: '/products', label: 'SẢN PHẨM' },
-  { to: '/uu-dai', label: 'ƯU ĐÃI' },
-  { to: '/moi-ve', label: 'MỚI VỀ' },
   { to: '/tra-cuu', label: 'TRA CỨU' },
   { to: '/gioi-thieu', label: 'VỀ CHÚNG TÔI' },
 ]
