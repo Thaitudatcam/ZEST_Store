@@ -6,47 +6,15 @@ import api from '../api/axios'
 
 export function RobotHead({ size = 'sm', blink = false }) {
   const sizeMap = { sm: 'w-14 h-14', md: 'w-16 h-16' }
-  const padMap = { sm: 'p-[10px]', md: 'p-[12px]' }
   return (
-    <div className={`${sizeMap[size]} relative flex flex-col items-center justify-center`}>
-      <div className="absolute -top-2.5 flex flex-col items-center">
-        <div className="w-1 h-3 bg-gold rounded-full" />
-        <div className="w-2 h-2 rounded-full bg-gold shadow-[0_0_6px_rgba(201,162,39,0.6)] animate-glow-pulse" />
-      </div>
-      <div className={`w-full h-full rounded-2xl bg-gradient-to-br from-gold to-gold-dark shadow-lg ring-[2px] ring-ivory/50 flex flex-col items-center justify-center relative overflow-hidden ${padMap[size]}`}>
-        <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
-        <div className="flex gap-2.5 items-center">
-          <div className={`w-[7px] h-[7px] rounded-full bg-noir transition-transform duration-100 ${blink ? 'scale-y-[0.2]' : 'scale-y-100'}`} />
-          <div className={`w-[7px] h-[7px] rounded-full bg-noir transition-transform duration-100 ${blink ? 'scale-y-[0.2]' : 'scale-y-100'}`} />
-        </div>
-        <div className="flex gap-[3px] mt-1">
-          <div className="w-[3px] h-[3px] rounded-full bg-noir/40" />
-          <div className="w-[3px] h-[3px] rounded-full bg-noir/60" />
-          <div className="w-[3px] h-[3px] rounded-full bg-noir/40" />
-        </div>
-        <div className="absolute left-1.5 bottom-1.5 w-2.5 h-1.5 rounded-full bg-gradient-to-r from-bordeaux/20 to-transparent" />
-        <div className="absolute right-1.5 bottom-1.5 w-2.5 h-1.5 rounded-full bg-gradient-to-l from-bordeaux/20 to-transparent" />
-      </div>
+    <div className={`${sizeMap[size]} rounded-full bg-gradient-to-br from-[#f97316] to-[#ea580c] shadow-lg flex items-center justify-center`}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+        stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        className={`${size === 'sm' ? 'w-6 h-6' : 'w-7 h-7'}`}>
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
     </div>
   )
-}
-
-export function useBlink() {
-  const [blink, setBlink] = useState(false)
-  useEffect(() => {
-    let blinkTimer
-    const scheduleBlink = () => {
-      const delay = 4000 + Math.random() * 8000
-      blinkTimer = setTimeout(() => {
-        setBlink(true)
-        setTimeout(() => setBlink(false), 150)
-        scheduleBlink()
-      }, delay)
-    }
-    scheduleBlink()
-    return () => clearTimeout(blinkTimer)
-  }, [])
-  return blink
 }
 
 export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
@@ -59,7 +27,6 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const [loading, setLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState(null)
   const [showAttach, setShowAttach] = useState(false)
-  const blink = useBlink()
   const bottomRef = useRef(null)
   const fileInputRef = useRef(null)
   const cameraInputRef = useRef(null)
@@ -220,7 +187,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
     <div className="h-full w-full flex flex-col overflow-hidden bg-noir-900 border border-gold/15">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gold/10 shrink-0 bg-noir-800/80">
         <div className="flex items-center gap-3">
-          <RobotHead size="md" blink={blink} />
+          <RobotHead size="md" />
           <div>
             <p className="text-sm font-semibold text-ivory">Trợ lý ZestStore</p>
             <p className="text-[10px] text-stone-light/50">AI Fashion Assistant</p>
@@ -278,7 +245,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ scrollBehavior: 'smooth' }}>
             {messages.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                <RobotHead size="md" blink={blink} />
+                <RobotHead size="md" />
                 <p className="text-sm text-ivory mt-4 font-medium">Xin chào! Tôi có thể giúp gì cho bạn?</p>
                 <p className="text-xs text-stone-light/40 mt-1">
                   {quickPrompts.length > 0
