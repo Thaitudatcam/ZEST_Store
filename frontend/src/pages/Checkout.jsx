@@ -473,10 +473,26 @@ export default function Checkout() {
 
   return (
     <><div className="max-w-6xl mx-auto px-4 py-8">
-      <button onClick={() => navigate('/cart')} className="flex items-center gap-1 text-sm text-stone hover:text-ink-soft mb-4">
-        <ArrowLeft className="h-4 w-4" /> Quay lại giỏ hàng
-      </button>
-      <h1 className="text-2xl font-bold mb-6">Thanh toán</h1>
+      {/* Step Indicator */}
+      <div className="flex items-center justify-center gap-2 mb-8">
+        {[
+          { label: 'Giỏ hàng', done: true },
+          { label: 'Thanh toán', active: true },
+          { label: 'Hoàn tất', done: false },
+        ].map((step, idx) => (
+          <div key={step.label} className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 ${step.active ? 'text-[var(--primary-color)]' : step.done ? 'text-[var(--primary-color)]' : 'text-stone'}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                step.active ? 'bg-[var(--primary-color)] text-white' : step.done ? 'bg-[var(--primary-color)] text-white' : 'bg-stone/15 text-stone'
+              }`}>
+                {step.done ? '✓' : idx + 1}
+              </div>
+              <span className={`text-sm font-semibold ${step.active ? 'text-[var(--primary-color)]' : step.done ? 'text-[var(--primary-color)]' : 'text-stone'}`}>{step.label}</span>
+            </div>
+            {idx < 2 && <div className="w-10 h-px bg-stone/20 mx-1" />}
+          </div>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3 space-y-6">
