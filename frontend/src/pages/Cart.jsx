@@ -3,11 +3,19 @@ import { getCart, removeCartItem, updateCartItem, clearCart, validateCart } from
 import { useCart } from '../context/CartContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Toast from '../components/Toast'
-import { Trash2, ShoppingBag, Plus, Minus, X } from 'lucide-react'
+import { Trash2, ShoppingBag, Plus, Minus, X, Truck, ShieldCheck, RotateCcw, Tag, CheckCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
 import ConfirmDialog from '../components/ConfirmDialog'
+
+const FREE_SHIP_THRESHOLD = 399000
+
+const STEPS = [
+  { label: 'Giỏ hàng', active: true },
+  { label: 'Thanh toán', active: false },
+  { label: 'Hoàn tất', active: false },
+]
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -88,10 +96,6 @@ export default function Cart() {
     }
   }
 
-  const handleItemClick = (item) => {
-    setSelectedItem(item)
-  }
-
   const handleRemove = async (vid) => {
     setConfirmAction(null)
     try {
@@ -135,134 +139,237 @@ export default function Cart() {
     navigate('/checkout', { state: { selectedItems: items.filter(i => selectedIds.has(i.maBienThe)) } })
   }
 
-  const groups = items.reduce((acc, i) => {
-    const pid = i.maSanPham
-    if (!acc[pid]) acc[pid] = { product: i.tenSanPham || `Sản phẩm #${pid}`, variants: [] }
-    acc[pid].variants.push(i)
-    return acc
-  }, {})
-
-  const isProductSelected = (pid) => groups[pid].variants.every(v => selectedIds.has(v.maBienThe))
-
-  const toggleProduct = (pid) => {
-    const g = groups[pid]
-    const allSel = g.variants.every(v => selectedIds.has(v.maBienThe))
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      g.variants.forEach(v => { if (allSel) next.delete(v.maBienThe); else next.add(v.maBienThe) })
-      return next
-    })
-  }
-
   const selectedTotal = items.filter(i => selectedIds.has(i.maBienThe)).reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const allSelected = items.length > 0 && selectedIds.size === items.length
+  const amountToFreeShip = Math.max(0, FREE_SHIP_THRESHOLD - selectedTotal)
 
   if (loading) return <LoadingSpinner className="py-20" />
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Giỏ hàng ({items.length})</h1>
-        {items.length > 0 && <button onClick={() => setConfirmAction('clear')} className="text-sm text-bordeaux hover:underline">Xóa tất cả</button>}
+      {/* Step Indicator */}
+      <div className="flex items-center justify-center gap-2 mb-8">
+        {STEPS.map((step, idx) => (
+          <div key={step.label} className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 ${step.active ? 'text-[var(--primary-color)]' : 'text-stone'}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                step.active ? 'bg-[var(--primary-color)] text-white' : 'bg-stone/15 text-stone'
+              }`}>
+                {idx + 1}
+              </div>
+              <span className={`text-sm font-semibold ${step.active ? 'text-[var(--primary-color)]' : 'text-stone'}`}>{step.label}</span>
+            </div>
+            {idx < STEPS.length - 1 && <div className="w-10 h-px bg-stone/20 mx-1" />}
+          </div>
+        ))}
       </div>
 
       {items.length === 0 ? (
         <div className="text-center py-20 text-stone animate-fade-in">
           <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-stone" />
           <p className="mb-4">Giỏ hàng trống</p>
-          <button onClick={() => navigate('/')} className="text-gold font-semibold hover:underline">Mua sắm ngay</button>
+          <button onClick={() => navigate('/')} className="text-[var(--primary-color)] font-semibold hover:underline">Mua sắm ngay</button>
         </div>
       ) : (
-        <>
-          <div className="flex items-center gap-3 px-1 mb-3 text-sm text-stone">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
-                className="w-4 h-4 rounded border-stone/30 text-gold focus:ring-gold" />
-              <span className="font-medium text-ink-soft">Chọn tất cả</span>
-            </label>
-            <span className="text-stone">|</span>
-            <button onClick={() => setSelectedIds(new Set())} className="hover:text-ink-soft">Bỏ chọn</button>
-          </div>
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left: Cart Items */}
+          <div className="flex-1">
+            {/* Free Ship Banner */}
+            {amountToFreeShip > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                <Truck className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="text-blue-800">
+                    Mua thêm <span className="font-bold">{VND(amountToFreeShip)}</span> để nhận ngay{' '}
+                    <span className="font-bold text-[var(--primary-color)] cursor-pointer hover:underline">Ưu đãi miễn phí vận chuyển.</span>
+                  </p>
+                  <p className="text-blue-500 text-xs mt-0.5">(Có thể thay đổi nếu áp dụng mã ưu đãi)</p>
+                </div>
+              </div>
+            )}
+            {amountToFreeShip <= 0 && selectedTotal > 0 && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="text-emerald-700 font-semibold">Bạn đã được miễn phí vận chuyển!</p>
+                </div>
+              </div>
+            )}
 
-          <div className="space-y-4">
-            {Object.entries(groups).map(([pid, g]) => {
-              const prodSel = isProductSelected(Number(pid))
-              return (
-                <div key={pid} className={`bg-ivory rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-md ${prodSel ? 'border-gold shadow-sm' : ''}`}>
-                  <div className="flex items-center gap-3 px-4 py-3 bg-ivory-100 border-b">
-                    <input type="checkbox" checked={prodSel} onChange={() => toggleProduct(Number(pid))}
-                      className="w-4 h-4 rounded border-stone/30 text-gold focus:ring-gold shrink-0" />
-                    <span className={`font-semibold text-sm ${g.variants.some(v => v.sanPhamTrangThai === 0 || v.sanPhamNgayXoa) ? 'line-through text-stone' : ''}`}>
-                      {g.product}
-                    </span>
-                    {g.variants.some(v => v.sanPhamTrangThai === 0 || v.sanPhamNgayXoa) && (
-                      <span className="text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium">không tồn tại</span>
-                    )}
-                    <span className="text-xs text-stone ml-auto">{g.variants.length} biến thể</span>
+            {/* Trust */}
+            <div className="bg-ivory rounded-xl border border-stone/10 p-4 mb-5">
+              <p className="text-sm font-semibold text-ink mb-1.5">An tâm mua sắm hàng chính hàng tại <span className="text-[var(--primary-color)]">BeeStylish.vn</span></p>
+              <ul className="text-xs text-stone space-y-0.5">
+                <li>Được kiểm tra hàng trước khi thanh toán & hài lòng</li>
+                <li>Được đổi trả trong 15 ngày theo chính sách (*)</li>
+              </ul>
+            </div>
+
+            {/* Cart Header */}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-ink uppercase">Giỏ hàng ({items.length} sản phẩm)</h2>
+              {items.length > 1 && (
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-stone">
+                  <input type="checkbox" checked={allSelected} onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-stone/30 text-[var(--primary-color)] focus:ring-[var(--primary-color)]" />
+                  Chọn tất cả
+                </label>
+              )}
+            </div>
+
+            {/* Table Header */}
+            <div className="hidden sm:grid grid-cols-[1fr_120px_120px_110px_40px] gap-3 px-4 py-2 text-xs font-semibold text-stone uppercase tracking-wide border-b border-stone/15">
+              <span>Tên hàng</span>
+              <span className="text-center">Giá</span>
+              <span className="text-center">Số lượng</span>
+              <span className="text-right">Tổng tiền</span>
+              <span />
+            </div>
+
+            {/* Cart Items */}
+            <div className="divide-y divide-stone/10 border-b border-stone/15">
+              {items.map((i) => (
+                <div key={i.maBienThe}
+                  className={`grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_120px_120px_110px_40px] gap-3 sm:gap-3 items-center px-4 py-4 transition ${
+                    i.ngayXoa ? 'opacity-50' : ''
+                  }`}>
+                  {/* Checkbox + Image + Info */}
+                  <div className="flex items-center gap-3 col-span-1 sm:col-span-1">
+                    <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
+                      className="w-4 h-4 rounded border-stone/30 text-[var(--primary-color)] focus:ring-[var(--primary-color)] shrink-0" />
+                    <div className="w-16 h-16 bg-ivory-100 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => !i.ngayXoa && setSelectedItem(i)}>
+                      <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover" fallback="https://placehold.co/80x80/e2e8f0/475569?text=P" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink truncate">{i.tenSanPham || `Sản phẩm #${i.maSanPham}`}</p>
+                      <p className="text-[11px] text-stone">Mã sản phẩm: {i.maSanPhamCode || i.sku || '—'}</p>
+                      {i.kichCo && <p className="text-xs text-stone">Kích thước: <span className="font-medium text-ink">{i.kichCo}</span></p>}
+                      {i.mauSac && <p className="text-xs text-stone">Màu sắc: <span className="font-medium text-ink">{i.mauSac}</span></p>}
+                      {i.ngayXoa && <span className="text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium">không tồn tại</span>}
+                    </div>
                   </div>
-                  <div className="divide-y">
-                    {g.variants.map((i, vi) => (
-                      <div key={i.maBienThe}
-                        className={`flex items-center gap-3 px-4 py-3 transition ${selectedIds.has(i.maBienThe) ? 'bg-gold/10/40' : ''}`}
-                        style={{ animationDelay: `${vi * 50}ms` }}>
-                        <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
-                          className="w-4 h-4 rounded border-stone/30 text-gold focus:ring-gold shrink-0" />
-                        <div className="flex-1 min-w-0 flex items-center gap-2 cursor-pointer" onClick={() => handleItemClick(i)}>
-                          <p className={`text-sm min-w-[120px] ${i.ngayXoa ? 'line-through text-stone' : 'text-ink-soft'}`}>
-                            {i.mauSac ? `${i.mauSac} / ${i.kichCo || ''}` : (i.kichCo || '')}
-                            {i.ngayXoa && <span className="ml-1 text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium not-italic no-underline">không tồn tại</span>}
-                          </p>
-                          <span className="text-[10px] text-stone">{(i.maSanPhamCode || i.sku)}</span>
-                          <span className="flex items-center gap-1.5">
-                            {Number(i.phanTramGiamGia) > 0 && (
-                              <span className="bg-bordeaux text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">-{i.phanTramGiamGia}%</span>
-                            )}
-                            <p className="text-gold font-semibold text-sm">{VND(i.donGia || 0)}</p>
-                            {i.giaGoc && Number(i.giaGoc) > Number(i.donGia) && (
-                              <p className="text-[11px] text-stone line-through">{VND(i.giaGoc)}</p>
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex items-center border rounded-lg">
-                          <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
-                            className="px-2 py-1 hover:bg-ivory-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Minus className="h-3 w-3" /></button>
-                          <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999} disabled={!!i.ngayXoa}
-                            onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
-                            onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
-                            className="w-10 px-1 py-1 border-x text-center text-xs outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-ivory-100 disabled:cursor-not-allowed" />
-                          <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || i.ngayXoa}
-                            className="px-2 py-1 hover:bg-ivory-100 transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"><Plus className="h-3 w-3" /></button>
-                        </div>
-                        {i.tonKho !== undefined && <span className="text-[10px] text-stone w-12 text-right">Kho: {i.tonKho}</span>}
-                        <button onClick={() => setConfirmAction(i.maBienThe)} className="text-bordeaux hover:text-bordeaux transition active:scale-90"><Trash2 className="h-4 w-4" /></button>
+
+                  {/* Giá */}
+                  <div className="hidden sm:flex flex-col items-center text-center">
+                    <span className="text-sm font-bold text-[var(--primary-color)]">{VND(i.donGia || 0)}</span>
+                    {i.giaGoc && Number(i.giaGoc) > Number(i.donGia) && (
+                      <span className="text-[11px] text-stone line-through">{VND(i.giaGoc)}</span>
+                    )}
+                  </div>
+                  {/* Giá - Mobile */}
+                  <div className="flex sm:hidden items-center gap-2 ml-16">
+                    <span className="text-sm font-bold text-[var(--primary-color)]">{VND(i.donGia || 0)}</span>
+                    {i.giaGoc && Number(i.giaGoc) > Number(i.donGia) && (
+                      <span className="text-[11px] text-stone line-through">{VND(i.giaGoc)}</span>
+                    )}
+                  </div>
+
+                  {/* Số lượng */}
+                  <div className="hidden sm:flex justify-center">
+                    <div className="flex items-center border border-stone/20 rounded-lg overflow-hidden">
+                      <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
+                        className="px-2.5 py-1.5 hover:bg-ivory-100 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999} disabled={!!i.ngayXoa}
+                        onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
+                        onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
+                        className="w-10 px-1 py-1.5 border-x border-stone/20 text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-ivory-100" />
+                      <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || i.ngayXoa}
+                        className="px-2.5 py-1.5 hover:bg-ivory-100 transition disabled:opacity-30 disabled:cursor-not-allowed">
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tổng tiền */}
+                  <div className="hidden sm:flex justify-end">
+                    <span className="text-sm font-bold text-ink">{VND((i.donGia || 0) * (i.soLuong || 1))}</span>
+                  </div>
+
+                  {/* Xóa */}
+                  <div className="hidden sm:flex justify-center">
+                    <button onClick={() => setConfirmAction(i.maBienThe)} className="text-stone hover:text-bordeaux transition p-1" title="Xóa">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Mobile: Quantity + Price + Delete */}
+                  <div className="flex sm:hidden items-center justify-between ml-16 mt-1">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center border border-stone/20 rounded-lg overflow-hidden">
+                        <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
+                          className="px-2 py-1 hover:bg-ivory-100 transition disabled:opacity-30">
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <input type="number" value={i.soLuong || 1} min={1} disabled={!!i.ngayXoa}
+                          onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
+                          onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
+                          className="w-10 px-1 py-1 border-x border-stone/20 text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                        <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || i.ngayXoa}
+                          className="px-2 py-1 hover:bg-ivory-100 transition disabled:opacity-30">
+                          <Plus className="h-3 w-3" />
+                        </button>
                       </div>
-                    ))}
+                      <button onClick={() => setConfirmAction(i.maBienThe)} className="text-stone hover:text-bordeaux transition p-1">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <span className="text-sm font-bold text-ink">{VND((i.donGia || 0) * (i.soLuong || 1))}</span>
                   </div>
                 </div>
-              )
-            })}
+              ))}
+            </div>
           </div>
 
-          <div className="mt-6 bg-ivory rounded-xl border p-6 transition-all duration-300 hover:shadow-md">
-            <div className="flex justify-between text-sm text-stone mb-1">
-              <span>Đã chọn: <strong>{selectedIds.size}</strong> sản phẩm</span>
-              <span>Tạm tính: <strong className="text-gold">{VND(selectedTotal)}</strong></span>
+          {/* Right: Order Summary */}
+          <div className="w-full lg:w-80 shrink-0">
+            <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 sticky top-24">
+              <h3 className="text-base font-bold text-ink uppercase mb-4">Đơn hàng</h3>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-stone">
+                  <span>Tạm tính ({selectedIds.size} sản phẩm)</span>
+                  <span className="font-semibold text-ink">{VND(selectedTotal)}</span>
+                </div>
+                {amountToFreeShip > 0 && (
+                  <div className="flex justify-between text-stone">
+                    <span>Phí vận chuyển</span>
+                    <span className="text-stone">Tính khi thanh toán</span>
+                  </div>
+                )}
+                {amountToFreeShip <= 0 && selectedTotal > 0 && (
+                  <div className="flex justify-between text-emerald-deep">
+                    <span>Phí vận chuyển</span>
+                    <span className="font-semibold">Miễn phí</span>
+                  </div>
+                )}
+              </div>
+
+              <hr className="border-stone/15 my-4" />
+
+              <div className="flex justify-between text-lg font-bold">
+                <span>Tổng giá trị đơn hàng</span>
+                <span className="text-[var(--primary-color)]">{VND(selectedTotal)}</span>
+              </div>
+
+              <button onClick={handleCheckout}
+                className="mt-5 w-full bg-[var(--primary-color)] text-white font-bold py-3.5 rounded-xl hover:bg-[var(--primary-hover)] transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+                disabled={selectedIds.size === 0 || items.some(i => selectedIds.has(i.maBienThe) && (i.ngayXoa || i.sanPhamTrangThai === 0 || i.sanPhamNgayXoa))}>
+                TIẾP TỤC THANH TOÁN <span className="text-lg">→</span>
+              </button>
+
+              <p className="text-xs text-stone text-center mt-3">
+                Dùng mã giảm giá của <span className="font-semibold text-ink">BeeStylish</span> trong bước tiếp theo
+              </p>
             </div>
-            <div className="flex justify-between text-lg font-bold border-t pt-3 mt-2">
-              <span>Tổng cộng ({selectedIds.size} sản phẩm):</span>
-              <span className="text-gold">{VND(selectedTotal)}</span>
-            </div>
-            <button onClick={handleCheckout}
-              className="mt-4 block w-full bg-gold text-noir text-center font-semibold py-3 rounded-lg hover:bg-gold-hover transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={selectedIds.size === 0 || items.some(i => selectedIds.has(i.maBienThe) && (i.ngayXoa || i.sanPhamTrangThai === 0 || i.sanPhamNgayXoa))}>
-              Thanh toán ({selectedIds.size} sản phẩm)
-            </button>
           </div>
-        </>
+        </div>
       )}
 
+      {/* Modal xem chi tiết */}
       {selectedItem && (() => {
         const i = selectedItem
         return (
@@ -278,9 +385,10 @@ export default function Cart() {
             <div className="p-5 space-y-3">
               <div>
                 <h3 className="font-bold text-lg">{i.tenSanPham || 'Sản phẩm'}</h3>
+                <p className="text-xs text-stone">SKU: {i.sku || '—'}</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
-                <span className="text-gold font-bold text-xl">{VND(i.donGia || 0)}</span>
+                <span className="text-[var(--primary-color)] font-bold text-xl">{VND(i.donGia || 0)}</span>
                 {i.giaGoc && Number(i.giaGoc) > Number(i.donGia) && (
                   <span className="text-sm text-stone line-through">{VND(i.giaGoc)}</span>
                 )}
@@ -298,13 +406,10 @@ export default function Cart() {
                     Size: <span className="font-medium">{i.kichCo}</span>
                   </span>
                 )}
-                <span className="bg-ivory-100 px-3 py-1 rounded-full text-ink-soft">
-                  Kho: <span className="font-medium">{i.tonKho ?? '—'}</span>
-                </span>
               </div>
               {(i.slug || i.maSanPham) && (
                 <a href={`/products/${i.slug || i.maSanPham}`} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-gold font-medium hover:underline mt-1">
+                  className="inline-flex items-center gap-1 text-sm text-[var(--primary-color)] font-medium hover:underline mt-1">
                   Xem chi tiết sản phẩm →
                 </a>
               )}
