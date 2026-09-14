@@ -5,7 +5,8 @@ import { getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
-import { getProvinces, getDistricts, getWards, getServices, calculateShippingFee } from '../api/ghn'
+import { getServices, calculateShippingFee } from '../api/ghn'
+import { getProvinces, getDistricts, getWards } from '../api/address'
 import { getUserVouchers } from '../api/userVoucher'
 import { getAvailableCoupons } from '../api/coupons'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -15,6 +16,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, ShieldCheck, RefreshCcw, Lock } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
+import SearchableSelect from '../components/SearchableSelect'
 
 const PAYMENT_OPTIONS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', icon: Truck },
@@ -85,6 +87,8 @@ export default function Checkout() {
   const [provinces, setProvinces] = useState([])
   const [districts, setDistricts] = useState([])
   const [wards, setWards] = useState([])
+  // provinces đã đủ 63 tỉnh (api/address tự chuyển sang dataset local khi GHN mock)
+  const provinceOptions = provinces
   const [services, setServices] = useState([])
   const [selectedProvinceId, setSelectedProvinceId] = useState(0)
   const [selectedDistrictId, setSelectedDistrictId] = useState(0)
@@ -171,7 +175,12 @@ export default function Checkout() {
   const cascadeAddress = async (provinceName, districtName, provs, wardName, address) => {
     cascadingRef.current = true
 
-    if (address?.provinceId) {
+    // Chỉ đi nhánh ID khi ID còn tồn tại trong danh sách hiện tại
+    // (địa chỉ cũ lưu ID GHN sẽ rơi xuống khớp theo tên bên dưới)
+    const provList = provs || provinces
+    const idKnown = address?.provinceId
+      && provList.some((p) => String(p.ProvinceID) === String(address.provinceId))
+    if (idKnown) {
       setSelectedProvinceId(address.provinceId)
       setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false)
 
@@ -193,7 +202,7 @@ export default function Checkout() {
       return
     }
 
-    provs = provs || provinces
+    provs = provList
     const matchedProv = matchProvince(provinceName, provs)
     if (!matchedProv) {
       cascadingRef.current = false
@@ -233,16 +242,20 @@ export default function Checkout() {
       setGhnError(false)
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       calculateShippingFee({
-        toDistrictId: selectedDistrictId,
+        // Dataset local dùng mã chữ ("001") — ép số cho backend, mock bỏ qua ID
+        toDistrictId: Number(selectedDistrictId),
         toWardCode: selectedWardCode,
         weight: Math.max(weight, 500),
         provinceName: form.tinhThanhPho,
       }).then((res) => {
-        if (res?.error) {
+        // Backend /ghn/fee trả {data:{total}} (mock 30000 khi chưa cấu hình token),
+        // còn /calculate trả {fee} — đọc cả 2 dạng để không kẹt ở "chờ tính phí"
+        const fee = res?.fee ?? res?.data?.total ?? null
+        if (res?.error || fee == null) {
           setGhnFee(null)
           setGhnError(true)
         } else {
-          setGhnFee(res?.fee ?? null)
+          setGhnFee(fee)
           setGhnError(false)
         }
       }).catch(() => {
@@ -387,8 +400,8 @@ export default function Checkout() {
     if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { toast.error('Vui lòng điền đầy đủ thông tin giao hàng'); return }
     if (!validatePhone(form.sdtNguoiNhan)) { toast.error('Số điện thoại phải có 10-11 chữ số'); return }
     if (cart.length === 0) { return }
-    if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn đầy đủ địa chỉ giao hàng'); return }
-    if (ghnFee === null) { toast.error('Vui lòng chờ tính phí vận chuyển'); return }
+    if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn Tỉnh/Quận/Phường trong danh sách để tính phí ship'); return }
+    if (ghnFee === null) { toast.error('Chưa tính được phí vận chuyển, kiểm tra lại Tỉnh/Quận/Phường đã chọn'); return }
     setConfirmOrder(true)
   }
 
@@ -498,21 +511,29 @@ export default function Checkout() {
 
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                <select value={selectedProvinceId} onChange={(e) => { const id = Number(e.target.value); setSelectedProvinceId(id); setSelectedDistrictId(0); setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, tinhThanhPho: name })) }}
-                  className="border border-stone/20 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold bg-white">
-                  <option value={0}>Tỉnh/Thành phố</option>
-                  {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
-                </select>
-                <select value={selectedDistrictId} onChange={(e) => { setSelectedDistrictId(Number(e.target.value)); setSelectedWardCode(''); setWards([]); setGhnFee(null); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, quanHuyen: name })) }}
-                  disabled={!selectedProvinceId} className="border border-stone/20 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold bg-white disabled:bg-stone/5">
-                  <option value={0}>Quận/Huyện</option>
-                  {districts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
-                </select>
-                <select value={selectedWardCode} onChange={(e) => { setSelectedWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setForm((f) => ({ ...f, phuongXa: name })) }}
-                  disabled={!selectedDistrictId} className="border border-stone/20 rounded-lg px-3 py-2.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold bg-white disabled:bg-stone/5">
-                  <option value={0}>Phường/Xã</option>
-                  {wards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
-                </select>
+                <SearchableSelect
+                  value={selectedProvinceId}
+                  options={provinceOptions}
+                  idKey="ProvinceID" labelKey="ProvinceName"
+                  placeholder="Tỉnh/Thành phố" searchPlaceholder="Gõ để tìm tỉnh/thành..."
+                  onChange={(id, name) => { setSelectedProvinceId(id === '' ? 0 : id); setSelectedDistrictId(''); setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false); setForm((f) => ({ ...f, tinhThanhPho: name })) }}
+                />
+                <SearchableSelect
+                  value={selectedDistrictId}
+                  options={districts.map((d) => ({ DistrictID: d.DistrictID, DistrictName: d.DistrictName }))}
+                  idKey="DistrictID" labelKey="DistrictName"
+                  placeholder="Quận/Huyện" searchPlaceholder="Gõ để tìm quận/huyện..."
+                  disabled={!selectedProvinceId}
+                  onChange={(id, name) => { setSelectedDistrictId(id); setSelectedWardCode(''); setWards([]); setGhnFee(null); setForm((f) => ({ ...f, quanHuyen: name })) }}
+                />
+                <SearchableSelect
+                  value={selectedWardCode}
+                  options={wards.map((w) => ({ WardCode: w.WardCode, WardName: w.WardName }))}
+                  idKey="WardCode" labelKey="WardName"
+                  placeholder="Phường/Xã" searchPlaceholder="Gõ để tìm phường/xã..."
+                  disabled={!selectedDistrictId}
+                  onChange={(code, name) => { setSelectedWardCode(code); setForm((f) => ({ ...f, phuongXa: name })) }}
+                />
               </div>
               <div>
                 <label className="text-xs font-medium text-stone uppercase tracking-wide mb-1 block">Địa chỉ</label>
@@ -714,22 +735,30 @@ export default function Checkout() {
               <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })} placeholder="Số điện thoại" required
                 className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
-            <select value={addrProvinceId} onChange={(e) => { const id = Number(e.target.value); setAddrProvinceId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, tinhThanhPho: name, provinceId: id || null }) }}
-              className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
-              <option value={0}>-- Chọn Tỉnh/Thành phố --</option>
-              {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
-            </select>
+            <SearchableSelect
+              value={addrProvinceId}
+              options={provinceOptions}
+              idKey="ProvinceID" labelKey="ProvinceName"
+              placeholder="-- Chọn Tỉnh/Thành phố --" searchPlaceholder="Gõ để tìm tỉnh/thành..."
+              onChange={(id, name) => { setAddrProvinceId(id === '' ? 0 : id); setAddrForm({ ...addrForm, tinhThanhPho: name, provinceId: id === '' ? null : id }) }}
+            />
             <div className="grid grid-cols-2 gap-3">
-              <select value={addrDistrictId} onChange={(e) => { const id = Number(e.target.value); setAddrDistrictId(id); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, quanHuyen: name, districtId: id || null }) }}
-                disabled={!addrProvinceId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
-                <option value={0}>-- Chọn Quận/Huyện --</option>
-                {addrDistricts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
-              </select>
-              <select value={addrWardCode} onChange={(e) => { setAddrWardCode(e.target.value); const name = e.target.options[e.target.selectedIndex]?.text || ''; setAddrForm({ ...addrForm, phuongXa: name, wardCode: e.target.value || '' }) }}
-                disabled={!addrDistrictId} className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold">
-                <option value="">-- Chọn Phường/Xã --</option>
-                {addrWards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
-              </select>
+              <SearchableSelect
+                value={addrDistrictId}
+                options={addrDistricts.map((d) => ({ DistrictID: d.DistrictID, DistrictName: d.DistrictName }))}
+                idKey="DistrictID" labelKey="DistrictName"
+                placeholder="-- Chọn Quận/Huyện --" searchPlaceholder="Gõ để tìm quận/huyện..."
+                disabled={!addrProvinceId}
+                onChange={(id, name) => { setAddrDistrictId(id); setAddrForm({ ...addrForm, quanHuyen: name, districtId: id === '' ? null : id }) }}
+              />
+              <SearchableSelect
+                value={addrWardCode}
+                options={addrWards.map((w) => ({ WardCode: w.WardCode, WardName: w.WardName }))}
+                idKey="WardCode" labelKey="WardName"
+                placeholder="-- Chọn Phường/Xã --" searchPlaceholder="Gõ để tìm phường/xã..."
+                disabled={!addrDistrictId}
+                onChange={(code, name) => { setAddrWardCode(code); setAddrForm({ ...addrForm, phuongXa: name, wardCode: code || '' }) }}
+              />
             </div>
             <input value={addrForm.chiTietDiaChi} onChange={(e) => setAddrForm({ ...addrForm, chiTietDiaChi: e.target.value })} placeholder="Địa chỉ chi tiết (số nhà, đường)" required
               className="border rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />

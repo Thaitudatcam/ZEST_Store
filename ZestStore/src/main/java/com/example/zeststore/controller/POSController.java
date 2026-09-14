@@ -8,6 +8,7 @@ import com.example.zeststore.entity.ThanhToan;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.repository.BienTheSanPhamRepository;
 import com.example.zeststore.repository.ThanhToanRepository;
+import com.example.zeststore.service.CampaignDiscountService;
 import com.example.zeststore.service.ThanhToanService;
 import com.example.zeststore.service.POSService;
 import com.example.zeststore.service.PaymentService;
@@ -40,6 +41,7 @@ public class POSController {
     private final ThanhToanService thanhToanService;
     private final PaymentService paymentService;
     private final PaymentConfig paymentConfig;
+    private final CampaignDiscountService campaignDiscountService;
 
     @PostMapping("/validate-coupon")
     public ResponseEntity<?> validateCoupon(@RequestBody Map<String, Object> body) {
@@ -90,12 +92,16 @@ public class POSController {
     public ResponseEntity<?> scanSku(@RequestParam String sku) {
         BienTheSanPham v = bienTheRepository.findBySkuIgnoreCase(sku.trim())
             .orElseThrow(() -> new BadRequestException("Không tìm thấy sản phẩm với mã: " + sku));
+        campaignDiscountService.applyToVariants(java.util.List.of(v));
+        BigDecimal giaGoc = v.getGia() != null ? v.getGia() : BigDecimal.ZERO;
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maBienThe", v.getMaBienThe());
         result.put("tenSanPham", v.getSanPham().getTenSanPham());
         result.put("kichCo", v.getKichCo() != null ? v.getKichCo().getKichCo() : "");
         result.put("mauSac", v.getMauSac() != null ? v.getMauSac().getMauSac() : "");
-        result.put("gia", v.getGia());
+        result.put("gia", CampaignDiscountService.discountedPrice(giaGoc, v.getPhanTramGiamGia()));
+        result.put("giaGoc", giaGoc);
+        result.put("phanTramGiamGia", v.getPhanTramGiamGia());
         result.put("tonKho", v.getTonKho());
         result.put("sku", v.getSku());
         result.put("maSanPhamCode", v.getSanPham().getMaSanPhamCode());

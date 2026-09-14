@@ -75,6 +75,11 @@ public class BienTheSanPham {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
+    // % giảm giá từ chương trình đang chạy (do CampaignDiscountService gán khi trả về cho shop)
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("phanTramGiamGia")
+    private BigDecimal phanTramGiamGia;
+
     @OneToMany(mappedBy = "bienThe")
     @ToString.Exclude
     @JsonIgnore

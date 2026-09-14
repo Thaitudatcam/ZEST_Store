@@ -68,6 +68,10 @@ public class AutoGrantService {
     @Transactional
     public void batchGrant(ChuongTrinhQuaTang campaign) {
         PhieuGiamGia coupon = campaign.getPhieuGiamGia();
+        if (coupon == null) {
+            log.warn("Campaign {} chua gan ma giam gia, bo qua batchGrant", campaign.getMaChuongTrinh());
+            return;
+        }
         List<NguoiDung> targets;
         if (campaign.getDoiTuong() == DoiTuongEnum.TAT_CA) {
             targets = nguoiDungRepository.findAll().stream()
@@ -109,6 +113,7 @@ public class AutoGrantService {
 
     private void grantFromCampaign(NguoiDung user, ChuongTrinhQuaTang campaign) {
         LocalDateTime now = LocalDateTime.now();
+        if (campaign.getPhieuGiamGia() == null) return;
         if (campaign.getNgayBatDau() != null && now.isBefore(campaign.getNgayBatDau())) return;
         if (campaign.getNgayKetThuc() != null && now.isAfter(campaign.getNgayKetThuc())) return;
         if (voucherNguoiDungRepository.existsByNguoiDung_MaNguoiDungAndChuongTrinhQuaTang_MaChuongTrinh(

@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class PosCartService {
     private final BienTheSanPhamRepository bienTheRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final InventoryService inventoryService;
+    private final CampaignDiscountService campaignDiscountService;
 
     /**
      * Tổng số lượng đang được dự trữ (reserved) cho 1 biến thể trên toàn bộ các quầy POS.
@@ -101,19 +103,27 @@ public class PosCartService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getCart(Integer adminUserId) {
         List<PosCartItem> items = posCartRepository.findByAdmin_MaNguoiDung(adminUserId);
+        java.util.Set<Integer> variantIds = items.stream()
+                .map(item -> item.getBienThe().getMaBienThe())
+                .collect(Collectors.toSet());
+        Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByVariantIds(variantIds);
         return items.stream().filter(item -> item.getNgayTao().isAfter(LocalDateTime.now().minusMinutes(30))).map(item -> {
             BienTheSanPham v = item.getBienThe();
             int physical = v.getTonKho() != null ? v.getTonKho() : 0;
             // Dự trữ của CÁC QUẦY KHÁC (không kể quầy này) để hiển thị số còn khả dụng cho quầy hiện tại.
             int reservedOthers = totalReservedForVariant(v.getMaBienThe()) - item.getSoLuong();
             int tonKhoKhaDung = Math.max(0, physical - reservedOthers);
+            BigDecimal giaGoc = v.getGia() != null ? v.getGia() : BigDecimal.ZERO;
+            BigDecimal pct = pctMap.get(v.getMaBienThe());
             Map<String, Object> m = new java.util.LinkedHashMap<>();
             m.put("id", item.getId());
             m.put("maBienThe", v.getMaBienThe());
             m.put("tenSanPham", v.getSanPham().getTenSanPham());
             m.put("kichCo", v.getKichCo().getKichCo());
             m.put("mauSac", v.getMauSac().getMauSac());
-            m.put("gia", v.getGia());
+            m.put("gia", CampaignDiscountService.discountedPrice(giaGoc, pct));
+            m.put("giaGoc", giaGoc);
+            m.put("phanTramGiamGia", pct);
             m.put("soLuong", item.getSoLuong());
             m.put("tonKho", physical);
             m.put("tonKhoKhaDung", tonKhoKhaDung);

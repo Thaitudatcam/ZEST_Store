@@ -131,7 +131,8 @@ export default function ProductDetail() {
         maBienThe: variantId,
         soLuong: qty,
         tenSanPham: product.tenSanPham,
-        donGia: variantPrice,
+        donGia: discountedPrice,
+        giaGoc: variantPrice,
         urlAnh: mainImg,
         maSanPham: product.maSanPham,
       }]
@@ -207,6 +208,10 @@ export default function ProductDetail() {
 
   const mainImg = imageUrl(currentImages[previewIdx]?.url) || imageUrl(product.urlAnhDaiDien) || 'https://placehold.co/600x600/e2e8f0/475569?text=Polo'
   const variantPrice = selectedVariant?.gia || (product.giaThapNhat ?? variants[0]?.gia ?? 0)
+  const variantDiscount = Number(selectedVariant?.phanTramGiamGia || product?.phanTramGiamGia || 0)
+  const discountedPrice = variantDiscount > 0
+    ? Math.max(0, Math.round(Number(variantPrice) * (1 - variantDiscount / 100)))
+    : Number(variantPrice)
   const selectedStock = selectedVariant?.tonKho ?? 0
   const totalStock = variants.reduce((sum, v) => sum + (v.tonKho || 0), 0)
   const isOutOfStock = totalStock === 0
@@ -343,8 +348,16 @@ export default function ProductDetail() {
         </div>
 
         <div className="order-2 lg:order-3">
-          <div className="flex items-center gap-2 mb-5">
-            <p className="text-4xl font-bold text-ink">{VND(variantPrice)}</p>
+          <div className="flex items-center gap-3 mb-5">
+            {variantDiscount > 0 ? (
+              <>
+                <p className="text-4xl font-bold text-bordeaux">{VND(discountedPrice)}</p>
+                <p className="text-lg text-stone line-through">{VND(variantPrice)}</p>
+                <span className="bg-bordeaux text-white text-xs font-bold px-2.5 py-1 rounded-full">-{variantDiscount}%</span>
+              </>
+            ) : (
+              <p className="text-4xl font-bold text-ink">{VND(variantPrice)}</p>
+            )}
           </div>
 
           {variants.length > 0 && (() => {
@@ -649,7 +662,12 @@ export default function ProductDetail() {
                     maBienThe: vid,
                     soLuong: sl || qty,
                     tenSanPham: s.tenSanPham || product.tenSanPham,
-                    donGia: v.gia || variantPrice,
+                    donGia: (() => {
+                      const d = Number(v.phanTramGiamGia || 0)
+                      const g = Number(v.gia || variantPrice)
+                      return d > 0 ? Math.max(0, Math.round(g * (1 - d / 100))) : g
+                    })(),
+                    giaGoc: v.gia || variantPrice,
                     urlAnh: v.urlAnh || mainImg,
                     maSanPham: s.maSanPham || product.maSanPham,
                   }]

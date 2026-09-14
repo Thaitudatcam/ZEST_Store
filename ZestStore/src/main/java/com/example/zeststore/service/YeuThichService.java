@@ -22,6 +22,7 @@ public class YeuThichService {
     private final NguoiDungRepository nguoiDungRepository;
     private final BienTheSanPhamRepository bienTheRepository;
     private final DanhGiaRepository danhGiaRepository;
+    private final CampaignDiscountService campaignDiscountService;
 
     public DanhSachYeuThich getOrCreateWishlist(Integer userId) {
         return danhSachYeuThichRepository.findByNguoiDung_MaNguoiDung(userId)
@@ -64,6 +65,14 @@ public class YeuThichService {
             sp.setAverageRating(avgRatingMap.get(sp.getMaSanPham()));
             sp.setReviewCount(countMap.get(sp.getMaSanPham()));
         });
+        Map<Integer, BigDecimal> minPriceMap = new HashMap<>();
+        products.forEach(sp -> {
+            if (sp.getGiaThapNhat() != null) minPriceMap.put(sp.getMaSanPham(), sp.getGiaThapNhat());
+        });
+        if (!minPriceMap.isEmpty()) {
+            Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByProductIds(minPriceMap);
+            products.forEach(sp -> sp.setPhanTramGiamGia(pctMap.get(sp.getMaSanPham())));
+        }
         return products;
     }
 

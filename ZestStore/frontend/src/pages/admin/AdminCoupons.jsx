@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
+import { getCoupons, generateCouponCode, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
 import { getActiveCategories } from '../../api/categories'
 import { getProducts } from '../../api/products'
 import { grantVoucher } from '../../api/userVoucher'
@@ -81,7 +81,8 @@ export default function AdminCoupons() {
   const hasFilter = Object.values(filter).some(v => v !== '')
 
   const validate = () => {
-    if (!form.maCode.trim()) { alert('Vui lòng nhập mã code!'); return false }
+    // Mã code được tự gen nếu để trống — chỉ validate khi user nhập tay.
+    if (form.maCode.trim() && !/^[A-Z0-9-]{3,50}$/i.test(form.maCode.trim())) { alert('Mã code chỉ gồm chữ, số, gạch ngang (3-50 ký tự)!'); return false }
     if (form.kieuGiamGia !== 3 && (!form.giaTriGiam || Number(form.giaTriGiam) <= 0)) { alert('Giá trị giảm phải lớn hơn 0!'); return false }
     if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) { alert('Phần trăm giảm không được vượt quá 100%!'); return false }
     if (!form.ngayBatDau) { alert('Vui lòng chọn ngày bắt đầu!'); return false }
@@ -130,7 +131,7 @@ export default function AdminCoupons() {
     e.preventDefault()
     if (!validate()) return
     payloadRef.current = {
-      maCode: form.maCode,
+      maCode: form.maCode?.trim() ? form.maCode.trim().toUpperCase() : null,
       kieuGiamGia: form.kieuGiamGia,
       giaTriGiam: Number(form.giaTriGiam),
       giaTriDonToiThieu: form.giaTriDonToiThieu ? Number(form.giaTriDonToiThieu) : null,
@@ -194,6 +195,7 @@ export default function AdminCoupons() {
   const totalPages = Math.ceil(coupons.length / PAGE_SIZE)
   const paged = coupons.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('vi-VN') : '—')
+  const fmtPGG = (id) => (id == null ? '—' : `PGG${String(id).padStart(2, '0')}`)
   const StaBadge = ({ c }) => {
     const st = c.trangThaiThucTe ?? c.trangThai
     const label = STA_LABELS[st] ?? 'Không xác định'
@@ -263,7 +265,9 @@ export default function AdminCoupons() {
           <table className="w-full text-sm">
             <thead className="bg-ivory-100 border-b">
               <tr>
-                <th className="text-left px-3 py-3 font-semibold text-stone">Mã</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">STT</th>
+                <th className="text-center px-3 py-3 font-semibold text-stone">Mã phiếu giảm giá</th>
+                <th className="text-left px-3 py-3 font-semibold text-stone">Tên mã</th>
                 <th className="text-center px-3 py-3 font-semibold text-stone">Giảm</th>
                 <th className="text-center px-3 py-3 font-semibold text-stone">SL</th>
                 <th className="text-center px-3 py-3 font-semibold text-stone">Giảm tối đa</th>
@@ -274,9 +278,15 @@ export default function AdminCoupons() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {paged.map((c) => (
+              {paged.map((c, idx) => (
                 <tr key={c.maPhieuGiamGia}
                   className={`hover:bg-ivory-100 ${c.kieuGiamGia === 3 ? 'bg-emerald-deep/10/40' : [0, 4, 5].includes(c.trangThaiThucTe ?? c.trangThai) ? 'bg-bordeaux/10' : ''}`}>
+                  <td className="px-3 py-3 text-center font-mono text-xs text-stone">
+                    {page * PAGE_SIZE + idx + 1}
+                  </td>
+                  <td className="px-3 py-3 text-center font-mono text-xs font-semibold text-stone">
+                    {fmtPGG(c.maPhieuGiamGia)}
+                  </td>
                   <td className={`px-3 py-3 font-mono font-semibold ${c.kieuGiamGia === 3 ? 'text-emerald-deep' : 'text-gold'}`}>
                     {c.maCode}
 
@@ -357,9 +367,21 @@ export default function AdminCoupons() {
               </button>
             </div>
             <form onSubmit={requestCreate} className="space-y-4">
-              <input value={form.maCode} onChange={e => setForm({ ...form, maCode: e.target.value.toUpperCase() })}
-                placeholder="Mã code" required
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
+              <div className="flex gap-2">
+                <input value={form.maCode} onChange={e => setForm({ ...form, maCode: e.target.value.toUpperCase() })}
+                  placeholder="Tên mã (vd: SALE50K, để trống = tự gen)"
+                  className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold" />
+                <button type="button" onClick={async () => {
+                  try {
+                    const r = await generateCouponCode()
+                    setForm(f => ({ ...f, maCode: r.maCode || '' }))
+                  } catch { alert('Không gen được mã, vui lòng nhập tay') }
+                }}
+                  className="shrink-0 border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ivory-100 text-gold border-gold/30">
+                  Tự gen
+                </button>
+              </div>
+              <p className="text-[11px] text-stone -mt-2">Mã phiếu giảm giá (vd: PGG01) tự tạo theo ID. Tên mã (vd: SALE50K) để trống sẽ tự sinh.</p>
 
               {/* Type selector */}
               <div className="flex gap-2">
@@ -649,7 +671,7 @@ export default function AdminCoupons() {
       <ConfirmDialog
         open={confirmSave}
         title="Tạo mã giảm giá"
-        message={`Bạn chắc chắn muốn tạo mã "${form.maCode}"?`}
+        message={`Bạn chắc chắn muốn tạo mã "${form.maCode?.trim() || '(tự gen)'}"?`}
         confirmText="Tạo"
         variant="gold"
         onConfirm={handleSubmit}

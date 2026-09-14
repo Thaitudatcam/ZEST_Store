@@ -35,6 +35,7 @@ import AdminCoupons from './pages/admin/AdminCoupons'
 
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
+import AdminCampaignForm from './pages/admin/AdminCampaignForm'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
@@ -70,6 +71,8 @@ export default function App() {
         <Route path="thong-ke" element={<AdminThongKe />} />
         <Route path="coupons" element={<AdminCoupons />} />
         <Route path="campaigns" element={<AdminCampaigns />} />
+        <Route path="campaigns/create" element={<AdminCampaignForm />} />
+        <Route path="campaigns/:id/edit" element={<AdminCampaignForm />} />
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="customers" element={<AdminUsers />} />

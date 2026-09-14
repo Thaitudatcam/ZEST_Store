@@ -39,6 +39,7 @@ public class DonHangService {
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final InventoryService inventoryService;
+    private final CampaignDiscountService campaignDiscountService;
 
     @Transactional(readOnly = true)
     public List<DonHang> getOrdersByUser(Integer userId) {
@@ -215,7 +216,8 @@ public class DonHangService {
     public Map<String, Object> getOrderDetailForUser(Integer orderId, Integer userId) {
         DonHang order = donHangRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+        // Đơn khách lẻ tại quầy không có chủ — không cho xem qua cổng khách hàng
+        if (order.getNguoiDung() == null || !order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to current user");
         }
         return getOrderDetail(orderId);
@@ -246,17 +248,26 @@ public class DonHangService {
         BigDecimal tongTien = BigDecimal.ZERO;
         List<Map<String, Object>> orderItems = new ArrayList<>();
 
+        // Giá KM chương trình theo từng biến thể — chốt vào đơn hàng
+        java.util.Set<Integer> orderVariantIds = new java.util.HashSet<>();
+        for (MucGioHang cartItem : cartItems) {
+            orderVariantIds.add(cartItem.getBienThe().getMaBienThe());
+        }
+        Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByVariantIds(orderVariantIds);
+
         for (MucGioHang cartItem : cartItems) {
             BienTheSanPham variant = cartItem.getBienThe();
             if (variant.getTonKho() < cartItem.getSoLuong()) {
                 throw new BadRequestException("Insufficient stock for " + variant.getSku());
             }
-            BigDecimal thanhTien = variant.getGia().multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
+            BigDecimal donGia = CampaignDiscountService.discountedPrice(
+                    variant.getGia(), pctMap.get(variant.getMaBienThe()));
+            BigDecimal thanhTien = donGia.multiply(BigDecimal.valueOf(cartItem.getSoLuong()));
             tongTien = tongTien.add(thanhTien);
 
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("bienThe", variant);
-            itemMap.put("donGia", variant.getGia());
+            itemMap.put("donGia", donGia);
             itemMap.put("soLuong", cartItem.getSoLuong());
             itemMap.put("thanhTien", thanhTien);
             orderItems.add(itemMap);
@@ -268,9 +279,7 @@ public class DonHangService {
             coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
-            if (phieuGiamGiaService.isCouponUsedByUser(coupon, user.getMaNguoiDung())) {
-                throw new BadRequestException("Mã giảm giá đã được sử dụng");
-            }
+            // Dùng nhiều lần tới khi hết số lượng: không chặn theo user.
 
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
                 throw new BadRequestException("Mã giảm giá đã ngừng hoạt động");
@@ -311,9 +320,7 @@ public class DonHangService {
         if (request.getMaCodeFreeship() != null && !request.getMaCodeFreeship().isEmpty()) {
             freeshipCoupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCodeFreeship())
                     .orElseThrow(() -> new BadRequestException("Mã freeship không hợp lệ"));
-            if (phieuGiamGiaService.isCouponUsedByUser(freeshipCoupon, user.getMaNguoiDung())) {
-                throw new BadRequestException("Mã freeship đã được sử dụng");
-            }
+            // Dùng nhiều lần tới khi hết số lượng: không chặn theo user.
             if (!Integer.valueOf(3).equals(freeshipCoupon.getKieuGiamGia())) {
                 throw new BadRequestException("Mã này không phải mã freeship");
             }
@@ -521,7 +528,7 @@ public class DonHangService {
     public Map<String, String> confirmReceived(Integer orderId, Integer userId) {
         DonHang order = donHangRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+        if (order.getNguoiDung() == null || !order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
         if (!Integer.valueOf(4).equals(order.getTrangThaiDon())) {

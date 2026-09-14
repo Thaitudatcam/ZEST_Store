@@ -217,7 +217,14 @@ export default function AdminProducts() {
                 <tr key={p.maSanPham} className="hover:bg-ivory-100">
                   <td className="px-3 py-3 text-center text-xs text-stone">{page * PAGE_SIZE + i + 1}</td>
                   <td className="px-3 py-3 text-center">
-                    <SafeImg src={p.urlAnhDaiDien} className="w-10 h-10 rounded-lg object-cover bg-ivory-100 mx-auto" fallback="https://placehold.co/40x40/e2e8f0/475569?text=P" />
+                    <div className="relative w-10 h-10 mx-auto">
+                      <SafeImg src={p.urlAnhDaiDien} className="w-10 h-10 rounded-lg object-cover bg-ivory-100" fallback="https://placehold.co/40x40/e2e8f0/475569?text=P" />
+                      {Number(p.phanTramGiamGia) > 0 && (
+                        <span className="absolute -top-1.5 -right-2 bg-bordeaux text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                          -{p.phanTramGiamGia}%
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-3 text-xs font-mono text-stone">SP{String(p.maSanPham).padStart(3, '0')}</td>
                   <td className="px-3 py-3">
@@ -225,7 +232,16 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-3 py-3 text-stone text-xs">{p.danhMuc?.tenDanhMuc || '-'}</td>
                   <td className="px-3 py-3 text-stone text-xs">{p.tenThuongHieu || '-'}</td>
-                  <td className="px-3 py-3 text-right font-semibold text-xs">{VND(p.giaTrungBinh || 0)}</td>
+                  <td className="px-3 py-3 text-right text-xs">
+                    {Number(p.phanTramGiamGia) > 0 ? (
+                      <>
+                        <span className="font-bold text-emerald-deep">{VND((p.giaTrungBinh || 0) * (1 - Number(p.phanTramGiamGia) / 100))}</span>
+                        <span className="block text-[10px] text-stone line-through">{VND(p.giaTrungBinh || 0)}</span>
+                      </>
+                    ) : (
+                      <span className="font-semibold">{VND(p.giaTrungBinh || 0)}</span>
+                    )}
+                  </td>
                   <td className="px-3 py-3 text-center">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(p.tongTonKho ?? 0) > 0 ? 'bg-emerald-deep/20 text-emerald-deep' : 'bg-bordeaux/20 text-bordeaux'}`}>
                       {p.tongTonKho ?? 0}

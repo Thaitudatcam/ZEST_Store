@@ -124,6 +124,11 @@ public class SanPham {
     @JsonProperty("averageRating")
     private Double averageRating;
 
+    // % giảm giá từ chương trình đang chạy (do CampaignDiscountService gán khi trả về cho shop)
+    @Transient
+    @JsonProperty("phanTramGiamGia")
+    private BigDecimal phanTramGiamGia;
+
     @Transient
     @JsonProperty("reviewCount")
     private Long reviewCount;

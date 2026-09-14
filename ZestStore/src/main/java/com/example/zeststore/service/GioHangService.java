@@ -21,6 +21,7 @@ public class GioHangService {
     private final MucGioHangRepository mucGioHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final CampaignDiscountService campaignDiscountService;
 
     @Transactional(readOnly = true)
     public GioHang getOrCreateCart(Integer userId) {
@@ -36,6 +37,13 @@ public class GioHangService {
         GioHang cart = getOrCreateCart(userId);
         List<MucGioHang> items = mucGioHangRepository.findByGioHang_MaGioHang(cart.getMaGioHang());
 
+        // % KM chương trình theo từng biến thể (batch 1 lần) — donGia trả về là giá đã trừ
+        java.util.Set<Integer> variantIds = new java.util.HashSet<>();
+        for (MucGioHang item : items) {
+            if (item.getBienThe() != null) variantIds.add(item.getBienThe().getMaBienThe());
+        }
+        Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByVariantIds(variantIds);
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (MucGioHang item : items) {
             BienTheSanPham variant = item.getBienThe();
@@ -46,6 +54,9 @@ public class GioHangService {
             if (product == null || product.getNgayXoa() != null || (product.getTrangThai() != null && product.getTrangThai() == 0)) {
                 continue;
             }
+            BigDecimal giaGoc = variant != null && variant.getGia() != null ? variant.getGia() : BigDecimal.ZERO;
+            BigDecimal pct = variant != null ? pctMap.get(variant.getMaBienThe()) : null;
+            BigDecimal donGia = CampaignDiscountService.discountedPrice(giaGoc, pct);
             Map<String, Object> itemMap = new LinkedHashMap<>();
             itemMap.put("maMucGioHang", item.getMaMucGioHang());
             itemMap.put("maBienThe", variant != null ? variant.getMaBienThe() : null);
@@ -56,10 +67,12 @@ public class GioHangService {
             itemMap.put("slug", product != null ? product.getSlug() : null);
             itemMap.put("kichCo", variant != null && variant.getKichCo() != null ? variant.getKichCo().getKichCo() : null);
             itemMap.put("mauSac", variant != null && variant.getMauSac() != null ? variant.getMauSac().getMauSac() : null);
-            itemMap.put("donGia", variant != null ? variant.getGia() : BigDecimal.ZERO);
+            itemMap.put("donGia", donGia);
+            itemMap.put("giaGoc", giaGoc);
+            itemMap.put("phanTramGiamGia", pct);
             itemMap.put("soLuong", item.getSoLuong());
             itemMap.put("tonKho", variant != null ? variant.getTonKho() : 0);
-            itemMap.put("thanhTien", variant != null ? variant.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())) : BigDecimal.ZERO);
+            itemMap.put("thanhTien", donGia.multiply(BigDecimal.valueOf(item.getSoLuong())));
             itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
             itemMap.put("ngayXoa", variant != null ? variant.getNgayXoa() : null);
             itemMap.put("sanPhamTrangThai", product != null ? product.getTrangThai() : null);

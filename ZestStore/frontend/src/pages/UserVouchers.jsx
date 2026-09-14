@@ -7,6 +7,7 @@ import { Ticket, Gift, Clock, CheckCircle, XCircle, Tag, AlertCircle } from 'luc
 import ConfirmDialog from '../components/ConfirmDialog'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
+const fmtPGG = (id) => (id == null ? '—' : `PGG${String(id).padStart(2, '0')}`)
 
 const STATUS = {
   0: { label: 'Chờ nhận', cls: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
@@ -126,6 +127,9 @@ export default function UserVouchers() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-block bg-ivory-100 text-stone text-[10px] font-mono font-semibold px-2 py-0.5 rounded">
+                          {fmtPGG(v.maPhieuGiamGia)}
+                        </span>
                         <span className="inline-block bg-gold/20 text-gold text-xs font-semibold px-2 py-0.5 rounded">
                           {v.maCode}
                         </span>
@@ -141,6 +145,9 @@ export default function UserVouchers() {
                         {v.kieuGiamGia === 1 && v.giaTriGiamToiDa ? ` (tối đa ${VND(v.giaTriGiamToiDa)})` : ''}
                       </p>
                       {v.giaTriDonToiThieu > 0 && <p className="text-xs opacity-70 mt-0.5">Đơn tối thiểu {VND(v.giaTriDonToiThieu)}</p>}
+                      <p className="text-xs opacity-70 mt-0.5">
+                        {v.soLuongConLai == null ? 'Không giới hạn lượt · dùng nhiều lần' : `Còn ${v.soLuongConLai} lượt · dùng nhiều lần tới khi hết`}
+                      </p>
                       <p className="text-xs opacity-60 mt-0.5">
                         <Clock className="h-3 w-3 inline mr-0.5" />
                         Nhận: {new Date(v.ngayNhan).toLocaleDateString('vi-VN')}
@@ -182,6 +189,11 @@ export default function UserVouchers() {
                       <span className="inline-block bg-gold/20 text-gold text-xs font-semibold px-2 py-0.5 rounded">
                         {v.maCode}
                       </span>
+                      {v.maPhieuGiamGia != null && (
+                        <span className="inline-block bg-ivory-100 text-stone text-[10px] font-mono font-semibold px-2 py-0.5 rounded">
+                          {fmtPGG(v.maPhieuGiamGia)}
+                        </span>
+                      )}
                       <span className="text-[10px] bg-ivory-100 text-stone font-semibold px-1.5 py-0.5 rounded">Công khai</span>
                     </div>
                     <p className="font-medium text-sm">

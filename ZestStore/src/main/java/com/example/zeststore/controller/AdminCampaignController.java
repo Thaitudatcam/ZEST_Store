@@ -1,14 +1,18 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.entity.*;
+import com.example.zeststore.repository.BienTheSanPhamRepository;
 import com.example.zeststore.repository.ChuongTrinhQuaTangRepository;
 import com.example.zeststore.repository.PhieuGiamGiaRepository;
+import com.example.zeststore.repository.SanPhamRepository;
 import com.example.zeststore.service.AutoGrantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +26,8 @@ public class AdminCampaignController {
 
     private final ChuongTrinhQuaTangRepository campaignRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
+    private final SanPhamRepository sanPhamRepository;
+    private final BienTheSanPhamRepository bienTheSanPhamRepository;
     private final AutoGrantService autoGrantService;
 
     @GetMapping
@@ -32,16 +38,29 @@ public class AdminCampaignController {
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getOne(@PathVariable Integer id) {
+        ChuongTrinhQuaTang c = campaignRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+        return ResponseEntity.ok(toMap(c));
+    }
+
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
         String ten = (String) body.get("tenChuongTrinh");
-        Integer loaiTrigger = (Integer) body.get("loaiTrigger");
-        Integer maPhieuGiamGia = (Integer) body.get("maPhieuGiamGia");
-        if (ten == null || loaiTrigger == null || maPhieuGiamGia == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Thiếu thông tin bắt buộc"));
+        if (ten == null || ten.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Thiếu tên chương trình"));
         }
-        PhieuGiamGia coupon = phieuGiamGiaRepository.findById(maPhieuGiamGia)
-                .orElseThrow(() -> new RuntimeException("Coupon not found"));
+        // loaiTrigger optional — mặc định SU_KIEN khi form mới không gửi lên
+        Integer loaiTrigger = body.get("loaiTrigger") != null
+                ? ((Number) body.get("loaiTrigger")).intValue() : LoaiTrigger.SU_KIEN.getValue();
+        // maPhieuGiamGia optional — chương trình có thể chưa gắn mã giảm giá
+        PhieuGiamGia coupon = null;
+        if (body.get("maPhieuGiamGia") != null) {
+            Integer maPhieuGiamGia = ((Number) body.get("maPhieuGiamGia")).intValue();
+            coupon = phieuGiamGiaRepository.findById(maPhieuGiamGia)
+                    .orElseThrow(() -> new RuntimeException("Coupon not found"));
+        }
 
         LoaiTrigger trigger = LoaiTrigger.fromValue(loaiTrigger);
 
@@ -58,6 +77,11 @@ public class AdminCampaignController {
                 .tenChuongTrinh(ten)
                 .loaiTrigger(trigger)
                 .phieuGiamGia(coupon)
+                .kieuGiamGia(body.get("kieuGiamGia") != null
+                        ? ((Number) body.get("kieuGiamGia")).intValue() : null)
+                .giaTriGiam(toBigDecimal(body.get("giaTriGiam")))
+                .sanPhamApDung(new HashSet<>(findSanPhams(body.get("maSanPhamIds"))))
+                .bienTheApDung(new HashSet<>(findBienThes(body.get("maBienTheIds"))))
                 .soNgayKhongHoatDong(body.get("soNgayKhongHoatDong") != null
                         ? ((Number) body.get("soNgayKhongHoatDong")).intValue() : null)
                 .doiTuong(body.get("doiTuong") != null
@@ -130,6 +154,19 @@ public class AdminCampaignController {
         if (body.containsKey("trangThai")) {
             c.setTrangThai(((Number) body.get("trangThai")).intValue());
         }
+        if (body.containsKey("kieuGiamGia")) {
+            c.setKieuGiamGia(body.get("kieuGiamGia") != null
+                    ? ((Number) body.get("kieuGiamGia")).intValue() : null);
+        }
+        if (body.containsKey("giaTriGiam")) {
+            c.setGiaTriGiam(toBigDecimal(body.get("giaTriGiam")));
+        }
+        if (body.containsKey("maSanPhamIds")) {
+            c.setSanPhamApDung(new HashSet<>(findSanPhams(body.get("maSanPhamIds"))));
+        }
+        if (body.containsKey("maBienTheIds")) {
+            c.setBienTheApDung(new HashSet<>(findBienThes(body.get("maBienTheIds"))));
+        }
 
         campaignRepository.save(c);
         return ResponseEntity.ok(toMap(c));
@@ -153,6 +190,9 @@ public class AdminCampaignController {
         if (c.getLoaiTrigger() != LoaiTrigger.SU_KIEN) {
             return ResponseEntity.badRequest().body(Map.of("message", "Chỉ có thể launch campaign sự kiện"));
         }
+        if (c.getPhieuGiamGia() == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Chương trình chưa gắn mã giảm giá"));
+        }
         if (c.getTrangThai() != 1) {
             return ResponseEntity.badRequest().body(Map.of("message", "Campaign đang tắt"));
         }
@@ -160,18 +200,52 @@ public class AdminCampaignController {
         return ResponseEntity.ok(Map.of("message", "Đã phát động campaign thành công"));
     }
 
+    private static BigDecimal toBigDecimal(Object v) {
+        if (v == null) return null;
+        if (v instanceof BigDecimal b) return b;
+        if (v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        String s = v.toString().trim();
+        return s.isEmpty() ? null : new BigDecimal(s);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<SanPham> findSanPhams(Object ids) {
+        if (!(ids instanceof List<?> list) || list.isEmpty()) return List.of();
+        List<Integer> intIds = list.stream()
+                .filter(o -> o instanceof Number)
+                .map(o -> ((Number) o).intValue())
+                .toList();
+        return intIds.isEmpty() ? List.of() : sanPhamRepository.findAllById(intIds);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<BienTheSanPham> findBienThes(Object ids) {
+        if (!(ids instanceof List<?> list) || list.isEmpty()) return List.of();
+        List<Integer> intIds = list.stream()
+                .filter(o -> o instanceof Number)
+                .map(o -> ((Number) o).intValue())
+                .toList();
+        return intIds.isEmpty() ? List.of() : bienTheSanPhamRepository.findAllById(intIds);
+    }
+
     private Map<String, Object> toMap(ChuongTrinhQuaTang c) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("maChuongTrinh", c.getMaChuongTrinh());
         m.put("tenChuongTrinh", c.getTenChuongTrinh());
-        m.put("loaiTrigger", c.getLoaiTrigger().getValue());
-        m.put("loaiTriggerText", switch (c.getLoaiTrigger()) {
+        m.put("loaiTrigger", c.getLoaiTrigger() != null ? c.getLoaiTrigger().getValue() : null);
+        m.put("loaiTriggerText", c.getLoaiTrigger() == null ? "—" : switch (c.getLoaiTrigger()) {
             case DANG_KY_MOI -> "Đăng ký mới";
             case QUAY_LAI -> "Quay lại";
             case SU_KIEN -> "Sự kiện";
         });
-        m.put("maPhieuGiamGia", c.getPhieuGiamGia().getMaPhieuGiamGia());
-        m.put("maCode", c.getPhieuGiamGia().getMaCode());
+        m.put("maPhieuGiamGia", c.getPhieuGiamGia() != null ? c.getPhieuGiamGia().getMaPhieuGiamGia() : null);
+        m.put("maCode", c.getPhieuGiamGia() != null ? c.getPhieuGiamGia().getMaCode() : null);
+        m.put("kieuGiamGia", c.getKieuGiamGia());
+        m.put("giaTriGiam", c.getGiaTriGiam());
+        m.put("maSanPhamIds", c.getSanPhamApDung() != null
+                ? c.getSanPhamApDung().stream().map(SanPham::getMaSanPham).toList() : List.of());
+        m.put("maBienTheIds", c.getBienTheApDung() != null
+                ? c.getBienTheApDung().stream().map(BienTheSanPham::getMaBienThe).toList() : List.of());
         m.put("soNgayKhongHoatDong", c.getSoNgayKhongHoatDong());
         m.put("doiTuong", c.getDoiTuong() != null ? c.getDoiTuong().getValue() : null);
         m.put("dieuKien", c.getDieuKien() != null ? c.getDieuKien().getValue() : null);

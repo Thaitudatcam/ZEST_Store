@@ -53,10 +53,9 @@ export default function AdminOrders() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const todayStr = new Date().toISOString().split('T')[0]
-  const [tuNgay, setTuNgay] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 30)
-    return d.toISOString().split('T')[0]
-  })
+  // Mặc định không giới hạn từ ngày để đơn cũ (vd đơn quầy tháng trước) vẫn hiện;
+  // người dùng thu hẹp lại khi cần
+  const [tuNgay, setTuNgay] = useState('')
   const [denNgay, setDenNgay] = useState(todayStr)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const dateError = tuNgay && denNgay && tuNgay > denNgay ? 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' : ''
@@ -172,7 +171,14 @@ export default function AdminOrders() {
           </table>
           )}
         </div>
-        {orders.length === 0 && !loading && <p className="text-center text-stone py-8">Không có đơn hàng</p>}
+        {orders.length === 0 && !loading && (
+          <p className="text-center text-stone py-8">
+            Không có đơn hàng
+            {(tuNgay || statusFilter > 0 || search) && (
+              <span className="block text-xs mt-1">Thử nới rộng Từ ngày hoặc xóa bộ lọc/trạng thái tìm kiếm</span>
+            )}
+          </p>
+        )}
       </div>
 
       {totalPages > 0 && (

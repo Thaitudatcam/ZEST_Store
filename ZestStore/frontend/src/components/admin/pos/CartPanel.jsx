@@ -153,7 +153,15 @@ export default function CartPanel({
                 <p className="text-[11px] text-stone">{[c.mauSac, c.kichCo].filter(Boolean).join(' - ')}</p>
                 <p className="text-[10px] text-stone/70 font-mono">{c.sku || c.maSanPhamCode || ''}</p>
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-xs font-bold text-[var(--primary-color)]">{VND(c.gia)}</span>
+                  <span className="flex items-center gap-1.5">
+                    {Number(c.phanTramGiamGia) > 0 && (
+                      <span className="text-[9px] font-bold text-white bg-bordeaux rounded-full px-1.5 py-0.5">-{c.phanTramGiamGia}%</span>
+                    )}
+                    <span className="text-xs font-bold text-[var(--primary-color)]">{VND(c.gia)}</span>
+                    {c.giaGoc != null && Number(c.giaGoc) > Number(c.gia) && (
+                      <span className="text-[10px] text-stone line-through">{VND(c.giaGoc)}</span>
+                    )}
+                  </span>
                   <div className="flex items-center gap-1">
                     <button onClick={() => onUpdateQty(i, -1)} className="w-6 h-6 flex items-center justify-center rounded-md bg-ivory-100 hover:bg-ivory text-stone transition" aria-label="Giảm">
                       <Minus className="h-3 w-3" />

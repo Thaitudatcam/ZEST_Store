@@ -28,6 +28,7 @@ public class POSService {
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final InventoryService inventoryService;
+    private final CampaignDiscountService campaignDiscountService;
 
     public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien) {
         Optional<PhieuGiamGia> opt = phieuGiamGiaRepository.findByMaCode(maCode);
@@ -61,13 +62,8 @@ public class POSService {
             Optional<VoucherNguoiDung> vnd = voucherNguoiDungRepository
                     .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(maNguoiDung, coupon.getMaPhieuGiamGia());
             if (vnd.isPresent()) {
-                if (TrangThaiVoucher.DA_DUNG.equals(vnd.get().getTrangThai())) {
-                    return Map.of("hopLe", false, "loaiMa", "VOUCHER", "lyDoTuChoi", "Voucher đã được sử dụng");
-                }
+                // Dùng nhiều lần: voucher DA_DUNG cũ vẫn cho dùng tiếp (chỉ chặn khi hết SL).
                 loaiMa = "VOUCHER";
-            }
-            if (phieuGiamGiaService.isCouponUsedByUser(coupon, maNguoiDung)) {
-                return Map.of("hopLe", false, "loaiMa", loaiMa, "lyDoTuChoi", "Mã giảm giá đã được sử dụng");
             }
         }
 
@@ -99,9 +95,12 @@ public class POSService {
         NguoiDung admin = nguoiDungRepository.findByIdForUpdate(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        if (request.getCheckoutKey() == null || request.getCheckoutKey().isBlank())
-            throw new BadRequestException("Thiếu mã phiên thanh toán");
-        String checkoutKey = "POS:" + adminUserId + ":" + request.getCheckoutKey();
+        // Frontend quầy hiện không gửi checkoutKey — tự sinh để vẫn bán được,
+        // còn khi client có gửi thì giữ nguyên để chống thu tiền trùng
+        String clientKey = request.getCheckoutKey();
+        String checkoutKey = (clientKey == null || clientKey.isBlank())
+                ? "POS:" + adminUserId + ":" + System.currentTimeMillis()
+                : "POS:" + adminUserId + ":" + clientKey;
         DonHang previous = donHangRepository.findByCheckoutKey(checkoutKey).orElse(null);
         if (previous != null) return Map.of("maDonHang", previous.getMaDonHang(),
                 "thanhToan", previous.getTongTien(),
@@ -132,19 +131,25 @@ public class POSService {
                 quantities.merge(item.getBienThe().getMaBienThe(), item.getSoLuong(), Math::addExact);
         }
         if (quantities.isEmpty()) throw new BadRequestException("Giỏ hàng trống");
+        Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByVariantIds(quantities.keySet());
         for (var entry : quantities.entrySet()) {
             BienTheSanPham variant = inventoryService.lockVariant(entry.getKey());
             PosCartItem reservation = posCartRepository
                     .findByAdmin_MaNguoiDungAndBienThe_MaBienThe(adminUserId, entry.getKey()).orElse(null);
-            if (reservation == null || reservation.getNgayTao().isBefore(LocalDateTime.now().minusMinutes(30))
-                    || reservation.getSoLuong() < entry.getValue())
+            // Quầy hiện không dùng luồng giữ hàng server (frontend không sync pos-cart):
+            // chỉ chặn khi CÓ bản giữ mà đã hết hạn/thiếu số lượng.
+            // Không có bản giữ thì kiểm tra tồn khả dụng ở bước dưới (đã trừ phần quầy khác giữ).
+            if (reservation != null && (reservation.getNgayTao().isBefore(LocalDateTime.now().minusMinutes(30))
+                    || reservation.getSoLuong() < entry.getValue()))
                 throw new BadRequestException("Giữ hàng đã hết hạn hoặc thay đổi. Vui lòng tải lại giỏ hàng trước khi thu tiền");
             if (variant.getNgayXoa() != null || variant.getTonKho()
                     - inventoryService.reserved(entry.getKey(), null, adminUserId) < entry.getValue())
                 throw new BadRequestException("Không đủ hàng khả dụng cho " + variant.getSku());
-            BigDecimal lineTotal = variant.getGia().multiply(BigDecimal.valueOf(entry.getValue()));
+            BigDecimal donGia = CampaignDiscountService.discountedPrice(
+                    variant.getGia(), pctMap.get(entry.getKey()));
+            BigDecimal lineTotal = donGia.multiply(BigDecimal.valueOf(entry.getValue()));
             tongTien = tongTien.add(lineTotal);
-            orderItems.add(Map.of("bienThe", variant, "donGia", variant.getGia(),
+            orderItems.add(Map.of("bienThe", variant, "donGia", donGia,
                     "soLuong", entry.getValue(), "thanhTien", lineTotal));
         }
 
@@ -160,9 +165,7 @@ public class POSService {
             coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode().trim())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
-            if (customer != null && phieuGiamGiaService.isCouponUsedByUser(coupon, customer.getMaNguoiDung())) {
-                throw new BadRequestException("Mã giảm giá đã được sử dụng");
-            }
+            // Dùng nhiều lần tới khi hết số lượng: không chặn theo user.
 
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
                 throw new BadRequestException("Mã giảm giá không hoạt động");

@@ -97,6 +97,8 @@ export default function AdminPOS() {
         tenSanPham: v.tenSanPham,
         urlAnhDaiDien: v.urlAnhDaiDien,
         gia: v.gia,
+        giaGoc: v.giaGoc,
+        phanTramGiamGia: v.phanTramGiamGia,
         giaNhap: v.giaNhap,
         tonKho: v.tonKho,
         mauSac: v.mauSac,
@@ -212,14 +214,25 @@ export default function AdminPOS() {
     }
   }
 
+  // Chuẩn hóa giá KM đợt: grid/scan trả gia đã trừ + giaGoc,
+  // modal chi tiết trả gia gốc + % -> tự trừ ở đây để giỏ luôn đúng
+  const effPrice = (variant) => {
+    const pct = Number(variant.phanTramGiamGia) || 0
+    if (variant.giaGoc != null) return { gia: Number(variant.gia) || 0, giaGoc: Number(variant.giaGoc), pct }
+    const base = Number(variant.gia) || 0
+    if (pct > 0) return { gia: Math.max(0, Math.round(base * (1 - pct / 100))), giaGoc: base, pct }
+    return { gia: base, giaGoc: undefined, pct: 0 }
+  }
+
   const addToCart = (variant) => {
     const qtyInCart = cart.filter(c => c.maBienThe === variant.maBienThe).reduce((s, c) => s + c.soLuong, 0)
     if (qtyInCart >= (variant.tonKho || 0)) { setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' }); return }
+    const price = effPrice(variant)
     setCart(prev => {
       const existing = prev.findIndex(c => c.maBienThe === variant.maBienThe)
       if (existing >= 0) {
         const next = [...prev]
-        next[existing] = { ...next[existing], soLuong: next[existing].soLuong + 1 }
+        next[existing] = { ...next[existing], soLuong: next[existing].soLuong + 1, gia: price.gia, giaGoc: price.giaGoc, phanTramGiamGia: price.pct || undefined }
         return next
       }
       return [...prev, {
@@ -227,7 +240,9 @@ export default function AdminPOS() {
         tenSanPham: variant.tenSanPham,
         kichCo: variant.kichCo || '',
         mauSac: variant.mauSac || '',
-        gia: variant.gia || 0,
+        gia: price.gia,
+        giaGoc: price.giaGoc,
+        phanTramGiamGia: price.pct || undefined,
         soLuong: 1,
         tonKho: variant.tonKho || 0,
         urlAnh: variant.urlAnhDaiDien || variant.urlAnh || '',
@@ -880,7 +895,16 @@ export default function AdminPOS() {
                 <h3 className="font-bold text-ink">{variantModal.product?.tenSanPham || 'Sản phẩm'}</h3>
                 {(() => {
                   const v = variantModal.variants?.find(va => va.kichCo?.kichCo === selectedSize && va.mauSac?.mauSac === selectedColor)
-                  return v ? <p className="text-[var(--primary-color)] font-bold text-lg mt-1">{VND(v.gia)}</p> : null
+                  if (!v) return null
+                  const pct = Number(v.phanTramGiamGia) || 0
+                  const price = pct > 0 ? Math.max(0, Math.round(Number(v.gia) * (1 - pct / 100))) : v.gia
+                  return (
+                    <span className="flex items-center gap-2 mt-1">
+                      {pct > 0 && <span className="text-[10px] font-bold text-white bg-bordeaux rounded-full px-1.5 py-0.5">-{pct}%</span>}
+                      <p className="text-[var(--primary-color)] font-bold text-lg">{VND(price)}</p>
+                      {pct > 0 && <p className="text-sm text-stone line-through">{VND(v.gia)}</p>}
+                    </span>
+                  )
                 })()}
               </div>
               <button onClick={() => setVariantModal(null)} className="text-stone hover:text-ink shrink-0 p-1"><X className="h-5 w-5" /></button>

@@ -3,6 +3,7 @@ import api from './axios'
 export const getStats = () => api.get('/dashboard/stats').then((r) => r.data)
 export const getAllOrders = (page = 0, size = 20, loaiDonHang, q, trangThai, tuNgay, denNgay) => api.get('/orders/admin/all', { params: { page, size, loaiDonHang, q, trangThai, tuNgay, denNgay } }).then((r) => r.data)
 export const getCoupons = () => api.get('/coupons').then((r) => r.data)
+export const generateCouponCode = () => api.get('/coupons/generate-code').then((r) => r.data)
 export const createCoupon = (data) => api.post('/coupons', data).then((r) => r.data)
 export const deleteCoupon = (id) => api.delete(`/coupons/${id}`).then((r) => r.data)
 export const createCategory = (data) => api.post('/categories', data).then((r) => r.data)
@@ -57,6 +58,7 @@ export const updateCoupon = (id, data) => api.put(`/coupons/${id}`, data).then(r
 export const lookupSku = (sku) => api.get(`/admin/pos/scan`, { params: { sku } }).then((r) => r.data)
 
 export const getCampaigns = () => api.get('/admin/campaigns').then((r) => r.data)
+export const getCampaign = (id) => api.get(`/admin/campaigns/${id}`).then((r) => r.data)
 export const createCampaign = (data) => api.post('/admin/campaigns', data).then((r) => r.data)
 export const toggleCampaignStatus = (id) => api.put(`/admin/campaigns/${id}/toggle-status`).then((r) => r.data)
 export const launchCampaign = (id) => api.post(`/admin/campaigns/${id}/launch`).then((r) => r.data)

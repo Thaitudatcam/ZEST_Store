@@ -215,7 +215,15 @@ export default function Cart() {
                             {i.ngayXoa && <span className="ml-1 text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium not-italic no-underline">không tồn tại</span>}
                           </p>
                           <span className="text-[10px] text-stone">{(i.maSanPhamCode || i.sku)}</span>
-                          <p className="text-gold font-semibold text-sm">{VND(i.donGia || 0)}</p>
+                          <span className="flex items-center gap-1.5">
+                            {Number(i.phanTramGiamGia) > 0 && (
+                              <span className="bg-bordeaux text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">-{i.phanTramGiamGia}%</span>
+                            )}
+                            <p className="text-gold font-semibold text-sm">{VND(i.donGia || 0)}</p>
+                            {i.giaGoc && Number(i.giaGoc) > Number(i.donGia) && (
+                              <p className="text-[11px] text-stone line-through">{VND(i.giaGoc)}</p>
+                            )}
+                          </span>
                         </div>
                         <div className="flex items-center border rounded-lg">
                           <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
@@ -273,6 +281,9 @@ export default function Cart() {
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-gold font-bold text-xl">{VND(i.donGia || 0)}</span>
+                {i.giaGoc && Number(i.giaGoc) > Number(i.donGia) && (
+                  <span className="text-sm text-stone line-through">{VND(i.giaGoc)}</span>
+                )}
                 <span className="text-stone">x{i.soLuong}</span>
                 <span className="text-stone font-semibold">= {VND((i.donGia || 0) * (i.soLuong || 1))}</span>
               </div>

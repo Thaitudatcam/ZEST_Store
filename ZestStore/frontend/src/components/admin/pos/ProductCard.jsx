@@ -21,8 +21,10 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
   const gia = Number(variant.gia) || 0
   const giaNhap = Number(variant.giaNhap) || 0
   const ton = variant.tonKho ?? 0
+  const campaignPct = Number(variant.phanTramGiamGia) || 0
+  const giaGoc = variant.giaGoc != null ? Number(variant.giaGoc) : null
 
-  const isSale = giaNhap > 0 && gia < giaNhap
+  const isSale = !campaignPct && giaNhap > 0 && gia < giaNhap
 
   if (mode === 'modal') {
     return (
@@ -38,8 +40,18 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
           <p className="text-[11px] text-stone">Mã: <span className="font-mono font-medium text-ink-soft">{sku}</span></p>
           <p className="text-[11px] text-stone">Kho: <span className={`font-semibold ${ton > 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{ton}</span></p>
           <div className="flex items-center gap-2 mt-1">
-            {isSale && <span className="text-[11px] text-stone line-through">{VND(giaNhap)}</span>}
-            <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
+            {campaignPct > 0 ? (
+              <>
+                <span className="text-[10px] font-bold text-white bg-bordeaux rounded-full px-1.5 py-0.5">-{campaignPct}%</span>
+                <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
+                {giaGoc != null && giaGoc > gia && <span className="text-[11px] text-stone line-through">{VND(giaGoc)}</span>}
+              </>
+            ) : (
+              <>
+                {isSale && <span className="text-[11px] text-stone line-through">{VND(giaNhap)}</span>}
+                <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
+              </>
+            )}
           </div>
         </div>
         <div className="shrink-0 flex flex-col items-end gap-1.5">
@@ -81,7 +93,9 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
           className={`w-full h-full object-cover group-hover:scale-105 transition duration-500 ${ton <= 0 ? 'opacity-50 grayscale' : ''}`}
           fallback="https://placehold.co/200x200/e2e8f0/475569?text=P" />
         {ton <= 0 && <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold text-sm">Hết hàng</span>}
-        {isSale && <span className="absolute top-2 left-2 px-2 py-0.5 bg-bordeaux text-white text-[10px] font-bold rounded-full">GIẢM</span>}
+        {campaignPct > 0
+          ? <span className="absolute top-2 left-2 px-2 py-0.5 bg-bordeaux text-white text-[10px] font-bold rounded-full">-{campaignPct}%</span>
+          : isSale && <span className="absolute top-2 left-2 px-2 py-0.5 bg-bordeaux text-white text-[10px] font-bold rounded-full">GIẢM</span>}
         {cartQty > 0 && (
           <span className="absolute top-2 right-2 w-6 h-6 bg-[var(--primary-color)] text-white text-xs font-bold rounded-full flex items-center justify-center shadow-md">{cartQty}</span>
         )}
@@ -91,7 +105,11 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
         <p className="text-[11px] text-stone mt-0.5">{color} {size ? `- ${size}` : ''}</p>
         <p className="text-[10px] text-stone font-mono mt-0.5">CTSP: {variant.maCTSP || sku || '—'}</p>
         <div className="flex items-center justify-between mt-2">
-          <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
+          <span className="flex items-center gap-1.5">
+            {campaignPct > 0 && <span className="text-[10px] font-bold text-white bg-bordeaux rounded-full px-1.5 py-0.5">-{campaignPct}%</span>}
+            <span className="text-sm font-bold text-[var(--primary-color)]">{VND(gia)}</span>
+            {campaignPct > 0 && giaGoc != null && giaGoc > gia && <span className="text-[11px] text-stone line-through">{VND(giaGoc)}</span>}
+          </span>
           {cartQty > 0 ? (
             <div className="flex items-center gap-1 bg-[var(--primary-bg)] rounded-lg px-1">
               <button onClick={() => onQtyChange?.(variant, -1)} className="p-1 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded" aria-label="Giảm">

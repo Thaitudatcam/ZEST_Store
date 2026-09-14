@@ -48,6 +48,7 @@ public class SanPhamService {
     private final PosCartRepository posCartRepository;
     private final ThuocTinhRepository thuocTinhRepository;
     private final InventoryService inventoryService;
+    private final CampaignDiscountService campaignDiscountService;
 
     public Page<SanPham> getProducts(String keyword, Integer categoryId, BigDecimal minPrice,
                                       BigDecimal maxPrice, int page, int size, String sortBy, String sortDir) {
@@ -62,6 +63,7 @@ public class SanPhamService {
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<SanPham> result = sanPhamRepository.findByTrangThaiAndNgayXoaIsNull(1, pageable);
         populateStock(result);
+        populateDiscount(result);
         return result;
     }
 
@@ -69,6 +71,7 @@ public class SanPhamService {
         Pageable pageable = PageRequest.of(page, size);
         Page<SanPham> result = sanPhamRepository.searchByKeyword(keyword, pageable);
         populateStock(result);
+        populateDiscount(result);
         return result;
     }
 
@@ -82,7 +85,20 @@ public class SanPhamService {
             result = sanPhamRepository.filterProductsByCategory(categoryId, pageable);
         }
         populateStock(result);
+        populateDiscount(result);
         return result;
+    }
+
+    /** Gán % giảm giá chương trình lên SP ở các trang bán hàng (không dùng cho admin/POS). */
+    private void populateDiscount(Page<SanPham> page) {
+        if (page.isEmpty()) return;
+        Map<Integer, BigDecimal> minPriceMap = new HashMap<>();
+        for (SanPham sp : page.getContent()) {
+            if (sp.getGiaThapNhat() != null) minPriceMap.put(sp.getMaSanPham(), sp.getGiaThapNhat());
+        }
+        if (minPriceMap.isEmpty()) return;
+        Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByProductIds(minPriceMap);
+        page.getContent().forEach(sp -> sp.setPhanTramGiamGia(pctMap.get(sp.getMaSanPham())));
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +111,7 @@ public class SanPhamService {
             result = sanPhamRepository.findAdminProductsOrderByLastUpdated(pageable);
         }
         populateStock(result);
+        populateDiscount(result);
         return result;
     }
 
@@ -230,6 +247,12 @@ public class SanPhamService {
                 .min(BigDecimal::compareTo)
                 .orElse(null);
         product.setGiaThapNhat(minGia);
+        campaignDiscountService.applyToVariants(variants);
+        product.setPhanTramGiamGia(variants.stream()
+                .map(BienTheSanPham::getPhanTramGiamGia)
+                .filter(java.util.Objects::nonNull)
+                .max(BigDecimal::compareTo)
+                .orElse(null));
 
         Map<String, Object> result = new HashMap<>();
         result.put("product", product);
@@ -339,7 +362,9 @@ public class SanPhamService {
     }
 
     public List<BienTheSanPham> getVariants(Integer productId) {
-        return bienTheRepository.findBySanPham_MaSanPham(productId);
+        List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(productId);
+        campaignDiscountService.applyToVariants(variants);
+        return variants;
     }
 
     @Transactional
@@ -526,6 +551,8 @@ public class SanPhamService {
         List<Map<String, Object>> result = new java.util.ArrayList<>();
         for (SanPham p : products) {
             List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(p.getMaSanPham());
+            // Giá KM đợt cho quầy: gia = giá đã trừ, giaGoc = giá gốc
+            campaignDiscountService.applyToVariants(variants);
             if (variants.isEmpty()) {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("maBienThe", null);
@@ -544,6 +571,8 @@ public class SanPhamService {
             } else {
                 for (BienTheSanPham v : variants) {
                     Map<String, Object> row = new LinkedHashMap<>();
+                    BigDecimal giaGoc = v.getGia() != null ? v.getGia() : BigDecimal.ZERO;
+                    BigDecimal giaBan = CampaignDiscountService.discountedPrice(giaGoc, v.getPhanTramGiamGia());
                     row.put("maBienThe", v.getMaBienThe());
                     row.put("maSanPham", p.getMaSanPham());
                     row.put("tenSanPham", p.getTenSanPham());
@@ -555,7 +584,9 @@ public class SanPhamService {
                     row.put("maMauHex", v.getMauSac() != null ? v.getMauSac().getMaMauHex() : null);
                     row.put("kichCo", v.getKichCo() != null ? v.getKichCo().getKichCo() : "-");
                     row.put("maKichCo", v.getKichCo() != null ? v.getKichCo().getMaKichCo() : null);
-                    row.put("gia", v.getGia() != null ? v.getGia() : 0);
+                    row.put("gia", giaBan);
+                    row.put("giaGoc", giaGoc);
+                    row.put("phanTramGiamGia", v.getPhanTramGiamGia());
                     row.put("giaNhap", v.getGiaNhap() != null ? v.getGiaNhap() : 0);
                     row.put("tonKho", v.getTonKho() != null ? v.getTonKho() : 0);
                     row.put("sku", v.getSku() != null ? v.getSku() : "-");
