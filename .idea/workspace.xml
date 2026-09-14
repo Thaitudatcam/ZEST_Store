@@ -6,394 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="8962ec28-7d71-40e4-84ca-f7f567f5743c" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/ZEST_Store.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/.gitattributes" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/.zcode/plans/plan-sess_db138c96-33e5-46b1-8c24-97701b954b8d.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/backend7.err" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/backend7.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/docs/inventory-fix-20260909.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/docs/meeting-notes/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/docs/meeting-notes/update_descs.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/design-system/MASTER.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/public/data/quan_huyen.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/public/data/tinh_tp.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/public/data/xa_phuong.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/public/favicon.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/public/icons.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/public/mockServiceWorker.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/App.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/address.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/admin.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/ai.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/auth.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/axios.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/cart.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/categories.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/coupons.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/ghn.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/notifications.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/orders.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/payment.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/products.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/recommendations.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/reviews.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/userVoucher.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/users.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/api/wishlist.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/AdminRoute.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/AiChat.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/AiChatPanel.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/CameraScanner.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ConfirmDialog.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/EmptyState.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ErrorBoundary.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/Footer.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/InvoicePrint.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/LoadingSpinner.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/Navbar.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/NotificationBell.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/OtpVerification.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/OtpVerification.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ProductCard.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/PromoBanner.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ProtectedRoute.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/SafeImg.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/SearchableSelect.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/Skeleton.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/StatusBadge.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/Toast.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/VariantModal.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/AdminBadge.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/AdminCard.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/AskAi.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/NotificationBell.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/RealtimeClock.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/AddProductModal.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/CartPanel.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/CustomerPickerModal.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/OrderTabs.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/POSConfirmDialog.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/POSToast.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/PaymentModal.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/ProductCard.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/ProductGrid.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/admin/pos/apiClient.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/Aurora.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/CountUp.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/FadeContent.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/GradientText.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/Input.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/RotatingText.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/ScrollProgress.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/ShinyText.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/SpotlightCard.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/components/ui/TiltedCard.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/context/AuthContext.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/context/CartContext.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/context/ToastContext.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/context/VoucherContext.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/context/WishlistContext.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/data/dvhc.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/hooks/useNotificationStream.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/hooks/useOrderStream.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/hooks/useReducedMotion.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/index.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/main.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/mocks/browser.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/mocks/data.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/mocks/handlers.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/AboutPage.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/AuthPage.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/Cart.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/Checkout.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/ForgotPassword.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/Home.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/OrderDetail.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/Orders.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/OtpVerifyPage.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/PaymentResult.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/PolicyPage.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/ProductDetail.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/Profile.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/UserVouchers.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/Wishlist.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminBrands.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminCampaignForm.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminCampaigns.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminCategories.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminChangePassword.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminCoupons.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminLayout.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminOrderDetail.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminOrders.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminPOS.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminProductForm.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminProductVariantDetail.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminProducts.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminReviews.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminThongKe.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/AdminUsers.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pages/admin/Dashboard.jsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/ZS.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/anhnen.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/aopolo.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/strip/Áo Thun Nam Cao Cấp Polo Màu Kem.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/strip/Áo Thun Nam Cao Cấp Polo Màu Nâu Socola.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/strip/Áo Thun Nam Cao Cấp Polo Màu Trắng.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/strip/Áo Thun Nam Cao Cấp Polo Màu Đen.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/Áo Thun Nam Cao Cấp Polo Màu Xanh Navy.webp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/Áo polo nam Trắng.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/pictures/Áo polo thể thao Trắng.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/src/utils/imageUrl.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/tsconfig.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/frontend/vite.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/mvnw" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/mvnw.cmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/pixel-checklist.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/pom.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/ZestStoreApplication.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/config/AiConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/config/AsyncConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/config/GhnConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/config/PaymentConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/config/RestTemplateConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AdminCampaignController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AdminCustomerController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AdminEmployeeController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AdminReviewController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AdminUserController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AiAnalyticsController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AiChatController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/AuthController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/CategoryController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/DanhGiaController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/DonHangController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/FileController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/GhnController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/GioHangController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/LookupController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/MomoController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/POSController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/PhiVanChuyenController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/PhieuGiamGiaController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/RecommendationController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/SanPhamController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/ThanhToanController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/ThongBaoController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/ThongKeController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/ThuocTinhController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/UserController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/VietQrController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/VnPayController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/VoucherNguoiDungController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/YeuThichController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/controller/ZaloPayController.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/BienTheRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/BrandRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/CartItemRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/CartUpdateRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/CategoryRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/ChangePasswordRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/ColorRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/CouponRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/CouponValidateRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/DanhGiaRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/DatLaiMatKhauRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/DiaChiRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/GuiMaXacThucRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/ImageRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/LoginRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/OrderRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/PaymentCompleteRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/PhiVanChuyenRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/PosCartRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/PosOrderRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/QuenMatKhauRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/RefreshTokenRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/RegisterRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/SanPhamRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/SanPhamWithVariantsRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/SizeRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/StatusUpdateRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/UpdateCouponRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/UserUpdateRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/XacThucEmailRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/request/XacThucQuenMatKhauRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/response/AuthResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/response/CouponResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/response/PaymentListDTO.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/response/PaymentResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/dto/response/PaymentStatsDTO.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/AnhSanPham.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/BienTheSanPham.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/ChuongTrinhQuaTang.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/CouponUsageLog.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DanhGia.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DanhMuc.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DanhSachYeuThich.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DiaChiNguoiDung.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DieuKienEnum.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DoiTuongEnum.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/DonHang.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/GioHang.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/HanhViNguoiDung.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/HoiThoaiAi.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/KichCo.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/LichSuDonHang.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/LoaiTrigger.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/MauSac.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/MucDonHang.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/MucGioHang.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/MucYeuThich.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/NguoiDung.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/PhiVanChuyen.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/PhieuGiamGia.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/PosCartItem.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/RefreshToken.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/SanPham.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/ThanhToan.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/ThongBao.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/ThongKeNgay.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/ThuocTinh.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/ThuongHieu.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/TinNhanAi.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/TrangThaiVoucher.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/VaiTro.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/entity/VoucherNguoiDung.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/exception/BadRequestException.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/exception/DuplicateResourceException.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/exception/GlobalExceptionHandler.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/exception/ResourceNotFoundException.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/exception/TooManyRequestsException.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/AnhSanPhamRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/BienTheSanPhamRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/ChuongTrinhQuaTangRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/CouponUsageLogRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DanhGiaRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DanhMucRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DanhSachYeuThichRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DiaChiNguoiDungRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/DonHangRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/GioHangRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/HanhViNguoiDungRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/HoiThoaiAiRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/KichCoRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/LichSuDonHangRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/MauSacRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/MucDonHangRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/MucGioHangRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/MucYeuThichRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/NguoiDungRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/PhiVanChuyenRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/PhieuGiamGiaRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/PosCartRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/RefreshTokenRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/SanPhamRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/ThanhToanRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/ThongBaoRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/ThongKeNgayRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/ThuocTinhRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/ThuongHieuRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/TinNhanAiRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/VaiTroRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/repository/VoucherNguoiDungRepository.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/security/CustomUserDetailsService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/security/JwtAuthenticationFilter.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/security/JwtTokenProvider.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/security/SecurityConfig.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AdminAiService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AdminCustomerService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AdminEmployeeService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AdminReviewService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AiChatService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AuthService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/AutoGrantService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/CampaignDiscountService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/CampaignSchedulerJob.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/CategoryService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/DanhGiaService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/DonHangService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/EmailService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/FileUploadService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/GhnService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/GioHangService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/InventoryService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/LookupService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/MomoService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/NotificationSseService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/OpenAiService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/OrderSseService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/POSService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/PaymentService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/PhiVanChuyenService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/PhieuGiamGiaService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/PosCartService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ProductAiService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/RecommendationService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/SanPhamService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ThanhToanService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ThongBaoService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ThongKeJob.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ThongKeService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ThuocTinhService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/UserService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/VietQrService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/VnPayService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/VoucherExpiryJob.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/VoucherNguoiDungService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/YeuThichService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/service/ZaloPayService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/java/com/example/zeststore/util/VndUtil.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/application-local.example.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/application.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/db/migration/V5__add_variant_trang_thai.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/db/migration/V6__add_gia_nhap_and_trang_thai.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260719_01__add_cong_khai_column.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260719_02__fix_chuong_trinh_qua_tang.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260719_03__add_vietqr_payment_method.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260726_01__add_loyalty_points_and_batch_vouchers.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260726_02__rollback_voucher_cam_tay.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260726_03__add_loyalty_points_v2.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260727_01__add_email_verification.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260730_01__backfill_loyalty_points.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260801_01__add_diem_quy_tac.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260802_01__add_thong_ke_ngay.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260802_02__fix_thong_bao_loai_check.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260803_01__unique_voucher_nguoi_dung.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260803_02__add_san_pham_tin_nhan_ai.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260803_02__fix_sale50k_voucher_status.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260803_03__add_so_lan_in_don_hang.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260803_04__drop_hoa_don_tables.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260827_01__add_anh_san_pham_ngay_xoa.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260909_01__inventory_lifecycle.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260914_01__campaign_optional_coupon.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/main/resources/migration/V20260914_02__campaign_discount_scope.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/ZestStoreApplicationTests.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/service/InventoryAdjustmentTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/service/InventoryServiceTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/service/OrderInventoryTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/service/PaymentInventoryTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/service/PosInventoryTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/src/test/java/com/example/zeststore/service/ReturnInventoryTest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/start_backend.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/start_jar.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/startup-check.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ZestStore/tools/Repair-InventorySchema.ps1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/PoloShopDB_full.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/summary.md" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -423,33 +37,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Notification.DisplayName-DoNotAsk-DatabaseConfigFileWatcher.found&quot;: &quot;New/updated database configurations found&quot;,
-    &quot;Notification.DoNotAsk-DatabaseConfigFileWatcher.found&quot;: &quot;true&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;Spring Boot.ZestStoreApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/ZEST_Store/ZestStore&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Notification.DisplayName-DoNotAsk-DatabaseConfigFileWatcher.found": "New/updated database configurations found",
+    "Notification.DoNotAsk-DatabaseConfigFileWatcher.found": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.ZestStoreApplication.executor": "Run",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/ZEST_Store/ZestStore",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\ZEST_Store\ZestStore\frontend\src\pictures" />
@@ -501,11 +116,16 @@
       <workItem from="1789137711283" duration="3196000" />
       <workItem from="1789227517129" duration="3785000" />
       <workItem from="1789314010723" duration="2330000" />
-      <workItem from="1789393592481" duration="1494000" />
+      <workItem from="1789393592481" duration="3771000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/.." />
+    </ignored-roots>
   </component>
 </project>
