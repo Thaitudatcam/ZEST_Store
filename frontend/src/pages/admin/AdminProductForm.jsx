@@ -19,8 +19,6 @@ const LOAI_THUOC_TINH = [
   { key: 'KIEU_DANG', label: 'Kiểu dáng' },
   { key: 'CHAT_LIEU', label: 'Chất liệu' },
   { key: 'CO_AO', label: 'Cổ áo' },
-  { key: 'TAY_AO', label: 'Tay áo' },
-  { key: 'VAI_AO', label: 'Vai áo' },
 ]
 
 const quillModules = {
@@ -41,9 +39,9 @@ export default function AdminProductForm() {
   const isEdit = Boolean(id)
 
   const [product, setProduct] = useState({
-    tenSanPham: '', maDanhMuc: '', maThuongHieu: '', moTa: '', trangThai: 1,
+    tenSanPham: '', slug: '', maDanhMuc: '', maThuongHieu: '', moTa: '', trangThai: 1,
     xuatXu: '',
-    maLoaiAo: '', maKieuDang: '', maChatLieu: '', maCoAo: '', maTayAo: '', maVaiAo: '',
+    maLoaiAo: '', maKieuDang: '', maChatLieu: '', maCoAo: '',
   })
   const [categories, setCategories] = useState([])
   const [sizes, setSizes] = useState([])
@@ -58,7 +56,6 @@ export default function AdminProductForm() {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmDeleteColor, setConfirmDeleteColor] = useState(null)
   const [confirmSaveProduct, setConfirmSaveProduct] = useState(false)
-  const [confirmRemoveImage, setConfirmRemoveImage] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editIdx, setEditIdx] = useState(null)
   const [vform, setVform] = useState({ maKichCo: '', maMauSac: '', gia: '', giaNhap: '', tonKho: '0', urlAnh: '' })
@@ -87,6 +84,30 @@ export default function AdminProductForm() {
   const [bulkForm, setBulkForm] = useState({ giaBan: '', giaNhap: '', tonKho: '', onlyEmpty: true })
 
   const [thuocTinhData, setThuocTinhData] = useState({})
+  const [origins, setOrigins] = useState([])
+
+  // Chỉ đếm những tổ hợp chưa có trong bảng. Nhờ đó người dùng biết chính xác
+  // thao tác "tạo tổ hợp" sẽ thêm bao nhiêu biến thể mới.
+  const selectedCombinationCount = selectedColorIds.length * selectedSizeIds.length
+  const existingSelectedCombinationCount = selectedColorIds.reduce((total, colorId) => (
+    total + selectedSizeIds.filter(sizeId => variants.some(v =>
+      Number(v.maMauSac) === Number(colorId) && Number(v.maKichCo) === Number(sizeId)
+    )).length
+  ), 0)
+  const newCombinationCount = Math.max(0, selectedCombinationCount - existingSelectedCombinationCount)
+  const invalidPriceCount = variants.filter(v => !v.gia || Number(v.gia) <= 0).length
+  const canSubmitProduct = Boolean(
+    product.tenSanPham.trim() && product.maDanhMuc && product.maThuongHieu &&
+    variants.length > 0 && invalidPriceCount === 0
+  )
+  const publishChecklist = [
+    { label: 'Tên sản phẩm', done: Boolean(product.tenSanPham.trim()) },
+    { label: 'Danh mục', done: Boolean(product.maDanhMuc) },
+    { label: 'Thương hiệu', done: Boolean(product.maThuongHieu) },
+    { label: 'Ảnh đại diện', done: uploadedImages.length > 0 },
+    { label: 'Biến thể sản phẩm', done: variants.length > 0 },
+    { label: 'Giá bán hợp lệ', done: variants.length > 0 && invalidPriceCount === 0 },
+  ]
 
   useEffect(() => {
     Promise.all([
@@ -95,15 +116,21 @@ export default function AdminProductForm() {
       api.get('/colors').then(r => r.data),
       api.get('/brands').then(r => r.data),
       ...LOAI_THUOC_TINH.map(l => getThuocTinh(l.key).then(d => [l.key, d]).catch(() => [l.key, []])),
+      getThuocTinh('XUAT_XU').catch(() => []),
       isEdit ? api.get(`/products/detail/${id}`).then(r => r.data) : Promise.resolve(null),
     ]).then((results) => {
-      const [cats, sz, cl, br, ...thuocTinhResults] = results
-      const detail = results[results.length - 1]
+      const [cats, sz, cl, br, ...remainingResults] = results
+      // The final Promise.all result is the product detail in edit mode;
+      // exclude it before iterating the six attribute lookup results.
+      const detail = remainingResults.pop()
+      const originData = remainingResults.pop()
+      const thuocTinhResults = remainingResults
 
       setCategories(Array.isArray(cats) ? cats : [])
       setSizes(Array.isArray(sz) ? sz : [])
       setColors(Array.isArray(cl) ? cl : [])
       setBrands(Array.isArray(br) ? br : [])
+      setOrigins(Array.isArray(originData) ? originData : [])
 
       const ttMap = {}
       thuocTinhResults.forEach(([key, data]) => { ttMap[key] = Array.isArray(data) ? data : [] })
@@ -116,6 +143,7 @@ export default function AdminProductForm() {
         const firstBrand = detail.variants?.find(v => v.thuongHieu)?.thuongHieu
         setProduct({
           tenSanPham: detail.product.tenSanPham,
+          slug: detail.product.slug || '',
           maDanhMuc: detail.product.danhMuc?.maDanhMuc || '',
           maThuongHieu: firstBrand?.maThuongHieu || '',
           moTa: detail.product.moTa || '',
@@ -125,28 +153,37 @@ export default function AdminProductForm() {
           maKieuDang: detail.product.kieuDang?.maThuocTinh || '',
           maChatLieu: detail.product.chatLieu?.maThuocTinh || '',
           maCoAo: detail.product.coAo?.maThuocTinh || '',
-          maTayAo: detail.product.tayAo?.maThuocTinh || '',
-          maVaiAo: detail.product.vaiAo?.maThuocTinh || '',
         })
         setVariants((detail.variants || []).map(v => ({
           ...v,
           maKichCo: v.maKichCo || v.kichCo?.maKichCo || '',
           maMauSac: v.maMauSac || v.mauSac?.maMauSac || '',
         })))
-        const images = []
-        if (detail.product.urlAnhDaiDien) {
-          images.push({ url: detail.product.urlAnhDaiDien, maMauSac: '', fileId: 'main' })
-        }
-        ;(detail.images || []).forEach(img => {
-          images.push({ url: img.urlAnh, maMauSac: '', fileId: img.maAnh })
-        })
-        setUploadedImages(images)
+        // Ảnh sản phẩm chỉ có một vai trò: ảnh đại diện ở trang danh sách.
+        // Ảnh theo màu được quản lý độc lập bên dưới phần biến thể.
+        setUploadedImages(detail.product.urlAnhDaiDien
+          ? [{ url: detail.product.urlAnhDaiDien, fileId: 'main' }]
+          : [])
       }
     }).catch(() => toast.error('Không thể tải dữ liệu'))
     .finally(() => setLoading(false))
   }, [id])
 
   const updateProductField = (field, value) => setProduct(p => ({ ...p, [field]: value }))
+
+  const slugify = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const buildProductPayload = (trangThai = product.trangThai) => ({
+    ...product,
+    maDanhMuc: Number(product.maDanhMuc),
+    // Slug là URL công khai: chỉ tạo khi sản phẩm mới, không đổi khi chỉnh sửa.
+    slug: product.slug || `${slugify(product.tenSanPham)}-${Date.now()}`,
+    trangThai,
+    xuatXu: product.xuatXu || null,
+    maLoaiAo: product.maLoaiAo ? Number(product.maLoaiAo) : null,
+    maKieuDang: product.maKieuDang ? Number(product.maKieuDang) : null,
+    maChatLieu: product.maChatLieu ? Number(product.maChatLieu) : null,
+    maCoAo: product.maCoAo ? Number(product.maCoAo) : null,
+  })
 
   const requestSaveProduct = (e) => {
     e.preventDefault()
@@ -159,23 +196,35 @@ export default function AdminProductForm() {
     setConfirmSaveProduct(true)
   }
 
+  const handleSaveDraft = async () => {
+    if (!product.tenSanPham.trim() || !product.maDanhMuc) {
+      toast.error('Nháp cần có ít nhất tên sản phẩm và danh mục'); return
+    }
+    setSaving(true)
+    try {
+      const payload = buildProductPayload(2)
+      let productId = id
+      if (isEdit) await api.put(`/products/${id}`, payload)
+      else {
+        const result = await api.post('/products', payload)
+        productId = result.data.maSanPham
+      }
+      if (uploadedImages[0]?.url) {
+        await api.put(`/products/${productId}`, { ...payload, urlAnhDaiDien: uploadedImages[0].url })
+      }
+      setProduct(current => ({ ...current, trangThai: 2 }))
+      toast.success('Đã lưu nháp. Sản phẩm không hiển thị với khách hàng.')
+      if (!isEdit) navigate(`/admin/products/${productId}/edit`, { replace: true })
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể lưu nháp')
+    } finally { setSaving(false) }
+  }
+
   const handleSaveProduct = async () => {
     setConfirmSaveProduct(false)
     setSaving(true)
     try {
-      const slug = product.tenSanPham.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now()
-      const payload = {
-        ...product,
-        maDanhMuc: Number(product.maDanhMuc),
-        slug,
-        xuatXu: product.xuatXu || null,
-        maLoaiAo: product.maLoaiAo ? Number(product.maLoaiAo) : null,
-        maKieuDang: product.maKieuDang ? Number(product.maKieuDang) : null,
-        maChatLieu: product.maChatLieu ? Number(product.maChatLieu) : null,
-        maCoAo: product.maCoAo ? Number(product.maCoAo) : null,
-        maTayAo: product.maTayAo ? Number(product.maTayAo) : null,
-        maVaiAo: product.maVaiAo ? Number(product.maVaiAo) : null,
-      }
+      const payload = buildProductPayload(1)
 
       let productId = isEdit ? id : null
       if (isEdit) {
@@ -183,7 +232,7 @@ export default function AdminProductForm() {
         for (const v of variants) {
           if (v.maBienThe) {
             const savedVariant = await api.put(`/products/variants/${v.maBienThe}`, {
-              sku: v.sku || `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+              sku: v.sku,
               maThuongHieu: Number(product.maThuongHieu),
               maKichCo: Number(v.maKichCo),
               maMauSac: Number(v.maMauSac),
@@ -204,9 +253,10 @@ export default function AdminProductForm() {
               tonKho: Number(v.tonKho || 0),
               version: v.version,
               urlAnh: v.urlAnh || undefined,
-              sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+              sku: v.sku,
             })
             v.maBienThe = res.data.maBienThe
+            v.sku = res.data.sku
             v.version = res.data.version
           }
         }
@@ -215,7 +265,7 @@ export default function AdminProductForm() {
           maKichCo: Number(v.maKichCo),
           maMauSac: Number(v.maMauSac),
           maThuongHieu: Number(product.maThuongHieu),
-          sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+          sku: v.sku,
           gia: Number(v.gia),
           giaNhap: Number(v.giaNhap || 0),
           tonKho: Number(v.tonKho || 0),
@@ -227,11 +277,10 @@ export default function AdminProductForm() {
       }
       if (!isEdit) {
         toast.success('Tạo sản phẩm thành công')
-        navigate(`/admin/products/${productId}/edit`, { replace: true })
         if (uploadedImages.length > 0) {
-          api.put(`/products/${productId}`, { ...payload, urlAnhDaiDien: uploadedImages[0].url })
-            .catch(e => console.error('Failed to save product image', e))
+          await api.put(`/products/${productId}`, { ...payload, urlAnhDaiDien: uploadedImages[0].url })
         }
+        navigate(`/admin/products/${productId}/edit`, { replace: true })
         return
       }
       if (uploadedImages.length > 0) {
@@ -373,9 +422,9 @@ export default function AdminProductForm() {
           maThuongHieu: Number(product.maThuongHieu), gia: Number(v.gia),
           giaNhap: Number(v.giaNhap || 0), tonKho: Number(v.tonKho || 0),
           version: v.version, urlAnh: v.urlAnh || undefined,
-          sku: `${product.tenSanPham.replace(/[^a-zA-Z0-9]/g, '').substring(0, 3).toUpperCase()}-${v.maMauSac}-${v.maKichCo}-${Date.now()}`,
+          sku: v.sku,
         })
-        setVariants(prev => prev.map((x, i) => i === index ? { ...x, maBienThe: res.data.maBienThe, version: res.data.version } : x))
+        setVariants(prev => prev.map((x, i) => i === index ? { ...x, maBienThe: res.data.maBienThe, sku: res.data.sku, version: res.data.version } : x))
       }
       toast.success('Đã lưu biến thể')
     } catch (err) { toast.error(err.response?.data?.message || 'Lỗi lưu biến thể') }
@@ -387,18 +436,10 @@ export default function AdminProductForm() {
     setUploadingImg(true)
     try {
       const data = await uploadProductImage(files[0])
-      setUploadedImages(prev => [...prev, { url: data.url, maMauSac: '', fileId: Date.now() }])
-      toast.success('Upload ảnh thành công')
+      setUploadedImages([{ url: data.url, fileId: 'main' }])
+      toast.success('Đã chọn ảnh đại diện mới')
     } catch (err) { toast.error(err.message || 'Upload ảnh thất bại') }
     finally { setUploadingImg(false) }
-  }
-
-  const handleRemoveImage = (fileId) => {
-    setConfirmRemoveImage(null)
-    if (fileId !== 'main') {
-      api.put(`/products/images/${fileId}/toggle`).catch(() => {})
-    }
-    setUploadedImages(prev => prev.filter(img => img.fileId !== fileId))
   }
 
   const handleDeleteVariantsByColor = (maMauSac) => {
@@ -473,8 +514,15 @@ export default function AdminProductForm() {
     if (!quickThuocTinhName.trim()) return
     try {
       const created = await createThuocTinh(thuocTinhType, quickThuocTinhName.trim())
+      if (thuocTinhType === 'XUAT_XU') {
+        setOrigins(prev => [...prev, created])
+        setProduct(p => ({ ...p, xuatXu: created.giaTri }))
+        setShowThuocTinhModal(false); setQuickThuocTinhName('')
+        toast.success(`Đã thêm xuất xứ "${created.giaTri}"`)
+        return
+      }
       setThuocTinhData(prev => ({ ...prev, [thuocTinhType]: [...(prev[thuocTinhType] || []), created] }))
-      const fieldMap = { LOAI_AO: 'maLoaiAo', KIEU_DANG: 'maKieuDang', CHAT_LIEU: 'maChatLieu', CO_AO: 'maCoAo', TAY_AO: 'maTayAo', VAI_AO: 'maVaiAo' }
+      const fieldMap = { LOAI_AO: 'maLoaiAo', KIEU_DANG: 'maKieuDang', CHAT_LIEU: 'maChatLieu', CO_AO: 'maCoAo' }
       const field = fieldMap[thuocTinhType]
       if (field) setProduct(p => ({ ...p, [field]: created.maThuocTinh }))
       setShowThuocTinhModal(false); setQuickThuocTinhName('')
@@ -589,10 +637,18 @@ export default function AdminProductForm() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-stone font-medium">Xuất xứ</label>
-                  <input value={product.xuatXu} onChange={(e) => updateProductField('xuatXu', e.target.value)}
-                    placeholder="VD: Việt Nam, Trung Quốc..." 
-                    className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-stone font-medium">Xuất xứ</label>
+                    <button type="button" onClick={() => openThuocTinhModal('XUAT_XU')}
+                      className="p-1 text-gold hover:bg-gold/10 rounded" title="Thêm xuất xứ mới">
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <select value={product.xuatXu} onChange={(e) => updateProductField('xuatXu', e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
+                    <option value="">-- Chọn xuất xứ --</option>
+                    {origins.map(origin => <option key={origin.maThuocTinh} value={origin.giaTri}>{origin.giaTri}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -602,7 +658,7 @@ export default function AdminProductForm() {
               <h2 className="font-semibold text-lg mb-3">Phân loại sản phẩm</h2>
               <div className="grid grid-cols-2 gap-3">
                 {LOAI_THUOC_TINH.map(({ key, label }) => {
-                  const fieldMap = { LOAI_AO: 'maLoaiAo', KIEU_DANG: 'maKieuDang', CHAT_LIEU: 'maChatLieu', CO_AO: 'maCoAo', TAY_AO: 'maTayAo', VAI_AO: 'maVaiAo' }
+                  const fieldMap = { LOAI_AO: 'maLoaiAo', KIEU_DANG: 'maKieuDang', CHAT_LIEU: 'maChatLieu', CO_AO: 'maCoAo' }
                   const field = fieldMap[key]
                   return (
                     <div key={key}>
@@ -664,40 +720,30 @@ export default function AdminProductForm() {
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${product.trangThai === 1 ? 'bg-gold' : 'bg-ivory-100'}`}>
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-ivory transition ${product.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
               </button>
-              <span className="text-sm text-stone">{product.trangThai === 1 ? 'Hoạt động' : 'Ẩn'}</span>
+              <span className="text-sm text-stone">{product.trangThai === 1 ? 'Hoạt động' : product.trangThai === 2 ? 'Nháp' : 'Ẩn'}</span>
             </div>
           </div>
 
           {/* ═══ CỘT PHẢI — ẢNH ═══ */}
           <div>
-            <h2 className="font-semibold text-lg mb-4">Hình ảnh sản phẩm</h2>
-            <p className="text-xs text-stone mb-3">Chọn 1 hình ảnh duy nhất làm ảnh đại diện cho sản phẩm</p>
+            <h2 className="font-semibold text-lg mb-1">Ảnh đại diện</h2>
+            <p className="text-xs text-stone mb-3">Ảnh này hiển thị ở trang chủ, danh sách sản phẩm và kết quả tìm kiếm.</p>
             {uploadedImages.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
-                {uploadedImages.map((img) => (
-                  <div key={img.fileId} className="relative group aspect-square bg-ivory-100 rounded-xl overflow-hidden border">
-                    <SafeImg src={img.url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
-                    <button type="button" onClick={() => setConfirmRemoveImage(img.fileId)}
-                      className="absolute top-2 right-2 p-1.5 bg-ivory/80 rounded-full hover:bg-ivory transition opacity-0 group-hover:opacity-100">
-                      <EyeOff className="h-4 w-4 text-bordeaux" />
-                    </button>
-                    {img.fileId === 'main' && (
-                      <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-gold/90 text-noir px-2 py-0.5 rounded-full">Đại diện</span>
-                    )}
-                  </div>
-                ))}
-                {uploadedImages.length < 6 && (
-                  <div onClick={() => document.getElementById('imgUpload').click()}
-                    className="border-2 border-dashed border-stone/30 rounded-xl aspect-square flex items-center justify-center hover:border-gold transition cursor-pointer">
-                    {uploadingImg ? <Loader className="h-5 w-5 animate-spin text-gold" /> : <Plus className="h-6 w-6 text-stone" />}
-                  </div>
-                )}
+              <div className="relative aspect-square bg-ivory-100 rounded-xl overflow-hidden border group">
+                <SafeImg src={uploadedImages[0].url} className="w-full h-full object-cover" fallback="https://placehold.co/400x400/e2e8f0/475569?text=?" />
+                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/65 to-transparent">
+                  <span className="inline-flex text-[10px] font-semibold bg-gold text-noir px-2 py-1 rounded-full">Ảnh đại diện</span>
+                </div>
+                <button type="button" onClick={() => document.getElementById('imgUpload').click()} disabled={uploadingImg}
+                  className="absolute top-3 right-3 px-3 py-1.5 bg-ivory/95 text-noir rounded-lg text-xs font-semibold shadow-sm hover:bg-ivory disabled:opacity-60 transition">
+                  {uploadingImg ? 'Đang tải...' : 'Thay ảnh'}
+                </button>
               </div>
             ) : (
               <div onClick={() => document.getElementById('imgUpload').click()}
                 className="border-2 border-dashed border-stone/30 rounded-xl aspect-square flex flex-col items-center justify-center hover:border-gold transition cursor-pointer gap-2">
                 {uploadingImg ? <Loader className="h-5 w-5 animate-spin text-gold" /> : <Upload className="h-8 w-8 text-stone" />}
-                <span className="text-xs text-stone">Nhấn để tải ảnh lên</span>
+                <span className="text-xs text-stone">Nhấn để chọn ảnh đại diện</span>
               </div>
             )}
             <input id="imgUpload" type="file" accept="image/*" hidden onChange={(e) => { handleUploadProductImage(e.target.files); e.target.value = '' }} />
@@ -712,7 +758,20 @@ export default function AdminProductForm() {
             <h2 className="font-semibold text-lg">Thiết lập biến thể</h2>
           </div>
 
-          <div className="bg-ivory-100 rounded-xl border p-4 mb-6">
+          <div className="bg-ivory-100 rounded-2xl border border-stone/15 p-4 mb-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+              <div>
+                <p className="text-sm font-semibold text-noir">Chọn thuộc tính để tạo tổ hợp</p>
+                <p className="text-xs text-stone mt-0.5">Mỗi màu sẽ kết hợp với từng kích cỡ đã chọn.</p>
+              </div>
+              <div className={`rounded-full px-3 py-1 text-xs font-semibold ${selectedCombinationCount === 0 ? 'bg-ivory text-stone border border-stone/15' : newCombinationCount > 0 ? 'bg-gold/15 text-noir' : 'bg-emerald-50 text-emerald-deep'}`}>
+                {selectedCombinationCount === 0
+                  ? 'Chưa chọn tổ hợp'
+                  : newCombinationCount > 0
+                    ? `${selectedColorIds.length} màu × ${selectedSizeIds.length} size · thêm ${newCombinationCount} biến thể`
+                    : 'Các tổ hợp đã có sẵn'}
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -728,9 +787,11 @@ export default function AdminProductForm() {
                     return (
                       <div key={c.maMauSac} className="relative group">
                         <button type="button" onClick={() => toggleColorId(c.maMauSac)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-gold text-noir border-gold' : 'bg-ivory text-stone border-stone/20 hover:border-stone/30'}`}>
+                          aria-pressed={selected}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs border transition ${selected ? 'bg-gold text-noir border-gold shadow-sm' : 'bg-ivory text-stone border-stone/20 hover:border-gold/60'}`}>
                           {c.maMauHex && <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.maMauHex }} />}
                           {c.mauSac}
+                          {selected && <Check className="h-3 w-3" />}
                         </button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDeleteColor({ maMauSac: c.maMauSac, mauSac: c.mauSac }) }}
                           className="absolute -top-1 -right-1 w-4 h-4 bg-bordeaux/100 text-white rounded-full text-[10px] leading-none flex items-center justify-center hover:bg-bordeaux shadow opacity-0 group-hover:opacity-100 transition-opacity"
@@ -753,23 +814,31 @@ export default function AdminProductForm() {
                     const selected = selectedSizeIds.includes(s.maKichCo)
                     return (
                       <button key={s.maKichCo} type="button" onClick={() => toggleSizeId(s.maKichCo)}
-                        className={`px-3 py-1.5 rounded-lg text-xs border font-medium transition ${selected ? 'bg-gold text-noir border-gold' : 'bg-ivory text-stone border-stone/20 hover:border-stone/30'}`}>
-                        {s.kichCo}
+                        aria-pressed={selected}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs border font-medium transition ${selected ? 'bg-gold text-noir border-gold shadow-sm' : 'bg-ivory text-stone border-stone/20 hover:border-gold/60'}`}>
+                        {s.kichCo} {selected && <Check className="h-3 w-3" />}
                       </button>
                     )
                   })}
                 </div>
               </div>
             </div>
-            <button type="button" onClick={handleGenerateVariants}
-              className="bg-gold text-noir px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-gold-hover flex items-center gap-1">
-              <Plus className="h-3.5 w-3.5" /> Tạo biến thể
-            </button>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button type="button" onClick={handleGenerateVariants}
+                disabled={newCombinationCount === 0}
+                className="bg-gold text-noir px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gold-hover disabled:cursor-not-allowed disabled:opacity-45 flex items-center gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                {newCombinationCount > 0 ? `Tạo ${newCombinationCount} tổ hợp biến thể` : 'Tạo tổ hợp biến thể'}
+              </button>
+              {existingSelectedCombinationCount > 0 && newCombinationCount > 0 && (
+                <span className="text-xs text-stone">Bỏ qua {existingSelectedCombinationCount} tổ hợp đã tồn tại</span>
+              )}
+            </div>
           </div>
 
           {variants.length === 0 && !showForm ? (
             <div className="mb-4">
-              <EmptyState icon="PackageOpen" title="Chưa có biến thể" description="Chọn màu & size ở trên và nhấn 'Tạo biến thể'" />
+              <EmptyState icon="PackageOpen" title="Chưa có biến thể" description="Chọn màu và kích cỡ, sau đó tạo tổ hợp biến thể." />
             </div>
           ) : (
             <>
@@ -905,11 +974,21 @@ export default function AdminProductForm() {
           )}
         </div>
 
-        <button type="submit" disabled={saving}
-          className="w-full bg-gold text-noir py-2.5 rounded-lg text-sm font-semibold hover:bg-gold-hover disabled:opacity-50 flex items-center justify-center gap-2">
-          {saving ? <Loader className="h-4 w-4 animate-spin" /> : null}
-          {isEdit ? 'Cập nhật sản phẩm' : 'Tạo sản phẩm'}
-        </button>
+        <div className="rounded-2xl border border-stone/15 bg-ivory-100/70 p-4">
+          <div className="flex items-center justify-between gap-3 mb-3"><div><h3 className="font-semibold text-sm">Kiểm tra trước khi xuất bản</h3><p className="text-xs text-stone mt-0.5">Hoàn thành các mục cần thiết để sản phẩm hiển thị với khách hàng.</p></div><span className={`text-xs font-bold px-2.5 py-1 rounded-full ${canSubmitProduct ? 'bg-emerald-deep/10 text-emerald-deep' : 'bg-gold/15 text-noir'}`}>{publishChecklist.filter(item => item.done).length}/{publishChecklist.length}</span></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{publishChecklist.map(item => <div key={item.label} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium ${item.done ? 'bg-emerald-deep/10 text-emerald-deep' : 'bg-white text-stone border border-stone/10'}`}>{item.done ? <Check className="h-3.5 w-3.5 shrink-0" /> : <X className="h-3.5 w-3.5 shrink-0" />}{item.label}</div>)}</div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-[0.42fr_1fr] gap-3">
+          <button type="button" onClick={handleSaveDraft} disabled={saving}
+            className="border border-stone/25 bg-white text-noir py-2.5 rounded-lg text-sm font-semibold hover:bg-ivory-100 disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving ? <Loader className="h-4 w-4 animate-spin" /> : null} Lưu nháp
+          </button>
+          <button type="submit" disabled={saving || !canSubmitProduct}
+            className="bg-gold text-noir py-2.5 rounded-lg text-sm font-semibold hover:bg-gold-hover disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving ? <Loader className="h-4 w-4 animate-spin" /> : null}
+            {isEdit ? 'Cập nhật & xuất bản' : 'Tạo & xuất bản'}
+          </button>
+        </div>
       </form>
 
       {/* ═══ MODALS ═══ */}
@@ -948,7 +1027,7 @@ export default function AdminProductForm() {
       {showThuocTinhModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowThuocTinhModal(false)}>
           <div className="bg-ivory rounded-2xl max-w-sm w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-2">Thêm {LOAI_THUOC_TINH.find(l => l.key === thuocTinhType)?.label || 'thuộc tính'}</h3>
+            <h3 className="font-bold text-lg mb-2">Thêm {thuocTinhType === 'XUAT_XU' ? 'xuất xứ' : (LOAI_THUOC_TINH.find(l => l.key === thuocTinhType)?.label || 'thuộc tính')}</h3>
             <input value={quickThuocTinhName} onChange={e => setQuickThuocTinhName(e.target.value)}
               placeholder="Nhập tên..." autoFocus
               className="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-gold"
@@ -1066,9 +1145,6 @@ export default function AdminProductForm() {
         message={`Bạn chắc chắn muốn ${isEdit ? 'cập nhật' : 'tạo'} sản phẩm "${product.tenSanPham}"?`}
         confirmText={isEdit ? 'Cập nhật' : 'Tạo'} variant="gold" loading={saving}
         onConfirm={handleSaveProduct} onCancel={() => setConfirmSaveProduct(false)} />
-      <ConfirmDialog open={confirmRemoveImage !== null} title="Ẩn ảnh" message="Bạn chắc chắn muốn ẩn ảnh này?"
-        confirmText="Ẩn" onConfirm={() => handleRemoveImage(confirmRemoveImage)} onCancel={() => setConfirmRemoveImage(null)} />
-
       {/* ═══ BULK APPLY MODAL ═══ */}
       {showBulkApply && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowBulkApply(false)}>

@@ -102,6 +102,17 @@ public class DonHangController {
                 id, request.getTrangThai(), userService.getUserIdFromAuth(auth)));
     }
 
+    @PutMapping("/admin/{id}/inventory-reconciliation")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<?> reconcileLegacyInventory(@PathVariable Integer id,
+                                                        @RequestBody Map<String, Boolean> body) {
+        Boolean stockWasDeducted = body.get("stockWasDeducted");
+        if (stockWasDeducted == null) {
+            throw new IllegalArgumentException("stockWasDeducted is required");
+        }
+        return ResponseEntity.ok(donHangService.reconcileLegacyInventory(id, stockWasDeducted));
+    }
+
     @GetMapping("/admin/{id}/print")
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> getPrintData(@PathVariable Integer id, Authentication auth) {

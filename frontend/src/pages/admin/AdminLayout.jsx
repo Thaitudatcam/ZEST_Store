@@ -36,24 +36,19 @@ export default function AdminLayout() {
   ]
 
   const managementNav = isStaff ? [
-    { label: 'Quản lý hóa đơn', icon: ClipboardList, children: [
+    { label: 'Quản lý đơn hàng', icon: ClipboardList, children: [
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
   ] : [
-    { label: 'Quản lý hóa đơn', icon: ClipboardList, children: [
+    { label: 'Quản lý đơn hàng', icon: ClipboardList, children: [
       { to: '/admin/orders/online', label: 'Đơn hàng online' },
       { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
     ]},
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
-      { to: '/admin/products/detail', label: 'Sản phẩm chi tiết' },
-      { to: '/admin/categories', label: 'Danh mục' },
-      { to: '/admin/brands', label: 'Thương hiệu' },
+      { to: '/admin/products/detail', label: 'Biến thể sản phẩm' },
     ]},
-    { label: 'Danh sách thuộc tính', icon: Tags, children: [
-      { to: '/admin/colors', label: 'Màu sắc' },
-      { to: '/admin/sizes', label: 'Kích cỡ' },
-    ]},
+    { to: '/admin/attributes', label: 'Thuộc tính sản phẩm', icon: Tags },
     { to: '/admin/coupons', label: 'Quản lý giảm giá', icon: Ticket },
     { label: 'Quản lý tài khoản', icon: Users, children: [
       { to: '/admin/customers', label: 'Khách hàng' },
@@ -67,7 +62,7 @@ export default function AdminLayout() {
   const handleLogout = () => { logout(); navigate('/login') }
 
   const isActive = (item) => item.end ? pathname === item.to : pathname.startsWith(item.to)
-  const isChildActive = (item) => item.children?.some(c => pathname.startsWith(c.to)) || (item.label === 'Quản lý hóa đơn' && pathname.startsWith('/admin/orders/'))
+  const isChildActive = (item) => item.children?.some(c => pathname.startsWith(c.to)) || (item.label === 'Quản lý đơn hàng' && pathname.startsWith('/admin/orders/'))
 
   const renderNavItem = (item, isTop = false) => {
     if (item.children) {

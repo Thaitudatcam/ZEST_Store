@@ -525,6 +525,17 @@ public class DonHangService {
     }
 
     @Transactional
+    public DonHang reconcileLegacyInventory(Integer orderId, boolean stockWasDeducted) {
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (List.of(5, 8).contains(order.getTrangThaiDon())) {
+            throw new BadRequestException("Không thể đối soát tồn kho cho đơn đã kết thúc");
+        }
+        inventoryService.reconcileLegacy(order, stockWasDeducted);
+        return order;
+    }
+
+    @Transactional
     public Map<String, String> confirmReceived(Integer orderId, Integer userId) {
         DonHang order = donHangRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));

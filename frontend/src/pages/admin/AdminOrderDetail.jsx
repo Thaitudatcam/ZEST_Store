@@ -5,7 +5,7 @@ import StatusBadge from '../../components/StatusBadge'
 import SafeImg from '../../components/SafeImg'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { ArrowLeft, Package, CreditCard, Truck, Clock, User, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X, Printer } from 'lucide-react'
+import { ArrowLeft, Package, CreditCard, Truck, Clock, User, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X, Printer, Copy, Store } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getOrderPrintData, registerOrderPrint } from '../../api/admin'
 import InvoicePrint from '../../components/InvoicePrint'
@@ -110,6 +110,8 @@ export default function AdminOrderDetail() {
   const [error, setError] = useState('')
   const [updating, setUpdating] = useState(null)
   const [confirmStatus, setConfirmStatus] = useState(null)
+  const [reconcileMode, setReconcileMode] = useState(null)
+  const [reconciling, setReconciling] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
   const [printData, setPrintData] = useState(null)
   const [printLoading, setPrintLoading] = useState(false)
@@ -158,6 +160,7 @@ export default function AdminOrderDetail() {
 
   const isAdmin = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro === 'ADMIN' : user?.vaiTro === 'ADMIN'
   const isPos = order.loaiDonHang === 2
+  const copyText = async (value, label) => { try { await navigator.clipboard.writeText(value); toast.success(`Đã sao chép ${label}`) } catch { toast.error('Không thể sao chép') } }
   const status = order.trangThaiDon
   const canPrint = isPos
     ? true
@@ -183,6 +186,21 @@ export default function AdminOrderDetail() {
       toast.error(err.response?.data?.message || 'Cập nhật thất bại')
     } finally {
       setUpdating(null)
+    }
+  }
+
+  const handleReconcileInventory = async (stockWasDeducted) => {
+    setReconciling(true)
+    try {
+      await api.put(`/orders/admin/${id}/inventory-reconciliation`, { stockWasDeducted })
+      const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
+      setData(updated)
+      toast.success('Đã đối soát tồn kho. Bạn có thể tiếp tục chuyển trạng thái đơn hàng.')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể đối soát tồn kho')
+    } finally {
+      setReconciling(false)
+      setReconcileMode(null)
     }
   }
 
@@ -223,7 +241,7 @@ export default function AdminOrderDetail() {
       <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold">Đơn hàng #{order.maDonHang}</h1>
+            <div className="flex items-center gap-2"><h1 className="text-xl font-bold">Đơn hàng #{order.maDonHang}</h1><span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-gold/15 text-noir"><Store className="h-3 w-3" />{isPos ? 'Tại quầy POS' : 'Website'}</span></div>
             <p className="text-sm text-stone">{order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}</p>
             {order.maDonHangCode && <p className="text-xs text-stone mt-0.5">Mã: {order.maDonHangCode}</p>}
           </div>
@@ -250,6 +268,28 @@ export default function AdminOrderDetail() {
       </div>
 
       <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
+
+      {order.stockState === 'LEGACY' && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 mb-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+            <div>
+              <h2 className="font-semibold text-amber-950">Đối soát tồn kho đơn cũ</h2>
+              <p className="text-sm text-amber-900/80 mt-1">Đơn này được tạo trước khi hệ thống theo dõi tồn kho. Chọn theo tình trạng thực tế để không làm lệch kho.</p>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <button onClick={() => setReconcileMode(false)} disabled={reconciling}
+                  className="px-4 py-2 rounded-xl bg-white border border-amber-300 text-amber-950 text-sm font-semibold hover:bg-amber-100 transition disabled:opacity-50">
+                  Hàng chưa được trừ
+                </button>
+                <button onClick={() => setReconcileMode(true)} disabled={reconciling}
+                  className="px-4 py-2 rounded-xl bg-amber-700 text-white text-sm font-semibold hover:bg-amber-800 transition disabled:opacity-50">
+                  Hàng đã được trừ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {nextStatuses.length > 0 && (
         <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6">
@@ -322,7 +362,7 @@ export default function AdminOrderDetail() {
         <hr className="border-t mt-4" />
         <div className="pt-4 space-y-1 text-sm">
           <div className="flex justify-between text-stone"><span>Tạm tính</span><span>{VND(items.reduce((s, i) => s + Number(i.thanhTien), 0))}</span></div>
-          {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm giá</span><span>-{VND(order.soTienGiam)}</span></div>}
+          {(order.soTienGiam || 0) > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm giá {order.phieuGiamGia?.maCode ? <span className="text-xs">({order.phieuGiamGia.maCode})</span> : ''}</span><span>-{VND(order.soTienGiam)}</span></div>}
           {(order.phiVanChuyen || 0) > 0 && <div className="flex justify-between text-stone"><span>Phí vận chuyển</span><span>{VND(order.phiVanChuyen)}</span></div>}
           <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Tổng cộng</span><span className="text-gold">{VND(order.tongTien || 0)}</span></div>
         </div>
@@ -362,6 +402,7 @@ export default function AdminOrderDetail() {
                   {p.thoiGianTt && p.trangThaiThanhToan === 2 && (
                     <p className="text-xs text-stone">{new Date(p.thoiGianTt).toLocaleString('vi-VN')}</p>
                   )}
+                  {p.refunded && <p className="text-xs font-semibold text-bordeaux mt-1">Đã hoàn tiền {VND(p.soTien || 0)} vào ví</p>}
                 </div>
               </div>
             ))}
@@ -375,9 +416,9 @@ export default function AdminOrderDetail() {
         </h2>
         <div className="text-sm space-y-1">
           <p><span className="text-stone">Khách hàng:</span> {order.tenNguoiNhan || order.nguoiDung?.hoTen || 'Khách lẻ'}</p>
-          <p><span className="text-stone">SĐT:</span> {order.sdtNguoiNhan || order.nguoiDung?.soDienThoai || '—'}</p>
+          <p className="flex items-center gap-2"><span className="text-stone">SĐT:</span> {order.sdtNguoiNhan || order.nguoiDung?.soDienThoai || '—'}{(order.sdtNguoiNhan || order.nguoiDung?.soDienThoai) && <button onClick={() => copyText(order.sdtNguoiNhan || order.nguoiDung?.soDienThoai, 'số điện thoại')} className="text-gold hover:bg-gold/10 p-1 rounded" title="Sao chép"><Copy className="h-3.5 w-3.5" /></button>}</p>
           <p><span className="text-stone">Email:</span> {order.nguoiDung?.email || '—'}</p>
-          {(order.loaiDonHang !== 2) && <p><span className="text-stone">Địa chỉ:</span> {order.diaChiGiaoHang || '—'}</p>}
+          {(order.loaiDonHang !== 2) && <p className="flex items-start gap-2"><span className="text-stone shrink-0">Địa chỉ:</span> {order.diaChiGiaoHang || '—'}{order.diaChiGiaoHang && <button onClick={() => copyText(order.diaChiGiaoHang, 'địa chỉ')} className="text-gold hover:bg-gold/10 p-1 rounded" title="Sao chép"><Copy className="h-3.5 w-3.5" /></button>}</p>}
           {order.ghiChu && <p><span className="text-stone">Ghi chú:</span> {order.ghiChu}</p>}
         </div>
       </div>
@@ -391,6 +432,19 @@ export default function AdminOrderDetail() {
         loading={updating === confirmStatus}
         onConfirm={() => { setConfirmStatus(null); handleUpdateStatus(confirmStatus) }}
         onCancel={() => setConfirmStatus(null)}
+      />
+
+      <ConfirmDialog
+        open={reconcileMode !== null}
+        title="Xác nhận đối soát tồn kho"
+        message={reconcileMode
+          ? <>Xác nhận hàng của đơn <span className="font-semibold">#{order.maDonHang}</span> <span className="font-semibold">đã được trừ khỏi tồn kho</span>. Khi hủy/trả hàng, hệ thống sẽ cộng hàng lại.</>
+          : <>Xác nhận hàng của đơn <span className="font-semibold">#{order.maDonHang}</span> <span className="font-semibold">chưa được trừ khỏi tồn kho</span>. Khi xác nhận đơn, hệ thống sẽ trừ hàng một lần.</>}
+        confirmText="Xác nhận đối soát"
+        variant="gold"
+        loading={reconciling}
+        onConfirm={() => handleReconcileInventory(reconcileMode)}
+        onCancel={() => setReconcileMode(null)}
       />
 
       {selectedItem && (() => {

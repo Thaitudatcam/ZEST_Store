@@ -5,7 +5,7 @@ import { searchSuggestions } from '../../api/products'
 import { getActiveCategories } from '../../api/categories'
 import { getBrands } from '../../api/admin'
 import api from '../../api/axios'
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, Loader, Filter, X, SlidersHorizontal } from 'lucide-react'
+import { Plus, Pencil, Search, Eye, EyeOff, Loader, X, SlidersHorizontal, Package } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -42,14 +42,23 @@ export default function AdminProducts() {
   }, [])
 
   const load = (pg, q) => {
-    api.get('/products/admin/list', { params: { page: pg, size: PAGE_SIZE, ...(q ? { keyword: q } : {}) } })
+    const keyword = (q || '').trim().replace(/\s+/g, ' ')
+    const statusMap = { active: 1, hidden: 0, draft: 2 }
+    api.get('/products/admin/list', { params: {
+      page: pg, size: PAGE_SIZE, ...(keyword ? { keyword } : {}),
+      ...(filterCategory ? { categoryId: filterCategory } : {}),
+      ...(filterBrand ? { brandId: filterBrand } : {}),
+      ...(filterStatus ? { status: statusMap[filterStatus] } : {}),
+      ...(filterPriceMin ? { minPrice: filterPriceMin } : {}),
+      ...(filterPriceMax ? { maxPrice: filterPriceMax } : {}),
+    } })
       .then((r) => r.data).then((d) => {
         setProducts(d.content ?? d ?? [])
         setTotalPages(d.totalPages || 1)
       }).catch(() => setError('Không thể tải sản phẩm'))
   }
 
-  useEffect(() => { load(page, search) }, [page])
+  useEffect(() => { load(page, search) }, [page, filterCategory, filterBrand, filterStatus, filterPriceMin, filterPriceMax])
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -63,7 +72,7 @@ export default function AdminProducts() {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!search.trim()) { setSuggestions([]); setShowSuggestions(false); return }
-    const q = search.trim()
+    const q = search.trim().replace(/\s+/g, ' ')
     setSearchLoading(true)
     debounceRef.current = setTimeout(() => {
       searchSuggestions(q, 5)
@@ -87,41 +96,39 @@ export default function AdminProducts() {
     } catch {}
   }
 
-  const filtered = products.filter(p => {
-    if (filterCategory && String(p.danhMuc?.maDanhMuc) !== filterCategory) return false
-    if (filterBrand && String(p.maThuongHieu || p.thuongHieu?.maThuongHieu) !== filterBrand) return false
-    if (filterStatus === 'active' && p.trangThai !== 1) return false
-    if (filterStatus === 'hidden' && p.trangThai !== 0) return false
-    const price = Number(p.giaTrungBinh || 0)
-    if (filterPriceMin && price < Number(filterPriceMin)) return false
-    if (filterPriceMax && price > Number(filterPriceMax)) return false
-    return true
-  })
+  const filtered = products
 
   const hasFilter = filterCategory || filterBrand || filterStatus || filterPriceMin || filterPriceMax
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Danh sách sản phẩm</h1>
-        <Link to="/admin/products/create" className="bg-[var(--primary-color)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Thêm sản phẩm
-        </Link>
+    <div className="max-w-[1440px] mx-auto pb-8">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-noir via-noir-800 to-noir p-5 sm:p-6 mb-5 shadow-xl">
+        <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-gold/20 blur-3xl" />
+        <div className="absolute right-24 -bottom-16 h-32 w-32 rounded-full bg-gold/10 blur-2xl" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-gold text-noir flex items-center justify-center shadow-lg"><Package className="h-6 w-6" /></div>
+            <div><p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-1">Hàng hóa & tồn kho</p><h1 className="text-2xl sm:text-3xl font-bold text-ivory">Sản phẩm</h1><p className="text-sm text-ivory/60 mt-1">Tra cứu nhanh, kiểm soát hiển thị và tồn kho như tại quầy POS.</p></div>
+          </div>
+          <Link to="/admin/products/create" className="inline-flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-gold-hover hover:-translate-y-0.5 transition">
+            <Plus className="h-4 w-4" /> Thêm sản phẩm
+          </Link>
+        </div>
       </div>
 
       {error && <div className="bg-bordeaux/10 border border-bordeaux/20 text-bordeaux text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
 
-      <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
-        <div className="p-4 border-b space-y-3">
-          <div className="flex gap-3 items-center">
-            <div className="relative flex-1 max-w-xs" ref={searchRef}>
+      <div className="bg-ivory rounded-2xl shadow-lg border border-stone/15 overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-stone/10 bg-gradient-to-r from-ivory via-ivory to-gold/5 space-y-3">
+          <div className="flex flex-wrap gap-3 items-center justify-between">
+            <div className="relative flex-1 min-w-[240px] max-w-md" ref={searchRef}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
               <input value={search} onChange={(e) => handleSearch(e.target.value)}
                 onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true) }}
-                placeholder="Tìm sản phẩm..." className="pl-9 pr-10 py-2 border rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold" />
+                placeholder="Tìm tên, mã sản phẩm..." className="pl-9 pr-10 py-2.5 bg-white border border-stone/20 rounded-xl text-sm w-full focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold" />
               {searchLoading && <Loader className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone animate-spin" />}
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full mt-1 left-0 right-0 bg-ivory border rounded-xl shadow-lg z-50 py-2 max-h-72 overflow-y-auto">
+                <div className="absolute top-full mt-2 left-0 right-0 bg-ivory border border-stone/15 rounded-xl shadow-xl z-50 py-2 max-h-72 overflow-y-auto">
                   {suggestions.map((p) => (
                     <button key={p.maSanPham} onClick={() => { setShowSuggestions(false); setSearch(''); navigate(`/admin/products/${p.maSanPham}/edit`) }}
                       className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gold/10 transition text-left">
@@ -143,18 +150,18 @@ export default function AdminProducts() {
               )}
             </div>
             <button onClick={() => setShowFilters(prev => !prev)}
-              className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition ${showFilters ? 'bg-gold/10 border-gold text-gold' : 'hover:bg-ivory-100'}`}>
+              className={`relative flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-bold transition ${showFilters ? 'bg-noir border-noir text-ivory shadow-md' : 'bg-white border-stone/20 text-stone hover:border-gold hover:text-noir'}`}>
               <SlidersHorizontal className="h-4 w-4" /> Bộ lọc
-              {hasFilter && <span className="w-2 h-2 bg-gold rounded-full" />}
+              {hasFilter && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gold rounded-full ring-2 ring-ivory" />}
             </button>
           </div>
 
           {showFilters && (
-            <div className="flex flex-wrap gap-3 items-end pt-2 border-t">
+            <div className="flex flex-wrap gap-3 items-end pt-3 border-t border-stone/10">
               <div>
                 <label className="text-xs text-stone font-medium">Danh mục</label>
                 <select value={filterCategory} onChange={e => { setFilterCategory(e.target.value); setPage(0) }}
-                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
+                  className="w-full bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/60">
                   <option value="">Tất cả</option>
                   {categories.map(c => <option key={c.maDanhMuc} value={c.maDanhMuc}>{c.tenDanhMuc}</option>)}
                 </select>
@@ -162,7 +169,7 @@ export default function AdminProducts() {
               <div>
                 <label className="text-xs text-stone font-medium">Thương hiệu</label>
                 <select value={filterBrand} onChange={e => { setFilterBrand(e.target.value); setPage(0) }}
-                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
+                  className="w-full bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/60">
                   <option value="">Tất cả</option>
                   {brands.map(b => <option key={b.maThuongHieu} value={b.maThuongHieu}>{b.tenThuongHieu}</option>)}
                 </select>
@@ -170,25 +177,26 @@ export default function AdminProducts() {
               <div>
                 <label className="text-xs text-stone font-medium">Trạng thái</label>
                 <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}
-                  className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
+                  className="w-full bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/60">
                   <option value="">Tất cả</option>
                   <option value="active">Đang bán</option>
+                  <option value="draft">Nháp</option>
                   <option value="hidden">Đã ẩn</option>
                 </select>
               </div>
               <div>
                 <label className="text-xs text-stone font-medium">Giá từ</label>
                 <input type="number" value={filterPriceMin} onChange={e => { setFilterPriceMin(e.target.value); setPage(0) }}
-                  placeholder="0" className="w-28 border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
+                  placeholder="0" className="w-28 bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/60" />
               </div>
               <div>
                 <label className="text-xs text-stone font-medium">đến</label>
                 <input type="number" value={filterPriceMax} onChange={e => { setFilterPriceMax(e.target.value); setPage(0) }}
-                  placeholder="∞" className="w-28 border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" />
+                  placeholder="∞" className="w-28 bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold/60" />
               </div>
               {hasFilter && (
                 <button onClick={() => { setFilterCategory(''); setFilterBrand(''); setFilterStatus(''); setFilterPriceMin(''); setFilterPriceMax(''); setPage(0) }}
-                  className="flex items-center gap-1 px-3 py-2 text-xs text-stone hover:text-bordeaux border rounded-lg hover:bg-ivory-100 transition">
+                  className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-stone hover:text-bordeaux border border-stone/20 rounded-xl hover:bg-bordeaux/5 transition">
                   <X className="h-3 w-3" /> Xóa lọc
                 </button>
               )}
@@ -198,23 +206,23 @@ export default function AdminProducts() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-ivory-100 border-b">
+            <thead className="bg-noir text-ivory">
               <tr>
-                <th className="text-center px-3 py-3 font-semibold text-stone w-10">STT</th>
-                <th className="text-center px-3 py-3 font-semibold text-stone w-12">Ảnh</th>
-                <th className="text-left px-3 py-3 font-semibold text-stone">Mã SP</th>
-                <th className="text-left px-3 py-3 font-semibold text-stone">Tên sản phẩm</th>
-                <th className="text-left px-3 py-3 font-semibold text-stone">Danh mục</th>
-                <th className="text-left px-3 py-3 font-semibold text-stone">Thương hiệu</th>
-                <th className="text-right px-3 py-3 font-semibold text-stone">Giá TB</th>
-                <th className="text-center px-3 py-3 font-semibold text-stone">Tồn kho</th>
-                <th className="text-center px-3 py-3 font-semibold text-stone">Trạng thái</th>
-                <th className="text-center px-3 py-3 font-semibold text-stone">Hành động</th>
+                <th className="text-center px-3 py-3 font-semibold text-ivory/65 w-10">STT</th>
+                <th className="text-center px-3 py-3 font-semibold text-ivory/65 w-12">Ảnh</th>
+                <th className="text-left px-3 py-3 font-semibold text-ivory/65">Mã SP</th>
+                <th className="text-left px-3 py-3 font-semibold text-ivory/65">Tên sản phẩm</th>
+                <th className="text-left px-3 py-3 font-semibold text-ivory/65">Danh mục</th>
+                <th className="text-left px-3 py-3 font-semibold text-ivory/65">Thương hiệu</th>
+                <th className="text-right px-3 py-3 font-semibold text-ivory/65">Giá TB</th>
+                <th className="text-center px-3 py-3 font-semibold text-ivory/65">Tồn kho</th>
+                <th className="text-center px-3 py-3 font-semibold text-ivory/65">Trạng thái</th>
+                <th className="text-center px-3 py-3 font-semibold text-ivory/65">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {filtered.map((p, i) => (
-                <tr key={p.maSanPham} className="hover:bg-ivory-100">
+                <tr key={p.maSanPham} className="hover:bg-gold/5 transition-colors">
                   <td className="px-3 py-3 text-center text-xs text-stone">{page * PAGE_SIZE + i + 1}</td>
                   <td className="px-3 py-3 text-center">
                     <div className="relative w-10 h-10 mx-auto">
@@ -226,7 +234,7 @@ export default function AdminProducts() {
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs font-mono text-stone">SP{String(p.maSanPham).padStart(3, '0')}</td>
+                  <td className="px-3 py-3 text-xs font-mono text-stone"><span className="inline-flex rounded-md bg-noir/5 px-2 py-1">SP{String(p.maSanPham).padStart(3, '0')}</span></td>
                   <td className="px-3 py-3">
                     <span className="font-medium truncate max-w-[200px] block">{p.tenSanPham}</span>
                   </td>
@@ -243,8 +251,8 @@ export default function AdminProducts() {
                     )}
                   </td>
                   <td className="px-3 py-3 text-center">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(p.tongTonKho ?? 0) > 0 ? 'bg-emerald-deep/20 text-emerald-deep' : 'bg-bordeaux/20 text-bordeaux'}`}>
-                      {p.tongTonKho ?? 0}
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${(p.tongTonKho ?? 0) === 0 ? 'bg-bordeaux/20 text-bordeaux' : (p.tongTonKho ?? 0) <= 5 ? 'bg-gold/20 text-noir' : 'bg-emerald-deep/20 text-emerald-deep'}`}>
+                      {(p.tongTonKho ?? 0) === 0 ? 'Hết' : `${p.tongTonKho}${(p.tongTonKho ?? 0) <= 5 ? ' · Thấp' : ''}`}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -252,15 +260,15 @@ export default function AdminProducts() {
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition ${
                         p.trangThai === 1
                           ? 'bg-emerald-deep/20 text-emerald-deep border-emerald-deep/20 hover:bg-emerald-200'
-                          : 'bg-ivory-100 text-stone border-stone/20 hover:bg-ivory-100'
+                          : p.trangThai === 2 ? 'bg-gold/15 text-noir border-gold/20 hover:bg-gold/25' : 'bg-ivory-100 text-stone border-stone/20 hover:bg-ivory-100'
                       }`}>
                       {p.trangThai === 1 ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                      {p.trangThai === 1 ? 'Hiện' : 'Ẩn'}
+                      {p.trangThai === 1 ? 'Hiện' : p.trangThai === 2 ? 'Nháp' : 'Ẩn'}
                     </button>
                   </td>
                   <td className="px-3 py-3 text-center">
                     <div className="flex justify-center gap-1">
-                      <Link to={`/admin/products/${p.maSanPham}/edit`} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Pencil className="h-4 w-4" /></Link>
+                      <Link to={`/admin/products/${p.maSanPham}/edit`} className="p-2 text-gold hover:bg-gold/10 rounded-lg transition"><Pencil className="h-4 w-4" /></Link>
                     </div>
                   </td>
                 </tr>
@@ -271,12 +279,12 @@ export default function AdminProducts() {
         {filtered.length === 0 && <p className="text-center text-stone py-8">Không có sản phẩm</p>}
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 p-4 border-t">
-            <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Trước</button>
+          <div className="flex items-center justify-center gap-2 p-4 border-t border-stone/10 bg-ivory-100/50">
+            <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-white disabled:opacity-40">Trước</button>
             {Array.from({ length: totalPages }, (_, i) => (
-              <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{i + 1}</button>
+              <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-gold text-noir border-gold font-bold shadow-sm' : 'border-stone/20 hover:bg-white'}`}>{i + 1}</button>
             ))}
-            <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Sau</button>
+            <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-white disabled:opacity-40">Sau</button>
           </div>
         )}
       </div>

@@ -16,6 +16,7 @@ import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
 import SafeImg from '../components/SafeImg'
 import ProductCard from '../components/ProductCard'
 import { imageUrl } from '../utils/imageUrl'
+import DOMPurify from 'dompurify'
 
 export default function ProductDetail() {
   const { slug } = useParams()
@@ -44,6 +45,16 @@ export default function ProductDetail() {
   const [relatedProducts, setRelatedProducts] = useState([])
   const variantRef = useRef(null)
   const [highlightVariant, setHighlightVariant] = useState(false)
+
+  const sanitizedDescription = useMemo(
+    () => DOMPurify.sanitize(product?.moTa || ''),
+    [product?.moTa]
+  )
+  const plainDescription = useMemo(() => {
+    const element = document.createElement('div')
+    element.innerHTML = sanitizedDescription
+    return (element.textContent || element.innerText || '').replace(/\s+/g, ' ').trim()
+  }, [sanitizedDescription])
 
   const load = async () => {
     try {
@@ -219,6 +230,20 @@ export default function ProductDetail() {
 
   const colorCount = colorGroups.length
   const nextGroup = colorCount > 1 ? colorGroups[(selectedColorIndex + 1) % colorCount] : null
+  const galleryItems = colorGroups.flatMap((group, colorIndex) => {
+    // Mỗi màu thường chỉ có một ảnh; nếu sau này có nhiều góc chụp thì vẫn
+    // hiển thị được tất cả trong cùng thanh xem trước.
+    const groupImages = group.images.length > 0
+      ? group.images
+      : (group.image ? [{ url: group.image }] : [])
+    return groupImages.map((image, imageIndex) => ({
+      ...image,
+      colorIndex,
+      imageIndex,
+      colorName: group.mauSac?.mauSac || 'Màu sản phẩm',
+      colorHex: group.mauSac?.maMauHex,
+    }))
+  })
 
   const applyColor = (idx) => {
     const group = colorGroups[idx]
@@ -295,7 +320,7 @@ export default function ProductDetail() {
             Wear Confidence<br />Define Your Style.
           </h1>
           <p className="text-stone text-base leading-relaxed max-w-sm">
-            {truncateWords(product.moTa, 30)}
+            {truncateWords(plainDescription, 30)}
           </p>
           <button
             onClick={() => document.getElementById('mo-ta-san-pham')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -314,12 +339,23 @@ export default function ProductDetail() {
 
         <div className="order-1 lg:order-2 max-w-md mx-auto w-full">
           <div className="relative mb-3">
-            <div className="flex items-center animate-float">
-              {colorCount > 1 && (
-                <button onClick={goPrevColor} aria-label="Màu trước"
-                  className="shrink-0 z-10 mr-1.5 md:mr-3 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-ink shadow-md border border-beige-deep/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
+            <div className="flex items-stretch gap-3 animate-float">
+              {galleryItems.length > 1 && (
+              <div className="hidden sm:flex w-14 shrink-0 flex-col gap-2 overflow-y-auto py-1 pr-1 max-h-[26rem]">
+                {galleryItems.map((item, index) => {
+                  const active = item.colorIndex === selectedColorIndex && item.imageIndex === previewIdx
+                  return (
+                    <button key={`${item.colorIndex}-${item.imageIndex}-${index}`} type="button"
+                      onClick={() => { applyColor(item.colorIndex); setPreviewIdx(item.imageIndex) }}
+                      title={item.colorName}
+                      aria-label={`Xem ảnh màu ${item.colorName}`}
+                      className={`relative w-12 h-12 rounded-lg overflow-hidden bg-white border-2 shadow-sm transition-all duration-200 ${active ? 'border-gold scale-105 ring-2 ring-gold/25' : 'border-white/90 hover:border-gold/60 hover:scale-105'}`}>
+                      <SafeImg src={imageUrl(item.url)} alt={item.colorName} className="w-full h-full object-cover" />
+                      {item.colorHex && <span className="absolute right-1 bottom-1 w-2.5 h-2.5 rounded-full border border-white shadow" style={{ backgroundColor: item.colorHex }} />}
+                    </button>
+                  )
+                })}
+              </div>
               )}
               <div key={mainImg} className="relative flex-1 aspect-square bg-ivory-100 rounded-2xl overflow-hidden shadow-lg animate-fade-in">
                 <div className="hidden md:block w-full h-full">
@@ -328,22 +364,36 @@ export default function ProductDetail() {
                 <div className="block md:hidden w-full h-full">
                   <SafeImg src={mainImg} alt={product.tenSanPham} className="w-full h-full object-cover object-center" />
                 </div>
-                {nextGroup?.image && (
-                  <button onClick={goNextColor} aria-label="Màu tiếp theo" title="Màu tiếp theo"
-                    className="absolute bottom-3 right-3 z-10 hidden sm:block w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 border-white shadow-lg ring-1 ring-stone/20 hover:scale-105 active:scale-95 transition-transform duration-200">
-                    <SafeImg src={imageUrl(nextGroup.image)} alt="" className="w-full h-full object-cover object-center" />
+                {colorCount > 1 && <>
+                  <button onClick={goPrevColor} aria-label="Màu trước"
+                    className="absolute z-10 left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-ink shadow-md border border-beige-deep/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
+                    <ChevronLeft className="h-5 w-5" />
                   </button>
-                )}
+                  <button onClick={goNextColor} aria-label="Màu tiếp theo"
+                    className="absolute z-10 right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-ink shadow-md border border-beige-deep/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>}
               </div>
-              {colorCount > 1 && (
-                <button onClick={goNextColor} aria-label="Màu tiếp theo"
-                  className="shrink-0 z-10 ml-1.5 md:ml-3 w-9 h-9 rounded-full bg-white/95 hover:bg-white text-ink shadow-md border border-beige-deep/40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95">
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              )}
             </div>
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-4/5 h-5 rounded-[50%] bg-noir/15 blur-xl pointer-events-none" />
           </div>
+          {galleryItems.length > 1 && (
+            <div className="sm:hidden flex gap-2 overflow-x-auto pb-1 px-1">
+              {galleryItems.map((item, index) => {
+                const active = item.colorIndex === selectedColorIndex && item.imageIndex === previewIdx
+                return (
+                  <button key={`${item.colorIndex}-${item.imageIndex}-${index}`} type="button"
+                    onClick={() => { applyColor(item.colorIndex); setPreviewIdx(item.imageIndex) }}
+                    aria-label={`Xem ảnh màu ${item.colorName}`}
+                    className={`relative shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 ${active ? 'border-gold ring-2 ring-gold/25' : 'border-transparent'}`}>
+                    <SafeImg src={imageUrl(item.url)} alt={item.colorName} className="w-full h-full object-cover" />
+                    {item.colorHex && <span className="absolute right-1 bottom-1 w-2.5 h-2.5 rounded-full border border-white" style={{ backgroundColor: item.colorHex }} />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
           <p className="text-center font-serif text-xl md:text-2xl text-ink mt-6">Dress Better. Feel Better.</p>
         </div>
 
@@ -492,8 +542,8 @@ export default function ProductDetail() {
                 Mô tả sản phẩm
               </h2>
             </div>
-            <div className="p-6 text-stone leading-relaxed whitespace-pre-line text-sm">
-              {product.moTa}
+            <div className="p-6 text-stone leading-relaxed text-sm [&_p]:mb-3 [&_img]:my-4 [&_img]:max-w-full [&_img]:rounded-xl [&_img]:border [&_img]:shadow-sm [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5">
+              <div dangerouslySetInnerHTML={{ __html: sanitizedDescription }} />
             </div>
           </div>
         </div>

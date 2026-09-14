@@ -108,8 +108,13 @@ public class SanPhamController {
             @RequestParam(defaultValue = "15") int size,
             @RequestParam(defaultValue = "ngayTao") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) String keyword) {
-        return ResponseEntity.ok(sanPhamService.getAdminProducts(keyword, page, size, sortBy, sortDir));
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) Integer brandId,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice) {
+        return ResponseEntity.ok(sanPhamService.filterAdminProducts(keyword, categoryId, brandId, status, minPrice, maxPrice, page, size));
     }
 
     @GetMapping("/{id}/variants")

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -270,9 +271,6 @@ public class SanPhamService {
         SanPham product = getById(productId);
         List<BienTheSanPham> created = new java.util.ArrayList<>();
         for (BienTheRequest req : requests) {
-            if (bienTheRepository.findBySku(req.getSku()).isPresent()) {
-                throw new DuplicateResourceException("SKU already exists: " + req.getSku());
-            }
             ThuongHieu thuongHieu = thuongHieuRepository.findById(req.getMaThuongHieu())
                     .orElseThrow(() -> new ResourceNotFoundException("Brand", req.getMaThuongHieu()));
             KichCo kichCo = kichCoRepository.findById(req.getMaKichCo())
@@ -285,7 +283,7 @@ public class SanPhamService {
             }
             BienTheSanPham variant = BienTheSanPham.builder()
                     .sanPham(product).thuongHieu(thuongHieu).kichCo(kichCo).mauSac(mauSac)
-                    .sku(req.getSku()).gia(req.getGia()).urlAnh(req.getUrlAnh())
+                    .sku(generateSku(product, mauSac, kichCo)).gia(req.getGia()).urlAnh(req.getUrlAnh())
                     .tonKho(req.getTonKho() != null ? req.getTonKho() : 0).build();
             created.add(bienTheRepository.save(variant));
         }
@@ -382,9 +380,6 @@ public class SanPhamService {
     @Transactional
     public BienTheSanPham createVariant(Integer productId, BienTheRequest request) {
         SanPham product = getById(productId);
-        if (bienTheRepository.findBySku(request.getSku()).isPresent()) {
-            throw new BadRequestException("SKU already exists: " + request.getSku());
-        }
         KichCo kichCo = kichCoRepository.findById(request.getMaKichCo())
                 .orElseThrow(() -> new ResourceNotFoundException("Size", request.getMaKichCo()));
         MauSac mauSac = mauSacRepository.findById(request.getMaMauSac())
@@ -400,7 +395,7 @@ public class SanPhamService {
                 .thuongHieu(thuongHieu)
                 .kichCo(kichCo)
                 .mauSac(mauSac)
-                .sku(request.getSku())
+                .sku(generateSku(product, mauSac, kichCo))
                 .gia(request.getGia())
                 .giaNhap(request.getGiaNhap() != null ? request.getGiaNhap() : BigDecimal.ZERO)
                 .urlAnh(request.getUrlAnh())
@@ -408,6 +403,29 @@ public class SanPhamService {
                 .build());
         recalculateGiaTrungBinh(product);
         return variant;
+    }
+
+    private String generateSku(SanPham product, MauSac mauSac, KichCo kichCo) {
+        String baseSku = String.format("SP%03d", product.getMaSanPham())
+                + "-" + skuPart(mauSac.getMauSac())
+                + "-" + skuPart(kichCo.getKichCo());
+        String sku = baseSku;
+        int suffix = 2;
+        while (bienTheRepository.findBySku(sku).isPresent()) {
+            sku = baseSku + "-" + suffix++;
+        }
+        return sku;
+    }
+
+    private String skuPart(String value) {
+        String normalized = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D')
+                .toUpperCase(Locale.ROOT)
+                .replaceAll("[^A-Z0-9]+", "-")
+                .replaceAll("(^-+|-+$)", "");
+        return normalized.isBlank() ? "NA" : normalized;
     }
 
     @Transactional
@@ -594,6 +612,22 @@ public class SanPhamService {
                 }
             }
         }
+        result.sort(java.util.Comparator.comparingInt((Map<String, Object> row) -> {
+            Object variantId = row.get("maBienThe");
+            Object productId = row.get("maSanPham");
+            return ((Number) (variantId != null ? variantId : productId)).intValue();
+        }).reversed());
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SanPham> filterAdminProducts(String keyword, Integer categoryId, Integer brandId,
+                                              Integer status, BigDecimal minPrice, BigDecimal maxPrice,
+                                              int page, int size) {
+        Page<SanPham> result = sanPhamRepository.filterAdminProducts(
+                keyword == null || keyword.isBlank() ? null : keyword.trim().replaceAll("\\s+", " "),
+                categoryId, brandId, status, minPrice, maxPrice, PageRequest.of(page, size));
+        populateStock(result);
         return result;
     }
 

@@ -96,4 +96,18 @@ public class InventoryService {
         order.setStockState("RELEASED");
         orders.saveAndFlush(order);
     }
+
+    /**
+     * Old orders were created before stock movements were tracked. An administrator
+     * must explicitly confirm the real stock situation before those orders can be
+     * cancelled, returned, or moved through fulfilment.
+     */
+    public void reconcileLegacy(DonHang order, boolean stockWasDeducted) {
+        if (!"LEGACY".equals(order.getStockState())) {
+            throw new BadRequestException("Đơn hàng này đã được đối soát tồn kho");
+        }
+        quantities(order);
+        order.setStockState(stockWasDeducted ? "DEDUCTED" : "NONE");
+        orders.saveAndFlush(order);
+    }
 }

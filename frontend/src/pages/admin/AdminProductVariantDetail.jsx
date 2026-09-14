@@ -1,12 +1,69 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../../context/ToastContext'
 import api from '../../api/axios'
 import SafeImg from '../../components/SafeImg'
-import { Search, Printer, X, Eye, ChevronLeft, ChevronRight, QrCode, Download, SlidersHorizontal } from 'lucide-react'
+import { Search, X, Eye, ChevronLeft, ChevronRight, QrCode, Download, SlidersHorizontal } from 'lucide-react'
 import QRCode from 'qrcode'
 import * as XLSX from 'xlsx'
+import { jsPDF } from 'jspdf'
+import CameraScanner from '../../components/CameraScanner'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
+
+const loadImage = (src) => new Promise((resolve, reject) => {
+  const image = new Image()
+  image.onload = () => resolve(image)
+  image.onerror = reject
+  image.src = src
+})
+
+const createLabelImage = async (item) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1200
+  canvas.height = 720
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.strokeStyle = '#b9a66b'
+  ctx.lineWidth = 5
+  ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24)
+
+  const qrUrl = await QRCode.toDataURL(item.sku || '', {
+    width: 360, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#111111', light: '#ffffff' },
+  })
+  const qr = await loadImage(qrUrl)
+  ctx.drawImage(qr, 55, 175, 360, 360)
+
+  const textX = 465
+  const maxWidth = 675
+  ctx.fillStyle = '#171717'
+  ctx.font = 'bold 38px Arial'
+  const productName = item.tenSanPham || 'Sản phẩm'
+  const words = productName.split(/\s+/)
+  let line = ''
+  let y = 165
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word
+    if (ctx.measureText(next).width > maxWidth && line) {
+      ctx.fillText(line, textX, y)
+      y += 50
+      line = word
+    } else line = next
+  }
+  if (line) ctx.fillText(line, textX, y)
+
+  ctx.font = '30px Arial'
+  ctx.fillStyle = '#555555'
+  ctx.fillText(`Màu: ${item.mauSac || '-'}`, textX, y + 80)
+  ctx.fillText(`Kích cỡ: ${item.kichCo || '-'}`, textX, y + 125)
+  ctx.font = 'bold 38px Arial'
+  ctx.fillStyle = '#a57c00'
+  ctx.fillText(VND(item.gia), textX, y + 195)
+  ctx.font = 'bold 32px monospace'
+  ctx.fillStyle = '#171717'
+  ctx.fillText(item.sku || '-', textX, y + 270)
+  return canvas.toDataURL('image/png')
+}
 
 function QRCodeImg({ sku }) {
   const [dataUrl, setDataUrl] = useState(null)
@@ -29,13 +86,15 @@ export default function AdminProductVariantDetail() {
   const [colors, setColors] = useState([])
   const [sizes, setSizes] = useState([])
   const [printItems, setPrintItems] = useState([])
-  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [downloadingLabels, setDownloadingLabels] = useState(false)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [showDetail, setShowDetail] = useState(null)
-  const [priceRange, setPriceRange] = useState([0, 0])
-  const [maxPrice, setMaxPrice] = useState(0)
-  const printRef = useRef(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [filterPriceMin, setFilterPriceMin] = useState('')
+  const [filterPriceMax, setFilterPriceMax] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const hasFilter = filterColor || filterSize || filterStatus || filterPriceMin || filterPriceMax
 
   useEffect(() => {
     Promise.all([
@@ -47,25 +106,24 @@ export default function AdminProductVariantDetail() {
       setSizes(Array.isArray(sz) ? sz : [])
       const data = Array.isArray(rowsData) ? rowsData : []
       setRows(data)
-      const prices = data.map(r => Number(r.gia) || 0)
-      const mp = Math.max(...prices, 0)
-      setMaxPrice(mp)
-      setPriceRange([0, mp])
     }).catch(() => {})
     .finally(() => setLoading(false))
   }, [])
 
   const filtered = rows.filter(r => {
-    if (search) {
-      const q = search.toLowerCase()
-      if (!(r.sku || '').toLowerCase().includes(q) && !(r.tenSanPham || '').toLowerCase().includes(q)) return false
+    const compactSearch = search.toLowerCase().replace(/\s+/g, '')
+    if (compactSearch) {
+      const compactSku = (r.sku || '').toLowerCase().replace(/\s+/g, '')
+      const compactName = (r.tenSanPham || '').toLowerCase().replace(/\s+/g, '')
+      if (!compactSku.includes(compactSearch) && !compactName.includes(compactSearch)) return false
     }
     if (filterColor && r.mauSac !== filterColor) return false
     if (filterSize && r.kichCo !== filterSize) return false
     if (filterStatus === 'active' && r.trangThai !== 1) return false
     if (filterStatus === 'hidden' && r.trangThai !== 0) return false
     const price = Number(r.gia) || 0
-    if (price < priceRange[0] || price > priceRange[1]) return false
+    if (filterPriceMin && price < Number(filterPriceMin)) return false
+    if (filterPriceMax && price > Number(filterPriceMax)) return false
     return true
   })
 
@@ -77,6 +135,22 @@ export default function AdminProductVariantDetail() {
       const idx = prev.findIndex(p => p.sku === r.sku)
       if (idx >= 0) return prev.filter((_, i) => i !== idx)
       return [...prev, r]
+    })
+  }
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(r =>
+    printItems.some(item => item.sku === r.sku)
+  )
+
+  const toggleAllFilteredLabels = () => {
+    if (allFilteredSelected) {
+      const filteredSkus = new Set(filtered.map(r => r.sku))
+      setPrintItems(prev => prev.filter(item => !filteredSkus.has(item.sku)))
+      return
+    }
+    setPrintItems(prev => {
+      const selectedSkus = new Set(prev.map(item => item.sku))
+      return [...prev, ...filtered.filter(item => !selectedSkus.has(item.sku))]
     })
   }
 
@@ -110,69 +184,39 @@ export default function AdminProductVariantDetail() {
     toast.success('Đã xuất file Excel')
   }
 
-  const handleScanQR = useCallback(() => {
-    const { Html5QrcodeScanner } = require('html5-qrcode')
-    const scanWindow = document.createElement('div')
-    scanWindow.id = 'qr-scan-container'
-    Object.assign(scanWindow.style, {
-      position: 'fixed', inset: '0', zIndex: '9999', background: 'white', display: 'flex', flexDirection: 'column',
-    })
-    document.body.appendChild(scanWindow)
+  const handleScannedSku = useCallback((sku) => {
+    setCameraOpen(false)
+    setSearch(sku)
+    setPage(0)
+    toast.success(`Tìm thấy: ${sku}`)
+  }, [toast])
 
-    const header = document.createElement('div')
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e5e5e5;'
-    header.innerHTML = '<strong style="font-size:16px">Quét mã QR</strong>'
-    const closeBtn = document.createElement('button')
-    closeBtn.textContent = 'Đóng'
-    closeBtn.style.cssText = 'padding:6px 12px;border:1px solid #ccc;border-radius:8px;cursor:pointer;font-size:13px;'
-    header.appendChild(closeBtn)
-    scanWindow.appendChild(header)
-
-    const reader = document.createElement('div')
-    reader.id = 'qr-reader'
-    reader.style.cssText = 'flex:1;'
-    scanWindow.appendChild(reader)
-
-    const cleanup = () => { try { scanner.clear() } catch {} document.body.removeChild(scanWindow) }
-    closeBtn.onclick = cleanup
-
-    const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false)
-    scanner.render(
-      (decodedText) => {
-        setSearch(decodedText)
-        cleanup()
-        toast.success(`Tìm thấy: ${decodedText}`)
-      },
-      () => {}
-    )
-  }, [])
-
-  const handlePrintLabels = useCallback(() => {
-    if (printItems.length === 0) return
-    setShowPrintModal(true)
-    setTimeout(async () => {
-      const win = window.open('', '', 'width=500,height=400')
-      if (!win) return
-      win.document.write(`<html><head><title>In nhãn</title><style>
-        body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }
-        .labels { display: flex; flex-wrap: wrap; gap: 8px; }
-        .label { width: 220px; border: 1px solid #ccc; padding: 10px; text-align: center; page-break-inside: avoid; }
-        .label img { display: block; margin: 0 auto; }
-        .label p { margin: 2px 0; font-size: 11px; }
-        .label .name { font-weight: bold; font-size: 12px; }
-        .label .price { color: #2563eb; font-weight: bold; font-size: 12px; }
-        .label .sku { font-size: 10px; color: #666; margin-top: 4px; }
-        @media print { @page { margin: 5mm; } }
-      </style></head><body><div class="labels">`)
-      for (const item of printItems) {
-        const url = await QRCode.toDataURL(item.sku, { width: 160, margin: 1, color: { dark: '#000', light: '#fff' } }).catch(() => null)
-        win.document.write(`<div class="label">${url ? `<img src="${url}" alt="${item.sku}" />` : `<p>${item.sku}</p>`}<p class="name">${item.tenSanPham}</p><p>${item.mauSac || ''} ${item.kichCo || ''}</p><p class="price">${VND(item.gia)}</p><p class="sku">${item.sku}</p></div>`)
+  const handleDownloadLabelsPdf = useCallback(async () => {
+    if (printItems.length === 0 || downloadingLabels) return
+    setDownloadingLabels(true)
+    try {
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const labelWidth = 90
+      const labelHeight = 54
+      const labelsPerPage = 8
+      for (let index = 0; index < printItems.length; index += 1) {
+        if (index > 0 && index % labelsPerPage === 0) pdf.addPage()
+        const position = index % labelsPerPage
+        const column = position % 2
+        const row = Math.floor(position / 2)
+        const x = 10 + column * 95
+        const y = 10 + row * 67
+        const labelImage = await createLabelImage(printItems[index])
+        pdf.addImage(labelImage, 'PNG', x, y, labelWidth, labelHeight)
       }
-      win.document.write('</div></body></html>')
-      win.document.close()
-      setTimeout(() => win.print(), 500)
-    }, 100)
-  }, [printItems])
+      pdf.save(`nhan-sku-${new Date().toISOString().slice(0, 10)}.pdf`)
+      toast.success(`Đã tải PDF ${printItems.length} nhãn QR/SKU`)
+    } catch {
+      toast.error('Không thể tạo file PDF nhãn')
+    } finally {
+      setDownloadingLabels(false)
+    }
+  }, [downloadingLabels, printItems, toast])
 
   if (loading) return <div className="animate-pulse h-96 bg-ivory-100 rounded-2xl" />
 
@@ -184,7 +228,7 @@ export default function AdminProductVariantDetail() {
           {printItems.length > 0 && (
             <span className="text-sm text-stone">Đã chọn {printItems.length}</span>
           )}
-          <button onClick={handleScanQR}
+          <button onClick={() => setCameraOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-[var(--primary-color)] text-white text-sm font-semibold rounded-lg hover:opacity-90 transition">
             <QrCode className="h-4 w-4" /> Quét QR
           </button>
@@ -192,64 +236,34 @@ export default function AdminProductVariantDetail() {
             className="flex items-center gap-2 px-4 py-2 border border-[var(--primary-color)] text-[var(--primary-color)] text-sm font-semibold rounded-lg hover:bg-[var(--primary-bg)] transition">
             <Download className="h-4 w-4" /> Tải Excel
           </button>
-          <button onClick={handlePrintLabels} disabled={printItems.length === 0}
+          <button onClick={toggleAllFilteredLabels} disabled={filtered.length === 0}
+            className="px-4 py-2 border border-gold text-gold text-sm font-semibold rounded-lg hover:bg-gold/10 transition disabled:opacity-50">
+            {allFilteredSelected ? 'Bỏ chọn tất cả' : `Chọn tất cả (${filtered.length})`}
+          </button>
+          <button onClick={handleDownloadLabelsPdf} disabled={printItems.length === 0 || downloadingLabels}
             className="flex items-center gap-2 px-4 py-2 bg-gold text-noir text-sm font-semibold rounded-lg hover:bg-gold-hover transition disabled:opacity-50">
-            <Printer className="h-4 w-4" /> In nhãn
+            <Download className="h-4 w-4" /> {downloadingLabels ? 'Đang tạo PDF…' : 'Tải nhãn PDF'}
           </button>
         </div>
       </div>
 
-      <div className="bg-ivory rounded-2xl border p-4 mb-6">
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-xs text-stone font-medium">Tìm kiếm</label>
-            <div className="relative mt-1">
+      <div className="bg-ivory rounded-2xl border overflow-hidden mb-6">
+        <div className="p-4 border-b space-y-3">
+          <div className="flex gap-3 items-center">
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
-              <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-                placeholder="Tìm theo mã SP hoặc tên..."
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
+              <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(0) }} placeholder="Tìm theo SKU hoặc tên..." className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gold" />
             </div>
+            <button onClick={() => setShowFilters(value => !value)} className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition ${showFilters ? 'bg-gold/10 border-gold text-gold' : 'hover:bg-ivory-100'}`}><SlidersHorizontal className="h-4 w-4" /> Bộ lọc{hasFilter && <span className="w-2 h-2 bg-gold rounded-full" />}</button>
           </div>
-          <div>
-            <label className="text-xs text-stone font-medium">Màu sắc</label>
-            <select value={filterColor} onChange={(e) => { setFilterColor(e.target.value); setPage(0) }}
-              className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
-              <option value="">Tất cả màu</option>
-              {colors.map(c => <option key={c.maMauSac} value={c.mauSac}>{c.mauSac}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-stone font-medium">Kích cỡ</label>
-            <select value={filterSize} onChange={(e) => { setFilterSize(e.target.value); setPage(0) }}
-              className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
-              <option value="">Tất cả size</option>
-              {sizes.map(s => <option key={s.maKichCo} value={s.kichCo}>{s.kichCo}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-stone font-medium">Trạng thái</label>
-            <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(0) }}
-              className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold">
-              <option value="">Tất cả</option>
-              <option value="active">Hoạt động</option>
-              <option value="hidden">Ẩn</option>
-            </select>
-          </div>
-          {maxPrice > 0 && (
-            <div className="min-w-[220px]">
-              <label className="text-xs text-stone font-medium flex items-center gap-1">
-                <SlidersHorizontal className="h-3 w-3" /> Khoảng giá: {VND(priceRange[0])} — {VND(priceRange[1])}
-              </label>
-              <div className="flex gap-2 mt-1 items-center">
-                <input type="range" min="0" max={maxPrice} value={priceRange[0]}
-                  onChange={e => { const v = Number(e.target.value); setPriceRange(p => [Math.min(v, p[1]), p[1]]); setPage(0) }}
-                  className="flex-1 accent-gold h-1.5" />
-                <input type="range" min="0" max={maxPrice} value={priceRange[1]}
-                  onChange={e => { const v = Number(e.target.value); setPriceRange(p => [p[0], Math.max(v, p[0])]); setPage(0) }}
-                  className="flex-1 accent-gold h-1.5" />
-              </div>
-            </div>
-          )}
+          {showFilters && <div className="flex flex-wrap gap-3 items-end pt-2 border-t">
+          <div><label className="text-xs text-stone font-medium">Màu sắc</label><select value={filterColor} onChange={(e) => { setFilterColor(e.target.value); setPage(0) }} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold"><option value="">Tất cả màu</option>{colors.map(c => <option key={c.maMauSac} value={c.mauSac}>{c.mauSac}</option>)}</select></div>
+          <div><label className="text-xs text-stone font-medium">Kích cỡ</label><select value={filterSize} onChange={(e) => { setFilterSize(e.target.value); setPage(0) }} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold"><option value="">Tất cả size</option>{sizes.map(s => <option key={s.maKichCo} value={s.kichCo}>{s.kichCo}</option>)}</select></div>
+          <div><label className="text-xs text-stone font-medium">Trạng thái</label><select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(0) }} className="w-full border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold"><option value="">Tất cả</option><option value="active">Hoạt động</option><option value="hidden">Ẩn</option></select></div>
+          <div><label className="text-xs text-stone font-medium">Giá từ</label><input type="number" min="0" value={filterPriceMin} onChange={e => { setFilterPriceMin(e.target.value); setPage(0) }} placeholder="0" className="w-28 border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" /></div>
+          <div><label className="text-xs text-stone font-medium">đến</label><input type="number" min="0" value={filterPriceMax} onChange={e => { setFilterPriceMax(e.target.value); setPage(0) }} placeholder="∞" className="w-28 border rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-gold" /></div>
+          {hasFilter && <button onClick={() => { setFilterColor(''); setFilterSize(''); setFilterStatus(''); setFilterPriceMin(''); setFilterPriceMax(''); setPage(0) }} className="flex items-center gap-1 px-3 py-2 text-xs text-stone hover:text-bordeaux border rounded-lg hover:bg-ivory-100 transition"><X className="h-3 w-3" /> Xóa lọc</button>}
+          </div>}
         </div>
       </div>
 
@@ -260,7 +274,7 @@ export default function AdminProductVariantDetail() {
               <th className="text-center px-3 py-2 font-semibold text-stone w-10">STT</th>
               <th className="text-center px-3 py-2 font-semibold text-stone w-12">Ảnh</th>
               <th className="text-left px-3 py-2 font-semibold text-stone">Mã SP</th>
-              <th className="text-left px-3 py-2 font-semibold text-stone">Mã CTSP</th>
+              <th className="text-left px-3 py-2 font-semibold text-stone">SKU</th>
               <th className="text-left px-3 py-2 font-semibold text-stone">Tên SP</th>
               <th className="text-center px-3 py-2 font-semibold text-stone">Kích cỡ</th>
               <th className="text-center px-3 py-2 font-semibold text-stone">Màu sắc</th>
@@ -307,8 +321,8 @@ export default function AdminProductVariantDetail() {
                       <div className="flex items-center justify-center gap-2">
                         <button onClick={() => togglePrintItem(r)}
                           className={`p-1.5 rounded-lg transition ${selected ? 'bg-gold/20 text-gold' : 'text-stone hover:text-gold hover:bg-gold/10'}`}
-                          title="Chọn in">
-                          <Printer className="h-4 w-4" />
+                          title="Chọn tải nhãn PDF">
+                          <QrCode className="h-4 w-4" />
                         </button>
                         {r.maBienThe && (
                           <button onClick={() => setShowDetail(r)}
@@ -376,7 +390,7 @@ export default function AdminProductVariantDetail() {
               <div>
                 <p className="font-semibold">{showDetail.tenSanPham}</p>
                 <p className="text-xs text-stone mt-0.5">Mã SP: <span className="font-mono">SP{String(showDetail.maSanPham).padStart(3, '0')}</span></p>
-                <p className="text-xs text-stone">Mã CTSP: <span className="font-mono font-semibold">{showDetail.sku}</span></p>
+                <p className="text-xs text-stone">SKU: <span className="font-mono font-semibold">{showDetail.sku}</span></p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -419,29 +433,18 @@ export default function AdminProductVariantDetail() {
         </div>
       )}
 
-      {showPrintModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 animate-fade-in"
-          onClick={() => setShowPrintModal(false)}>
-          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 animate-scale-in"
-            onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-bold text-lg">In nhãn mã vạch</h3>
-              <button onClick={() => setShowPrintModal(false)} className="text-stone hover:text-stone">
-                <X className="h-5 w-5" />
-              </button>
+      {cameraOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 animate-fade-in" onClick={() => setCameraOpen(false)}>
+          <div className="bg-ivory rounded-2xl max-w-lg w-full mx-4 overflow-hidden shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-stone/10">
+              <h3 className="font-bold text-lg">Quét mã vạch</h3>
+              <button onClick={() => setCameraOpen(false)} className="text-stone hover:text-noir"><X className="h-5 w-5" /></button>
             </div>
-            <div className="p-4 text-sm text-stone">
-              <p>Đã chọn <strong>{printItems.length}</strong> biến thể. Trang in sẽ mở ra, bạn chọn máy in và in nhãn.</p>
-            </div>
-            <div className="border-t p-4 flex gap-3">
-              <button onClick={() => setShowPrintModal(false)}
-                className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-ivory-100">Hủy</button>
-              <button onClick={() => { setShowPrintModal(false); setTimeout(handlePrintLabels, 200) }}
-                className="flex-1 py-2.5 bg-gold text-noir rounded-xl text-sm font-semibold hover:bg-gold-hover">In ngay</button>
-            </div>
+            <CameraScanner onScan={handleScannedSku} onClose={() => setCameraOpen(false)} />
           </div>
         </div>
       )}
+
     </div>
   )
 }

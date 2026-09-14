@@ -21,6 +21,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import jakarta.servlet.DispatcherType;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -37,6 +39,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // SSE responses are continued by the servlet container as an ASYNC
+                // dispatch. The initial request has already passed authentication;
+                // authorizing that continuation a second time can reject it after
+                // headers/body have been committed and produces misleading 500 logs.
+                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh",
                                  "/api/auth/quen-mat-khau", "/api/auth/dat-lai-mat-khau",
                                  "/api/auth/xac-thuc-quen-mat-khau").permitAll()
@@ -46,6 +53,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/sizes").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/brands").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/colors").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/thuoc-tinh/**").permitAll()
                 .requestMatchers("/api/debug/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/files/**").permitAll()

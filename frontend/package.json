@@ -13,6 +13,7 @@
     "emoji-picker-react": "^4.19.1",
     "html5-qrcode": "^2.3.8",
     "jsbarcode": "^3.12.3",
+    "jspdf": "^4.2.1",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.468.0",
     "motion": "^12.42.2",

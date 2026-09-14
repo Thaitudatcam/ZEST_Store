@@ -29,6 +29,7 @@ import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminProductVariantDetail from './pages/admin/AdminProductVariantDetail'
+import AdminProductAttributes from './pages/admin/AdminProductAttributes'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminCoupons from './pages/admin/AdminCoupons'
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="products/create" element={<AdminProductForm />} />
         <Route path="products/:id/edit" element={<AdminProductForm />} />
         <Route path="products/detail" element={<AdminProductVariantDetail />} />
+        <Route path="attributes" element={<AdminProductAttributes />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="brands" element={<AdminBrands />} />
         <Route path="thong-ke" element={<AdminThongKe />} />

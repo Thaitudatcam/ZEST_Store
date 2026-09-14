@@ -238,31 +238,33 @@ export default function Checkout() {
 
   useEffect(() => {
     if (selectedWardCode && selectedDistrictId && cart.length > 0) {
+      let isCurrent = true
       setGhnLoading(true)
       setGhnError(false)
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       calculateShippingFee({
         // Dataset local dùng mã chữ ("001") — ép số cho backend, mock bỏ qua ID
+        serviceTypeId: selectedServiceId,
         toDistrictId: Number(selectedDistrictId),
         toWardCode: selectedWardCode,
         weight: Math.max(weight, 500),
         provinceName: form.tinhThanhPho,
       }).then((res) => {
-        // Backend /ghn/fee trả {data:{total}} (mock 30000 khi chưa cấu hình token),
-        // còn /calculate trả {fee} — đọc cả 2 dạng để không kẹt ở "chờ tính phí"
-        const fee = res?.fee ?? res?.data?.total ?? null
-        if (res?.error || fee == null) {
+        if (!isCurrent) return
+        if (res?.error) {
           setGhnFee(null)
           setGhnError(true)
         } else {
-          setGhnFee(fee)
+          setGhnFee(res.fee)
           setGhnError(false)
         }
       }).catch(() => {
+        if (!isCurrent) return
         setGhnFee(null)
         setGhnError(true)
       })
-      .finally(() => setGhnLoading(false))
+      .finally(() => { if (isCurrent) setGhnLoading(false) })
+      return () => { isCurrent = false }
     }
   }, [selectedWardCode, selectedDistrictId, selectedServiceId, cart, form.tinhThanhPho])
 

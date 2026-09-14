@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-public class ZestStoreApplication {
+public class  ZestStoreApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ZestStoreApplication.class, args);
