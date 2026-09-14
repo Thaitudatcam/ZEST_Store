@@ -75,13 +75,6 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50">
-      {/* Top Promo Banner */}
-      <div className="bg-[var(--primary-color)] text-white text-center py-2 px-4">
-        <span className="text-xs sm:text-sm font-semibold tracking-wide">
-          MUA 2 ÁO POLO CHỈ 139K/ÁO
-        </span>
-      </div>
-
       {/* Main Nav */}
       <div className="bg-white border-b border-stone/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
