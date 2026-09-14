@@ -249,7 +249,8 @@ public class YeuCauTraHangService {
     private void restoreStock(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
             variant.setTonKho(variant.getTonKho() + item.getSoLuong());
             bienTheRepository.save(variant);
         }

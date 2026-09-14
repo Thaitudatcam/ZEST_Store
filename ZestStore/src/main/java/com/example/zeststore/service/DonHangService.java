@@ -245,7 +245,10 @@ public class DonHangService {
         List<Map<String, Object>> orderItems = new ArrayList<>();
 
         for (MucGioHang cartItem : cartItems) {
-            BienTheSanPham variant = cartItem.getBienThe();
+            // Khóa dòng biến thể (PESSIMISTIC_WRITE) trước khi kiểm tra để 2 đơn
+            // đặt đồng thời không cùng đọc 1 mức tồn kho cũ rồi bán vượt quá tồn.
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(cartItem.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", cartItem.getBienThe().getMaBienThe()));
             if (variant.getTonKho() < cartItem.getSoLuong()) {
                 throw new BadRequestException("Insufficient stock for " + variant.getSku());
             }
@@ -687,7 +690,8 @@ public class DonHangService {
     private void deductStockNow(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
             if (variant.getTonKho() < item.getSoLuong()) {
                 throw new BadRequestException("Insufficient stock for " + variant.getSku()
                         + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
@@ -708,7 +712,8 @@ public class DonHangService {
     private void restoreStock(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
             variant.setTonKho(variant.getTonKho() + item.getSoLuong());
             bienTheRepository.save(variant);
         }
@@ -728,7 +733,8 @@ public class DonHangService {
         if (wasStockDeductedForOrder(order)) {
             List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
             for (MucDonHang item : items) {
-                BienTheSanPham variant = item.getBienThe();
+                BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                        .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
                 variant.setTonKho(variant.getTonKho() + item.getSoLuong());
                 bienTheRepository.save(variant);
             }

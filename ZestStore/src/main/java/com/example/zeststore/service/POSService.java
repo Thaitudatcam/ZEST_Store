@@ -101,9 +101,13 @@ public class POSService {
         List<Map<String, Object>> orderItems = new ArrayList<>();
         BigDecimal tongTien = BigDecimal.ZERO;
 
-        if (request.getItems() != null && !request.getItems().isEmpty()) {
+        // Đơn build từ giỏ quầy đã được giữ chỗ (trừ kho) lúc thêm món,
+        // nên khi tạo đơn KHÔNG trừ lại. Chỉ trừ kho khi build từ danh sách gửi lên.
+        boolean fromCart = request.getItems() == null || request.getItems().isEmpty();
+
+        if (!fromCart) {
             for (PosOrderRequest.PosItem req : request.getItems()) {
-                BienTheSanPham variant = bienTheRepository.findById(req.getMaBienThe())
+                BienTheSanPham variant = bienTheRepository.findByIdForUpdate(req.getMaBienThe())
                         .orElseThrow(() -> new BadRequestException("Variant not found: " + req.getMaBienThe()));
                 if (variant.getTonKho() < req.getSoLuong()) {
                     throw new BadRequestException("Insufficient stock for " + variant.getSku());
@@ -181,11 +185,18 @@ public class POSService {
             }
         }
 
-        for (Map<String, Object> item : orderItems) {
-            BienTheSanPham variant = (BienTheSanPham) item.get("bienThe");
-            Integer soLuong = (Integer) item.get("soLuong");
-            variant.setTonKho(variant.getTonKho() - soLuong);
-            bienTheRepository.save(variant);
+        if (!fromCart) {
+            for (Map<String, Object> item : orderItems) {
+                BienTheSanPham v = (BienTheSanPham) item.get("bienThe");
+                Integer soLuong = (Integer) item.get("soLuong");
+                BienTheSanPham variant = bienTheRepository.findByIdForUpdate(v.getMaBienThe())
+                        .orElseThrow(() -> new BadRequestException("Variant not found: " + v.getMaBienThe()));
+                if (variant.getTonKho() < soLuong) {
+                    throw new BadRequestException("Insufficient stock for " + variant.getSku());
+                }
+                variant.setTonKho(variant.getTonKho() - soLuong);
+                bienTheRepository.save(variant);
+            }
         }
 
         String tenNguoiNhan = customer != null ? customer.getHoTen()

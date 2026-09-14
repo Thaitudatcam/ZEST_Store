@@ -214,7 +214,8 @@ public class ThanhToanService {
     private void deductStock(Integer orderId) {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
         for (MucDonHang item : items) {
-            BienTheSanPham variant = item.getBienThe();
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
             if (variant.getTonKho() < item.getSoLuong()) {
                 throw new BadRequestException("Insufficient stock for " + variant.getSku()
                         + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");

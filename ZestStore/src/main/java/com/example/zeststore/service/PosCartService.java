@@ -33,7 +33,7 @@ public class PosCartService {
     public PosCartItem addItem(Integer adminUserId, PosCartRequest request) {
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
-        BienTheSanPham variant = bienTheRepository.findById(request.getMaBienThe())
+        BienTheSanPham variant = bienTheRepository.findByIdForUpdate(request.getMaBienThe())
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", request.getMaBienThe()));
 
         if (variant.getNgayXoa() != null) {
@@ -74,7 +74,8 @@ public class PosCartService {
             throw new BadRequestException("Cannot release more than cart quantity");
         }
 
-        BienTheSanPham variant = existing.getBienThe();
+        BienTheSanPham variant = bienTheRepository.findByIdForUpdate(existing.getBienThe().getMaBienThe())
+                .orElseThrow(() -> new ResourceNotFoundException("Variant", existing.getBienThe().getMaBienThe()));
         variant.setTonKho(variant.getTonKho() + request.getSoLuong());
         bienTheRepository.save(variant);
 
@@ -110,7 +111,8 @@ public class PosCartService {
     public void clearCart(Integer adminUserId) {
         List<PosCartItem> items = posCartRepository.findByAdmin_MaNguoiDung(adminUserId);
         for (PosCartItem item : items) {
-            BienTheSanPham variant = item.getBienThe();
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
             variant.setTonKho(variant.getTonKho() + item.getSoLuong());
             bienTheRepository.save(variant);
         }
@@ -123,7 +125,8 @@ public class PosCartService {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(30);
         List<PosCartItem> expired = posCartRepository.findByNgayTaoBefore(threshold);
         for (PosCartItem item : expired) {
-            BienTheSanPham variant = item.getBienThe();
+            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
+                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
             variant.setTonKho(variant.getTonKho() + item.getSoLuong());
             bienTheRepository.save(variant);
             posCartRepository.delete(item);
