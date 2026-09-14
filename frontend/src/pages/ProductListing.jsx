@@ -36,6 +36,7 @@ export default function ProductListing() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '')
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'ngayTao')
   const [sortDir, setSortDir] = useState(searchParams.get('sortDir') || 'desc')
+  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
 
   useEffect(() => {
     Promise.all([
@@ -50,8 +51,14 @@ export default function ProductListing() {
   }, [])
 
   useEffect(() => {
+    const kw = searchParams.get('keyword') || ''
+    setKeyword(kw)
+  }, [searchParams])
+
+  useEffect(() => {
     setLoading(true)
     const params = { page: 0, size: 50, sortBy, sortDir }
+    if (keyword) params.keyword = keyword
     if (filterCategory) params.categoryId = filterCategory
     if (minPrice) params.minPrice = minPrice
     if (maxPrice) params.maxPrice = maxPrice
@@ -59,7 +66,7 @@ export default function ProductListing() {
       .then(d => setProducts(d.content ?? d ?? []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false))
-  }, [filterCategory, minPrice, maxPrice, sortBy, sortDir])
+  }, [keyword, filterCategory, minPrice, maxPrice, sortBy, sortDir])
 
   const filteredProducts = useMemo(() => {
     let list = [...products]
@@ -88,12 +95,13 @@ export default function ProductListing() {
     setFilterSize('')
     setMinPrice('')
     setMaxPrice('')
+    setKeyword('')
     setSortBy('ngayTao')
     setSortDir('desc')
     setSearchParams({})
   }
 
-  const hasActiveFilters = filterCategory || filterBrand || filterSize || minPrice || maxPrice
+  const hasActiveFilters = keyword || filterCategory || filterBrand || filterSize || minPrice || maxPrice
 
   const sidebarContent = (
     <div className="space-y-0">
@@ -175,7 +183,9 @@ export default function ProductListing() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h1 className="text-xl font-bold text-ink">Tất cả sản phẩm</h1>
+            <h1 className="text-xl font-bold text-ink">
+              {keyword ? `Kết quả tìm kiếm: "${keyword}"` : 'Tất cả sản phẩm'}
+            </h1>
             <p className="text-sm text-stone mt-0.5">{filteredProducts.length} sản phẩm</p>
           </div>
           <div className="flex items-center gap-3">

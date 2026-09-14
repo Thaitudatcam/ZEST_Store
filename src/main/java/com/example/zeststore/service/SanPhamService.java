@@ -173,7 +173,8 @@ public class SanPhamService {
             m.put("tenSanPham", sp.getTenSanPham());
             m.put("slug", sp.getSlug());
             m.put("urlAnhDaiDien", sp.getUrlAnhDaiDien());
-            m.put("gia", sp.getGiaTrungBinh());
+            m.put("gia", sp.getGiaThapNhat() != null ? sp.getGiaThapNhat() : sp.getGiaTrungBinh());
+            m.put("giaThapNhat", sp.getGiaThapNhat());
             m.put("tongTonKho", sp.getTongTonKho());
             return m;
         }).collect(Collectors.toList());

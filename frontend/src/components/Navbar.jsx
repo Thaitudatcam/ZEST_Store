@@ -84,7 +84,7 @@ export default function Navbar() {
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      navigate(`/?keyword=${encodeURIComponent(searchQuery.trim())}`)
+      navigate(`/products?keyword=${encodeURIComponent(searchQuery.trim())}`)
       setShowSuggestions(false)
       setSearchQuery('')
     }
@@ -167,7 +167,7 @@ export default function Navbar() {
                     </div>
                   </div>
                   {((searchQuery.trim() && suggestions.length > 0) || (!searchQuery.trim() && defaultProducts.length > 0)) && (
-                    <Link to={`/?keyword=${encodeURIComponent(searchQuery.trim())}`}
+                    <Link to={`/products?keyword=${encodeURIComponent(searchQuery.trim())}`}
                       onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
                       className="flex items-center justify-between px-4 py-2.5 border-t border-stone/10 bg-ivory-50 hover:bg-ivory-100 transition">
                       <span className="text-[11px] text-stone">Tìm thấy {(searchQuery.trim() ? suggestions : defaultProducts).length} sản phẩm</span>
