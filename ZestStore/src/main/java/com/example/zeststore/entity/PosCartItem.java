@@ -29,7 +29,7 @@ public class PosCartItem {
     @Column(name = "so_luong", nullable = false)
     private Integer soLuong;
 
-    @Column(name = "ngay_tao", nullable = false, updatable = false)
+    @Column(name = "ngay_tao", nullable = false)
     private LocalDateTime ngayTao;
 
     @PrePersist

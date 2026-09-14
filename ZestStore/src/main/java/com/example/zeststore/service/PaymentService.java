@@ -37,9 +37,6 @@ public class PaymentService {
 
         if (success && result.get("orderId") != null) {
             momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
-            if (result.get("orderId").startsWith("NAPVI")) {
-                return redirectBase + "/vi-zeststore?status=pending";
-            }
             return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderIdInt");
         }
         String redirect = redirectBase + "/payment/result?success=false";
@@ -80,9 +77,6 @@ public class PaymentService {
 
         if (success && result.get("txnRef") != null) {
             vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
-            if (result.get("txnRef").startsWith("NAPVI")) {
-                return redirectBase + "/vi-zeststore?status=pending";
-            }
             return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderId");
         }
         String redirect = redirectBase + "/payment/result?success=false";

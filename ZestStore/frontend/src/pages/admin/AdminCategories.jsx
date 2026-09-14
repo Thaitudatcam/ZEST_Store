@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getCategoryTree } from '../../api/categories'
-import { createCategory, updateCategory, deleteCategory } from '../../api/admin'
-import { Plus, Pencil, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
+import { createCategory, updateCategory, toggleCategory } from '../../api/admin'
+import { Plus, Pencil, ChevronRight, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
-function TreeNode({ cat, onEdit, onDelete, depth = 0 }) {
+function TreeNode({ cat, onEdit, onToggle, depth = 0 }) {
   const [open, setOpen] = useState(true)
   const hasChildren = cat.children?.length > 0
   return (
@@ -14,11 +14,13 @@ function TreeNode({ cat, onEdit, onDelete, depth = 0 }) {
           <button onClick={() => setOpen(!open)} className="text-stone">{open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</button>
         ) : <div className="w-4" />}
         <span className="flex-1 text-sm font-medium">{cat.tenDanhMuc}</span>
-        {cat.hienThi === false && <span className="text-[10px] font-semibold text-stone-light bg-stone/10 border border-stone/20 px-1.5 py-0.5 rounded-full">Ẩn</span>}
+        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${cat.hienThi === false ? 'text-stone-light bg-stone/10 border-stone/20' : 'text-emerald-deep bg-emerald-deep/10 border-emerald-deep/20'}`}>{cat.hienThi === false ? 'Ẩn' : 'Hiện'}</span>
         <button onClick={() => onEdit(cat)} className="p-1 text-gold hover:bg-gold/10 rounded"><Pencil className="h-3.5 w-3.5" /></button>
-        <button onClick={() => onDelete(cat.maDanhMuc)} className="p-1 text-bordeaux hover:bg-bordeaux/10 rounded"><Trash2 className="h-3.5 w-3.5" /></button>
+        <button onClick={() => onToggle(cat.maDanhMuc)} className={`p-1 rounded ${cat.hienThi === false ? 'text-emerald-600 hover:bg-emerald-50' : 'text-stone hover:bg-ivory-100'}`} title={cat.hienThi === false ? 'Hiện' : 'Ẩn'}>
+          {cat.hienThi === false ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
       </div>
-      {open && hasChildren && cat.children.map((c) => <TreeNode key={c.maDanhMuc} cat={c} onEdit={onEdit} onDelete={onDelete} depth={depth + 1} />)}
+      {open && hasChildren && cat.children.map((c) => <TreeNode key={c.maDanhMuc} cat={c} onEdit={onEdit} onToggle={onToggle} depth={depth + 1} />)}
     </div>
   )
 }
@@ -28,7 +30,6 @@ export default function AdminCategories() {
   const [form, setForm] = useState({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true })
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(null)
   const [confirmSave, setConfirmSave] = useState(false)
 
   const load = () => getCategoryTree().then(setCats).catch(() => {})
@@ -45,9 +46,8 @@ export default function AdminCategories() {
     } catch { alert('Lỗi') }
   }
 
-  const handleDelete = async (id) => {
-    setConfirmDelete(null)
-    try { await deleteCategory(id); load() } catch { alert('Không thể xóa (có thể có sản phẩm con)') }
+  const handleToggle = async (id) => {
+    try { await toggleCategory(id); load() } catch { alert('Lỗi khi đổi trạng thái danh mục') }
   }
 
   const flatten = (items, depth = 0) => {
@@ -70,7 +70,7 @@ export default function AdminCategories() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-ivory rounded-2xl shadow-sm border p-4">
-          {cats.map((c) => <TreeNode key={c.maDanhMuc} cat={c} onEdit={handleEdit} onDelete={(id) => setConfirmDelete(id)} />)}
+          {cats.map((c) => <TreeNode key={c.maDanhMuc} cat={c} onEdit={handleEdit} onToggle={handleToggle} />)}
           {cats.length === 0 && <p className="text-center text-stone py-8">Chưa có danh mục</p>}
         </div>
 
@@ -108,14 +108,6 @@ export default function AdminCategories() {
         )}
       </div>
 
-      <ConfirmDialog
-        open={confirmDelete !== null}
-        title="Xác nhận xóa"
-        message="Bạn chắc chắn muốn xóa danh mục này?"
-        confirmText="Xóa"
-        onConfirm={() => handleDelete(confirmDelete)}
-        onCancel={() => setConfirmDelete(null)}
-      />
       <ConfirmDialog
         open={confirmSave}
         title={editing ? 'Cập nhật danh mục' : 'Thêm danh mục'}

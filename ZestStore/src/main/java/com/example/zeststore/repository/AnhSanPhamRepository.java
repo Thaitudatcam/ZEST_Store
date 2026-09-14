@@ -15,6 +15,6 @@ public interface AnhSanPhamRepository extends JpaRepository<AnhSanPham, Integer>
 
     List<AnhSanPham> findByBienThe_MaBienTheOrderByThuTuHienThiAsc(Integer maBienThe);
 
-    @Query("SELECT a FROM AnhSanPham a WHERE a.bienThe.maBienThe IN :ids ORDER BY a.thuTuHienThi ASC")
+    @Query("SELECT a FROM AnhSanPham a WHERE a.bienThe.maBienThe IN :ids AND a.ngayXoa IS NULL ORDER BY a.thuTuHienThi ASC")
     List<AnhSanPham> findByBienThe_MaBienTheIn(@Param("ids") List<Integer> ids);
 }

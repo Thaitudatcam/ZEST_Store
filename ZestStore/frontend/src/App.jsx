@@ -17,8 +17,7 @@ import Wishlist from './pages/Wishlist'
 import UserVouchers from './pages/UserVouchers'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
-import ViZeststore from './pages/ViZeststore'
-import LoyaltyPoints from './pages/LoyaltyPoints'
+
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
 import AboutPage from './pages/AboutPage'
@@ -33,10 +32,9 @@ import AdminProductVariantDetail from './pages/admin/AdminProductVariantDetail'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminCoupons from './pages/admin/AdminCoupons'
-import AdminReturns from './pages/admin/AdminReturns'
+
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
-import AdminDiemQuyTac from './pages/admin/AdminDiemQuyTac'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
@@ -62,7 +60,7 @@ export default function App() {
         <Route path="orders/online" element={<AdminOrders />} />
         <Route path="orders/pos" element={<AdminOrders />} />
         <Route path="orders/:id" element={<AdminOrderDetail />} />
-        <Route path="returns" element={<AdminReturns />} />
+
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/create" element={<AdminProductForm />} />
         <Route path="products/:id/edit" element={<AdminProductForm />} />
@@ -72,7 +70,6 @@ export default function App() {
         <Route path="thong-ke" element={<AdminThongKe />} />
         <Route path="coupons" element={<AdminCoupons />} />
         <Route path="campaigns" element={<AdminCampaigns />} />
-        <Route path="diem-quy-tac" element={<AdminDiemQuyTac />} />
         <Route path="reviews" element={<AdminReviews />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="customers" element={<AdminUsers />} />
@@ -102,8 +99,7 @@ export default function App() {
               <Route path="/vouchers" element={<ProtectedRoute><UserVouchers /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><ErrorBoundary><OrderDetail /></ErrorBoundary></ProtectedRoute>} />
-              <Route path="/vi-zeststore" element={<ProtectedRoute><ViZeststore /></ProtectedRoute>} />
-              <Route path="/tich-diem" element={<ProtectedRoute><LoyaltyPoints /></ProtectedRoute>} />
+
               <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
           </main>

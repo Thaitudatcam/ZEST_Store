@@ -1,6 +1,6 @@
 import { Printer } from 'lucide-react'
 
-const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR', 7: 'Ví ZestStore' }
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
 function VND(n) { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
@@ -10,9 +10,8 @@ export default function InvoicePrint({ data }) {
   const items = data.chiTiet || []
   const tamTinh = Number(data.tamTinh ?? items.reduce((s, i) => s + Number(i.thanhTien || 0), 0))
   const giamGia = Number(donHang.soTienGiam || 0)
-  const giamDiem = Number(donHang.soTienGiamDiem || 0)
   const phiVanChuyen = Number(donHang.phiVanChuyen || 0)
-  const tongTien = Number(donHang.tongTien ?? data.tongTien ?? tamTinh - giamGia - giamDiem + phiVanChuyen)
+  const tongTien = Number(donHang.tongTien ?? data.tongTien ?? tamTinh - giamGia + phiVanChuyen)
   const isPos = donHang.loaiDonHang === 2
   const payments = data.thanhToans || []
   const daThanhToan = payments.filter(p => p.trangThaiThanhToan === 2)
@@ -75,7 +74,6 @@ export default function InvoicePrint({ data }) {
           <div className="space-y-1 w-64">
             <div className="flex justify-between"><span className="text-stone">Tạm tính</span><span>{VND(tamTinh)}</span></div>
             {giamGia > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm giá</span><span>-{VND(giamGia)}</span></div>}
-            {giamDiem > 0 && <div className="flex justify-between text-emerald-deep"><span>Giảm điểm</span><span>-{VND(giamDiem)}</span></div>}
             {phiVanChuyen > 0 && <div className="flex justify-between"><span>Phí vận chuyển</span><span>{VND(phiVanChuyen)}</span></div>}
             <div className="flex justify-between border-t pt-1 font-bold text-base"><span>Tổng cộng</span><span>{VND(tongTien)}</span></div>
             {daThanhToan.length > 0 && (

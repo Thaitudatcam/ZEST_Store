@@ -54,4 +54,10 @@ public class CategoryController {
     public ResponseEntity<?> delete(@PathVariable Integer id) {
         return ResponseEntity.ok(categoryService.delete(id));
     }
+
+    @PutMapping("/{id}/toggle")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> toggleHienThi(@PathVariable Integer id) {
+        return ResponseEntity.ok(categoryService.toggleHienThi(id));
+    }
 }

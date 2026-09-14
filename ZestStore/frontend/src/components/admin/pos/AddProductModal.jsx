@@ -90,9 +90,9 @@ export default function AddProductModal({ open, onClose, variants, colors, sizes
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-stone/10">
+        <div className="px-6 py-4 border-t border-stone/10 flex justify-end">
           <button onClick={onClose}
-            className="w-full py-2.5 border border-stone/20 rounded-xl text-sm font-semibold text-stone hover:bg-ivory-100 transition">
+            className="px-6 py-2.5 border border-stone/20 rounded-xl text-sm font-semibold text-stone hover:bg-ivory-100 transition">
             Đóng lại
           </button>
         </div>

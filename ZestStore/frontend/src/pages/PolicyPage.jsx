@@ -8,7 +8,7 @@ const policies = {
       { h: '1. Điều kiện đổi trả', p: 'Sản phẩm còn nguyên tem mác, chưa qua sử dụng, giặt ủi. Thời gian đổi trả trong vòng 7 ngày kể từ ngày nhận hàng. Sản phẩm lỗi do nhà sản xuất sẽ được hỗ trợ đổi mới hoàn toàn.' },
       { h: '2. Quy trình đổi trả', p: 'Liên hệ hotline 1900 1234 hoặc email support@zeststore.vn để được hướng dẫn. Gửi sản phẩm kèm hóa đơn về địa chỉ: 123 Nguyễn Huệ, Q.1, TP.HCM. Chúng tôi sẽ xử lý trong vòng 3-5 ngày làm việc.' },
       { h: '3. Phí đổi trả', p: 'Miễn phí đổi trả nếu sản phẩm bị lỗi từ nhà sản xuất. Trường hợp đổi size/màu do khách hàng thay đổi nhu cầu: tính phí 30.000đ/sản phẩm.' },
-      { h: '4. Hoàn tiền', p: 'Hoàn tiền qua chuyển khoản ngân hàng trong vòng 5-7 ngày làm việc sau khi nhận được hàng trả lại. Hoàn tiền qua ví MoMo/VNPay trong 24-48 giờ.' },
+      { h: '4. Hoàn tiền', p: 'Hoàn tiền qua chuyển khoản ngân hàng trong vòng 5-7 ngày làm việc sau khi nhận được hàng trả lại. Hoàn tiền qua MoMo/VNPay trong 24-48 giờ.' },
     ],
   },
   'bao-mat': {
@@ -33,7 +33,7 @@ const policies = {
     title: 'Hướng dẫn mua hàng',
     content: [
       { h: '1. Đặt hàng online', p: 'Bước 1: Truy cập ZestStore.vn, chọn sản phẩm yêu thích. Bước 2: Chọn màu sắc, kích cỡ, số lượng. Bước 3: Nhấn "Thêm vào giỏ" và tiến hành thanh toán. Bước 4: Điền thông tin giao hàng và chọn phương thức thanh toán.' },
-      { h: '2. Thanh toán', p: 'Chúng tôi hỗ trợ thanh toán khi nhận hàng (COD), chuyển khoản ngân hàng, ví MoMo và VNPay. Đối với COD, vui lòng chuẩn bị đủ tiền mặt khi nhận hàng.' },
+      { h: '2. Thanh toán', p: 'Chúng tôi hỗ trợ thanh toán khi nhận hàng (COD), chuyển khoản ngân hàng, MoMo và VNPay. Đối với COD, vui lòng chuẩn bị đủ tiền mặt khi nhận hàng.' },
       { h: '3. Tạo tài khoản', p: 'Đăng ký tài khoản để theo dõi đơn hàng, lưu danh sách yêu thích và nhận ưu đãi độc quyền. Đăng ký nhanh qua email hoặc số điện thoại.' },
       { h: '4. Chăm sóc khách hàng', p: 'Hotline: 1900 1234 (8:00 - 21:00). Email: support@zeststore.vn. Chat trực tiếp trên website hoặc fanpage Facebook.' },
     ],

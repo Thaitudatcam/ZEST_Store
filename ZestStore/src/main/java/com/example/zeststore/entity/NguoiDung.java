@@ -3,7 +3,6 @@ package com.example.zeststore.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -77,10 +76,6 @@ public class NguoiDung {
     @Column(name = "ngay_xoa")
     private LocalDateTime ngayXoa;
 
-    @Column(name = "so_du", nullable = false, precision = 18, scale = 2, columnDefinition = "DECIMAL(18,2) DEFAULT 0")
-    @Builder.Default
-    private BigDecimal soDu = BigDecimal.ZERO;
-
     @Column(name = "nguon_tao", length = 20)
     @Builder.Default
     private String nguonTao = "SELF_REGISTER";
@@ -149,7 +144,6 @@ public class NguoiDung {
     protected void onCreate() {
         this.ngayTao = LocalDateTime.now();
         if (this.trangThai == null) this.trangThai = 1;
-        if (this.soDu == null) this.soDu = BigDecimal.ZERO;
         if (this.maNguoiDungCode == null) {
             String prefix = "KH";
             if (this.vaiTro != null && this.vaiTro.getTenVaiTro() != null) {

@@ -7,6 +7,7 @@ export const createCoupon = (data) => api.post('/coupons', data).then((r) => r.d
 export const deleteCoupon = (id) => api.delete(`/coupons/${id}`).then((r) => r.data)
 export const createCategory = (data) => api.post('/categories', data).then((r) => r.data)
 export const deleteBrand = (id) => api.delete('/brands/' + id).then((r) => r.data)
+export const toggleBrand = (id) => api.put('/brands/' + id + '/toggle').then((r) => r.data)
 export const createBrand = (data) => api.post('/brands', data).then((r) => r.data)
 export const updateBrand = (id, data) => api.put('/brands/' + id, data).then((r) => r.data)
 export const getBrands = () => api.get('/brands').then((r) => r.data)
@@ -14,6 +15,7 @@ export const createColor = (data) => api.post('/colors', data).then((r) => r.dat
 export const createSize = (data) => api.post('/sizes', data).then((r) => r.data)
 export const updateCategory = (id, data) => api.put(`/categories/${id}`, data).then((r) => r.data)
 export const deleteCategory = (id) => api.delete(`/categories/${id}`).then((r) => r.data)
+export const toggleCategory = (id) => api.put(`/categories/${id}/toggle`).then((r) => r.data)
 
 export const getOrderPrintData = (id) => api.get(`/orders/admin/${id}/print`).then((r) => r.data)
 export const registerOrderPrint = (id) => api.post(`/orders/admin/${id}/print`).then((r) => r.data)
@@ -60,9 +62,6 @@ export const toggleCampaignStatus = (id) => api.put(`/admin/campaigns/${id}/togg
 export const launchCampaign = (id) => api.post(`/admin/campaigns/${id}/launch`).then((r) => r.data)
 export const updateCampaign = (id, data) => api.put(`/admin/campaigns/${id}`, data).then((r) => r.data)
 export const deleteCampaign = (id) => api.delete(`/admin/campaigns/${id}`).then((r) => r.data)
-
-export const getDiemQuyTacAdmin = () => api.get('/admin/diem-quy-tac').then((r) => r.data)
-export const updateDiemQuyTac = (data) => api.put('/admin/diem-quy-tac', data).then((r) => r.data)
 
 export const getThuocTinh = (loai) => api.get('/thuoc-tinh', { params: { loai } }).then((r) => r.data)
 export const createThuocTinh = (loaiThuocTinh, giaTri) => api.post('/thuoc-tinh', { loaiThuocTinh, giaTri }).then((r) => r.data)

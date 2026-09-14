@@ -5,7 +5,6 @@ import com.example.zeststore.dto.request.StatusUpdateRequest;
 import com.example.zeststore.service.DonHangService;
 import com.example.zeststore.service.OrderSseService;
 import com.example.zeststore.service.UserService;
-import com.example.zeststore.service.YeuCauTraHangService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -29,7 +28,6 @@ public class DonHangController {
     private final DonHangService donHangService;
     private final UserService userService;
     private final OrderSseService orderSseService;
-    private final YeuCauTraHangService yeuCauTraHangService;
     private static final Logger log = LoggerFactory.getLogger(DonHangController.class);
 
     @GetMapping
@@ -62,14 +60,6 @@ public class DonHangController {
     @PutMapping("/{id}/confirm-received")
     public ResponseEntity<?> confirmReceived(Authentication auth, @PathVariable Integer id) {
         return ResponseEntity.ok(donHangService.confirmReceived(id, userService.getUserIdFromAuth(auth)));
-    }
-
-    @PostMapping("/{id}/return-request")
-    public ResponseEntity<?> requestReturn(Authentication auth, @PathVariable Integer id,
-                                            @RequestBody Map<String, String> body) {
-        String lyDo = body.get("lyDo");
-        return ResponseEntity.ok(yeuCauTraHangService.createReturnRequest(
-                id, userService.getUserIdFromAuth(auth), lyDo, body.get("hinhAnh")));
     }
 
     @GetMapping("/admin/all")

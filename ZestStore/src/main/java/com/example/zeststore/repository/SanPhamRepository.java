@@ -60,6 +60,15 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
             + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
     Page<SanPham> searchAdminByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
+    @Query("SELECT s FROM SanPham s WHERE s.ngayXoa IS NULL "
+            + "ORDER BY COALESCE(s.ngayCapNhat, s.ngayTao) DESC, s.maSanPham DESC")
+    Page<SanPham> findAdminProductsOrderByLastUpdated(Pageable pageable);
+
+    @Query("SELECT s FROM SanPham s WHERE s.ngayXoa IS NULL AND "
+            + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%) "
+            + "ORDER BY COALESCE(s.ngayCapNhat, s.ngayTao) DESC, s.maSanPham DESC")
+    Page<SanPham> searchAdminProductsOrderByLastUpdated(@Param("keyword") String keyword, Pageable pageable);
+
     @Query("SELECT FUNCTION('FORMAT', s.ngayTao, 'yyyy-MM-dd'), COUNT(s) "
             + "FROM SanPham s WHERE s.ngayXoa IS NULL AND s.ngayTao BETWEEN :tuNgay AND :denNgay "
             + "GROUP BY FUNCTION('FORMAT', s.ngayTao, 'yyyy-MM-dd')")

@@ -34,6 +34,9 @@ public class ThanhToanService {
     private final GioHangRepository gioHangRepository;
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final OrderSseService orderSseService;
+    private final InventoryService inventoryService;
+    private final jakarta.persistence.EntityManager entityManager;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     public List<ThanhToan> getPaymentsByOrder(Integer orderId) {
         return thanhToanRepository.findByDonHang_MaDonHang(orderId);
@@ -117,45 +120,47 @@ public class ThanhToanService {
                 || (dto.getEmailNguoiDung() != null && dto.getEmailNguoiDung().toLowerCase().contains(k));
     }
 
-    private final ViService viService;
+    private ThanhToan lockPayment(Integer id) {
+        ThanhToan snapshot = getPaymentById(id);
+        if (snapshot.getDonHang() != null) {
+            DonHang order = donHangRepository.findByIdForUpdate(snapshot.getDonHang().getMaDonHang())
+                    .orElseThrow(() -> new ResourceNotFoundException("Order", snapshot.getDonHang().getMaDonHang()));
+            entityManager.refresh(order);
+        }
+        ThanhToan payment = thanhToanRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+        entityManager.refresh(payment);
+        return payment;
+    }
 
     @Transactional
     public ThanhToan completePayment(Integer paymentId, String maGiaoDich) {
-        ThanhToan payment = thanhToanRepository.findByIdForUpdate(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
-
-        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) {
-            return payment;
-        }
-
-        payment.setMaGiaoDich(maGiaoDich);
-        payment.setTrangThaiThanhToan(2);
-        payment.setThoiGianTt(java.time.LocalDateTime.now());
-
-        if (payment.getDonHang() == null) {
-            thanhToanRepository.save(payment);
-            String gateway = payment.getNhaCungCap() != null ? payment.getNhaCungCap() : "Ví ZestStore";
-            viService.napTien(payment.getMaNguoiDung(), payment.getSoTien(),
-                    "Nạp tiền qua " + gateway, payment.getMaThanhToan());
+        ThanhToan payment = lockPayment(paymentId);
+        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) return payment;
+        if (payment.getDonHang() != null && "LEGACY".equals(payment.getDonHang().getStockState()))
+            throw new BadRequestException("Thanh toán đơn cũ cần đối soát kho và hoàn tiền trước khi xử lý");
+        // Keep maGiaoDich as the stable merchant reference for repeated gateway callbacks.
+        payment.setGatewayTransactionId(maGiaoDich);
+        payment.setThoiGianTt(LocalDateTime.now());
+        DonHang order = payment.getDonHang();
+        if (order == null) {
+            payment.setTrangThaiThanhToan(2);
+        } else if (java.util.Set.of(5, 8, 9).contains(order.getTrangThaiDon())) {
+            // A provider can settle after the local reservation has expired. Do not ship twice.
+            if (order.getNguoiDung() == null)
+                throw new BadRequestException("Thanh toán đến muộn cần đối soát thủ công cho khách lẻ");
+            payment.setTrangThaiThanhToan(3);
         } else {
-            DonHang order = payment.getDonHang();
+            inventoryService.deduct(order);
+            payment.setTrangThaiThanhToan(2);
             if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
                 order.setTrangThaiDon(2);
                 donHangRepository.save(order);
                 orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
-
-                boolean isCOD = Integer.valueOf(1).equals(payment.getPhuongThuc());
-                if (!isCOD) {
-                    deductStock(order.getMaDonHang());
-                }
             }
-
-            thanhToanRepository.save(payment);
-
             clearCartForOrder(order);
         }
-
-        return payment;
+        return thanhToanRepository.save(payment);
     }
 
     private void clearCartForOrder(DonHang order) {
@@ -171,75 +176,56 @@ public class ThanhToanService {
                 });
     }
 
-    @Transactional
-    public ThanhToan failPayment(Integer paymentId) {
-        ThanhToan payment = getPaymentById(paymentId);
-        payment.setTrangThaiThanhToan(3);
+    private ThanhToan failLocked(ThanhToan payment) {
+        // Failure notifications must never overwrite a successful settlement.
+        if (!Integer.valueOf(1).equals(payment.getTrangThaiThanhToan())) return payment;
         DonHang order = payment.getDonHang();
-        if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+        if (order != null && Integer.valueOf(1).equals(order.getTrangThaiDon())) {
+            inventoryService.release(order);
             order.setTrangThaiDon(5);
             donHangRepository.save(order);
         }
+        payment.setTrangThaiThanhToan(3);
         return thanhToanRepository.save(payment);
     }
 
-    @Scheduled(fixedRate = 300000)
     @Transactional
-    public void autoCancelExpiredPayments() {
-        LocalDateTime threshold = LocalDateTime.now().minusHours(2);
-        List<ThanhToan> expired = thanhToanRepository
-                .findByTrangThaiThanhToanAndThoiGianTaoBefore(1, threshold);
-        for (ThanhToan payment : expired) {
-            DonHang order = payment.getDonHang();
-            List<ThanhToan> orderPayments = thanhToanRepository
-                    .findByDonHang_MaDonHang(order.getMaDonHang());
-            boolean hasSuccessfulPayment = orderPayments.stream()
-                    .anyMatch(p -> Integer.valueOf(2).equals(p.getTrangThaiThanhToan()));
-            if (hasSuccessfulPayment) {
-                log.warn("Order #{} already has a successful payment, skipping cancel", order.getMaDonHang());
-                payment.setTrangThaiThanhToan(3);
-                thanhToanRepository.save(payment);
-                continue;
-            }
-            if (Integer.valueOf(1).equals(order.getTrangThaiDon())) {
-                order.setTrangThaiDon(5);
-                donHangRepository.save(order);
-                log.info("Auto-cancelled expired order #{}", order.getMaDonHang());
-            }
-            payment.setTrangThaiThanhToan(3);
-            thanhToanRepository.save(payment);
-        }
+    public ThanhToan failPayment(Integer paymentId) {
+        return failLocked(lockPayment(paymentId));
     }
 
-    private void deductStock(Integer orderId) {
-        List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(orderId);
-        for (MucDonHang item : items) {
-            BienTheSanPham variant = bienTheRepository.findByIdForUpdate(item.getBienThe().getMaBienThe())
-                    .orElseThrow(() -> new ResourceNotFoundException("Variant", item.getBienThe().getMaBienThe()));
-            if (variant.getTonKho() < item.getSoLuong()) {
-                throw new BadRequestException("Insufficient stock for " + variant.getSku()
-                        + " (available: " + variant.getTonKho() + ", needed: " + item.getSoLuong() + ")");
+    @Scheduled(fixedRate = 300000)
+    public void autoCancelExpiredPayments() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(2);
+        List<Integer> expiredIds = thanhToanRepository.findByTrangThaiThanhToanAndThoiGianTaoBefore(1, threshold)
+                .stream().filter(p -> !Integer.valueOf(1).equals(p.getPhuongThuc()))
+                .map(ThanhToan::getMaThanhToan).toList();
+        var tx = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        for (Integer id : expiredIds) {
+            try {
+                tx.executeWithoutResult(ignored -> {
+                    ThanhToan payment = lockPayment(id);
+                    if (Integer.valueOf(1).equals(payment.getTrangThaiThanhToan())
+                            && !Integer.valueOf(1).equals(payment.getPhuongThuc())
+                            && payment.getThoiGianTao().isBefore(threshold)) failLocked(payment);
+                });
+            } catch (RuntimeException ex) {
+                log.error("Không thể xử lý thanh toán hết hạn #{}; cần đối soát", id, ex);
             }
-            variant.setTonKho(variant.getTonKho() - item.getSoLuong());
-            bienTheRepository.save(variant);
         }
     }
 
     @Transactional
     public ThanhToan retryPayment(Integer paymentId, Integer userId) {
-        ThanhToan payment = getPaymentById(paymentId);
-        if (!Integer.valueOf(1).equals(payment.getTrangThaiThanhToan())
-                && !Integer.valueOf(3).equals(payment.getTrangThaiThanhToan())) {
-            throw new BadRequestException("Can only retry pending or failed payments");
-        }
-        if (!payment.getDonHang().getNguoiDung().getMaNguoiDung().equals(userId)) {
+        ThanhToan payment = lockPayment(paymentId);
+        DonHang order = payment.getDonHang();
+        if (order == null || order.getNguoiDung() == null
+                || !order.getNguoiDung().getMaNguoiDung().equals(userId))
             throw new BadRequestException("Payment does not belong to current user");
-        }
-        payment.setTrangThaiThanhToan(1);
-        payment.setMaGiaoDich("ORD-" + payment.getDonHang().getMaDonHang()
-                + "-" + System.currentTimeMillis());
-        payment.setThoiGianTt(null);
-        payment.setThoiGianTao(LocalDateTime.now());
-        return thanhToanRepository.save(payment);
+        if (!Integer.valueOf(1).equals(order.getTrangThaiDon())
+                || !Integer.valueOf(1).equals(payment.getTrangThaiThanhToan()))
+            throw new BadRequestException("Đơn đã hủy/đã xử lý. Vui lòng tạo đơn mới");
+        // Preserve the original deadline and reference; retries do not extend stock holds.
+        return payment;
     }
 }

@@ -3,19 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from '../../api/admin'
-import { getCustomerDiem, getDiemQuyTac } from '../../api/vi'
-import { getAvailableCoupons } from '../../api/coupons'
+import { getBestOffer } from '../../api/coupons'
 import { posApi } from '../../components/admin/pos/apiClient'
 import OrderTabs from '../../components/admin/pos/OrderTabs'
 import ProductGrid from '../../components/admin/pos/ProductGrid'
 import CartPanel from '../../components/admin/pos/CartPanel'
 import AddProductModal from '../../components/admin/pos/AddProductModal'
 import CustomerPickerModal from '../../components/admin/pos/CustomerPickerModal'
+import PaymentModal from '../../components/admin/pos/PaymentModal'
+import POSConfirmDialog from '../../components/admin/pos/POSConfirmDialog'
 import POSToast from '../../components/admin/pos/POSToast'
 import CameraScanner from '../../components/CameraScanner'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import InvoicePrint from '../../components/InvoicePrint'
-import { Plus, ShoppingCart, X } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Trash2, X } from 'lucide-react'
 import SafeImg from '../../components/SafeImg'
 import { useAuth } from '../../context/AuthContext'
 
@@ -24,7 +25,16 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 export default function AdminPOS() {
   const navigate = useNavigate()
   const { user } = useAuth()
-
+  const checkoutKey = useRef(sessionStorage.getItem('posCheckoutKey') || crypto.randomUUID())
+  const pendingCheckout = useRef(false)
+  const persistCheckoutKey = () => {
+    sessionStorage.setItem('posCheckoutKey', checkoutKey.current)
+    return checkoutKey.current
+  }
+  const finishCheckout = () => {
+    sessionStorage.removeItem('posCheckoutKey')
+    checkoutKey.current = crypto.randomUUID()
+  }
   const [products, setProducts] = useState([])
   const [allVariants, setAllVariants] = useState([])
   const [search, setSearch] = useState('')
@@ -37,27 +47,37 @@ export default function AdminPOS() {
   const [colors, setColors] = useState([])
   const [sizes, setSizes] = useState([])
 
-  const [orders, setOrders] = useState([{ id: 1, cart: [], customer: null, coupon: null, couponCode: '', dungDiem: false }])
+  const [orders, setOrders] = useState([])
   const [currentOrderIdx, setCurrentOrderIdx] = useState(0)
-  const orderIdCounter = useRef(1)
+  const orderIdCounter = useRef(0)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCustomerPicker, setShowCustomerPicker] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [customerDiem, setCustomerDiem] = useState({ soDiem: 0 })
-  const [dungDiem, setDungDiem] = useState(false)
   const [coupon, setCoupon] = useState(null)
   const [couponMsg, setCouponMsg] = useState('')
+  const [couponInput, setCouponInput] = useState('')
   const [availableCoupons, setAvailableCoupons] = useState([])
-  const [diemQuyTac, setDiemQuyTac] = useState(null)
-  const [paymentMethod, setPaymentMethod] = useState(5)
-  const [tienKhachDua, setTienKhachDua] = useState('')
+  const [showCouponPicker, setShowCouponPicker] = useState(false)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
+  const [loaiDon, setLoaiDon] = useState('TAI_QUAY')
+  const [shippingInfo, setShippingInfo] = useState({ hoTen: '', soDienThoai: '', diaChi: '', tinhThanh: '', quanHuyen: '', phuongXa: '', phuongThuc: 'GHN' })
+  const [shippingFee, setShippingFee] = useState(0)
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [provinces, setProvinces] = useState([])
+  const [districts, setDistricts] = useState([])
+  const [wards, setWards] = useState([])
+  const [mienPhiVanChuyen, setMienPhiVanChuyen] = useState(false)
+  const shippingDebounceRef = useRef(null)
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [customerPaid, setCustomerPaid] = useState(0)
+  const [showConfirmOrder, setShowConfirmOrder] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState(5)
   const [variantModal, setVariantModal] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
@@ -67,7 +87,6 @@ export default function AdminPOS() {
 
   useEffect(() => {
     getActiveCategories().then(r => setCategories(Array.isArray(r) ? r : [])).catch(() => {})
-    getDiemQuyTac().then(setDiemQuyTac).catch(() => {})
     posApi.getColors().then(setColors).catch(() => {})
     posApi.getSizes().then(setSizes).catch(() => {})
     posApi.getVariants().then(r => {
@@ -101,26 +120,42 @@ export default function AdminPOS() {
   }, [categoryId])
 
   useEffect(() => {
-    if (!selectedCustomer) return
-    getCustomerDiem(selectedCustomer.maNguoiDung).then(setCustomerDiem).catch(() => setCustomerDiem({ soDiem: 0 }))
-  }, [selectedCustomer])
+    posApi.getProvinces().then(setProvinces).catch(() => {})
+  }, [])
 
-  const tiLeDoi = diemQuyTac?.tiLeDoi ?? 1
-  const giamToiDaPhanTram = diemQuyTac?.giamToiDaPhanTram ?? 50
-  const diemToiThieu = diemQuyTac?.diemToiThieu ?? 10
+  useEffect(() => {
+    if (!shippingInfo.tinhThanh) { setDistricts([]); setWards([]); return }
+    posApi.getDistricts(shippingInfo.tinhThanh).then(setDistricts).catch(() => setDistricts([]))
+  }, [shippingInfo.tinhThanh])
+
+  useEffect(() => {
+    if (!shippingInfo.quanHuyen) { setWards([]); return }
+    posApi.getWards(shippingInfo.quanHuyen).then(setWards).catch(() => setWards([]))
+  }, [shippingInfo.quanHuyen])
+
+  useEffect(() => {
+    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.tinhThanh || !shippingInfo.quanHuyen || !shippingInfo.phuongXa) { setShippingFee(0); return }
+    setShippingLoading(true)
+    clearTimeout(shippingDebounceRef.current)
+    shippingDebounceRef.current = setTimeout(() => {
+      posApi.calculateShipping({
+        serviceTypeId: shippingInfo.phuongThuc === 'GHTK' ? 1 : 2,
+        toDistrictId: parseInt(shippingInfo.quanHuyen, 10),
+        toWardCode: String(shippingInfo.phuongXa),
+        weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
+      }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000)).finally(() => setShippingLoading(false))
+    }, 300)
+    return () => clearTimeout(shippingDebounceRef.current)
+  }, [loaiDon, shippingInfo.tinhThanh, shippingInfo.quanHuyen, shippingInfo.phuongXa, shippingInfo.phuongThuc, cart])
+
+  const phiVanChuyen = loaiDon === 'GIAO_HANG' && !mienPhiVanChuyen ? shippingFee : 0
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
-  const giaTriSauCoupon = Math.max(0, total - (coupon?.soTienGiam || 0))
-  const maxDiemTheoQuyTac = Math.floor(giaTriSauCoupon * giamToiDaPhanTram / 100 / tiLeDoi)
-  const maxDiemSuDung = Math.max(0, Math.min(customerDiem.soDiem || 0, maxDiemTheoQuyTac))
-  const diemDungDuoc = (customerDiem.soDiem || 0) > 0 && maxDiemSuDung >= diemToiThieu
-  const soDiemSuDung = dungDiem && diemDungDuoc ? maxDiemSuDung : 0
-  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) - soDiemSuDung * tiLeDoi)
+  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) + phiVanChuyen)
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
-  const tienThua = tienKhachDua !== '' && !isNaN(Number(tienKhachDua)) ? Number(tienKhachDua) - thanhTien : null
 
   const saveCurrentOrder = (idxOverride) => {
     const idx = idxOverride !== undefined ? idxOverride : currentOrderIdx
-    setOrders(prev => prev.map((o, i) => i === idx ? { ...o, cart, customer: selectedCustomer, coupon, dungDiem } : o))
+    setOrders(prev => prev.map((o, i) => i === idx ? { ...o, cart, customer: selectedCustomer, coupon } : o))
   }
 
   const switchOrder = (idx) => {
@@ -130,41 +165,47 @@ export default function AdminPOS() {
     setCart(target.cart)
     setSelectedCustomer(target.customer)
     setCoupon(target.coupon)
-    setDungDiem(target.dungDiem)
-    setCustomerDiem({ soDiem: 0 })
+    setCouponInput(target.coupon?.maCode || '')
     setAvailableCoupons([])
     setCouponMsg('')
-    if (target.customer) {
-      getCustomerDiem(target.customer.maNguoiDung).then(setCustomerDiem).catch(() => {})
-    }
     setCurrentOrderIdx(idx)
   }
 
   const addNewOrder = () => {
-    saveCurrentOrder()
+    if (orders.length >= 10) {
+      setMsg({ type: 'error', text: 'Đã đạt giới hạn 10 đơn hàng mở. Vui lòng thanh toán hoặc đóng đơn hiện tại.' })
+      return
+    }
+    if (orders.length > 0) saveCurrentOrder()
     orderIdCounter.current += 1
-    setOrders(prev => [...prev, { id: orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false }])
+    const newOrder = { id: orderIdCounter.current, cart: [], customer: null, coupon: null }
+    setOrders(prev => [...prev, newOrder])
     setCart([])
     setSelectedCustomer(null)
     setCoupon(null)
+    setCouponInput('')
     setCouponMsg('')
-    setDungDiem(false)
-    setCustomerDiem({ soDiem: 0 })
     setAvailableCoupons([])
-    setCurrentOrderIdx(orders.length)
+    setCurrentOrderIdx(0)
   }
 
   const removeOrder = (idx) => {
-    if (orders.length <= 1) return
     const newOrders = orders.filter((_, i) => i !== idx)
     setOrders(newOrders)
-    if (idx === currentOrderIdx) {
+    if (newOrders.length === 0) {
+      setCart([])
+      setSelectedCustomer(null)
+      setCoupon(null)
+      setCouponInput('')
+      setCouponMsg('')
+      setCurrentOrderIdx(0)
+    } else if (idx === currentOrderIdx) {
       const newIdx = Math.min(idx, newOrders.length - 1)
       const target = newOrders[newIdx]
       setCart(target.cart)
       setSelectedCustomer(target.customer)
       setCoupon(target.coupon)
-      setDungDiem(target.dungDiem)
+      setCouponInput(target.coupon?.maCode || '')
       setCurrentOrderIdx(newIdx)
     } else if (idx < currentOrderIdx) {
       setCurrentOrderIdx(prev => prev - 1)
@@ -198,15 +239,19 @@ export default function AdminPOS() {
   }
 
   const updateQtyCart = (idx, delta) => {
-    setCart(prev => prev.map((c, i) => {
-      if (i !== idx) return c
-      const newQty = Math.max(1, c.soLuong + delta)
-      if (delta > 0 && newQty > c.tonKho) {
-        setMsg({ type: 'error', text: `Chỉ còn ${c.tonKho} sản phẩm trong kho` })
-        return c
-      }
-      return { ...c, soLuong: newQty }
-    }))
+    setCart(prev => {
+      const updated = prev.map((c, i) => {
+        if (i !== idx) return c
+        const newQty = c.soLuong + delta
+        if (newQty <= 0) return null
+        if (delta > 0 && newQty > c.tonKho) {
+          setMsg({ type: 'error', text: `Chỉ còn ${c.tonKho} sản phẩm trong kho` })
+          return c
+        }
+        return { ...c, soLuong: newQty }
+      }).filter(Boolean)
+      return updated
+    })
   }
 
   const updateQtyModal = (variant, delta) => {
@@ -241,18 +286,84 @@ export default function AdminPOS() {
         tongTien: total,
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       })
-      if (res.hopLe) { setCoupon(res); setCouponCodeState(code) }
+      if (res.hopLe) { setCoupon(res); setCouponInput(code); setCouponCodeState(code) }
       else { setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không hợp lệ') }
     } catch (err) {
       setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
     }
   }
 
+  const autoApplyBestCoupon = useCallback(async () => {
+    if (cart.length === 0) {
+      setCoupon(null)
+      setCouponMsg('')
+      return
+    }
+    try {
+      const res = await getBestOffer(total, [], selectedCustomer?.maNguoiDung)
+      if (res.found) {
+        setCoupon({ hopLe: true, maCode: res.maCode, soTienGiam: res.soTienGiam, kieuGiamGia: res.kieuGiamGia, loaiMa: res.loaiMa || 'COUPON' })
+        setCouponInput(res.maCode)
+        setCouponMsg('')
+      } else {
+        setCoupon(null)
+        setCouponInput('')
+        setCouponMsg('')
+      }
+    } catch {
+      // silently ignore
+    }
+  }, [cart.length, total, selectedCustomer?.maNguoiDung])
+
+  useEffect(() => {
+    autoApplyBestCoupon()
+  }, [autoApplyBestCoupon])
+
   const [couponCodeState, setCouponCodeState] = useState('')
 
-  const handleCheckout = async () => {
-    setConfirmAction(null)
-    if (cart.length === 0) return
+  const fetchAvailableCoupons = useCallback(async () => {
+    if (cart.length === 0) { setAvailableCoupons([]); return }
+    try {
+      const res = await getBestOffer(total, [], selectedCustomer?.maNguoiDung)
+      if (res.found) {
+        setAvailableCoupons([res])
+      } else {
+        setAvailableCoupons([])
+      }
+    } catch { setAvailableCoupons([]) }
+  }, [cart.length, total, selectedCustomer?.maNguoiDung])
+
+  useEffect(() => {
+    if (showCouponPicker) fetchAvailableCoupons()
+  }, [showCouponPicker, fetchAvailableCoupons])
+
+  useEffect(() => {
+    if (!showCouponPicker) return
+    const handler = (e) => {
+      if (!e.target.closest('[data-coupon-picker]')) setShowCouponPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showCouponPicker])
+
+  const resetOrderState = () => {
+    const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
+    if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null })
+    setOrders(newOrders)
+    setCart(newOrders[0]?.cart || [])
+    setSelectedCustomer(newOrders[0]?.customer || null)
+    setCoupon(newOrders[0]?.coupon || null)
+    setCouponInput(newOrders[0]?.coupon?.maCode || '')
+    setCurrentOrderIdx(0)
+    setCustomerPaid(0)
+    setShowConfirmOrder(false)
+    setPaymentMethod(5)
+  }
+
+  const handleCheckout = async (paymentMethod = 5) => {
+    setShowPaymentModal(false)
+    if (cart.length === 0 || pendingCheckout.current) return
+    pendingCheckout.current = true
     setPlacing(true)
     try {
       if (paymentMethod === 6) {
@@ -260,33 +371,29 @@ export default function AdminPOS() {
         const vqRes = await posApi.vietQRPreview(totalAmount)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
-        setPayResult({ thanhToan: totalAmount })
       } else {
         const res = await posApi.createOrder({
           items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
           maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
           maCode: coupon?.maCode || undefined,
           phuongThucThanhToan: 5,
-          soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
         })
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-        const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
-        if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false })
-        setOrders(newOrders)
-        setCart(newOrders[0]?.cart || [])
-        setSelectedCustomer(newOrders[0]?.customer || null)
-        setCoupon(newOrders[0]?.coupon || null)
-        setDungDiem(newOrders[0]?.dungDiem || false)
-        setCurrentOrderIdx(0)
+        resetOrderState()
         setPayResult(res)
       }
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
-    } finally { setPlacing(false) }
+    } finally {
+      pendingCheckout.current = false
+      setPlacing(false)
+    }
   }
 
   const handleConfirmQR = async () => {
-    if (cart.length === 0) return
+    if (cart.length === 0 || pendingCheckout.current) return
+    pendingCheckout.current = true
+    setShowPaymentModal(false)
     setPlacing(true)
     try {
       const res = await posApi.createOrder({
@@ -294,23 +401,31 @@ export default function AdminPOS() {
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
         maCode: coupon?.maCode || undefined,
         phuongThucThanhToan: 6,
-        soDiemSuDung: soDiemSuDung > 0 ? soDiemSuDung : undefined,
       })
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
-      const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
-      if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null, dungDiem: false })
-      setOrders(newOrders)
-      setCart(newOrders[0]?.cart || [])
-      setSelectedCustomer(newOrders[0]?.customer || null)
-      setCoupon(newOrders[0]?.coupon || null)
-      setDungDiem(newOrders[0]?.dungDiem || false)
-      setCurrentOrderIdx(0)
+      resetOrderState()
       setBankInfo(null)
       setQrDataUrl(null)
       setPayResult(res)
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Xác nhận thất bại' })
-    } finally { setPlacing(false) }
+    } finally {
+      pendingCheckout.current = false
+      setPlacing(false)
+    }
+  }
+
+  const handleTransferTabActive = async () => {
+    if (!bankInfo && cart.length > 0) {
+      try {
+        const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
+        const vqRes = await posApi.vietQRPreview(totalAmount)
+        setQrDataUrl(vqRes.qrUrl)
+        setBankInfo(vqRes)
+      } catch (err) {
+        setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Không thể tạo mã QR' })
+      }
+    }
   }
 
   const handlePrintInvoice = async () => {
@@ -370,52 +485,377 @@ export default function AdminPOS() {
   }
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-6rem)]">
+    <div className="min-h-[calc(100vh-6rem)]">
       {msg && <POSToast message={msg.text} type={msg.type} onClose={() => setMsg(null)} />}
 
-      <div className="flex-1 flex flex-col bg-ivory rounded-2xl border border-stone/10 overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone/10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-ink">Bán hàng</h1>
-              <p className="text-xs text-stone mt-0.5">Người bán: <span className="font-semibold text-ink-soft">{user?.hoTen || 'Admin'}</span></p>
-            </div>
-            <button onClick={addNewOrder}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:bg-[var(--primary-hover)] transition shadow-sm">
-              <Plus className="h-4 w-4" /> Tạo đơn hàng
-            </button>
-          </div>
-          <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={removeOrder} />
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Bán hàng</h1>
+          <p className="text-sm text-stone mt-0.5">Người bán: <span className="font-semibold text-ink-soft">{user?.hoTen || 'Admin'}</span></p>
         </div>
-
-        <div className="flex-1 overflow-hidden p-4">
-          <ProductGrid products={products} loading={loading} cart={cart}
-            onAdd={addToCart} onQtyChange={updateQtyModal}
-            onScanCamera={() => setCameraOpen(true)} onSearch={setSearch} search={search}
-            onCategoryChange={setCategoryId} categories={categories} categoryId={categoryId} />
-        </div>
+        <button onClick={addNewOrder}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:bg-[var(--primary-hover)] transition shadow-sm">
+          <Plus className="h-4 w-4" /> Tạo đơn hàng
+        </button>
       </div>
 
-      <CartPanel cart={cart} customer={selectedCustomer} coupon={coupon} couponMsg={couponMsg}
-        customerDiem={customerDiem} dungDiem={dungDiem}
-        onRemoveItem={removeItem} onUpdateQty={updateQtyCart} onClearCart={clearCart}
-        onSelectCustomer={(c) => { setSelectedCustomer(c); setShowCustomerPicker(false) }}
-        onClearCustomer={() => { setSelectedCustomer(null); setCustomerDiem({ soDiem: 0 }); setDungDiem(false); setCoupon(null); setCouponMsg('') }}
-        onApplyCoupon={handleApplyCoupon} onClearCoupon={() => { setCoupon(null); setCouponMsg('') }}
-        onToggleDiem={() => setDungDiem(v => !v)}
-        paymentMethod={paymentMethod} onPaymentMethodChange={(v) => { setPaymentMethod(v); setTienKhachDua('') }}
-        tienKhachDua={tienKhachDua} onTienKhachDuaChange={setTienKhachDua} tienThua={tienThua}
-        onCheckout={() => setConfirmAction('place')} placing={placing}
-        thanhTien={thanhTien} total={total} soLuongSanPham={soLuongSanPham} diemQuyTac={diemQuyTac}
-        onOpenCustomerPicker={() => setShowCustomerPicker(true)}
-        availableCoupons={availableCoupons} onOpenCouponDropdown={() => {}} />
+      {/* Order Tabs */}
+      {orders.length > 0 && (
+        <div className="mb-4">
+          <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={removeOrder} />
+        </div>
+      )}
 
+      {/* Empty state - no orders */}
+      {orders.length === 0 && (
+        <div className="bg-white rounded-2xl border border-stone/10 p-12 text-center">
+          <ShoppingCart className="h-16 w-16 text-stone/20 mx-auto mb-4" />
+          <p className="text-stone">Chưa có đơn hàng nào được mở. Vui lòng nhấn <span className="font-semibold text-ink">"Tạo đơn hàng"</span> để bắt đầu.</p>
+        </div>
+      )}
+
+      {/* Main content when order exists */}
+      {orders.length > 0 && (
+        <div className="space-y-4">
+          {/* Product Table Section */}
+          <div className="bg-white rounded-2xl border border-stone/10 overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone/10 flex items-center justify-between">
+              <h2 className="font-bold text-ink">Sản phẩm giỏ hàng</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCameraOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-stone/30 rounded-xl text-sm font-medium text-stone hover:border-[var(--primary-color)] hover:text-[var(--primary-color)] transition">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                  Quét QR sản phẩm
+                </button>
+                <button onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:bg-[var(--primary-hover)] transition">
+                  <Plus className="h-4 w-4" /> Thêm sản phẩm
+                </button>
+              </div>
+            </div>
+
+            {cart.length === 0 ? (
+              <div className="p-8 text-center text-stone">
+                <p>Giỏ hàng trống! Nhấn <span className="font-semibold text-ink">"Thêm sản phẩm"</span> hoặc <span className="font-semibold text-ink">"Quét QR"</span> để chọn đồ.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-ivory-100 text-left">
+                      <th className="px-5 py-3 font-semibold text-stone w-12">STT</th>
+                      <th className="px-5 py-3 font-semibold text-stone">Sản phẩm</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-28">Đơn giá</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-32">Số lượng</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-28">Thành tiền</th>
+                      <th className="px-5 py-3 font-semibold text-stone w-16">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((c, i) => (
+                      <tr key={i} className="border-t border-stone/5 hover:bg-ivory/50">
+                        <td className="px-5 py-3 text-stone">{i + 1}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-ivory-100 rounded-lg overflow-hidden shrink-0">
+                              <SafeImg src={c.urlAnh} alt="" className="w-full h-full object-cover" fallback="https://placehold.co/80x80/e2e8f0/475569?text=P" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-ink truncate">{c.tenSanPham}</p>
+                              <p className="text-xs text-stone">{[c.mauSac, c.kichCo].filter(Boolean).join(' - ')}</p>
+                              <p className="text-[10px] text-stone font-mono">{c.sku || c.maSanPhamCode || ''}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 font-semibold text-ink">{VND(c.gia)}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => updateQtyCart(i, -1)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-ivory-100 hover:bg-ivory text-stone transition" aria-label="Giảm">
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-bold">{c.soLuong}</span>
+                            <button onClick={() => updateQtyCart(i, 1)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-ivory-100 hover:bg-ivory text-stone transition" aria-label="Tăng">
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 font-bold text-[var(--primary-color)]">{VND(c.gia * c.soLuong)}</td>
+                        <td className="px-5 py-3">
+                          <button onClick={() => removeItem(i)} className="w-7 h-7 flex items-center justify-center rounded-lg text-stone hover:text-bordeaux hover:bg-bordeaux/10 transition" aria-label="Xóa">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {cart.length > 0 && (
+              <div className="px-5 py-3 border-t border-stone/10 flex justify-between items-center">
+                <button onClick={clearCart} className="text-xs text-bordeaux hover:text-bordeaux/80 font-medium">Xóa hết</button>
+                <div className="text-sm">
+                  <span className="text-stone">Tạm tính: </span>
+                  <span className="font-bold text-ink">{VND(total)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Section: Customer Info + Payment Info */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Customer Info */}
+            <div className="bg-white rounded-2xl border border-stone/10 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-ink">Thông tin khách hàng</h3>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
+                  {selectedCustomer && (
+                    <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponInput(''); setCouponMsg('') }}
+                      className="text-xs text-bordeaux hover:underline font-medium">Gỡ khách</button>
+                  )}
+                </div>
+              </div>
+              {selectedCustomer ? (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-ink">{selectedCustomer.hoTen}</p>
+                    <span className="w-5 h-5 rounded-full bg-emerald-deep/10 flex items-center justify-center">
+                      <svg className="h-3 w-3 text-emerald-deep" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span>
+                  </div>
+                  {selectedCustomer.soDienThoai && (
+                    <p className="text-xs text-stone mt-1">SĐT: {selectedCustomer.soDienThoai}</p>
+                  )}
+                  {selectedCustomer.email && (
+                    <p className="text-xs text-stone mt-0.5">Email: {selectedCustomer.email}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-stone">Đơn đang được đặt dưới dạng "Khách lẻ" (Mua ẩn danh)</p>
+              )}
+
+              {/* Shipping Address (when delivery mode) */}
+              {loaiDon === 'GIAO_HANG' && (
+                <div className="mt-4 pt-4 border-t border-stone/10">
+                  <p className="text-xs font-bold text-ink mb-3">Địa chỉ nhận hàng</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone mb-1 block">Họ và tên người nhận</label>
+                      <input value={shippingInfo?.hoTen || selectedCustomer?.hoTen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, hoTen: e.target.value }))}
+                        placeholder="Nguyễn Văn A" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone mb-1 block">Số điện thoại</label>
+                      <input value={shippingInfo?.soDienThoai || selectedCustomer?.soDienThoai || ''} onChange={e => setShippingInfo(prev => ({ ...prev, soDienThoai: e.target.value }))}
+                        placeholder="0912345678" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-stone mb-1 block">Địa chỉ cụ thể</label>
+                      <input value={shippingInfo?.diaChi || ''} onChange={e => setShippingInfo(prev => ({ ...prev, diaChi: e.target.value }))}
+                        placeholder="Ký túc xá khu B, Đại học Quốc gia" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select value={shippingInfo?.tinhThanh || ''} onChange={e => setShippingInfo(prev => ({ ...prev, tinhThanh: e.target.value, quanHuyen: '', phuongXa: '' }))}
+                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
+                        <option value="">Tỉnh/TP</option>
+                        {provinces?.map(p => <option key={p.ProvinceID || p.ma} value={p.ProvinceID || p.ma}>{p.ProvinceName || p.ten}</option>)}
+                      </select>
+                      <select value={shippingInfo?.quanHuyen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, quanHuyen: e.target.value, phuongXa: '' }))}
+                        disabled={!shippingInfo?.tinhThanh}
+                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
+                        <option value="">Quận/Huyện</option>
+                        {districts?.map(d => <option key={d.DistrictID || d.ma} value={d.DistrictID || d.ma}>{d.DistrictName || d.ten}</option>)}
+                      </select>
+                      <select value={shippingInfo?.phuongXa || ''} onChange={e => setShippingInfo(prev => ({ ...prev, phuongXa: e.target.value }))}
+                        disabled={!shippingInfo?.quanHuyen}
+                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
+                        <option value="">Phường/Xã</option>
+                        {wards?.map(w => <option key={w.WardCode || w.ma} value={w.WardCode || w.ma}>{w.WardName || w.ten}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between bg-ivory-100 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-stone">Phí vận chuyển</span>
+                        <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-semibold">GHN</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {shippingLoading ? (
+                          <span className="text-xs text-stone">Đang tính...</span>
+                        ) : (
+                          <span className="text-xs font-bold text-ink">{mienPhiVanChuyen ? 'Miễn phí' : VND(shippingFee || 0)}</span>
+                        )}
+                        <button onClick={() => {
+                          shippingDebounceRef.current = setTimeout(() => {
+                            calcShippingFee({
+                              toWard: shippingInfo.phuongXa, toDistrict: shippingInfo.quanHuyen,
+                              weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
+                            }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000))
+                          }, 100)
+                        }} className="text-stone hover:text-ink transition p-0.5" title="Tính lại phí">
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-stone italic">Phí cập nhật theo thời gian thực.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Info */}
+            <div className="bg-white rounded-2xl border border-stone/10 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-ink">Thông tin thanh toán</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone">{loaiDon === 'GIAO_HANG' ? 'Giao hàng' : 'Tại quầy'}</span>
+                  <button onClick={() => setLoaiDon(loaiDon === 'TAI_QUAY' ? 'GIAO_HANG' : 'TAI_QUAY')}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${loaiDon === 'GIAO_HANG' ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${loaiDon === 'GIAO_HANG' ? 'translate-x-5' : ''}`} />
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {/* Coupon */}
+                <div className="relative" data-coupon-picker>
+                  <label className="text-xs font-semibold text-stone mb-1.5 block">Mã phiếu giảm giá</label>
+                  <div className="flex items-center gap-2">
+                    <input value={couponInput} onChange={e => setCouponInput(e.target.value)}
+                      placeholder="Nhập mã (Enter để áp dụng)"
+                      disabled={cart.length === 0}
+                      className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
+                      onKeyDown={e => { if (e.key === 'Enter') { handleApplyCoupon(e.target.value); setShowCouponPicker(false) } }} />
+                    <button onClick={() => { fetchAvailableCoupons(); setShowCouponPicker(v => !v) }}
+                      disabled={cart.length === 0}
+                      className="text-xs font-semibold text-white bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] px-3 py-2 rounded-lg whitespace-nowrap disabled:opacity-40 transition">Chọn mã</button>
+                    <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
+                    <span className="text-sm font-bold text-[var(--primary-color)] w-20 text-right">{coupon ? VND(coupon.soTienGiam) : '0 đ'}</span>
+                  </div>
+                  {couponMsg && <p className="text-[11px] text-bordeaux mt-1">{couponMsg}</p>}
+
+                  {/* Coupon picker dropdown */}
+                  {showCouponPicker && cart.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-stone/20 rounded-xl shadow-lg max-h-52 overflow-auto">
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-stone/10">
+                        <span className="text-xs font-bold text-ink">Mã giảm giá khả dụng</span>
+                        <button onClick={() => setShowCouponPicker(false)} className="text-stone hover:text-ink"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                      </div>
+                      {availableCoupons.length === 0 ? (
+                        <p className="px-3 py-4 text-xs text-stone text-center">Không có mã giảm giá phù hợp</p>
+                      ) : (
+                        availableCoupons.map((c, i) => (
+                          <button key={i} onClick={() => {
+                            handleApplyCoupon(c.maCode)
+                            setShowCouponPicker(false)
+                          }} className="w-full text-left px-3 py-2.5 hover:bg-ivory-100 transition flex items-center justify-between border-b border-stone/5 last:border-0">
+                            <div>
+                              <p className="text-xs font-bold text-ink">{c.maCode}</p>
+                              <p className="text-[11px] text-stone mt-0.5">{c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam || 10}%` : `Giảm ${VND(c.soTienGiam)}`}</p>
+                            </div>
+                            <span className="text-xs font-bold text-[var(--primary-color)]">{VND(c.soTienGiam)}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Applied coupon badge */}
+                {coupon && (
+                  <div className="flex items-start gap-2 bg-emerald-deep/5 border border-emerald-deep/20 rounded-lg px-3 py-2">
+                    <svg className="h-4 w-4 text-emerald-deep mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-emerald-deep">Áp dụng thành công phiếu giảm giá {coupon.maCode} ({coupon.kieuGiamGia === 1 ? `${coupon.giaTriGiam || 10}%` : VND(coupon.soTienGiam)})</p>
+                      <p className="text-[11px] text-emerald-deep/70 mt-0.5">Giảm {VND(coupon.soTienGiam)}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Totals */}
+                <div className="space-y-2 text-sm pt-2 border-t border-stone/10">
+                  <div className="flex justify-between text-stone">
+                    <span>Tiền hàng</span><span>{VND(total)}</span>
+                  </div>
+                  {loaiDon === 'GIAO_HANG' && (
+                    <div className="flex justify-between text-stone">
+                      <span>Phí vận chuyển (GHN)</span>
+                      <span>{mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0)}</span>
+                    </div>
+                  )}
+                  {coupon && (
+                    <div className="flex justify-between text-emerald-deep">
+                      <span>Giảm giá</span><span>-{VND(coupon.soTienGiam)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-2 border-t border-stone/10">
+                    <span className="font-bold text-ink">Tổng số tiền</span>
+                    <span className="text-xl font-bold text-[var(--primary-color)]">{VND(thanhTien)}</span>
+                  </div>
+                </div>
+
+                {/* Customer Payment */}
+                <div className="pt-2 border-t border-stone/10">
+                  <button onClick={() => setShowPaymentModal(true)}
+                    className="w-full flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-ivory-100 transition group">
+                    <span className="text-xs font-semibold text-stone">Khách thanh toán</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-ink">{customerPaid > 0 ? VND(customerPaid) : '0 đ'}</span>
+                      <svg className="h-4 w-4 text-stone group-hover:text-[var(--primary-color)] transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Change */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-stone">Tiền thừa trả khách</span>
+                  <span className={`font-bold ${customerPaid - thanhTien >= 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>
+                    {VND(Math.max(0, customerPaid - thanhTien))}
+                  </span>
+                </div>
+
+                {/* Checkout */}
+                <button onClick={() => setShowConfirmOrder(true)} disabled={cart.length === 0 || placing}
+                  className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
+                  {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
       <AddProductModal open={showAddModal} onClose={() => setShowAddModal(false)}
         variants={allVariants} colors={colors} sizes={sizes} cart={cart}
         onAdd={addToCart} onQtyChange={updateQtyModal} />
 
       <CustomerPickerModal open={showCustomerPicker} onClose={() => setShowCustomerPicker(false)}
-        onSelect={(c) => { setSelectedCustomer(c); getCustomerDiem(c.maNguoiDung).then(setCustomerDiem).catch(() => {}) }} />
+        onSelect={async (c) => {
+          setSelectedCustomer(c)
+          try {
+            const addrs = await posApi.getCustomerAddresses(c.maNguoiDung)
+            const defaultAddr = addrs.find(a => a.laMacDinh) || addrs[0]
+            if (defaultAddr) {
+              setShippingInfo(prev => ({
+                ...prev,
+                hoTen: defaultAddr.tenNguoiNhan || c.hoTen || '',
+                soDienThoai: defaultAddr.soDienThoai || c.soDienThoai || '',
+                diaChi: defaultAddr.chiTietDiaChi || '',
+                tinhThanh: defaultAddr.provinceId ? String(defaultAddr.provinceId) : (defaultAddr.tinhThanhPho || ''),
+                quanHuyen: defaultAddr.districtId ? String(defaultAddr.districtId) : (defaultAddr.quanHuyen || ''),
+                phuongXa: defaultAddr.wardCode || (defaultAddr.phuongXa || ''),
+              }))
+            }
+          } catch {}
+        }} />
+
+      <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
+        thanhTien={thanhTien} placing={placing} bankInfo={bankInfo}
+        onConfirmPaid={(amount) => { setCustomerPaid(amount); setPaymentMethod(5) }}
+        onConfirmTransfer={(amount) => { setCustomerPaid(amount); setPaymentMethod(6) }}
+        onTransferTabActive={handleTransferTabActive} />
 
       {cameraOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70" onClick={() => setCameraOpen(false)}>
@@ -566,7 +1006,26 @@ export default function AdminPOS() {
       )}
 
       <ConfirmDialog open={typeof confirmAction === 'number'} title="Xóa sản phẩm" message="Bạn chắc chắn muốn xóa sản phẩm này?" confirmText="Xóa" onConfirm={() => { removeItem(confirmAction); setConfirmAction(null) }} onCancel={() => setConfirmAction(null)} />
-      <ConfirmDialog open={confirmAction === 'place'} title="Xác nhận thanh toán" message="Tạo đơn bán hàng với giỏ hiện tại?" confirmText="Thanh toán" variant="gold" onConfirm={handleCheckout} onCancel={() => setConfirmAction(null)} />
+
+      <POSConfirmDialog
+        open={showConfirmOrder}
+        loaiDon={loaiDon}
+        tienHang={total}
+        giamGia={coupon?.soTienGiam || 0}
+        tongPhaiTra={thanhTien}
+        hinhThucThanhToan={paymentMethod === 6 ? 'Chuyển khoản' : 'Tiền mặt'}
+        khachThanhToan={customerPaid || thanhTien}
+        loading={placing}
+        onConfirm={() => {
+          setShowConfirmOrder(false)
+          if (paymentMethod === 6) {
+            handleConfirmQR()
+          } else {
+            handleCheckout(5)
+          }
+        }}
+        onCancel={() => setShowConfirmOrder(false)}
+      />
     </div>
   )
 }
