@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
-import { getAddresses, addAddress } from '../api/users'
+import { getProfile, getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
@@ -13,7 +13,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, ShieldCheck, RefreshCcw, Lock } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, ShieldCheck, RefreshCcw, Lock, ShoppingCart } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 import SearchableSelect from '../components/SearchableSelect'
@@ -109,15 +109,17 @@ export default function Checkout() {
   const [addrDistricts, setAddrDistricts] = useState([])
   const [addrWards, setAddrWards] = useState([])
   const [addrLoading, setAddrLoading] = useState(false)
+  const [profile, setProfile] = useState(null)
   const [confirmOrder, setConfirmOrder] = useState(false)
   const [confirmAddr, setConfirmAddr] = useState(false)
 
   useEffect(() => {
     const provPromise = getProvinces().catch(() => [])
-    Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses()])
-      .then(([cartData, addrData]) => {
+    Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProfile().catch(() => null)])
+      .then(([cartData, addrData, profileData]) => {
         if (!selectedItems) setCart(cartData)
         setAddresses(addrData)
+        if (profileData) setProfile(profileData)
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
         if (def) {
           const fullAddr = def.tinhThanhPho ? `${def.chiTietDiaChi}, ${def.tinhThanhPho}` : def.chiTietDiaChi
@@ -433,7 +435,16 @@ export default function Checkout() {
 
       const method = form.phuongThucThanhToan
       if (method === 1) {
-        navigate(`/orders/${result.maDonHang}`)
+        navigate('/order-success', { state: {
+          order: {
+            ...result,
+            tenNguoiNhan: form.tenNguoiNhan,
+            sdtNguoiNhan: form.sdtNguoiNhan,
+            diaChiGiaoHang: form.diaChiGiaoHang,
+            phuongThucThanhToan: form.phuongThucThanhToan,
+            tongTien: finalTotal,
+          }
+        }})
       } else if (method === 2) {
         const paymentRes = await createVnPayPayment(result.maDonHang)
         window.location.href = paymentRes.paymentUrl
@@ -800,16 +811,134 @@ export default function Checkout() {
       )}
 
 
-      <ConfirmDialog
-        open={confirmOrder}
-        title="Xác nhận đặt hàng"
-        message="Bạn chắc chắn muốn đặt đơn hàng này?"
-        confirmText="Đặt hàng"
-        variant="gold"
-        loading={placing}
-        onConfirm={handlePlaceOrder}
-        onCancel={() => setConfirmOrder(false)}
-      />
+      {confirmOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+          onClick={() => setConfirmOrder(false)}>
+          <div className="bg-white rounded-2xl max-w-lg w-full mx-4 animate-scale-in max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2">
+                <span className="text-xl">📋</span> XÁC NHẬN THÔNG TIN ĐƠN HÀNG
+              </h3>
+              <button onClick={() => setConfirmOrder(false)} className="text-stone hover:text-ink transition p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Shipping Info */}
+              <div>
+                <h4 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-[var(--primary-color)]" /> THÔNG TIN NHẬN HÀNG
+                </h4>
+                <div className="text-sm space-y-1.5 ml-6">
+                  <p className="text-stone">
+                    <span className="font-semibold text-ink">Họ và tên:</span>{' '}
+                    <span className="text-ink">{form.tenNguoiNhan}</span>
+                    <span className="mx-2 text-gray-300">|</span>
+                    <span className="font-semibold text-ink">Số điện thoại:</span>{' '}
+                    <span className="text-ink">{form.sdtNguoiNhan}</span>
+                  </p>
+                  <p className="text-stone">
+                    <span className="font-semibold text-ink">Email:</span>{' '}
+                    <span className="text-ink">{profile?.email || '---'}</span>
+                  </p>
+                  <p className="text-stone">
+                    <span className="font-semibold text-ink">Địa chỉ nhận hàng:</span>{' '}
+                    <span className="text-ink">{form.diaChiGiaoHang}</span>
+                  </p>
+                  <p className="text-stone">
+                    <span className="font-semibold text-ink">Phương thức thanh toán:</span>{' '}
+                    <span className="text-[var(--primary-color)] font-semibold">
+                      {PAYMENT_OPTIONS.find(p => p.value === form.phuongThucThanhToan)?.label || 'COD'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Products */}
+              <div>
+                <h4 className="font-bold text-sm text-ink mb-3 flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-[var(--primary-color)]" /> SẢN PHẨM ĐÃ CHỌN
+                </h4>
+                <div className="ml-6">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left font-semibold pb-2 text-stone">Sản phẩm</th>
+                        <th className="text-center font-semibold pb-2 text-stone">SL</th>
+                        <th className="text-right font-semibold pb-2 text-stone">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cart.map((item) => (
+                        <tr key={item.maBienThe} className="border-b border-gray-100 last:border-0">
+                          <td className="py-3 pr-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-11 h-11 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                                <SafeImg src={item.urlAnh} alt="" className="w-full h-full object-cover" fallback="https://placehold.co/80x80/e2ee8f0/475569?text=Polo" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-ink text-xs">{item.tenSanPham}</p>
+                                <p className="text-xs text-stone">
+                                  {item.tenKichCo && `Size ${item.tenKichCo}`}
+                                  {item.tenKichCo && item.tenMauSac && ' / '}
+                                  {item.tenMauSac && item.tenMauSac}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-center py-3 text-ink">{item.soLuong || 1}</td>
+                          <td className="text-right py-3 font-semibold text-ink whitespace-nowrap">{VND(item.donGia * (item.soLuong || 1))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="border-t border-gray-200 pt-4 ml-6 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-stone">Tạm tính</span>
+                  <span className="font-medium text-ink">{VND(rawTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-stone">Phí vận chuyển</span>
+                  <span className="text-ink">{VND(effectiveShippingFee)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Mã giảm giá</span>
+                    <span>-{VND(discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200">
+                  <span className="text-ink">Tổng thanh toán:</span>
+                  <span className="text-[var(--primary-color)]">{VND(finalTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+              <button onClick={() => setConfirmOrder(false)}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold border-2 border-gray-300 text-stone hover:bg-gray-50 transition">
+                Quay lại
+              </button>
+              <button onClick={handlePlaceOrder} disabled={placing}
+                className="flex-1 py-3 rounded-xl text-sm font-bold bg-[var(--primary-color)] text-white hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                {placing ? (
+                  <><Loader className="h-4 w-4 animate-spin" /> Đang xử lý...</>
+                ) : (
+                  <><Check className="h-4 w-4" /> XÁC NHẬN ĐẶT HÀNG</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         open={confirmAddr}
         title="Thêm địa chỉ"

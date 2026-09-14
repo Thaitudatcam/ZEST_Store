@@ -188,12 +188,15 @@ export default function Profile() {
       <div className="bg-gradient-to-r from-[var(--primary-color)] to-[var(--primary-hover)]">
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3 text-white">
-            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
-              {profile?.hoTen?.charAt(0) || 'U'}
+            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
             <div>
-              <p className="text-sm opacity-90">Xin chào, <span className="font-bold">{profile?.hoTen || 'User'}</span></p>
-              <p className="text-xs opacity-75">Member Bee Stylish</p>
+              <p className="text-sm font-medium">
+                Xin chào, <span className="font-bold">{profile?.hoTen || 'User'}</span> • <span className="opacity-90">Member Bee Stylish</span>
+              </p>
             </div>
           </div>
         </div>
@@ -203,33 +206,18 @@ export default function Profile() {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Left Sidebar */}
           <div className="w-full md:w-64 shrink-0">
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-              {/* User Info Card */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--primary-color)] to-[var(--primary-hover)] flex items-center justify-center text-white font-bold text-lg">
-                    {profile?.hoTen?.charAt(0) || 'U'}
-                  </div>
-                  <div>
-                    <p className="font-bold text-ink text-sm">{profile?.hoTen || 'User'}</p>
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-0.5 ${getRoleBadgeColor(profile?.vaiTro)}`}>
-                      {getRoleLabel(profile?.vaiTro)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm p-3">
               {/* Navigation */}
-              <nav className="py-1">
+              <nav className="space-y-1">
                 {SIDEBAR_ITEMS.map(({ key, label, icon: Icon }) => {
                   const active = tab === key
                   return (
                     <button
                       key={key}
                       onClick={() => setTab(key)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all rounded-lg ${
                         active
-                          ? 'bg-[var(--primary-color)]/10 text-[var(--primary-color)] border-r-3 border-[var(--primary-color)]'
+                          ? 'bg-[var(--primary-color)] text-white shadow-md'
                           : 'text-stone hover:bg-gray-50 hover:text-ink'
                       }`}
                     >
@@ -478,68 +466,95 @@ export default function Profile() {
             {/* Addresses Tab */}
             {tab === 'addresses' && (
               <div className="space-y-4">
+                {/* Header */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                  <div className="px-6 py-5">
+                    <h2 className="text-lg font-bold text-ink flex items-center gap-2 mb-1">
+                      <span className="w-1 h-5 bg-[var(--primary-color)] rounded-full inline-block" />
+                      SỔ ĐỊA CHỈ GIAO HÀNG
+                    </h2>
+                    <p className="text-sm text-stone ml-3">Quản lý các địa chỉ giao hàng để thao tác mua sắm tiện lợi hơn.</p>
+                  </div>
+                </div>
+
                 {/* Address List */}
                 {addresses.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <div className="px-6 py-4 border-b border-gray-100">
-                      <h2 className="text-lg font-bold text-ink flex items-center gap-2">
-                        <span className="w-1 h-5 bg-[var(--primary-color)] rounded-full inline-block" />
-                        ĐỊA CHỈ GIAO HÀNG ({addresses.length})
-                      </h2>
-                    </div>
-                    <div className="p-4 space-y-3">
-                      {addresses.map((a) => (
-                        <div key={a.maDiaChi} className="border border-gray-200 rounded-xl p-4 hover:border-[var(--primary-color)]/30 transition">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-bold text-ink text-sm">{a.tenNguoiNhan}</p>
-                                <span className="text-stone text-sm">|</span>
-                                <p className="text-stone text-sm">{a.soDienThoai}</p>
-                                {a.laMacDinh && (
-                                  <span className="text-xs bg-[var(--primary-color)]/10 text-[var(--primary-color)] px-2 py-0.5 rounded-full font-medium">
-                                    Mặc định
-                                  </span>
-                                )}
+                  <div className="space-y-3">
+                    {addresses.map((a) => (
+                      <div key={a.maDiaChi} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <div className="flex">
+                          {/* Orange left accent */}
+                          <div className="w-1 bg-[var(--primary-color)] shrink-0" />
+                          <div className="flex-1 p-4">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2.5 mb-1.5">
+                                  <User className="h-4 w-4 text-stone shrink-0" />
+                                  <p className="font-bold text-ink text-sm">{a.tenNguoiNhan}</p>
+                                  <span className="text-stone text-sm">|</span>
+                                  <p className="text-stone text-sm">{a.soDienThoai}</p>
+                                  {a.laMacDinh && (
+                                    <span className="text-[11px] bg-[var(--primary-color)] text-white px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                                      Mặc định
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-stone flex items-start gap-1.5 ml-6.5">
+                                  <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0 text-stone" />
+                                  <span>{a.chiTietDiaChi}{a.phuongXa ? `, ${a.phuongXa}` : ''}{a.quanHuyen ? `, ${a.quanHuyen}` : ''}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</span>
+                                </p>
                               </div>
-                              <p className="text-sm text-stone flex items-start gap-1.5">
-                                <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                {a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}
-                              </p>
-                            </div>
-                            <div className="flex gap-1 ml-3">
-                              <button onClick={() => handleEditAddr(a)}
-                                className="p-2 text-stone hover:text-[var(--primary-color)] hover:bg-[var(--primary-color)]/5 rounded-lg transition"
-                                title="Sửa">
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              {!a.laMacDinh && (
-                                <button onClick={() => handleSetDefault(a.maDiaChi)}
-                                  className="p-2 text-stone hover:text-amber-500 hover:bg-amber-50 rounded-lg transition"
-                                  title="Đặt mặc định">
-                                  <Star className="h-4 w-4" />
+                              <div className="flex gap-1 ml-3 shrink-0">
+                                <button onClick={() => handleEditAddr(a)}
+                                  className="w-9 h-9 flex items-center justify-center text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded-lg transition"
+                                  title="Sửa địa chỉ">
+                                  <Pencil className="h-4 w-4" />
                                 </button>
-                              )}
-                              <button onClick={() => setConfirmAction(a.maDiaChi)}
-                                className="p-2 text-stone hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                                title="Xóa">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                                {!a.laMacDinh && (
+                                  <button onClick={() => handleSetDefault(a.maDiaChi)}
+                                    className="w-9 h-9 flex items-center justify-center text-amber-500 hover:bg-amber-50 rounded-lg transition"
+                                    title="Đặt mặc định">
+                                    <Star className="h-4 w-4" />
+                                  </button>
+                                )}
+                                <button onClick={() => setConfirmAction(a.maDiaChi)}
+                                  className="w-9 h-9 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-lg transition"
+                                  title="Xóa">
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {addresses.length === 0 && (
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
+                    <MapPin className="h-12 w-12 text-stone/30 mx-auto mb-3" />
+                    <p className="text-stone text-sm">Bạn chưa có địa chỉ giao hàng nào.</p>
+                    <p className="text-stone text-xs mt-1">Thêm địa chỉ mới để thuận tiện khi mua sắm.</p>
                   </div>
                 )}
 
                 {/* Add/Edit Address Form */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                  <div className="px-6 py-4 border-b border-gray-100">
-                    <h2 className="text-lg font-bold text-ink flex items-center gap-2">
+                  <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h2 className="text-base font-bold text-ink flex items-center gap-2">
                       <span className="w-1 h-5 bg-[var(--primary-color)] rounded-full inline-block" />
                       {editAddr ? 'SỬA ĐỊA CHỈ' : 'THÊM ĐỊA CHỈ MỚI'}
                     </h2>
+                    {editAddr && (
+                      <button onClick={() => {
+                        setEditAddr(null)
+                        setAddrForm({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', provinceId: null, districtId: null, wardCode: '', chiTietDiaChi: '', laMacDinh: false })
+                        setProvinceId(0); setDistrictId(0); setWardCode('')
+                      }} className="text-stone text-xs hover:text-ink transition">
+                        Hủy sửa
+                      </button>
+                    )}
                   </div>
                   <form onSubmit={(e) => { e.preventDefault(); setConfirmAction('saveAddr') }} className="p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -637,7 +652,7 @@ export default function Profile() {
                         onChange={(e) => setAddrForm({ ...addrForm, laMacDinh: e.target.checked })}
                         className="w-4 h-4 rounded border-gray-300 text-[var(--primary-color)] focus:ring-[var(--primary-color)]"
                       />
-                      <span className="text-ink">Đặt làm mặc định</span>
+                      <span className="text-ink font-medium">Đặt làm mặc định</span>
                     </label>
 
                     <div className="flex gap-3 pt-2">

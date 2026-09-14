@@ -18,6 +18,7 @@ import Wishlist from './pages/Wishlist'
 import UserVouchers from './pages/UserVouchers'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
+import OrderSuccess from './pages/OrderSuccess'
 
 import PaymentResult from './pages/PaymentResult'
 import PolicyPage from './pages/PolicyPage'
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="/vouchers" element={<ProtectedRoute><UserVouchers /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><ErrorBoundary><OrderDetail /></ErrorBoundary></ProtectedRoute>} />
+              <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
 
               <Route path="/payment/result" element={<PaymentResult />} />
             </Routes>
