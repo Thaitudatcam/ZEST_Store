@@ -30,7 +30,7 @@ class OrderInventoryTest {
     @Mock GhnService shipping;
     @Mock VoucherNguoiDungRepository vouchers;
     @Mock PhieuGiamGiaService couponService;
-    @Mock ViService wallet;
+
     @Mock InventoryService inventory;
     @InjectMocks DonHangService service;
     DonHang order;
