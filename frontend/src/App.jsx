@@ -14,7 +14,6 @@ import AuthPage from './pages/AuthPage'
 import ForgotPassword from './pages/ForgotPassword'
 import OtpVerifyPage from './pages/OtpVerifyPage'
 import Profile from './pages/Profile'
-import Wishlist from './pages/Wishlist'
 import UserVouchers from './pages/UserVouchers'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
@@ -37,6 +36,7 @@ import AdminProductAttributes from './pages/admin/AdminProductAttributes'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminCoupons from './pages/admin/AdminCoupons'
+import AdminVoucherCreate from './pages/admin/AdminVoucherCreate'
 
 import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
@@ -78,6 +78,7 @@ export default function App() {
         <Route path="brands" element={<AdminBrands />} />
         <Route path="thong-ke" element={<AdminThongKe />} />
         <Route path="coupons" element={<AdminCoupons />} />
+        <Route path="coupons/create" element={<AdminVoucherCreate />} />
         <Route path="campaigns" element={<AdminCampaigns />} />
         <Route path="campaigns/create" element={<AdminCampaignForm />} />
         <Route path="campaigns/:id/edit" element={<AdminCampaignForm />} />
@@ -108,7 +109,6 @@ export default function App() {
               <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
               <Route path="/checkout" element={<ProtectedRoute><ErrorBoundary><Checkout /></ErrorBoundary></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
               <Route path="/vouchers" element={<ProtectedRoute><UserVouchers /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/orders/:id" element={<ProtectedRoute><ErrorBoundary><OrderDetail /></ErrorBoundary></ProtectedRoute>} />
