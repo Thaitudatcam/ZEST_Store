@@ -128,7 +128,7 @@ export default function AdminThongKe() {
   const today = new Date()
   const greeting = today.getHours() < 12 ? 'Chào buổi sáng' : today.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'
 
-  const statusLabels = { 1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng', 5: 'Đã hủy', 6: 'Đã giao hàng', 9: 'Không nhận hàng' }
+  const statusLabels = { 1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng', 5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công' }
   const statusColors = { 1: 'gold', 2: 'blue', 3: 'purple', 4: 'green', 5: 'red', 6: 'green', 9: 'gray' }
 
   if (loading) {

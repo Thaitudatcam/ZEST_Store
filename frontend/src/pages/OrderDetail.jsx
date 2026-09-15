@@ -13,7 +13,7 @@ import { Package, MapPin, CreditCard, ExternalLink, ShoppingBag, CheckCircle, Tr
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Đã giao hàng', 9: 'Không nhận hàng',
+  5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
 }
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }

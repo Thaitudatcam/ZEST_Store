@@ -15,12 +15,12 @@ const STATUS_STEPS = [
   { status: 2, label: 'Đã xác nhận', icon: CheckCircle },
   { status: 3, label: 'Chờ lấy hàng', icon: Package },
   { status: 4, label: 'Chờ giao hàng', icon: Truck },
-  { status: 6, label: 'Đã giao hàng', icon: Home },
+  { status: 6, label: 'Giao hàng thành công', icon: Home },
 ]
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Đã giao hàng', 9: 'Không nhận hàng',
+  5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
 }
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }

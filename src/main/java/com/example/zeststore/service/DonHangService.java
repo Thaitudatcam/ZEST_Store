@@ -518,13 +518,14 @@ public class DonHangService {
 
         orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", null);
 
-        // Notify the order's customer that its status changed (status map: 1=Chờ,2=ĐãXL,3=ĐangGiao,4=ĐãGiao,5=ĐãHủy,6=Hoàn thành,7=Trả hàng).
+        // Notify the order's customer that its status changed (status map: 1=Chờ,2=ĐãXL,3=ĐangGiao,4=ĐãGiao,5=ĐãHủy,6=Giao thành công,9=Giao không thành công).
         if (order.getNguoiDung() != null) {
             String trangThaiText = switch (status) {
                 case 2 -> "đang được xử lý";
                 case 3 -> "đang được giao";
                 case 4 -> "đã được giao";
-                case 6 -> "đã hoàn thành";
+                case 6 -> "giao hàng thành công";
+                case 9 -> "giao hàng không thành công";
                 default -> "đã được cập nhật";
             };
             try {

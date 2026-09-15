@@ -14,8 +14,8 @@ const labels = {
   3: 'Chờ lấy hàng',
   4: 'Chờ giao hàng',
   5: 'Đã hủy',
-  6: 'Đã giao hàng',
-  9: 'Không nhận hàng',
+  6: 'Giao hàng thành công',
+  9: 'Giao hàng không thành công',
 }
 
 const posLabels = {

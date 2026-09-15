@@ -14,7 +14,7 @@ const ONLINE_STATUS_LIST = [
   { value: 3, label: 'Chờ giao' },
   { value: 4, label: 'Đang giao' },
   { value: 5, label: 'Đã hủy' },
-  { value: 6, label: 'Hoàn thành' },
+  { value: 6, label: 'Giao thành công' },
 ]
 
 export default function AdminOrders() {

@@ -21,8 +21,8 @@ const VND = (n) => {
 
 const statusLabels = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng',
-  4: 'Chờ giao hàng', 5: 'Đã hủy', 6: 'Đã giao hàng',
-  7: 'Yêu cầu trả', 8: 'Đã trả', 9: 'Không nhận'
+  4: 'Chờ giao hàng', 5: 'Đã hủy', 6: 'Giao hàng thành công',
+  7: 'Yêu cầu trả', 8: 'Đã trả', 9: 'Giao hàng không thành công'
 }
 const statusColors = {
   1: 'gold', 2: 'blue', 3: 'purple', 4: 'blue',
