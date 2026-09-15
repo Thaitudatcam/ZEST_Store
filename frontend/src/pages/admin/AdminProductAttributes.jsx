@@ -5,6 +5,7 @@ import api from '../../api/axios'
 import { useToast } from '../../context/ToastContext'
 import AdminCategories from './AdminCategories'
 import AdminBrands from './AdminBrands'
+import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader'
 
 const TYPES = {
   category: { title: 'Danh mục', icon: FolderTree },
@@ -77,13 +78,7 @@ export default function AdminProductAttributes() {
 
   return (
     <div className="max-w-[1440px] mx-auto pb-8">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-noir via-noir-800 to-noir p-6 sm:p-7 mb-6 shadow-xl">
-        <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full bg-gold/20 blur-3xl" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4"><div className="p-3 rounded-2xl bg-gold text-noir shadow-lg"><Tags className="h-6 w-6" /></div><div><p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-1">Dữ liệu dùng chung</p><h1 className="text-2xl sm:text-3xl font-bold text-ivory">Danh mục & thuộc tính</h1><p className="text-sm text-ivory/60 mt-1">Quản lý dữ liệu chuẩn cho toàn bộ sản phẩm.</p></div></div>
-          {!isCollection && <div className="rounded-xl bg-white/10 px-4 py-2 text-sm text-ivory"><span className="text-gold font-bold text-lg">{items.length}</span> {config.title.toLowerCase()}</div>}
-        </div>
-      </div>
+      <AdminWorkspaceHeader icon={Tags} eyebrow="Dữ liệu dùng chung" title="Danh mục & thuộc tính" description="Quản lý dữ liệu chuẩn cho toàn bộ sản phẩm." meta={!isCollection && <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-ivory"><span className="text-lg font-bold text-gold">{items.length}</span> {config.title.toLowerCase()}</div>} />
       <div className="bg-ivory border rounded-2xl p-2 mb-6 shadow-sm"><div className="flex flex-wrap gap-1.5">{Object.entries(TYPES).map(([key, type]) => <button key={key} onClick={() => { setSearch(''); setParams({ type: key }) }} className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${typeKey === key ? 'bg-noir text-ivory shadow-md' : 'text-stone hover:bg-gold/10 hover:text-noir'}`}><type.icon className={`h-4 w-4 ${typeKey === key ? 'text-gold' : 'text-stone'}`} /> {type.title}</button>)}</div></div>
       {isCollection ? (typeKey === 'category' ? <AdminCategories embedded /> : <AdminBrands embedded />) : <>
         <div className="rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/10 via-ivory to-ivory p-5 sm:p-6 mb-5 shadow-sm">

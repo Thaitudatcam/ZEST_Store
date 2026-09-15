@@ -459,7 +459,7 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
+    public DonHang updateOrderStatus(Integer orderId, Integer status, String note, Integer adminUserId) {
         List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8, 9);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
@@ -509,14 +509,17 @@ public class DonHangService {
 
         NguoiDung admin = nguoiDungRepository.findById(adminUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
+        String normalizedNote = note == null ? null : note.trim();
+        if (normalizedNote != null && normalizedNote.isEmpty()) normalizedNote = null;
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(oldStatus)
                 .trangThaiMoi(status)
                 .nguoiCapNhat(admin)
+                .ghiChu(normalizedNote)
                 .build());
 
-        orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", null);
+        orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", normalizedNote);
 
         // Notify the order's customer that its status changed (status map: 1=Chờ,2=ĐãXL,3=ĐangGiao,4=ĐãGiao,5=ĐãHủy,6=Hoàn thành,7=Trả hàng).
         if (order.getNguoiDung() != null) {

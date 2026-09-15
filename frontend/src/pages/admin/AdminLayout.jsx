@@ -36,14 +36,9 @@ export default function AdminLayout() {
   ]
 
   const managementNav = isStaff ? [
-    { label: 'Quản lý đơn hàng', icon: ClipboardList, children: [
-      { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
-    ]},
+    { label: 'Quản lý đơn hàng', icon: ClipboardList, to: '/admin/orders' },
   ] : [
-    { label: 'Quản lý đơn hàng', icon: ClipboardList, children: [
-      { to: '/admin/orders/online', label: 'Đơn hàng online' },
-      { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
-    ]},
+    { label: 'Quản lý đơn hàng', icon: ClipboardList, to: '/admin/orders' },
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
       { to: '/admin/products/detail', label: 'Biến thể sản phẩm' },

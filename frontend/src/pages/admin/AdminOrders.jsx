@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getAllOrders } from '../../api/admin'
 import StatusBadge from '../../components/StatusBadge'
-import { Search, Filter, Eye, Calendar, ChevronDown, Download, AlertTriangle } from 'lucide-react'
+import { Search, Filter, Eye, Calendar, ChevronDown, Download, AlertTriangle, ClipboardList } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { useToast } from '../../context/ToastContext'
 import { SkeletonTable } from '../../components/Skeleton'
+import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader'
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'MoMo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 const PAYMENT_STATUS_LABELS = { 1: 'Chờ TT', 2: 'Đã TT', 3: 'Thất bại' }
@@ -33,6 +34,8 @@ const ONLINE_STATUS_LIST = [
   { value: 4, label: 'Chờ giao hàng' },
   { value: 5, label: 'Đã hủy' },
   { value: 6, label: 'Đã giao hàng' },
+  { value: 7, label: 'Yêu cầu trả hàng' },
+  { value: 8, label: 'Đã trả hàng' },
 ]
 
 const POS_STATUS_LIST = [
@@ -42,14 +45,37 @@ const POS_STATUS_LIST = [
   { value: 5, label: 'Đã hủy' },
 ]
 
+const ALL_STATUS_LIST = [
+  { value: 0, label: 'Tất cả trạng thái' },
+  { value: 1, label: 'Chờ xử lý' },
+  { value: 2, label: 'Đã xác nhận' },
+  { value: 3, label: 'Chờ lấy hàng' },
+  { value: 4, label: 'Chờ giao hàng' },
+  { value: 5, label: 'Đã hủy' },
+  { value: 6, label: 'Hoàn thành / đã giao' },
+  { value: 7, label: 'Yêu cầu trả hàng' },
+  { value: 8, label: 'Đã trả hàng' },
+]
+
+function getPaginationItems(currentPage, pageCount) {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, index) => index)
+  const visible = [...new Set([0, pageCount - 1, currentPage - 1, currentPage, currentPage + 1]
+    .filter(index => index >= 0 && index < pageCount))].sort((a, b) => a - b)
+  const items = []
+  visible.forEach((value, index) => {
+    if (index > 0 && value - visible[index - 1] > 1) items.push(`ellipsis-${value}`)
+    items.push(value)
+  })
+  return items
+}
+
 export default function AdminOrders() {
   const toast = useToast()
-  const { pathname } = useLocation()
-  const loaiDonHang = pathname.endsWith('/pos') ? 2 : 1
   const [orders, setOrders] = useState([])
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [search, setSearch] = useState('')
+  const [orderTypeFilter, setOrderTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -58,15 +84,15 @@ export default function AdminOrders() {
   // người dùng thu hẹp lại khi cần
   const [tuNgay, setTuNgay] = useState('')
   const [denNgay, setDenNgay] = useState(todayStr)
-  const [datePreset, setDatePreset] = useState('30d')
+  const [datePreset, setDatePreset] = useState('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isStatusOpen, setIsStatusOpen] = useState(false)
   const dateError = tuNgay && denNgay && tuNgay > denNgay ? 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' : ''
-  const hasActiveFilter = statusFilter > 0 || tuNgay !== (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })() || denNgay !== todayStr
+  const hasActiveFilter = Boolean(orderTypeFilter) || statusFilter > 0 || datePreset !== 'all'
   const loadOrders = (p, loai, q) => {
     if (dateError) { setLoading(false); return }
     setLoading(true)
-    const l = loai ?? loaiDonHang
+    const l = loai ?? (orderTypeFilter ? Number(orderTypeFilter) : undefined)
     const keyword = (q || '').trim().replace(/\s+/g, ' ')
     getAllOrders(p, 10, l, keyword || undefined, statusFilter > 0 ? statusFilter : undefined,
       tuNgay || undefined, denNgay || undefined)
@@ -78,7 +104,7 @@ export default function AdminOrders() {
     .finally(() => setLoading(false))
   }
 
-  useEffect(() => { if (!dateError) loadOrders(0, loaiDonHang, search) }, [pathname, search, statusFilter, tuNgay, denNgay, dateError])
+  useEffect(() => { if (!dateError) loadOrders(0, undefined, search) }, [search, orderTypeFilter, statusFilter, tuNgay, denNgay, dateError])
   const exportExcel = () => {
     const rows = orders.map(o => ({ 'Mã đơn': `#${o.maDonHang}`, 'Khách hàng': o.nguoiDung?.hoTen || 'Khách lẻ', 'Ngày đặt': o.ngayDat ? new Date(o.ngayDat).toLocaleString('vi-VN') : '', 'Tổng tiền': Number(o.tongTien || 0), 'Thanh toán': PAYMENT_LABELS[o.thanhToans?.[0]?.phuongThuc] || '', 'Trạng thái': o.trangThaiDon }))
     const sheet = XLSX.utils.json_to_sheet(rows); const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, 'Don hang'); XLSX.writeFile(book, 'danh-sach-don-hang.xlsx')
@@ -96,18 +122,16 @@ export default function AdminOrders() {
 
   return (
     <div className="max-w-[1440px] mx-auto pb-8">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-noir via-noir-800 to-noir p-5 sm:p-6 mb-5 shadow-xl">
-        <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-gold/20 blur-3xl" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-        <div><p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-1">Vận hành bán hàng</p><h1 className="text-2xl sm:text-3xl font-bold text-ivory">Quản lý đơn hàng</h1><p className="text-sm text-ivory/60 mt-1">Theo dõi trạng thái, thanh toán và xử lý đơn tập trung.</p></div>
-        <div className="flex items-center gap-2">
-          <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm mã đơn, khách hàng..." className="pl-9 pr-4 py-2.5 border border-white/20 bg-white/10 text-ivory placeholder:text-ivory/50 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gold" /></div>
-          <button onClick={exportExcel} disabled={orders.length === 0} className="flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold bg-gold text-noir rounded-xl hover:bg-gold-hover disabled:opacity-50"><Download className="h-3.5 w-3.5" /> Xuất Excel</button>
-        </div>
-        </div>
-      </div>
+      <AdminWorkspaceHeader icon={ClipboardList} eyebrow="Vận hành bán hàng" title="Quản lý đơn hàng" description="Theo dõi tập trung đơn Online và đơn tại quầy POS.">
+        <button onClick={exportExcel} disabled={orders.length === 0} className="flex items-center gap-2 rounded-xl bg-gold px-3.5 py-2.5 text-xs font-bold text-noir shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-gold-hover disabled:cursor-not-allowed disabled:opacity-50"><Download className="h-3.5 w-3.5" /> Xuất Excel</button>
+      </AdminWorkspaceHeader>
 
-      <div className="bg-ivory rounded-2xl border shadow-sm p-2 mb-5">
+      <div className="mb-5 rounded-2xl border border-stone/15 bg-ivory p-3 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] flex-1 sm:max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm mã đơn, khách hàng..." className="w-full rounded-xl border border-stone/20 bg-white py-2.5 pl-9 pr-4 text-sm text-noir outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/50" /></div>
+          <select value={orderTypeFilter} onChange={e => { setOrderTypeFilter(e.target.value); setStatusFilter(0); setPage(0) }} className="rounded-xl border border-stone/20 bg-white px-3 py-2.5 text-sm font-medium text-noir outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/50">
+            <option value="">Tất cả đơn</option><option value="1">Đơn Online</option><option value="2">Đơn tại quầy</option>
+          </select>
         <button onClick={() => setIsFilterOpen(!isFilterOpen)}
           className={`relative flex items-center gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition ${isFilterOpen ? 'bg-noir text-ivory shadow-md' : 'text-stone hover:bg-gold/10 hover:text-noir'}`}>
           <Filter className={`h-4 w-4 ${isFilterOpen ? 'text-gold' : ''}`} />
@@ -116,10 +140,10 @@ export default function AdminOrders() {
           {hasActiveFilter && (
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gold rounded-full" />
           )}
-        </button>
+        </button></div>
         <div className={`transition-all duration-200 ${isFilterOpen ? 'max-h-96 overflow-visible opacity-100 mt-2 px-3 pb-3' : 'max-h-0 overflow-hidden opacity-0'}`}>
           <div className="rounded-xl bg-ivory-100/80 border border-stone/10 p-3 flex items-end gap-3 flex-wrap">
-            <div className="relative"><label className="block text-xs font-medium text-stone mb-1">Trạng thái</label><button type="button" onClick={() => setIsStatusOpen(value => !value)} className="min-w-48 flex items-center justify-between gap-5 bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm font-medium hover:border-gold focus:outline-none focus:ring-2 focus:ring-gold/50">{(loaiDonHang === 2 ? POS_STATUS_LIST : ONLINE_STATUS_LIST).find(item => item.value === statusFilter)?.label}<ChevronDown className={`h-4 w-4 text-stone transition ${isStatusOpen ? 'rotate-180' : ''}`} /></button>{isStatusOpen && <div className="absolute left-0 top-full mt-1 z-30 min-w-52 overflow-hidden rounded-xl bg-white border border-stone/15 shadow-xl p-1.5">{(loaiDonHang === 2 ? POS_STATUS_LIST : ONLINE_STATUS_LIST).map(item => <button key={item.value} type="button" onClick={() => { setStatusFilter(item.value); setIsStatusOpen(false) }} className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg text-left transition ${statusFilter === item.value ? 'bg-gold/15 text-noir font-semibold' : 'hover:bg-ivory-100 text-stone'}`}><span>{item.label}</span>{statusFilter === item.value && <span className="text-gold font-bold">✓</span>}</button>)}</div>}</div>
+            <div className="relative">{(() => { const statusOptions = orderTypeFilter === '2' ? POS_STATUS_LIST : orderTypeFilter === '1' ? ONLINE_STATUS_LIST : ALL_STATUS_LIST; return <><label className="block text-xs font-medium text-stone mb-1">Trạng thái</label><button type="button" onClick={() => setIsStatusOpen(value => !value)} className="min-w-52 flex items-center justify-between gap-5 bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm font-medium hover:border-gold focus:outline-none focus:ring-2 focus:ring-gold/50">{statusOptions.find(item => item.value === statusFilter)?.label}<ChevronDown className={`h-4 w-4 text-stone transition ${isStatusOpen ? 'rotate-180' : ''}`} /></button>{isStatusOpen && <div className="absolute left-0 top-full mt-1 z-30 min-w-56 overflow-hidden rounded-xl bg-white border border-stone/15 shadow-xl p-1.5">{statusOptions.map(item => <button key={item.value} type="button" onClick={() => { setStatusFilter(item.value); setIsStatusOpen(false) }} className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg text-left transition ${statusFilter === item.value ? 'bg-gold/15 text-noir font-semibold' : 'hover:bg-ivory-100 text-stone'}`}><span>{item.label}</span>{statusFilter === item.value && <span className="text-gold font-bold">✓</span>}</button>)}</div>}</> })()}</div>
             {datePreset === 'custom' && <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-stone" />
               <input type="date" value={tuNgay} onChange={e => { setTuNgay(e.target.value); setDatePreset('custom') }}
@@ -150,6 +174,7 @@ export default function AdminOrders() {
             <thead className="bg-noir text-ivory">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-ivory/70">#</th>
+                <th className="text-center px-4 py-3 font-semibold text-ivory/70">Nguồn đơn</th>
                 <th className="text-left px-4 py-3 font-semibold text-ivory/70">Khách hàng</th>
                 <th className="text-left px-4 py-3 font-semibold text-ivory/70">Ngày</th>
                 <th className="text-right px-4 py-3 font-semibold text-ivory/70">Tổng tiền</th>
@@ -163,6 +188,7 @@ export default function AdminOrders() {
                 return (
                   <tr key={o.maDonHang} className={`hover:bg-ivory-100 transition ${o.trangThaiDon === 1 && o.ngayDat && Date.now() - new Date(o.ngayDat).getTime() > 24 * 60 * 60 * 1000 ? 'bg-gold/5' : ''}`}>
                     <td className="px-4 py-3 font-bold text-noir">#{o.maDonHang}</td>
+                    <td className="px-4 py-3 text-center"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${o.loaiDonHang === 2 ? 'bg-noir/10 text-noir' : 'bg-gold/15 text-noir'}`}>{o.loaiDonHang === 2 ? 'Tại quầy' : 'Online'}</span></td>
                     <td className="px-4 py-3"><div className="font-semibold">{o.nguoiDung?.hoTen || 'Khách lẻ'}</div><span className="text-xs text-stone">{o.nguoiDung?.email || ''}</span></td>
                     <td className="px-4 py-3">{o.ngayDat ? new Date(o.ngayDat).toLocaleDateString('vi-VN') : '-'}</td>
                     <td className="px-4 py-3 text-right font-semibold">{VND(o.tongTien || 0)}</td>
@@ -191,19 +217,16 @@ export default function AdminOrders() {
       </div>
 
       {totalPages > 0 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <button onClick={() => loadOrders(0, null, search)} disabled={page === 0}
-            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-ivory-100 disabled:opacity-30">Đầu</button>
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
           <button onClick={() => loadOrders(page - 1, null, search)} disabled={page === 0}
-            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-ivory-100 disabled:opacity-30">Trước</button>
-          {Array.from({ length: totalPages }, (_, i) => i).map(p => (
-            <button key={p} onClick={() => loadOrders(p, null, search)}
-              className={`px-3 py-1.5 text-sm border rounded-lg ${p === page ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{p + 1}</button>
-          ))}
+            className="rounded-xl border border-stone/20 bg-ivory px-3.5 py-2 text-sm font-medium transition hover:border-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-35">Trước</button>
+          {getPaginationItems(page, totalPages).map(item => typeof item === 'string'
+            ? <span key={item} className="flex h-9 min-w-7 items-center justify-center text-stone">…</span>
+            : <button key={item} onClick={() => loadOrders(item, null, search)} aria-current={item === page ? 'page' : undefined}
+                className={`h-9 min-w-9 rounded-xl border px-2.5 text-sm font-semibold transition ${item === page ? 'border-gold bg-gold text-noir shadow-sm' : 'border-stone/20 bg-ivory text-stone hover:border-gold hover:bg-gold/10 hover:text-noir'}`}>{item + 1}</button>
+          )}
           <button onClick={() => loadOrders(page + 1, null, search)} disabled={page >= totalPages - 1}
-            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-ivory-100 disabled:opacity-30">Sau</button>
-          <button onClick={() => loadOrders(totalPages - 1, null, search)} disabled={page >= totalPages - 1}
-            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-ivory-100 disabled:opacity-30">Cuối</button>
+            className="rounded-xl border border-stone/20 bg-ivory px-3.5 py-2 text-sm font-medium transition hover:border-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-35">Sau</button>
         </div>
       )}
 
