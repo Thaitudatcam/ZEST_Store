@@ -214,7 +214,7 @@ export default function AdminProducts() {
                 <th className="text-left px-3 py-3 font-semibold text-ivory/65">Tên sản phẩm</th>
                 <th className="text-left px-3 py-3 font-semibold text-ivory/65">Danh mục</th>
                 <th className="text-left px-3 py-3 font-semibold text-ivory/65">Thương hiệu</th>
-                <th className="text-right px-3 py-3 font-semibold text-ivory/65">Giá TB</th>
+                <th className="text-left px-3 py-3 font-semibold text-ivory/65">KHOẢNG GIÁ</th>
                 <th className="text-center px-3 py-3 font-semibold text-ivory/65">Tồn kho</th>
                 <th className="text-center px-3 py-3 font-semibold text-ivory/65">Trạng thái</th>
                 <th className="text-center px-3 py-3 font-semibold text-ivory/65">Hành động</th>
@@ -243,11 +243,16 @@ export default function AdminProducts() {
                   <td className="px-3 py-3 text-right text-xs">
                     {Number(p.phanTramGiamGia) > 0 ? (
                       <>
-                        <span className="font-bold text-emerald-deep">{VND((p.giaTrungBinh || 0) * (1 - Number(p.phanTramGiamGia) / 100))}</span>
-                        <span className="block text-[10px] text-stone line-through">{VND(p.giaTrungBinh || 0)}</span>
+                        <span className="font-bold text-emerald-deep">{VND((p.giaThapNhat || p.giaTrungBinh || 0) * (1 - Number(p.phanTramGiamGia) / 100))}</span>
+                        <span className="block text-[10px] text-stone line-through">{VND(p.giaThapNhat || p.giaTrungBinh || 0)}</span>
+                      </>
+                    ) : p.giaThapNhat && p.giaTrungBinh && p.giaThapNhat !== p.giaTrungBinh ? (
+                      <>
+                        <span className="font-semibold">{VND(p.giaThapNhat)}</span>
+                        <span className="block text-[10px] text-stone">→ {VND(p.giaTrungBinh)}</span>
                       </>
                     ) : (
-                      <span className="font-semibold">{VND(p.giaTrungBinh || 0)}</span>
+                      <span className="font-semibold">{VND(p.giaThapNhat || p.giaTrungBinh || 0)}</span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-center">
