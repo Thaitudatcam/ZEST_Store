@@ -50,8 +50,10 @@ export default function AdminLayout() {
       { to: '/admin/products/detail', label: 'Biến thể sản phẩm' },
     ]},
     { to: '/admin/attributes', label: 'Thuộc tính sản phẩm', icon: Tags },
-    { to: '/admin/coupons', label: 'Quản lý giảm giá', icon: Ticket },
-    { to: '/admin/campaigns', label: 'Quà tặng', icon: Gift },
+    { label: 'Quản lý giảm giá', icon: Ticket, children: [
+      { to: '/admin/coupons', label: 'Phiếu giảm giá' },
+      { to: '/admin/campaigns', label: 'Đợt giảm giá' },
+    ]},
     { label: 'Quản lý tài khoản', icon: Users, children: [
       { to: '/admin/customers', label: 'Khách hàng' },
       { to: '/admin/employees', label: 'Nhân viên' },
