@@ -145,7 +145,7 @@ public class ThanhToanService {
         DonHang order = payment.getDonHang();
         if (order == null) {
             payment.setTrangThaiThanhToan(2);
-        } else if (java.util.Set.of(5, 8, 9).contains(order.getTrangThaiDon())) {
+        } else if (java.util.Set.of(5, 9).contains(order.getTrangThaiDon())) {
             // A provider can settle after the local reservation has expired. Do not ship twice.
             if (order.getNguoiDung() == null)
                 throw new BadRequestException("Thanh toán đến muộn cần đối soát thủ công cho khách lẻ");

@@ -460,7 +460,7 @@ public class DonHangService {
 
     @Transactional
     public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
-        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 7, 8, 9);
+        List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 9);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
         }

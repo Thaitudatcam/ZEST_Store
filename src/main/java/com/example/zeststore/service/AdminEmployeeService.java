@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,17 @@ public class AdminEmployeeService {
         String sdt = (String) body.get("soDienThoai");
         if (sdt != null && sdt.trim().isEmpty()) sdt = null;
 
+        Boolean gioiTinh = body.get("gioiTinh") != null
+                ? Boolean.parseBoolean(body.get("gioiTinh").toString()) : null;
+
+        LocalDate ngaySinh = null;
+        if (body.get("ngaySinh") != null && !body.get("ngaySinh").toString().isEmpty()) {
+            try { ngaySinh = LocalDate.parse(body.get("ngaySinh").toString()); } catch (Exception ignored) {}
+        }
+
+        String diaChi = (String) body.get("diaChi");
+        if (diaChi != null && diaChi.trim().isEmpty()) diaChi = null;
+
         NguoiDung emp = NguoiDung.builder()
                 .maNguoiDungCode("EMP" + System.currentTimeMillis())
                 .hoTen((String) body.get("hoTen"))
@@ -69,6 +81,8 @@ public class AdminEmployeeService {
                 .vaiTro(role)
                 .trangThai(1)
                 .choPhepBanHang(choPhepBanHang)
+                .gioiTinh(gioiTinh)
+                .ngaySinh(ngaySinh)
                 .build();
         emp = nguoiDungRepository.save(emp);
 
