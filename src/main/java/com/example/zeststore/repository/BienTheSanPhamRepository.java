@@ -16,6 +16,8 @@ public interface BienTheSanPhamRepository extends JpaRepository<BienTheSanPham, 
 
     List<BienTheSanPham> findBySanPham_MaSanPham(Integer maSanPham);
 
+    List<BienTheSanPham> findBySanPham_MaSanPhamIn(List<Integer> maSanPhamIds);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM BienTheSanPham b WHERE b.maBienThe = :id")
     Optional<BienTheSanPham> findByIdForUpdate(@Param("id") Integer id);

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Send, Paperclip, Image, Camera, Trash2, Plus, MessageSquare, ArrowRight } from 'lucide-react'
+import { X, Send, Paperclip, Image, Camera, ArrowRight, ExternalLink } from 'lucide-react'
 import { getConversations, getMessages, sendMessage, deleteConversation } from '../api/ai'
-import api from '../api/axios'
 
 export function RobotHead({ size = 'sm', blink = false }) {
   const sizeMap = { sm: 'w-14 h-14', md: 'w-16 h-16' }
@@ -17,11 +16,16 @@ export function RobotHead({ size = 'sm', blink = false }) {
   )
 }
 
+const CUSTOMER_QUICK_ACTIONS = [
+  { label: 'Áo Polo', question: 'Giới thiệu áo polo' },
+  { label: 'Khuyến mãi', question: 'Có chương trình khuyến mãi nào không?' },
+  { label: 'Địa chỉ shop', question: 'Địa chỉ shop ở đâu?' },
+]
+
+const GREETING = "Chào bạn! Em là Trợ lý AI của ZestStore. Em có thể hỗ trợ gì cho anh/chị hôm nay?"
+
 export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const navigate = useNavigate()
-  const [showSidebar, setShowSidebar] = useState(false)
-  const [conversations, setConversations] = useState([])
-  const [activeConv, setActiveConv] = useState(null)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,37 +36,10 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const cameraInputRef = useRef(null)
   const attachRef = useRef(null)
 
-  const loadConvs = useCallback(async () => {
-    try {
-      const convs = await getConversations()
-      setConversations(convs)
-    } catch {}
-  }, [])
-
   useEffect(() => {
-    if (!open) return
-    loadConvs()
-  }, [open, loadConvs])
-
-  useEffect(() => {
-    if (!open) { setShowSidebar(false); return }
-    const restore = async () => {
-      try {
-        const convs = await getConversations()
-        setConversations(convs)
-        if (messages.length > 0) return
-        if (convs.length > 0 && !activeConv) {
-          convs.sort((a, b) => new Date(b.ngayTao || 0) - new Date(a.ngayTao || 0))
-          const msgs = await getMessages(convs[0].maHoiThoai)
-          setActiveConv(convs[0].maHoiThoai)
-          setMessages(Array.isArray(msgs) ? msgs : [])
-        } else if (activeConv) {
-          const msgs = await getMessages(activeConv)
-          setMessages(Array.isArray(msgs) ? msgs : [])
-        }
-      } catch {}
+    if (open && messages.length === 0) {
+      setMessages([{ nguoiGui: 'ai', noiDung: GREETING, maTinNhan: 'greeting' }])
     }
-    restore()
   }, [open])
 
   useEffect(() => {
@@ -118,29 +95,6 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
     }
   }, [])
 
-  const switchConv = async (id) => {
-    setActiveConv(id)
-    setShowSidebar(false)
-    setMessages([])
-    try {
-      const msgs = await getMessages(id)
-      setMessages(Array.isArray(msgs) ? msgs : [])
-    } catch {}
-  }
-
-  const startNewConv = () => {
-    setActiveConv(null)
-    setMessages([])
-    setShowSidebar(false)
-  }
-
-  const handleDeleteConv = async (id, e) => {
-    e.stopPropagation()
-    await deleteConversation(id).catch(() => {})
-    loadConvs()
-    if (activeConv === id) { setActiveConv(null); setMessages([]) }
-  }
-
   const handleSend = async (text) => {
     const userText = (text ?? input).trim()
     if (!userText && !selectedImage) return
@@ -152,27 +106,11 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
     const tempId = Date.now()
     setMessages((prev) => [...prev, { nguoiGui: 'user', noiDung: userText, hinhAnh: imgData, maTinNhan: tempId }])
     try {
-      const result = await sendMessage(userText, activeConv, imgData)
+      const result = await sendMessage(userText, null, imgData)
       setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: result.reply, products: result.products || [], maTinNhan: tempId + 1 }])
-      if (!activeConv) setActiveConv(result.maHoiThoai)
-      loadConvs()
-    } catch {} finally { setLoading(false) }
-  }
-
-  const handleQuickPrompt = async (p) => {
-    if (loading) return
-    if (p.type === 'chat') { handleSend(p.question); return }
-    const tempId = Date.now()
-    setMessages((prev) => [...prev, { nguoiGui: 'user', noiDung: p.question, maTinNhan: tempId }])
-    setLoading(true)
-    try {
-      const res = await api.post('/ai/analytics/ask', { question: p.question }).then(r => r.data)
-      setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: res.answer, analyticsLink: res.lienKet, maTinNhan: tempId + 1 }])
     } catch {
-      setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: 'Không thể kết nối AI, vui lòng thử lại sau.', maTinNhan: tempId + 1 }])
-    } finally {
-      setLoading(false)
-    }
+      setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.', maTinNhan: tempId + 1 }])
+    } finally { setLoading(false) }
   }
 
   const handleKeyDown = (e) => {
@@ -183,188 +121,174 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
 
   const isSendDisabled = loading || (!input.trim() && !selectedImage)
 
+  const formatPrice = (price) => Number(price || 0).toLocaleString('vi-VN')
+
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden bg-noir-900 border border-gold/15">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gold/10 shrink-0 bg-noir-800/80">
+    <div className="h-full w-full flex flex-col overflow-hidden bg-noir-900 border border-gold/15 rounded-2xl">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gold/10 shrink-0 bg-gradient-to-r from-[#f97316] to-[#ea580c] rounded-t-2xl">
         <div className="flex items-center gap-3">
           <RobotHead size="md" />
           <div>
-            <p className="text-sm font-semibold text-ivory">Trợ lý ZestStore</p>
-            <p className="text-[10px] text-stone-light/50">AI Fashion Assistant</p>
+            <p className="text-sm font-bold text-white">Trợ lý AI</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <p className="text-[10px] text-white/80">Trực tuyến</p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => setShowSidebar(!showSidebar)}
-            className={`p-2 rounded-lg transition-colors ${showSidebar ? 'bg-gold/15 text-gold' : 'text-stone-light/60 hover:text-ivory hover:bg-ivory/5'}`}
-            title="Lịch sử hội thoại">
-            <MessageSquare className="h-4 w-4" />
-          </button>
-          <button onClick={onClose}
-            className="p-2 rounded-lg text-stone-light/60 hover:text-ivory hover:bg-ivory/5 transition-colors">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        <button onClick={onClose}
+          className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition-colors">
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
-      <div className="flex flex-1 min-h-0">
-        {showSidebar && (
-          <div className="w-48 border-r border-gold/10 flex flex-col bg-noir-800/40 shrink-0">
-            <div className="p-2 border-b border-gold/5">
-              <button onClick={startNewConv}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-gold hover:bg-gold/10 transition-colors">
-                <Plus className="h-3.5 w-3.5" /> Cuộc trò chuyện mới
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
-              {conversations.length === 0 && (
-                <p className="text-[11px] text-stone-light/40 text-center py-6">Chưa có hội thoại</p>
-              )}
-              {conversations
-                .slice()
-                .sort((a, b) => new Date(b.ngayTao || 0) - new Date(a.ngayTao || 0))
-                .map((c) => (
-                  <div key={c.maHoiThoai} role="button" tabIndex={0}
-                    onClick={() => switchConv(c.maHoiThoai)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchConv(c.maHoiThoai) } }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors text-left cursor-pointer ${
-                      activeConv === c.maHoiThoai ? 'bg-gold/10 text-gold' : 'text-stone-light/60 hover:bg-ivory/5 hover:text-stone-light/90'
-                    }`}>
-                    <span className="truncate flex-1">{c.tieuDe || 'Hội thoại'}</span>
-                    <button onClick={(e) => handleDeleteConv(c.maHoiThoai, e)}
-                      className="shrink-0 p-0.5 rounded hover:text-bordeaux hover:bg-bordeaux/10 opacity-0 group-hover:opacity-100 transition"
-                      title="Xóa">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ scrollBehavior: 'smooth' }}>
-            {messages.length === 0 && !loading && (
-              <div className="flex flex-col items-center justify-center h-full text-center py-10">
-                <RobotHead size="md" />
-                <p className="text-sm text-ivory mt-4 font-medium">Xin chào! Tôi có thể giúp gì cho bạn?</p>
-                <p className="text-xs text-stone-light/40 mt-1">
-                  {quickPrompts.length > 0
-                    ? 'Hỏi về doanh thu, đơn hàng, sản phẩm hoặc trò chuyện với AI.'
-                    : 'Hãy hỏi về sản phẩm, size, chất liệu, hoặc bất kỳ câu hỏi nào về thời trang.'}
-                </p>
-                {quickPrompts.length > 0 && (
-                  <div className="flex flex-wrap justify-center gap-2 mt-5">
-                    {quickPrompts.map((p, i) => (
-                      <button key={i} onClick={() => handleQuickPrompt(p)} disabled={loading}
-                        className="px-3.5 py-2 rounded-full text-xs font-medium bg-noir-700 border border-gold/20 text-stone-light/70 hover:border-gold/50 hover:text-gold transition-colors disabled:opacity-50">
-                        {p.text}
-                      </button>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ scrollBehavior: 'smooth' }}>
+        {messages.map((m) => (
+          <div key={m.maTinNhan} className={`flex ${m.nguoiGui === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {m.nguoiGui === 'ai' && (
+              <div className="mr-2 self-end mb-1 shrink-0">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center">
+                  <span className="text-white text-[10px] font-bold">ZS</span>
+                </div>
+              </div>
+            )}
+            <div className={`max-w-[80%] ${m.nguoiGui === 'user' ? 'order-first' : ''}`}>
+              <div className={`rounded-2xl px-3.5 py-2.5 ${
+                m.nguoiGui === 'user'
+                  ? 'bg-gold text-noir rounded-br-md'
+                  : 'bg-ivory border border-gold/15 text-ink rounded-bl-md'
+              }`}>
+                {m.hinhAnh && (
+                  <img src={m.hinhAnh} alt="upload" className="max-w-full rounded-lg mb-1.5" style={{ maxHeight: '160px', objectFit: 'contain' }} />
+                )}
+                {m.noiDung && <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.noiDung}</p>}
+                {m.products && m.products.length > 0 && (
+                  <div className="mt-2.5 space-y-2">
+                    {m.products.map((p) => (
+                      <div key={p.maSanPham}
+                        className="bg-white border border-stone/15 rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer"
+                        onClick={() => { navigate(`/products/${p.slug}`); onClose() }}>
+                        <div className="flex gap-3 p-3">
+                          <img src={p.urlAnhDaiDien ? (p.urlAnhDaiDien.startsWith('http') || p.urlAnhDaiDien.startsWith('/api/') ? p.urlAnhDaiDien : `/api/files/${p.urlAnhDaiDien}`) : ''}
+                            alt={p.tenSanPham} className="w-16 h-16 rounded-lg object-cover shrink-0 border border-stone/10" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-ink truncate">{p.tenSanPham}</p>
+                            <p className="text-sm font-bold text-[var(--primary-color)] mt-0.5">{formatPrice(p.gia)}đ</p>
+                          </div>
+                        </div>
+                        <div className="px-3 pb-2.5 space-y-1">
+                          {p.maSanPhamCode && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-semibold text-stone uppercase tracking-wide">Mã:</span>
+                              <span className="text-[10px] font-bold text-ink">{p.maSanPhamCode}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-stone">Giá:</span>
+                            <span className="text-[10px] font-semibold text-ink">{formatPrice(p.gia)}đ</span>
+                          </div>
+                          {p.mauSac && p.mauSac.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-stone">Có màu sắc:</span>
+                              <span className="text-[10px] font-semibold text-ink">{p.mauSac.join(', ')}</span>
+                            </div>
+                          )}
+                          {p.kichCo && p.kichCo.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-stone">Kích thước:</span>
+                              <span className="text-[10px] font-semibold text-ink">{p.kichCo.join(', ')}</span>
+                            </div>
+                          )}
+                          {p.chatLieu && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-stone">Chất liệu:</span>
+                              <span className="text-[10px] font-semibold text-ink">{p.chatLieu}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="px-3 pb-3">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--primary-color)] hover:underline">
+                            Xem chi tiết <ExternalLink className="h-3 w-3" />
+                          </span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
-            )}
-            {messages.map((m) => (
-              <div key={m.maTinNhan} className={`flex ${m.nguoiGui === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {m.nguoiGui === 'ai' && (
-                  <div className="mr-2 self-end mb-1">
-                    <div className="w-6 h-6 rounded-lg bg-gold flex items-center justify-center">
-                      <span className="text-noir text-[10px] font-bold">ZS</span>
-                    </div>
-                  </div>
-                )}
-                <div className={`max-w-[75%] ${m.nguoiGui === 'user' ? 'order-first' : ''}`}>
-                  <div className={`rounded-2xl px-3.5 py-2.5 ${
-                    m.nguoiGui === 'user'
-                      ? 'bg-gold text-noir rounded-br-md'
-                      : 'bg-ivory border border-gold/15 text-ink rounded-bl-md'
-                  }`}>
-                    {m.hinhAnh && (
-                      <img src={m.hinhAnh} alt="upload" className="max-w-full rounded-lg mb-1.5" style={{ maxHeight: '160px', objectFit: 'contain' }} />
-                    )}
-                    {m.noiDung && <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.noiDung}</p>}
-                    {m.products && m.products.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {m.products.map((p) => (
-                          <div key={p.maSanPham} onClick={() => { navigate(`/products/${p.slug}`); onClose() }}
-                            className="flex items-center gap-2 bg-noir-900/5 rounded-xl px-2.5 py-2 cursor-pointer hover:bg-gold/10 transition-all w-full">
-                            <img src={p.urlAnhDaiDien ? (p.urlAnhDaiDien.startsWith('http') || p.urlAnhDaiDien.startsWith('/api/') ? p.urlAnhDaiDien : `/api/files/${p.urlAnhDaiDien}`) : ''}
-                              alt={p.tenSanPham} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium truncate">{p.tenSanPham}</p>
-                              <p className="text-xs text-gold font-semibold">{Number(p.gia || 0).toLocaleString('vi-VN')}đ</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {m.analyticsLink && (
-                      <button onClick={() => { navigate(m.analyticsLink); onClose() }}
-                        className="flex items-center gap-1 text-xs text-gold-dark hover:text-gold font-medium mt-2">
-                        Xem chi tiết <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="mr-2 self-end mb-1">
-                  <div className="w-6 h-6 rounded-lg bg-gold flex items-center justify-center">
-                    <span className="text-noir text-[10px] font-bold">ZS</span>
-                  </div>
-                </div>
-                <div className="bg-ivory border border-gold/15 rounded-2xl rounded-bl-md px-4 py-3">
-                  <div className="flex gap-1.5 items-center">
-                    <div className="w-2 h-2 rounded-full bg-gold/60 animate-bounce" style={{ animationDelay: '0s' }} />
-                    <div className="w-2 h-2 rounded-full bg-gold/60 animate-bounce" style={{ animationDelay: '0.15s' }} />
-                    <div className="w-2 h-2 rounded-full bg-gold/60 animate-bounce" style={{ animationDelay: '0.3s' }} />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="px-4 py-3 border-t border-gold/10 shrink-0 bg-noir-800/60">
-            {selectedImage && (
-              <div className="relative mb-2 inline-block">
-                <img src={selectedImage} alt="preview" className="h-14 w-14 rounded-lg object-cover border border-gold/20" />
-                <button onClick={removeImage}
-                  className="absolute -top-1.5 -right-1.5 bg-bordeaux text-noir rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 bg-noir-700 rounded-2xl px-3 py-1.5 border border-gold/10">
-              <div className="relative" ref={attachRef}>
-                <button onClick={() => { setShowAttach(!showAttach) }} disabled={loading}
-                  className="text-stone-light/40 hover:text-gold p-1 transition disabled:opacity-50">
-                  <Paperclip className="h-4 w-4" />
-                </button>
-                {showAttach && (
-                  <div className="absolute bottom-full left-0 mb-1 bg-noir-800 border border-gold/10 rounded-xl shadow-lg p-1.5 flex gap-1">
-                    <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-light/60 hover:text-gold hover:bg-ivory/5 rounded-lg transition">
-                      <Image className="h-3.5 w-3.5" /> Ảnh
-                    </button>
-                    <button onClick={() => cameraInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-light/60 hover:text-gold hover:bg-ivory/5 rounded-lg transition">
-                      <Camera className="h-3.5 w-3.5" /> Camera
-                    </button>
-                  </div>
-                )}
-              </div>
-              <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
-                placeholder="Nhắn tin..." disabled={loading}
-                className="flex-1 bg-transparent text-sm text-ivory placeholder-stone-light/30 outline-none min-w-0" />
-              <button onClick={() => handleSend()} disabled={isSendDisabled}
-                className="bg-gold text-noir p-1.5 rounded-xl hover:bg-gold-hover transition disabled:opacity-50">
-                <Send className="h-4 w-4" />
-              </button>
             </div>
           </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="mr-2 self-end mb-1 shrink-0">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center">
+                <span className="text-white text-[10px] font-bold">ZS</span>
+              </div>
+            </div>
+            <div className="bg-ivory border border-gold/15 rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="flex gap-1.5 items-center">
+                <div className="w-2 h-2 rounded-full bg-gold/60 animate-bounce" style={{ animationDelay: '0s' }} />
+                <div className="w-2 h-2 rounded-full bg-gold/60 animate-bounce" style={{ animationDelay: '0.15s' }} />
+                <div className="w-2 h-2 rounded-full bg-gold/60 animate-bounce" style={{ animationDelay: '0.3s' }} />
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="px-3 pb-1.5 shrink-0">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+          {CUSTOMER_QUICK_ACTIONS.map((action, i) => (
+            <button key={i} onClick={() => handleSend(action.question)} disabled={loading}
+              className="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium bg-noir-700 border border-gold/15 text-stone-light/70 hover:border-gold/40 hover:text-gold transition-colors disabled:opacity-50">
+              {action.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="px-3 pb-3 pt-1 shrink-0">
+        {selectedImage && (
+          <div className="relative mb-2 inline-block">
+            <img src={selectedImage} alt="preview" className="h-14 w-14 rounded-lg object-cover border border-gold/20" />
+            <button onClick={removeImage}
+              className="absolute -top-1.5 -right-1.5 bg-bordeaux text-noir rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+              <X className="h-2.5 w-2.5" />
+            </button>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 bg-noir-700 rounded-2xl px-3 py-1.5 border border-gold/10">
+          <div className="relative" ref={attachRef}>
+            <button onClick={() => { setShowAttach(!showAttach) }} disabled={loading}
+              className="text-stone-light/40 hover:text-gold p-1 transition disabled:opacity-50">
+              <Paperclip className="h-4 w-4" />
+            </button>
+            {showAttach && (
+              <div className="absolute bottom-full left-0 mb-1 bg-noir-800 border border-gold/10 rounded-xl shadow-lg p-1.5 flex gap-1">
+                <button onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-light/60 hover:text-gold hover:bg-ivory/5 rounded-lg transition">
+                  <Image className="h-3.5 w-3.5" /> Ảnh
+                </button>
+                <button onClick={() => cameraInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-light/60 hover:text-gold hover:bg-ivory/5 rounded-lg transition">
+                  <Camera className="h-3.5 w-3.5" /> Camera
+                </button>
+              </div>
+            )}
+          </div>
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown} onPaste={handlePaste}
+            placeholder="Nhập tin nhắn..." disabled={loading}
+            className="flex-1 bg-transparent text-sm text-ivory placeholder-stone-light/30 outline-none min-w-0" />
+          <button onClick={() => handleSend()} disabled={isSendDisabled}
+            className="bg-gold text-noir p-1.5 rounded-xl hover:bg-gold-hover transition disabled:opacity-50">
+            <Send className="h-4 w-4" />
+          </button>
         </div>
       </div>
 

@@ -114,15 +114,22 @@ public class AiChatService {
             systemContent.append("1. Hãy trả lời dựa CHỈ trên dữ liệu thống kê thực tế ở trên.\n");
             systemContent.append("2. TUYỆT ĐỐI không được bịa ra, hư cấu số liệu, số lượng, doanh thu nào không có trong dữ liệu.\n");
             systemContent.append("3. Nếu số liệu câu hỏi hỏi đến không nằm trong dữ liệu, hãy lịch sự nói hiện tại chưa có thông tin đó hoặc đề nghị hỏi về doanh thu, số sản phẩm bán được, số đơn hàng.\n");
-        } else if (!matchedProducts.isEmpty()) {
+        } else         if (!matchedProducts.isEmpty()) {
             systemContent.append("\n\nDANH SÁCH SẢN PHẨM THẬT ĐANG BÁN TRONG CỬA HÀNG, phù hợp với yêu cầu của khách:\n");
             for (int i = 0; i < matchedProducts.size(); i++) {
                 Map<String, Object> p = matchedProducts.get(i);
-                systemContent.append((i + 1) + ". ").append(p.get("tenSanPham"))
-                    .append(" - Giá: ").append(p.get("gia")).append("đ");
-                if (p.get("tongTonKho") != null) {
-                    systemContent.append(" - Tồn kho: ").append(p.get("tongTonKho"));
+                systemContent.append((i + 1) + ". ").append(p.get("tenSanPham"));
+                if (p.get("maSanPhamCode") != null) systemContent.append(" (Mã: ").append(p.get("maSanPhamCode")).append(")");
+                systemContent.append(" - Giá từ: ").append(p.get("gia")).append("đ");
+                if (p.get("mauSac") != null && !((List<?>)p.get("mauSac")).isEmpty()) {
+                    systemContent.append(" - Màu: ").append(String.join(", ", (List<String>)p.get("mauSac")));
                 }
+                if (p.get("kichCo") != null && !((List<?>)p.get("kichCo")).isEmpty()) {
+                    systemContent.append(" - Size: ").append(String.join(", ", (List<String>)p.get("kichCo")));
+                }
+                if (p.get("chatLieu") != null) systemContent.append(" - Chất liệu: ").append(p.get("chatLieu"));
+                if (p.get("thuongHieu") != null) systemContent.append(" - Thương hiệu: ").append(p.get("thuongHieu"));
+                if (p.get("tongTonKho") != null) systemContent.append(" - Tồn kho: ").append(p.get("tongTonKho"));
                 systemContent.append("\n");
             }
             systemContent.append("\nQUY TẮC BẮT BUỘC:\n");

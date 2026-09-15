@@ -21,6 +21,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
@@ -183,15 +184,41 @@ public class SanPhamService {
             sp.setTongTonKho(finalStockMap.getOrDefault(sp.getMaSanPham(), 0));
         });
 
+        List<Integer> topIds = top.stream().map(SanPham::getMaSanPham).collect(Collectors.toList());
+        Map<Integer, List<String>> colorsMap = new HashMap<>();
+        Map<Integer, List<String>> sizesMap = new HashMap<>();
+        Map<Integer, String> brandMap = new HashMap<>();
+        if (!topIds.isEmpty()) {
+            List<BienTheSanPham> allVariants = bienTheRepository.findBySanPham_MaSanPhamIn(topIds);
+            for (BienTheSanPham bt : allVariants) {
+                if (bt.getMauSac() != null) {
+                    colorsMap.computeIfAbsent(bt.getSanPham().getMaSanPham(), k -> new ArrayList<>())
+                            .add(bt.getMauSac().getMauSac());
+                }
+                if (bt.getKichCo() != null) {
+                    sizesMap.computeIfAbsent(bt.getSanPham().getMaSanPham(), k -> new ArrayList<>())
+                            .add(bt.getKichCo().getKichCo());
+                }
+                if (bt.getThuongHieu() != null && !brandMap.containsKey(bt.getSanPham().getMaSanPham())) {
+                    brandMap.put(bt.getSanPham().getMaSanPham(), bt.getThuongHieu().getTenThuongHieu());
+                }
+            }
+        }
+
         return top.stream().map(sp -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("maSanPham", sp.getMaSanPham());
+            m.put("maSanPhamCode", sp.getMaSanPhamCode());
             m.put("tenSanPham", sp.getTenSanPham());
             m.put("slug", sp.getSlug());
             m.put("urlAnhDaiDien", sp.getUrlAnhDaiDien());
             m.put("gia", sp.getGiaThapNhat() != null ? sp.getGiaThapNhat() : sp.getGiaTrungBinh());
             m.put("giaThapNhat", sp.getGiaThapNhat());
             m.put("tongTonKho", sp.getTongTonKho());
+            m.put("chatLieu", sp.getChatLieu() != null ? sp.getChatLieu().getGiaTri() : null);
+            m.put("mauSac", colorsMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
+            m.put("kichCo", sizesMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
+            m.put("thuongHieu", brandMap.get(sp.getMaSanPham()));
             return m;
         }).collect(Collectors.toList());
     }
