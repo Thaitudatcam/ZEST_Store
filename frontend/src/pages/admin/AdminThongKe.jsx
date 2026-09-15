@@ -245,7 +245,7 @@ export default function AdminThongKe() {
                 HỦY {card.counts.cancelled}
               </span>
               <span className="px-2 py-0.5 rounded-full bg-stone/10 text-stone text-[10px] font-semibold">
-                KỜ LỄ {card.counts.failed}
+                XỬ LÝ {card.counts.failed}
               </span>
             </div>
           </div>
