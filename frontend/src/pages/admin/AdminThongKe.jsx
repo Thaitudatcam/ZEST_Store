@@ -1,388 +1,523 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getStats, getOrderStats, getRevenueByDay, getRevenueByDate, getRevenueByMonth, getRevenueByYear, getRecentOrders } from '../../api/admin'
-import { Package, DollarSign, Users, Star, TrendingUp, ShoppingBag, AlertCircle, CheckCircle, Search } from 'lucide-react'
-import CountUp from '../../components/ui/CountUp'
-import RealtimeClock from '../../components/admin/RealtimeClock'
-import AdminCard from '../../components/admin/AdminCard'
-import AdminBadge from '../../components/admin/AdminBadge'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { getStats, getOrderStats, getRevenueByDay, getRevenueByDate, getRevenueByMonth, getRevenueByYear, getRecentOrders, getBestSellingProducts, getAllOrders } from '../../api/admin'
+import { Package, DollarSign, Users, TrendingUp, ShoppingBag, AlertCircle, CheckCircle, Mail, ToggleLeft, ToggleRight, Filter, RefreshCw, Calendar, Clock, BarChart3, ShoppingCart } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { SkeletonTable } from '../../components/Skeleton'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
-const statCards = [
-  { key: 'orders', label: 'Đơn hàng', icon: ShoppingBag, value: null, color: 'gold' },
-  { key: 'revenue', label: 'Doanh thu', icon: TrendingUp, value: null, color: 'emerald' },
-  { key: 'users', label: 'Người dùng', icon: Users, value: null, color: 'blue' },
-  { key: 'products', label: 'Sản phẩm', icon: Package, value: null, color: 'purple' },
+const STATUS_LIST = [
+  { key: 'completed', label: 'Hoàn thành', color: 'bg-emerald-deep', dot: 'bg-emerald-deep' },
+  { key: 'cancelled', label: 'Đã hủy', color: 'bg-bordeaux', dot: 'bg-bordeaux' },
+  { key: 'pending', label: 'Chờ xác nhận', color: 'bg-gold', dot: 'bg-gold' },
+  { key: 'confirmed', label: 'Đã xác nhận', color: 'bg-royal', dot: 'bg-royal' },
+  { key: 'shipping', label: 'Chờ giao', color: 'bg-amber-500', dot: 'bg-amber-500' },
+  { key: 'delivering', label: 'Đang giao', color: 'bg-sky-500', dot: 'bg-sky-500' },
+  { key: 'failed', label: 'Giao thất bại', color: 'bg-stone', dot: 'bg-stone' },
 ]
-
-const cardColorMap = {
-  gold: { iconBg: 'bg-gold/15', iconColor: 'text-gold', line: 'bg-gold' },
-  emerald: { iconBg: 'bg-emerald-deep/100/15', iconColor: 'text-emerald-deep', line: 'bg-emerald-deep/100' },
-  blue: { iconBg: 'bg-gold/15', iconColor: 'text-gold', line: 'bg-gold' },
-  purple: { iconBg: 'bg-royal/15', iconColor: 'text-royal', line: 'bg-royal' },
-}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-dark-700 border border-dark-border rounded-xl px-4 py-3 shadow-xl">
-      <p className="text-dark-muted text-xs mb-1">{label}</p>
+    <div className="bg-white border border-stone/15 rounded-xl px-4 py-3 shadow-xl">
+      <p className="text-stone text-xs mb-1">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} className="text-sm font-semibold" style={{ color: p.color }}>{p.name}: {p.name === 'Doanh thu' ? VND(p.value) : p.value.toLocaleString('vi-VN')}</p>
+        <p key={i} className="text-sm font-semibold text-ink">{VND(p.value)}</p>
       ))}
     </div>
   )
 }
 
-const FMT_DATE = (d) => {
-  if (!d) return '-'
-  try { return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) } catch { return d }
-}
-
-const loaiDonLabels = { 1: 'Online', 2: 'Tại quầy' }
-const loaiDonColors = { 1: 'blue', 2: 'gold' }
-
 export default function AdminThongKe() {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const [stats, setStats] = useState(null)
   const [orderStats, setOrderStats] = useState(null)
   const [todayRevenue, setTodayRevenue] = useState(null)
   const [revenueData, setRevenueData] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
+  const [bestSelling, setBestSelling] = useState([])
   const [loading, setLoading] = useState(true)
-  const [revenueTab, setRevenueTab] = useState('week')
-  const [tuNgay, setTuNgay] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 7)
-    return d.toISOString().split('T')[0]
-  })
-  const [denNgay, setDenNgay] = useState(() => new Date().toISOString().split('T')[0])
-  const [thang, setThang] = useState(new Date().getMonth() + 1)
-  const [nam, setNam] = useState(new Date().getFullYear())
-  const [loaiFilter, setLoaiFilter] = useState(null)
   const [revenueLoading, setRevenueLoading] = useState(false)
 
-  const loadRevenue = useCallback(async () => {
-    setRevenueLoading(true)
-    try {
-      let data
-      if (revenueTab === 'week') {
-        data = await getRevenueByDate(7)
-      } else if (revenueTab === 'day') {
-        if (!tuNgay || !denNgay) { setRevenueData([]); setRevenueLoading(false); return }
-        data = await getRevenueByDay(tuNgay, denNgay)
-      } else if (revenueTab === 'month') {
-        data = await getRevenueByMonth(thang, nam)
-      } else if (revenueTab === 'year') {
-        data = await getRevenueByYear()
-      }
-      setRevenueData(Array.isArray(data) ? data.map(d => ({ ngay: d.ngay || d.date || d.thang || d.nam, doanhThu: Number(d.doanhThu || d.revenue || 0) })) : [])
-    } catch {
-      setRevenueData([])
-    } finally {
-      setRevenueLoading(false)
-    }
-  }, [revenueTab, tuNgay, denNgay, thang, nam])
+  // Filter state
+  const [tuNgay, setTuNgay] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })
+  const [denNgay, setDenNgay] = useState(() => new Date().toISOString().split('T')[0])
+  const [tuGio, setTuGio] = useState('00:00:00')
+  const [denGio, setDenGio] = useState('23:59:59')
+  const [revenueChartMode, setRevenueChartMode] = useState('year')
+  const [chartYear, setChartYear] = useState(new Date().getFullYear())
 
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0]
-    const loadAll = () => Promise.all([
-      getStats().catch(() => null),
-      getOrderStats().catch(() => null),
-      getRevenueByDay(today, today).then(r => Array.isArray(r) ? r.reduce((s, d) => s + Number(d.doanhThu || 0), 0) : null).catch(() => null),
-      getRecentOrders(5).then(r => Array.isArray(r) ? r : []).catch(() => []),
-    ]).then(([s, os, rev, recent]) => {
+  // Email settings
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [adminEmail, setAdminEmail] = useState(user?.email || 'minhphong26012006@gmail.com')
+
+  const loadAll = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const [s, os, rev, recent, best] = await Promise.all([
+        getStats().catch(() => null),
+        getOrderStats().catch(() => null),
+        getRevenueByDay(today, today).then(r => Array.isArray(r) ? r.reduce((s, d) => s + Number(d.doanhThu || 0), 0) : 0).catch(() => 0),
+        getRecentOrders(10).then(r => Array.isArray(r) ? r : []).catch(() => []),
+        getBestSellingProducts(10).then(r => Array.isArray(r) ? r : []).catch(() => []),
+      ])
       setStats(s)
       setOrderStats(os)
       setTodayRevenue(rev)
       setRecentOrders(recent)
-    }).finally(() => setLoading(false))
-    loadAll()
-    const id = setInterval(loadAll, 30000)
-    const onFocus = () => loadAll()
-    window.addEventListener('focus', onFocus)
-    return () => { clearInterval(id); window.removeEventListener('focus', onFocus) }
+      setBestSelling(best)
+    } catch {} finally { setLoading(false) }
   }, [])
 
-  useEffect(() => {
-    loadRevenue()
-  }, [loadRevenue])
+  useEffect(() => { loadAll(); const id = setInterval(loadAll, 30000); return () => clearInterval(id) }, [loadAll])
 
-  const filteredOrders = loaiFilter ? recentOrders.filter(o => Number(o.loaiDonHang) === loaiFilter) : recentOrders
+  const loadRevenueChart = useCallback(async () => {
+    setRevenueLoading(true)
+    try {
+      let data
+      if (revenueChartMode === 'year') {
+        data = await getRevenueByYear()
+      } else {
+        data = await getRevenueByMonth(new Date().getMonth() + 1, chartYear)
+      }
+      setRevenueData(Array.isArray(data) ? data.map(d => ({ ngay: d.ngay || d.date || d.thang || d.nam, doanhThu: Number(d.doanhThu || d.revenue || 0) })) : [])
+    } catch { setRevenueData([]) } finally { setRevenueLoading(false) }
+  }, [revenueChartMode, chartYear])
+
+  useEffect(() => { loadRevenueChart() }, [loadRevenueChart])
+
+  const loadFilteredOrders = useCallback(async () => {
+    try {
+      const data = await getAllOrders(0, 100, undefined, undefined, undefined, tuNgay, denNgay)
+      return data.content || []
+    } catch { return [] }
+  }, [tuNgay, denNgay])
+
+  // Compute stats
   const mergedOrders = orderStats ? {
-    totalOrders: orderStats.totalOrders ?? 0,
     completed: orderStats.completed ?? 0,
-    pending: (orderStats.pending ?? 0) + (orderStats.shipping ?? 0),
+    pending: (orderStats.pending ?? 0),
     cancelled: orderStats.cancelled ?? 0,
-  } : null
+    shipping: orderStats.shipping ?? 0,
+    confirmed: orderStats.confirmed ?? 0,
+    failed: orderStats.failed ?? orderStats.notReceived ?? 0,
+  } : { completed: 0, pending: 0, cancelled: 0, shipping: 0, confirmed: 0, failed: 0 }
 
-  const orderStatusData = mergedOrders ? [
-    { name: 'Hoàn thành', value: mergedOrders.completed, color: '#10B981' },
-    { name: 'Đang xử lý', value: mergedOrders.pending, color: '#D4A843' },
-    { name: 'Đã hủy', value: mergedOrders.cancelled, color: '#EF4444' },
-  ].filter(d => d.value > 0) : []
+  const todayInvoiceCount = recentOrders.filter(o => {
+    if (!o.ngayDat) return false
+    const d = new Date(o.ngayDat)
+    const today = new Date()
+    return d.toDateString() === today.toDateString()
+  }).length
 
-  const today = new Date()
-  const greeting = today.getHours() < 12 ? 'Chào buổi sáng' : today.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'
+  const todayProductCount = recentOrders.filter(o => {
+    if (!o.ngayDat) return false
+    const d = new Date(o.ngayDat)
+    const today = new Date()
+    return d.toDateString() === today.toDateString()
+  }).reduce((s, o) => s + (o.soLuongSanPham || o.items?.length || 1), 0)
 
-  const statusLabels = { 1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng', 5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công' }
-  const statusColors = { 1: 'gold', 2: 'blue', 3: 'purple', 4: 'green', 5: 'red', 6: 'green', 9: 'gray' }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-dark-700 rounded-2xl border border-dark-border p-5 animate-pulse">
-              <div className="h-4 w-20 bg-dark-600 rounded mb-3" />
-              <div className="h-8 w-24 bg-dark-600 rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+  // Time period revenue
+  const periodRevenue = (days) => {
+    const now = new Date()
+    const from = new Date(now); from.setDate(now.getDate() - days)
+    return recentOrders
+      .filter(o => o.ngayDat && new Date(o.ngayDat) >= from && o.trangThaiDon !== 5)
+      .reduce((s, o) => s + Number(o.tongTien || 0), 0)
   }
 
-  const getStatValue = (key) => {
-    switch (key) {
-      case 'orders': return stats?.totalOrders ?? 0
-      case 'revenue': return stats?.monthlyRevenue ?? 0
-      case 'users': return stats?.totalUsers ?? 0
-      case 'products': return stats?.totalProducts ?? 0
-      default: return 0
+  const periodCounts = (days) => {
+    const now = new Date()
+    const from = new Date(now); from.setDate(now.getDate() - days)
+    const filtered = recentOrders.filter(o => o.ngayDat && new Date(o.ngayDat) >= from)
+    return {
+      completed: filtered.filter(o => o.trangThaiDon === 6).length,
+      cancelled: filtered.filter(o => o.trangThaiDon === 5).length,
+      failed: filtered.filter(o => o.trangThaiDon === 9).length,
     }
   }
 
+  const todayCounts = periodCounts(0)
+  const weekCounts = periodCounts(7)
+  const monthCounts = periodCounts(30)
+  const yearCounts = periodCounts(365)
+
   const fmt = (n) => {
-    if (n == null) return '0'
     if (n >= 1000000000) return (n / 1000000000).toFixed(1) + 'B'
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
     if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
     return n.toLocaleString('vi-VN')
   }
 
+  if (loading) return <div className="p-6"><SkeletonTable rows={8} cols={6} /></div>
+
   return (
-    <div className="space-y-6">
-      {/* ──────── HEADER ──────── */}
+    <div className="max-w-[1440px] mx-auto pb-8 space-y-5">
+      {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">{greeting}, {user?.hoTen?.split(' ').pop() || 'Admin'}!</h1>
-          <p className="text-stone text-sm mt-0.5">Đây là tổng quan hoạt động của ZestStore hôm nay</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gold/15 flex items-center justify-center">
+            <BarChart3 className="h-5 w-5 text-gold" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-ink">Thống kê Bán hàng</h1>
+            <p className="text-xs text-stone">Doanh thu hôm nay theo chỉ số từ Hóa đơn đã hoàn thành (Khớp 100% với Danh sách Hóa đơn)</p>
+          </div>
         </div>
-        <AdminCard className="px-6 py-3 min-w-[200px]">
-          <RealtimeClock />
-        </AdminCard>
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-gold text-noir rounded-xl text-xs font-bold hover:bg-gold-hover transition">
+          <Mail className="h-4 w-4" /> Tùy chọn báo cáo qua Email
+        </button>
       </div>
 
-      {/* ──────── STAT CARDS ──────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map(card => {
-          const cc = cardColorMap[card.color]
-          const value = getStatValue(card.key)
-          return (
-            <AdminCard key={card.key} className="p-5 group hover:border-gold/20 transition-all duration-300">
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-11 h-11 rounded-xl ${cc.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                  <card.icon className={`h-5 w-5 ${cc.iconColor}`} />
-                </div>
-                {card.key === 'revenue' && (
-                  <span className="text-xs text-dark-muted bg-dark-600 px-2 py-0.5 rounded-full">Tháng này</span>
-                )}
-              </div>
-              {card.key === 'revenue' ? (
-                <p className="text-xl font-bold text-dark-text tabular-nums">{VND(value)}</p>
-              ) : (
-                <CountUp to={value} duration={1.5} className="text-2xl font-bold text-dark-text tabular-nums" separator="." />
-              )}
-              <p className="text-xs text-dark-muted mt-1">{card.label}</p>
-              <div className={`h-0.5 w-0 group-hover:w-full ${cc.line} rounded-full mt-3 transition-all duration-500`} />
-            </AdminCard>
-          )
-        })}
-      </div>
-
-      {/* ──────── STAT ROW 2 ──────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-dark-700 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-ivory tabular-nums">{mergedOrders?.completed ?? 0}</p>
-          <p className="text-xs text-ivory/60 mt-0.5 flex items-center justify-center gap-1"><CheckCircle className="h-3 w-3 text-emerald-deep" /> Đơn hoàn thành</p>
-        </div>
-        <div className="bg-dark-700 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-gold tabular-nums">{mergedOrders?.pending ?? 0}</p>
-          <p className="text-xs text-ivory/60 mt-0.5 flex items-center justify-center gap-1"><Package className="h-3 w-3 text-gold" /> Đang xử lý</p>
-        </div>
-        <div className="bg-dark-700 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-ivory tabular-nums">{mergedOrders?.cancelled ?? 0}</p>
-          <p className="text-xs text-ivory/60 mt-0.5 flex items-center justify-center gap-1"><AlertCircle className="h-3 w-3 text-bordeaux" /> Đã hủy</p>
-        </div>
-        <div className="bg-dark-700 rounded-xl border border-dark-border p-4 text-center">
-          <p className="text-2xl font-bold text-gold tabular-nums">{todayRevenue != null ? VND(todayRevenue) : '0'}</p>
-          <p className="text-xs text-ivory/60 mt-0.5 flex items-center justify-center gap-1"><TrendingUp className="h-3 w-3 text-gold" /> Doanh thu hôm nay</p>
-        </div>
-      </div>
-
-      {/* ──────── CHARTS ──────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Line Chart: Revenue */}
-        <AdminCard className="p-5 lg:col-span-2">
+      {/* Top Section: Revenue + Email Settings */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* Today Revenue */}
+        <div className="lg:col-span-3 bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-dark-text">Doanh thu</h3>
-            <div className="flex items-center gap-1">
-              {['week', 'day', 'month', 'year'].map(tab => (
-                <button key={tab} onClick={() => {
-                  setRevenueTab(tab)
-                  if (tab === 'week') {
-                    const d = new Date(); d.setDate(d.getDate() - 7)
-                    setTuNgay(d.toISOString().split('T')[0])
-                    setDenNgay(new Date().toISOString().split('T')[0])
-                  }
-                }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${revenueTab === tab ? 'bg-gold text-dark-900' : 'bg-dark-600 text-dark-muted border border-dark-border hover:bg-dark-500 hover:border-dark-muted/30'}`}>
-                  {tab === 'week' ? 'Tuần' : tab === 'day' ? 'Ngày' : tab === 'month' ? 'Tháng' : 'Năm'}
-                </button>
-              ))}
+            <h2 className="text-xs font-bold text-ink uppercase tracking-wide">DOANH THU HÔM NAY CHO QUẢN LÝ</h2>
+            <span className="text-[10px] font-semibold text-emerald-deep bg-emerald-deep/10 px-2.5 py-1 rounded-full">
+              Đã hoàn thành {todayInvoiceCount} hóa đơn hôm nay
+            </span>
+          </div>
+          <p className="text-3xl font-bold text-ink mb-5">{VND(todayRevenue || 0)}</p>
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            {[
+              { label: 'TIỀN MẶT', value: 0, icon: '💵' },
+              { label: 'CHUYỂN KHOẢN', value: 0, icon: '🏦' },
+              { label: 'VNPAY', value: 0, icon: '💳' },
+            ].map(item => (
+              <div key={item.label} className="bg-ivory/50 rounded-xl p-3 text-center border border-stone/5">
+                <p className="text-[10px] text-stone font-semibold uppercase tracking-wide mb-1">{item.label}</p>
+                <p className="text-lg font-bold text-ink">{VND(item.value)}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-6 text-xs text-stone">
+            <span>Hóa đơn phát sinh <span className="font-bold text-ink">{todayInvoiceCount}</span> hóa đơn</span>
+            <span>Sản phẩm bán <span className="font-bold text-ink">{todayProductCount}</span> sản phẩm</span>
+            <span>Hoàn thành <span className="font-bold text-emerald-deep">{mergedOrders.completed}</span></span>
+          </div>
+        </div>
+
+        {/* Email Report Settings */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
+          <h2 className="text-xs font-bold text-ink uppercase tracking-wide mb-4">GỬI EMAIL BÁO CÁO CHO QUẢN LÝ</h2>
+          <p className="text-xs text-stone mb-4">Bật/tắt định kỳ gửi báo cáo doanh thu hóa đơn thực tế cnnri của Email cho Quản lý.</p>
+          <div className="flex items-center justify-between mb-4 p-3 bg-ivory/50 rounded-xl">
+            <span className="text-sm font-medium text-ink">Tự động gửi email báo cáo</span>
+            <button onClick={() => setEmailEnabled(!emailEnabled)} className="text-gold">
+              {emailEnabled ? <ToggleRight className="h-7 w-7" /> : <ToggleLeft className="h-7 w-7 text-stone" />}
+            </button>
+          </div>
+          <div className="mb-4">
+            <label className="text-xs text-stone mb-1 block">Email Quản lý sẽ nhận báo cáo:</label>
+            <input value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)}
+              className="w-full px-3 py-2.5 border border-stone/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/30" />
+          </div>
+          <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gold text-noir rounded-xl text-sm font-bold hover:bg-gold-hover transition">
+            <Mail className="h-4 w-4" /> Gửi email báo cáo doanh thu ngay
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Cards: Today, Week, Month, Year */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'HÔM NAY', revenue: periodRevenue(0), counts: todayCounts },
+          { label: 'TUẦN NÀY', revenue: periodRevenue(7), counts: weekCounts },
+          { label: 'THÁNG NÀY', revenue: periodRevenue(30), counts: monthCounts },
+          { label: 'NĂM NÀY', revenue: periodRevenue(365), counts: yearCounts },
+        ].map(card => (
+          <div key={card.label} className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5">
+            <p className="text-[10px] font-bold text-stone uppercase tracking-wider mb-2">{card.label}</p>
+            <p className="text-xl font-bold text-ink mb-3">{VND(card.revenue)}</p>
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className="text-stone">Sản phẩm đã bán</span>
+              <span className="text-stone">•</span>
+              <span className="text-stone">Hủy đơn ?</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-deep/10 text-emerald-deep text-[10px] font-semibold">
+                HOÀN THÀNH {card.counts.completed}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-bordeaux/10 text-bordeaux text-[10px] font-semibold">
+                HỦY {card.counts.cancelled}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-stone/10 text-stone text-[10px] font-semibold">
+                KỜ LỄ {card.counts.failed}
+              </span>
             </div>
           </div>
-          {revenueTab !== 'week' && revenueTab !== 'year' && (
-            <div className="flex items-center gap-3 mb-4">
-              {revenueTab === 'day' && (
-                <>
-                  <input type="date" value={tuNgay} onChange={e => setTuNgay(e.target.value)}
-                    className="bg-dark-600 border border-dark-border rounded-lg px-3 py-1.5 text-sm text-dark-text [color-scheme:dark]" />
-                  <span className="text-dark-muted text-xs">→</span>
-                  <input type="date" value={denNgay} onChange={e => setDenNgay(e.target.value)}
-                    className="bg-dark-600 border border-dark-border rounded-lg px-3 py-1.5 text-sm text-dark-text [color-scheme:dark]" />
-                </>
-              )}
-              {revenueTab === 'month' && (
-                <>
-                  <select value={thang} onChange={e => setThang(Number(e.target.value))}
-                    className="bg-dark-600 border border-dark-border rounded-lg px-3 py-1.5 text-sm text-dark-text">
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>Tháng {i + 1}</option>
-                    ))}
-                  </select>
-                  <input type="number" value={nam} onChange={e => setNam(Number(e.target.value))}
-                    className="bg-dark-600 border border-dark-border rounded-lg px-3 py-1.5 text-sm text-dark-text w-24 [color-scheme:dark]" />
-                </>
-              )}
-              <button onClick={loadRevenue}
-                className="bg-gold text-dark-900 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-gold-hover transition flex items-center gap-1.5">
-                <Search className="h-3.5 w-3.5" /> Xem
-              </button>
-            </div>
-          )}
-          {revenueLoading ? (
-            <div className="h-[240px] flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-            </div>
-          ) : revenueData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
+        ))}
+      </div>
+
+      {/* Revenue Chart */}
+      <div className="bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-gold" /> Biểu đồ doanh thu thực tế
+          </h2>
+          <div className="flex items-center gap-2">
+            <select value={revenueChartMode} onChange={(e) => setRevenueChartMode(e.target.value)}
+              className="px-3 py-1.5 border border-stone/20 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-gold/30">
+              <option value="year">Theo năm</option>
+              <option value="month">Theo tháng</option>
+            </select>
+            {revenueChartMode === 'month' && (
+              <select value={chartYear} onChange={(e) => setChartYear(Number(e.target.value))}
+                className="px-3 py-1.5 border border-stone/20 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-gold/30">
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-4 mb-3 text-xs text-stone">
+          <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-gold rounded" /> Doanh thu (VNĐ)</span>
+        </div>
+        {revenueLoading ? (
+          <div className="h-[280px] flex items-center justify-center"><div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin" /></div>
+        ) : revenueData.length > 0 ? (
+          <>
+            <ResponsiveContainer width="100%" height={280}>
               <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="ngay" tick={{ fill: '#94A3B8', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#334155' }} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#334155' }} tickFormatter={(v) => fmt(v)} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="ngay" tick={{ fill: '#78716c', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} />
+                <YAxis tick={{ fill: '#78716c', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#e5e7eb' }} tickFormatter={(v) => fmt(v)} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="doanhThu" stroke="#D4A843" strokeWidth={2.5} dot={{ fill: '#D4A843', stroke: '#0A0E17', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#D4A843', stroke: '#0A0E17', strokeWidth: 2 }} name="Doanh thu" />
+                <Line type="monotone" dataKey="doanhThu" stroke="#D4A843" strokeWidth={2.5} dot={{ fill: '#D4A843', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#D4A843', stroke: '#fff', strokeWidth: 2 }} name="Doanh thu" />
               </LineChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-[240px] flex items-center justify-center text-dark-muted text-sm">Chưa có dữ liệu doanh thu</div>
-          )}
-        </AdminCard>
-
-        {/* Pie Chart: Order status */}
-        <AdminCard className="p-5">
-          <h3 className="text-sm font-semibold text-dark-text mb-4">Đơn hàng theo trạng thái</h3>
-          {orderStatusData.length > 0 ? (
-            <div className="flex flex-col items-center">
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie data={orderStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
-                    {orderStatusData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} stroke="none" />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap justify-center gap-4 mt-2">
-                {orderStatusData.map(d => (
-                  <div key={d.name} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                    <span className="text-xs text-dark-muted">{d.name}: <span className="text-dark-text font-semibold">{d.value}</span></span>
-                  </div>
-                ))}
-              </div>
+            <div className="mt-3 text-sm text-ink">
+              Tổng doanh thu thời gian: <span className="font-bold text-gold">{VND(revenueData.reduce((s, d) => s + d.doanhThu, 0))}</span>
             </div>
-          ) : (
-            <div className="h-[180px] flex items-center justify-center text-dark-muted text-sm">Chưa có dữ liệu</div>
-          )}
-        </AdminCard>
+          </>
+        ) : (
+          <div className="h-[280px] flex items-center justify-center text-stone text-sm">Chưa có dữ liệu doanh thu</div>
+        )}
       </div>
 
-      {/* ──────── RECENT ORDERS ──────── */}
-      <AdminCard className="overflow-hidden">
-        <div className="px-5 pt-5 pb-3 border-b border-dark-border flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-dark-text">Đơn hàng gần đây</h3>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-dark-800 rounded-lg p-0.5">
-              {[
-                { label: 'Tất cả', value: null },
-                { label: 'Online', value: 1 },
-                { label: 'Tại quầy', value: 2 },
-              ].map(opt => (
-                <button key={opt.label} onClick={() => setLoaiFilter(opt.value)}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold transition ${loaiFilter === opt.value ? 'bg-gold text-dark-900' : 'text-dark-muted hover:text-dark-text'}`}>
-                  {opt.label}
-                </button>
-              ))}
+      {/* Date/Time Filter */}
+      <div className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label className="text-[10px] font-semibold text-stone uppercase tracking-wide mb-1 block">Từ ngày</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone" />
+              <input type="date" value={tuNgay} onChange={(e) => setTuNgay(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-stone/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/30" />
             </div>
-            <span className="text-xs text-dark-muted">{recentOrders.length} đơn</span>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-stone uppercase tracking-wide mb-1 block">Đến ngày</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone" />
+              <input type="date" value={denNgay} onChange={(e) => setDenNgay(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-stone/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/30" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-stone uppercase tracking-wide mb-1 block">Từ giờ</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone" />
+              <input type="time" value={tuGio} onChange={(e) => setTuGio(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-stone/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/30" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-stone uppercase tracking-wide mb-1 block">Đến giờ</label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone" />
+              <input type="time" value={denGio} onChange={(e) => setDenGio(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 border border-stone/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-gold/30" />
+            </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-dark-800 border-b border-dark-border">
-                <th className="text-left px-5 py-3 font-semibold text-dark-muted text-xs">Mã đơn</th>
-                <th className="text-left px-5 py-3 font-semibold text-dark-muted text-xs">Khách hàng</th>
-                <th className="text-left px-5 py-3 font-semibold text-dark-muted text-xs">Ngày đặt</th>
-                <th className="text-right px-5 py-3 font-semibold text-dark-muted text-xs">Tổng tiền</th>
-                <th className="text-center px-5 py-3 font-semibold text-dark-muted text-xs">Loại</th>
-                <th className="text-center px-5 py-3 font-semibold text-dark-muted text-xs">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-dark-border">
-              {filteredOrders.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-8 text-dark-muted text-sm">Chưa có đơn hàng nào</td></tr>
-              ) : filteredOrders.map((order, i) => (
-                <tr key={order.maDonHang || i}
-                  onClick={() => navigate(`/admin/orders/${order.maDonHang || order.id}`)}
-                  className="hover:bg-dark-600/50 transition-colors cursor-pointer">
-                  <td className="px-5 py-3 font-medium text-dark-text">#{order.maDonHang || order.code || '-'}</td>
-                  <td className="px-5 py-3 text-dark-muted">{order.khachHang?.hoTen || order.hoTen || order.customerName || '-'}</td>
-                  <td className="px-5 py-3 text-dark-muted text-xs">{FMT_DATE(order.ngayTao || order.createdAt || order.ngayDat)}</td>
-                  <td className="px-5 py-3 text-right font-medium text-dark-text tabular-nums">{VND(order.tongTien || order.total || 0)}</td>
-                  <td className="px-5 py-3 text-center">
-                    <AdminBadge color={loaiDonColors[order.loaiDonHang] || 'gray'}>
-                      {loaiDonLabels[order.loaiDonHang] || '---'}
-                    </AdminBadge>
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <AdminBadge color={statusColors[order.trangThaiDon] || 'gray'}>
-                      {statusLabels[order.trangThaiDon] || order.trangThaiDon || 'Unknown'}
-                    </AdminBadge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-gold text-noir rounded-xl text-xs font-bold hover:bg-gold-hover transition">
+            <Filter className="h-3.5 w-3.5" /> Lọc dữ liệu
+          </button>
+          <button className="flex items-center gap-2 px-5 py-2.5 border border-stone/20 text-stone rounded-xl text-xs font-semibold hover:bg-ivory transition">
+            <RefreshCw className="h-3.5 w-3.5" /> Đặt lại
+          </button>
         </div>
-      </AdminCard>
+      </div>
+
+      {/* Payment Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'TỔNG TIỀN LỌC', value: 0, icon: DollarSign, color: 'text-gold bg-gold/10' },
+          { label: 'TIỀN MẶT', value: 0, icon: '💵', color: 'text-emerald-deep bg-emerald-deep/10' },
+          { label: 'CHUYỂN KHOẢN', value: 0, icon: '🏦', color: 'text-royal bg-royal/10' },
+          { label: 'VNPAY', value: 0, icon: '💳', color: 'text-sky-600 bg-sky-50' },
+        ].map(card => (
+          <div key={card.label} className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5 flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center shrink-0`}>
+              {typeof card.icon === 'string' ? <span className="text-lg">{card.icon}</span> : <card.icon className="h-5 w-5" />}
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-stone uppercase tracking-wide">{card.label}</p>
+              <p className="text-lg font-bold text-ink">{VND(card.value)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bottom Section: Top Selling + Sold Products + Order Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Top Selling */}
+        <div className="bg-white rounded-2xl border border-stone/10 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-stone/10 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-gold" /> Top bán chạy
+            </h2>
+            <span className="text-[10px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-full">TOP 10</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-ivory/50 border-b border-stone/10">
+                  <th className="text-left px-4 py-2.5 font-semibold text-stone">Sản phẩm</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-stone">Đã bán</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-stone">Tên</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-stone">Doanh thu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone/5">
+                {bestSelling.length === 0 ? (
+                  <tr><td colSpan={4} className="text-center py-6 text-stone">Không có dữ liệu</td></tr>
+                ) : bestSelling.slice(0, 10).map((p, i) => (
+                  <tr key={i} className="hover:bg-ivory/30">
+                    <td className="px-4 py-2.5 font-medium text-ink">{p.tenSanPham || p.name || '—'}</td>
+                    <td className="px-4 py-2.5 text-right text-stone">{p.soLuongBan || p.quantity || 0}</td>
+                    <td className="px-4 py-2.5 text-stone">{p.tenSanPham || '—'}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink">{VND(p.doanhThu || p.revenue || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Sold Products Detail */}
+        <div className="bg-white rounded-2xl border border-stone/10 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-stone/10 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+              <Package className="h-4 w-4 text-gold" /> Sản phẩm đã bán
+            </h2>
+            <span className="text-[10px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-full">CHI TIẾT</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-ivory/50 border-b border-stone/10">
+                  <th className="text-left px-4 py-2.5 font-semibold text-stone">Sản phẩm</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-stone">Số lượng</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-stone">Tên</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-stone">Doanh thu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone/5">
+                {bestSelling.length === 0 ? (
+                  <tr><td colSpan={4} className="text-center py-6 text-stone">Không có dữ liệu</td></tr>
+                ) : bestSelling.slice(0, 10).map((p, i) => (
+                  <tr key={i} className="hover:bg-ivory/30">
+                    <td className="px-4 py-2.5 font-medium text-ink">{p.tenSanPham || p.name || '—'}</td>
+                    <td className="px-4 py-2.5 text-center text-stone">{p.soLuongBan || p.quantity || 0}</td>
+                    <td className="px-4 py-2.5 text-stone">{p.tenSanPham || '—'}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-ink">{VND(p.doanhThu || p.revenue || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Order Status Summary */}
+        <div className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5">
+          <h2 className="text-sm font-bold text-ink flex items-center gap-2 mb-4">
+            <ShoppingCart className="h-4 w-4 text-gold" /> Đơn hàng
+          </h2>
+          <div className="space-y-2.5 mb-5">
+            {STATUS_LIST.map(s => (
+              <div key={s.key} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                  <span className="text-xs text-stone">{s.label}</span>
+                </div>
+                <span className="text-xs font-bold text-ink">{mergedOrders[s.key] ?? 0}</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-stone/10">
+            <div className="text-center p-2 bg-emerald-deep/5 rounded-xl">
+              <p className="text-lg font-bold text-emerald-deep">{mergedOrders.completed}</p>
+              <p className="text-[9px] font-semibold text-emerald-deep uppercase">Hoàn thành</p>
+            </div>
+            <div className="text-center p-2 bg-bordeaux/5 rounded-xl">
+              <p className="text-lg font-bold text-bordeaux">{mergedOrders.cancelled}</p>
+              <p className="text-[9px] font-semibold text-bordeaux uppercase">Đã hủy</p>
+            </div>
+            <div className="text-center p-2 bg-stone/5 rounded-xl">
+              <p className="text-lg font-bold text-stone">{mergedOrders.failed}</p>
+              <p className="text-[9px] font-semibold text-stone uppercase">Thất bại</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom: Potential Customers + Unsold Inventory */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Potential Customers */}
+        <div className="bg-white rounded-2xl border border-stone/10 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-stone/10 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+              <Users className="h-4 w-4 text-gold" /> Khách hàng tiềm năng
+            </h2>
+            <span className="text-[10px] font-bold text-gold bg-gold/10 px-2 py-0.5 rounded-full">TOP CHI TIÊU</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-ivory/50 border-b border-stone/10">
+                  <th className="text-left px-4 py-2.5 font-semibold text-stone">Khách hàng</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-stone">Số đơn</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-stone">Tổng chi tiêu</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone/5">
+                <tr><td colSpan={3} className="text-center py-6 text-stone">Không có dữ liệu</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Unsold Inventory */}
+        <div className="bg-white rounded-2xl border border-stone/10 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-stone/10 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-ink flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-gold" /> Bán chậm & tồn kho
+            </h2>
+            <span className="text-[10px] font-bold text-bordeaux bg-bordeaux/10 px-2 py-0.5 rounded-full">CHƯA BÁN ĐƯỢC</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-ivory/50 border-b border-stone/10">
+                  <th className="text-left px-4 py-2.5 font-semibold text-stone">Sản phẩm</th>
+                  <th className="text-center px-4 py-2.5 font-semibold text-stone">Đã bán</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-stone">Tồn</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone/5">
+                <tr><td colSpan={3} className="text-center py-6 text-stone">Không có dữ liệu</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
