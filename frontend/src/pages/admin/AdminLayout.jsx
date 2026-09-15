@@ -30,7 +30,7 @@ export default function AdminLayout() {
   const isStaff = role === 'STAFF'
 
   const topNav = [
-    { to: '/', label: 'Trang chủ', icon: Home, end: true },
+    { to: '/admin', label: 'Trang chủ', icon: Home, end: true },
     { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
     { to: '/admin/pos', label: 'Bán hàng', icon: ShoppingCart },
   ]
@@ -62,7 +62,10 @@ export default function AdminLayout() {
   const toggleNav = (label) => setNavOpen(prev => ({ ...prev, [label]: !prev[label] }))
   const handleLogout = () => { logout(); navigate('/login') }
 
-  const isActive = (item) => item.end ? pathname === item.to : pathname.startsWith(item.to)
+  const isActive = (item) => {
+    if (item.end) return pathname === item.to || (item.to === '/admin' && pathname === '/admin')
+    return pathname.startsWith(item.to) && pathname !== '/admin'
+  }
   const isChildActive = (item) => item.children?.some(c => pathname.startsWith(c.to)) || (item.label === 'Quản lý hóa đơn' && (pathname.startsWith('/admin/orders/') || pathname.startsWith('/admin/invoices')))
 
   const renderNavItem = (item, isTop = false) => {
