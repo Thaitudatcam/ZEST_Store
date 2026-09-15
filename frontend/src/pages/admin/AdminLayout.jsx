@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, Gift, ClipboardList } from 'lucide-react'
+import { Home, BarChart3, ShoppingCart, ShoppingBag, Package, Tags, Ticket, Star, Users, LogOut, ChevronDown, ChevronLeft, Menu, X, Gift, ClipboardList, Receipt } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import NotificationBell from '../../components/admin/NotificationBell'
@@ -36,13 +36,14 @@ export default function AdminLayout() {
   ]
 
   const managementNav = isStaff ? [
-    { label: 'Quản lý đơn hàng', icon: ClipboardList, children: [
-      { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
+    { label: 'Quản lý hóa đơn', icon: Receipt, children: [
+      { to: '/admin/orders/online', label: 'Đơn hàng' },
+      { to: '/admin/invoices', label: 'Hóa đơn' },
     ]},
   ] : [
-    { label: 'Quản lý đơn hàng', icon: ClipboardList, children: [
-      { to: '/admin/orders/online', label: 'Đơn hàng online' },
-      { to: '/admin/orders/pos', label: 'Đơn tại quầy' },
+    { label: 'Quản lý hóa đơn', icon: Receipt, children: [
+      { to: '/admin/orders/online', label: 'Đơn hàng' },
+      { to: '/admin/invoices', label: 'Hóa đơn' },
     ]},
     { label: 'Quản lý sản phẩm', icon: Package, children: [
       { to: '/admin/products', label: 'Sản phẩm' },
@@ -62,7 +63,7 @@ export default function AdminLayout() {
   const handleLogout = () => { logout(); navigate('/login') }
 
   const isActive = (item) => item.end ? pathname === item.to : pathname.startsWith(item.to)
-  const isChildActive = (item) => item.children?.some(c => pathname.startsWith(c.to)) || (item.label === 'Quản lý đơn hàng' && pathname.startsWith('/admin/orders/'))
+  const isChildActive = (item) => item.children?.some(c => pathname.startsWith(c.to)) || (item.label === 'Quản lý hóa đơn' && (pathname.startsWith('/admin/orders/') || pathname.startsWith('/admin/invoices')))
 
   const renderNavItem = (item, isTop = false) => {
     if (item.children) {
