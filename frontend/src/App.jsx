@@ -42,6 +42,7 @@ import AdminReviews from './pages/admin/AdminReviews'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminCampaignForm from './pages/admin/AdminCampaignForm'
 import AdminUsers from './pages/admin/AdminUsers'
+import AdminEmployeeForm from './pages/admin/AdminEmployeeForm'
 import AdminPOS from './pages/admin/AdminPOS'
 import AdminThongKe from './pages/admin/AdminThongKe'
 import AdminChangePassword from './pages/admin/AdminChangePassword'
@@ -61,7 +62,7 @@ export default function App() {
       <ScrollToTop />
       <Routes>
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Navigate to="/admin/thong-ke" replace />} />
         <Route path="orders" element={<Navigate to="/admin/orders/online" replace />} />
         <Route path="orders/online" element={<AdminOrders />} />
         <Route path="orders/pos" element={<AdminOrders />} />
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="users" element={<AdminUsers />} />
         <Route path="customers" element={<AdminUsers />} />
         <Route path="employees" element={<AdminUsers />} />
+        <Route path="employees/create" element={<AdminEmployeeForm />} />
         <Route path="pos" element={<AdminPOS />} />
         <Route path="change-password" element={<AdminChangePassword />} />
       </Route>
