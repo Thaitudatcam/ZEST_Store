@@ -318,9 +318,7 @@ export default function AdminUsers() {
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Hiển thị</span>
-              <select value={PAGE_SIZE} className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none">
-                <option value={10}>10</option>
-              </select>
+              <span className="text-sm font-medium">{PAGE_SIZE}</span>
               <span className="text-sm text-gray-500">dòng</span>
             </div>
           </div>
@@ -396,9 +394,7 @@ export default function AdminUsers() {
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Hiển thị</span>
-              <select value={PAGE_SIZE} className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none">
-                <option value={10}>10</option>
-              </select>
+              <span className="text-sm font-medium">{PAGE_SIZE}</span>
               <span className="text-sm text-gray-500">dòng</span>
             </div>
           </div>

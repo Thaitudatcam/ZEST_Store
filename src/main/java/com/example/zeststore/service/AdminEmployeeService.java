@@ -25,6 +25,7 @@ public class AdminEmployeeService {
     private final VaiTroRepository vaiTroRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllEmployees() {
         return nguoiDungRepository.findAll().stream()
                 .filter(u -> u.getVaiTro() != null &&
@@ -41,9 +42,6 @@ public class AdminEmployeeService {
                     m.put("ngayTao", u.getNgayTao());
                     m.put("gioiTinh", u.getGioiTinh());
                     m.put("ngaySinh", u.getNgaySinh());
-                    if (u.getDiaChis() != null && !u.getDiaChis().isEmpty()) {
-                        m.put("diaChi", u.getDiaChis().get(0).getChiTietDiaChi());
-                    }
                     return m;
                 }).collect(Collectors.toList());
     }

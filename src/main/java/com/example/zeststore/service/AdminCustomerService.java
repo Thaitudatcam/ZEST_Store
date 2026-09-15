@@ -25,6 +25,7 @@ public class AdminCustomerService {
     private final PasswordEncoder passwordEncoder;
     private final DiaChiNguoiDungRepository diaChiNguoiDungRepository;
 
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllCustomers() {
         return nguoiDungRepository.findAll().stream()
                 .filter(u -> u.getNgayXoa() == null)

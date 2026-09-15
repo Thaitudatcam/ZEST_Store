@@ -62,7 +62,7 @@ export default function App() {
       <ScrollToTop />
       <Routes>
       <Route path="/admin/*" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-        <Route index element={<Navigate to="/admin/thong-ke" replace />} />
+        <Route index element={<Dashboard />} />
         <Route path="orders" element={<Navigate to="/admin/orders/online" replace />} />
         <Route path="orders/online" element={<AdminOrders />} />
         <Route path="orders/pos" element={<AdminOrders />} />

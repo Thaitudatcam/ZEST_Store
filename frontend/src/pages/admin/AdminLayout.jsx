@@ -30,6 +30,7 @@ export default function AdminLayout() {
   const isStaff = role === 'STAFF'
 
   const topNav = [
+    { to: '/admin', label: 'Trang chủ', icon: Home, end: true },
     { to: '/admin/thong-ke', label: 'Thống kê', icon: BarChart3 },
     { to: '/admin/pos', label: 'Bán hàng', icon: ShoppingCart },
   ]
