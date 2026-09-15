@@ -51,11 +51,11 @@ export default function AdminLayout() {
     ]},
     { to: '/admin/attributes', label: 'Thuộc tính sản phẩm', icon: Tags },
     { to: '/admin/coupons', label: 'Quản lý giảm giá', icon: Ticket },
+    { to: '/admin/campaigns', label: 'Quà tặng', icon: Gift },
     { label: 'Quản lý tài khoản', icon: Users, children: [
       { to: '/admin/customers', label: 'Khách hàng' },
       { to: '/admin/employees', label: 'Nhân viên' },
     ]},
-    { to: '/admin/campaigns', label: 'Quà tặng', icon: Gift },
     { to: '/admin/reviews', label: 'Đánh giá', icon: Star },
   ]
 
