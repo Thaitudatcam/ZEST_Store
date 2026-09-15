@@ -203,7 +203,7 @@ export default function AdminThongKe() {
         {/* Email Report Settings */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
           <h2 className="text-xs font-bold text-ink uppercase tracking-wide mb-4">GỬI EMAIL BÁO CÁO CHO QUẢN LÝ</h2>
-          <p className="text-xs text-stone mb-4">Bật/tắt định kỳ gửi báo cáo doanh thu hóa đơn thực tế cnnri của Email cho Quản lý.</p>
+          <p className="text-xs text-stone mb-4">Bật/tắt định kỳ gửi báo cáo doanh thu hóa đơn thực tế cuối ngày của Email cho Quản lý.</p>
           <div className="flex items-center justify-between mb-4 p-3 bg-ivory/50 rounded-xl">
             <span className="text-sm font-medium text-ink">Tự động gửi email báo cáo</span>
             <button onClick={() => setEmailEnabled(!emailEnabled)} className="text-gold">
