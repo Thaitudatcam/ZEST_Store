@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus } from '../../api/admin'
-import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, RefreshCw, Download } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminUsers() {
@@ -135,116 +135,46 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
-        <div className="flex gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Tìm ${tab === 'customers' ? 'khách hàng' : 'nhân viên'}...`}
-              className="pl-9 pr-4 py-2 border rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gold" />
-          </div>
-          {tab === 'employees' && (
-            <button onClick={openCreate} className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">
+          {tab === 'employees' ? 'QUẢN LÝ NHÂN VIÊN' : 'Quản lý người dùng'}
+        </h1>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder={tab === 'employees' ? 'Tìm theo tên, mã, email, sdt' : 'Tìm khách hàng...'}
+            className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm w-full focus:outline-none focus:border-[var(--primary-color)] focus:ring-1 focus:ring-[var(--primary-color)]/30" />
+        </div>
+        {tab === 'employees' && (
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+            className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--primary-color)]">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="active">Hoạt động</option>
+            <option value="locked">Đã khóa</option>
+          </select>
+        )}
+        {tab === 'employees' && (
+          <>
+            <button onClick={loadEmployees}
+              className="flex items-center gap-2 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              <RefreshCw className="h-4 w-4" /> Làm mới
+            </button>
+            <button className="flex items-center gap-2 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              <Download className="h-4 w-4" /> Xuất Excel
+            </button>
+            <button onClick={openCreate}
+              className="flex items-center gap-2 bg-[var(--primary-color)] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
               <Plus className="h-4 w-4" /> Thêm nhân viên
             </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <Filter className="h-4 w-4 text-stone" />
-        {tab === 'employees' && (
-          <div className="flex gap-1">
-            {[
-              { value: 'all', label: 'Tất cả' },
-              { value: 'ADMIN', label: 'Quản trị' },
-              { value: 'STAFF', label: 'Nhân viên' },
-            ].map((s) => (
-              <button key={s.value} onClick={() => setRoleFilter(s.value)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition ${roleFilter === s.value ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>
-                {s.label}
-              </button>
-            ))}
-          </div>
+          </>
         )}
-        {tab === 'customers' && <div className="flex gap-1">
-          {[
-            { value: 'all', label: 'Tất cả' },
-            { value: 'active', label: 'Hoạt động' },
-            { value: 'locked', label: 'Đã khóa' },
-          ].map((s) => (
-            <button key={s.value} onClick={() => setStatusFilter(s.value)}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>
-              {s.label}
-            </button>
-          ))}
-        </div>}
-        {tab === 'employees' && <>
-          <div className="w-px h-6 bg-ivory-100" />
-          <div className="flex gap-1">
-            {[
-              { value: 'all', label: 'Tất cả' },
-              { value: 'active', label: 'Hoạt động' },
-              { value: 'locked', label: 'Đã khóa' },
-            ].map((s) => (
-              <button key={s.value} onClick={() => setStatusFilter(s.value)}
-                className={`px-3 py-1.5 text-xs rounded-lg border transition ${statusFilter === s.value ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </>}
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="bg-ivory rounded-2xl border p-4 flex items-center gap-3">
-          <div className="p-2.5 bg-gold/20 rounded-xl"><Users className="h-5 w-5 text-gold" /></div>
-          <div><p className="text-xs text-stone">Tổng {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</p><p className="text-xl font-bold">{tab === 'customers' ? customers.length : employees.length}</p></div>
-        </div>
-        <div className="bg-ivory rounded-2xl border p-4 flex items-center gap-3">
-          <div className="p-2.5 bg-emerald-deep/20 rounded-xl"><UserCheck className="h-5 w-5 text-emerald-deep" /></div>
-          <div><p className="text-xs text-stone">Hoạt động</p><p className="text-xl font-bold">{(tab === 'customers' ? customers : employees).filter(x => x.trangThai === 1).length}</p></div>
-        </div>
-        <div className="bg-ivory rounded-2xl border p-4 flex items-center gap-3">
-          <div className="p-2.5 bg-bordeaux/20 rounded-xl"><UserX className="h-5 w-5 text-bordeaux" /></div>
-          <div><p className="text-xs text-stone">Đã khóa</p><p className="text-xl font-bold">{(tab === 'customers' ? customers : employees).filter(x => x.trangThai !== 1).length}</p></div>
-        </div>
-      </div>
-
-      {error && <div className="bg-bordeaux/10 border border-bordeaux/20 text-bordeaux text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
-
-      {selectedIds.length > 0 && (() => {
-        const currentList = tab === 'customers' ? customers : employees
-        const hasLocked = selectedIds.some(id => {
-          const u = currentList.find(x => x.maNguoiDung === id)
-          return u && u.trangThai !== 1
-        })
-        const bulkAction = hasLocked ? 'unlock' : 'lock'
-        const bulkLabel = bulkAction === 'lock' ? 'Khóa' : 'Mở khóa'
-        return (
-          <div className="bg-gold/10 border border-gold/20 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
-            <span className="text-sm text-gold-hover font-medium">Đã chọn {selectedIds.length} {tab === 'customers' ? 'khách hàng' : 'nhân viên'}</span>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setConfirmBulk(bulkAction)}
-                className={`text-xs text-white px-3 py-1.5 rounded-lg font-semibold ${bulkAction === 'lock' ? 'bg-bordeaux hover:bg-bordeaux' : 'bg-emerald-deep hover:bg-emerald-deep'}`}>
-                {bulkLabel}
-              </button>
-              <button onClick={() => setSelectedIds([])} className="text-xs text-stone hover:text-ink-soft font-medium">Bỏ chọn</button>
-            </div>
-          </div>
-        )
-      })()}
-
-      <ConfirmDialog
-        open={confirmBulk !== null}
-        title="Xác nhận"
-        message={`${confirmBulk === 'lock' ? 'Khóa' : 'Mở khóa'} ${selectedIds.length} ${tab === 'customers' ? 'khách hàng' : 'nhân viên'}?`}
-        confirmText="Xác nhận"
-        variant="gold"
-        onConfirm={() => handleBulkToggle(confirmBulk)}
-        onCancel={() => setConfirmBulk(null)}
-      />
+      {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
 
       {tab === 'customers' && (
         <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
@@ -311,76 +241,80 @@ export default function AdminUsers() {
       )}
 
       {tab === 'employees' && (
-        <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-ivory-100 border-b">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="w-10 px-2 py-3 text-center">
-                    <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.length === pagedEmployees.length && pagedEmployees.length > 0} onChange={() => toggleSelectAll(pagedEmployees.map(e => e.maNguoiDung))} />
-                  </th>
-                  {[
-                    { key: 'hoTen', label: 'Nhân viên', align: 'text-left' },
-                    { key: 'email', label: 'Email', align: 'text-left' },
-                    { key: 'soDienThoai', label: 'SĐT', align: 'text-left' },
-                  ].map(({ key, label, align }) => (
-                    <th key={key} className={`${align} px-4 py-3 font-semibold text-stone cursor-pointer hover:text-ink select-none`} onClick={() => toggleSort(key)}>
-                      <span className="inline-flex items-center gap-1">{label} {sortField === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-stone" />}</span>
-                    </th>
-                  ))}
-                  <th className="text-center px-4 py-3 font-semibold text-stone">Vai trò</th>
-                  <th className="text-center px-4 py-3 font-semibold text-stone">Bán tại quầy</th>
-                  <th className="text-center px-4 py-3 font-semibold text-stone">Trạng thái</th>
-                  <th className="text-center px-4 py-3 font-semibold text-stone">Hành động</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">STT</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">ẢNH</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">MÃ NV</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">HỌ TÊN</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">EMAIL</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">SĐT</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">ĐỊA CHỈ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">CHỨC VỤ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">TRẠNG THÁI</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">THAO TÁC</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
-                {pagedEmployees.map((e) => (
-                  <tr key={e.maNguoiDung} className={`hover:bg-ivory-100 ${selectedIds.includes(e.maNguoiDung) ? 'bg-gold/10/50' : ''}`}>
-                    <td className="w-10 px-2 py-3 text-center">
-                      <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.includes(e.maNguoiDung)} onChange={() => toggleSelect(e.maNguoiDung)} />
-                    </td>
-                    <td className="px-4 py-3 font-medium">{e.hoTen}</td>
-                    <td className="px-4 py-3 text-stone">{e.email}</td>
-                    <td className="px-4 py-3">{e.soDienThoai || '-'}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.vaiTro === 'ADMIN' ? 'bg-royal/20 text-royal' : 'bg-gold/20 text-gold-hover'}`}>
-                        {e.vaiTro === 'ADMIN' ? 'Quản trị' : 'Nhân viên'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.choPhepBanHang ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-ivory-100 text-stone'}`}>
-                        {e.choPhepBanHang ? 'Có' : 'Không'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${e.trangThai === 1 ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-bordeaux/20 text-bordeaux'}`}>
-                        {e.trangThai === 1 ? 'Hoạt động' : 'Đã khóa'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-1">
-                        <button onClick={() => openEdit(e)} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => setConfirmEmpToggle(e.maNguoiDung)} className={`p-1.5 rounded-lg ${e.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
-                          {e.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+              <tbody className="divide-y divide-gray-100">
+                {pagedEmployees.map((e, idx) => {
+                  const initials = (e.hoTen || '').split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
+                  const avatarColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500']
+                  const colorIdx = (e.hoTen || '').charCodeAt(0) % avatarColors.length
+                  return (
+                    <tr key={e.maNguoiDung} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-center text-gray-500">{empPage * PAGE_SIZE + idx + 1}</td>
+                      <td className="px-4 py-3 text-center">
+                        <div className={`w-10 h-10 rounded-full ${avatarColors[colorIdx]} flex items-center justify-center text-white font-bold text-sm mx-auto`}>
+                          {initials}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center font-medium text-gray-700">{e.maNV || `NV${String(e.maNguoiDung).padStart(3, '0')}`}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-800">{e.hoTen}</td>
+                      <td className="px-4 py-3 text-gray-500">{e.email}</td>
+                      <td className="px-4 py-3 text-gray-700">{e.soDienThoai || '-'}</td>
+                      <td className="px-4 py-3 text-gray-500 max-w-[180px] truncate">{e.diaChi || '-'}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-xs font-medium text-gray-700">
+                          {e.vaiTro === 'ADMIN' ? 'Quản lý' : 'Nhân viên'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => setConfirmEmpToggle(e.maNguoiDung)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            e.trangThai === 1 ? 'bg-[var(--primary-color)]' : 'bg-gray-300'
+                          }`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            e.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => openEdit(e)} className="p-1.5 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded-lg transition">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
-          {pagedEmployees.length === 0 && <p className="text-center text-stone py-8">Chưa có nhân viên</p>}
-          {empTotalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 p-4 border-t">
-              <button disabled={empPage === 0} onClick={() => setEmpPage(empPage - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Trước</button>
-              {Array.from({ length: empTotalPages }, (_, i) => (
-                <button key={i} onClick={() => setEmpPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === empPage ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{i + 1}</button>
-              ))}
-              <button disabled={empPage >= empTotalPages - 1} onClick={() => setEmpPage(empPage + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Sau</button>
+          {pagedEmployees.length === 0 && <p className="text-center text-gray-400 py-8">Chưa có nhân viên</p>}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Hiển thị {pagedEmployees.length > 0 ? empPage * PAGE_SIZE + 1 : 0} - {Math.min((empPage + 1) * PAGE_SIZE, sortedEmployees.length)} trên tổng số {sortedEmployees.length} nhân viên
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Hiển thị</span>
+              <select value={PAGE_SIZE} className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none">
+                <option value={10}>10</option>
+              </select>
+              <span className="text-sm text-gray-500">dòng</span>
             </div>
-          )}
+          </div>
         </div>
       )}
 
