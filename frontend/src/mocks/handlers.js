@@ -116,10 +116,6 @@ export const handlers = [
     return HttpResponse.json({ items: [], tongTien: 0 })
   }),
 
-  http.get('/api/wishlist', () => {
-    return HttpResponse.json([])
-  }),
-
   http.get('/api/recommendations/personalized', ({ request }) => {
     const url = new URL(request.url)
     const limit = parseInt(url.searchParams.get('limit') || '8')

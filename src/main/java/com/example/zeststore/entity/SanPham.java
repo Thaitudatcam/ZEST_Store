@@ -146,11 +146,6 @@ public class SanPham {
     @OneToMany(mappedBy = "sanPham")
     @ToString.Exclude
     @JsonIgnore
-    private List<MucYeuThich> mucYeuThichs;
-
-    @OneToMany(mappedBy = "sanPham")
-    @ToString.Exclude
-    @JsonIgnore
     private List<HanhViNguoiDung> hanhVis;
 
     @PrePersist

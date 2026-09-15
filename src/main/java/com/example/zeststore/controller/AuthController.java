@@ -9,12 +9,10 @@ import com.example.zeststore.dto.request.XacThucEmailRequest;
 import com.example.zeststore.dto.request.XacThucQuenMatKhauRequest;
 import com.example.zeststore.dto.response.AuthResponse;
 import com.example.zeststore.entity.GioHang;
-import com.example.zeststore.entity.DanhSachYeuThich;
 import com.example.zeststore.entity.NguoiDung;
 import com.example.zeststore.entity.VaiTro;
 import com.example.zeststore.repository.NguoiDungRepository;
 import com.example.zeststore.repository.GioHangRepository;
-import com.example.zeststore.repository.DanhSachYeuThichRepository;
 import com.example.zeststore.repository.VaiTroRepository;
 import com.example.zeststore.security.JwtTokenProvider;
 import com.example.zeststore.service.AutoGrantService;
@@ -45,7 +43,6 @@ public class AuthController {
     private final NguoiDungRepository nguoiDungRepository;
     private final VaiTroRepository vaiTroRepository;
     private final GioHangRepository gioHangRepository;
-    private final DanhSachYeuThichRepository danhSachYeuThichRepository;
     private final PasswordEncoder passwordEncoder;
     private final AutoGrantService autoGrantService;
     private final AuthService authService;
@@ -120,7 +117,6 @@ public class AuthController {
         nguoiDung = nguoiDungRepository.save(nguoiDung);
 
         gioHangRepository.save(GioHang.builder().nguoiDung(nguoiDung).build());
-        danhSachYeuThichRepository.save(DanhSachYeuThich.builder().nguoiDung(nguoiDung).build());
 
         autoGrantService.handleDangKyMoi(nguoiDung);
 

@@ -81,7 +81,7 @@ public class PhieuGiamGia {
     @JoinTable(name = "coupon_san_pham",
         joinColumns = @JoinColumn(name = "ma_phieu_giam_gia"),
         inverseJoinColumns = @JoinColumn(name = "ma_san_pham"))
-    @JsonIgnoreProperties({"danhMuc", "bienTheSanPhams", "danhGias", "hinhAnhs", "mucYeuThichs", "hanhVis"})
+    @JsonIgnoreProperties({"danhMuc", "bienTheSanPhams", "danhGias", "hinhAnhs", "hanhVis"})
     @Builder.Default
     private Set<SanPham> sanPhamApDung = new HashSet<>();
 

@@ -5,12 +5,10 @@ import { addToCart } from '../api/cart'
 import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { useWishlist } from '../context/WishlistContext'
-import { ShoppingCart, Heart, Star, ChevronRight, ChevronLeft, ChevronDown, Truck, BadgeCheck, Filter, ArrowRight, Tag } from 'lucide-react'
+import { ShoppingCart, Star, ChevronRight, ChevronLeft, ChevronDown, Tag } from 'lucide-react'
 import { VND } from '../components/ProductCard'
 import Toast from '../components/Toast'
 import CartAddedToast from '../components/CartAddedToast'
-import { addWishlist, removeWishlist, checkWishlist } from '../api/wishlist'
 import SafeImg from '../components/SafeImg'
 import ProductCard from '../components/ProductCard'
 import { imageUrl } from '../utils/imageUrl'
@@ -20,7 +18,6 @@ export default function ProductDetail() {
   const { slug } = useParams()
   const { user } = useAuth()
   const { refreshCount } = useCart()
-  const { refreshWishlistCount } = useWishlist()
   const navigate = useNavigate()
   const [product, setProduct] = useState(null)
   const [variants, setVariants] = useState([])
@@ -29,7 +26,6 @@ export default function ProductDetail() {
   const [qty, setQty] = useState(1)
   const [toast, setToast] = useState(null)
   const [cartToast, setCartToast] = useState(null)
-  const [inWish, setInWish] = useState(false)
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
   const [selectedSizeId, setSelectedSizeId] = useState(null)
   const [reviews, setReviews] = useState([])
@@ -51,8 +47,6 @@ export default function ProductDetail() {
       setProduct(prod)
       setVariants(p.variants || [])
       setImages(p.images || [])
-      if (prod.maSanPham && user)
-        checkWishlist(prod.maSanPham).then((r) => setInWish(r.inWishlist)).catch(() => {})
       if (prod.maSanPham) {
         getProductReviews(prod.maSanPham).then((r) => {
           setReviews(r.reviews || [])
@@ -122,15 +116,6 @@ export default function ProductDetail() {
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Mua thất bại', type: 'error' })
     }
-  }
-
-  const toggleWish = async () => {
-    if (!user) return navigate('/login')
-    try {
-      if (inWish) { await removeWishlist(product.maSanPham); setInWish(false) }
-      else { await addWishlist(product.maSanPham); setInWish(true) }
-      refreshWishlistCount()
-    } catch {}
   }
 
   const colorGroups = useMemo(() => {
@@ -378,15 +363,6 @@ export default function ProductDetail() {
                 MUA NGAY
               </button>
             </div>
-
-            {/* Wishlist */}
-            <button onClick={toggleWish}
-              className={`self-start text-sm font-medium flex items-center gap-1.5 transition ${
-                inWish ? 'text-red-500' : 'text-stone hover:text-[var(--primary-color)]'
-              }`}>
-              <Heart className={`h-4 w-4 ${inWish ? 'fill-red-500' : ''}`} />
-              {inWish ? 'Đã yêu thích' : 'Thêm vào yêu thích'}
-            </button>
           </div>
         </div>
 

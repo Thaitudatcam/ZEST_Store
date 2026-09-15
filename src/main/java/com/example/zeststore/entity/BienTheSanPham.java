@@ -25,7 +25,7 @@ public class BienTheSanPham {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_san_pham", nullable = false)
-    @JsonIgnoreProperties({"bienThes", "danhGias", "mucYeuThichs", "hanhVis"})
+    @JsonIgnoreProperties({"bienThes", "danhGias", "hanhVis"})
     private SanPham sanPham;
 
     @ManyToOne(fetch = FetchType.LAZY)

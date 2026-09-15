@@ -120,11 +120,6 @@ public class NguoiDung {
     @JsonIgnore
     private List<DanhGia> danhGias;
 
-    @OneToOne(mappedBy = "nguoiDung", cascade = CascadeType.ALL)
-    @ToString.Exclude
-    @JsonIgnore
-    private DanhSachYeuThich danhSachYeuThich;
-
     @OneToMany(mappedBy = "nguoiDung")
     @ToString.Exclude
     @JsonIgnore
