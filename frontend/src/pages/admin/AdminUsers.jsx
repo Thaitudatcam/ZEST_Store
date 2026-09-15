@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus } from '../../api/admin'
-import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, RefreshCw, Download } from 'lucide-react'
+import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, getCustomerAddresses, addCustomerAddress, setDefaultCustomerAddress, deleteCustomerAddress } from '../../api/admin'
+import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, RefreshCw, Download, MapPin, Trash2, Star } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import { getProvinces, getDistricts, getWards } from '../../api/address'
 
 export default function AdminUsers() {
   const { pathname } = useLocation()
@@ -27,6 +28,20 @@ export default function AdminUsers() {
   const [confirmEmpToggle, setConfirmEmpToggle] = useState(null)
   const [confirmSave, setConfirmSave] = useState(false)
   const PAGE_SIZE = 20
+
+  // Address modal state
+  const [addrModal, setAddrModal] = useState(false)
+  const [addrCustomer, setAddrCustomer] = useState(null)
+  const [addresses, setAddresses] = useState([])
+  const [addrLoading, setAddrLoading] = useState(false)
+  const [addrForm, setAddrForm] = useState({ tenNguoiNhan: '', soDienThoai: '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', chiTietDiaChi: '', laMacDinh: false })
+  const [provinces, setProvinces] = useState([])
+  const [districts, setDistricts] = useState([])
+  const [wards, setWards] = useState([])
+  const [addrProvinceId, setAddrProvinceId] = useState(0)
+  const [addrDistrictId, setAddrDistrictId] = useState(0)
+  const [addrWardCode, setAddrWardCode] = useState('')
+  const [confirmAddrDelete, setConfirmAddrDelete] = useState(null)
 
   const loadCustomers = () => getCustomers().then(setCustomers).catch(() => setError('Không thể tải khách hàng'))
   const loadEmployees = () => getEmployees().then(setEmployees).catch(() => setError('Không thể tải nhân viên'))
@@ -96,6 +111,68 @@ export default function AdminUsers() {
     setConfirmEmpToggle(null)
     try { await toggleEmployeeStatus(id); setError(''); loadEmployees() }
     catch { setError('Cập nhật thất bại') }
+  }
+
+  // Address modal functions
+  const openAddressModal = async (customer) => {
+    setAddrCustomer(customer)
+    setAddrForm({ tenNguoiNhan: customer.hoTen || '', soDienThoai: customer.soDienThoai || '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', chiTietDiaChi: '', laMacDinh: false })
+    setAddrProvinceId(0); setAddrDistrictId(0); setAddrWardCode(''); setDistricts([]); setWards([])
+    setAddrModal(true)
+    try {
+      const addrs = await getCustomerAddresses(customer.maNguoiDung)
+      setAddresses(addrs || [])
+    } catch { setAddresses([]) }
+    try {
+      const provs = await getProvinces()
+      setProvinces(provs || [])
+    } catch { setProvinces([]) }
+  }
+
+  useEffect(() => {
+    if (addrProvinceId) {
+      setAddrDistrictId(0); setAddrWardCode(''); setWards([])
+      getDistricts(addrProvinceId).then(setDistricts).catch(() => setDistricts([]))
+    }
+  }, [addrProvinceId])
+
+  useEffect(() => {
+    if (addrDistrictId) {
+      setAddrWardCode('')
+      getWards(addrDistrictId).then(setWards).catch(() => setWards([]))
+    }
+  }, [addrDistrictId])
+
+  const handleAddAddress = async () => {
+    if (!addrCustomer) return
+    setAddrLoading(true)
+    try {
+      await addCustomerAddress(addrCustomer.maNguoiDung, addrForm)
+      setAddrForm({ tenNguoiNhan: addrCustomer.hoTen || '', soDienThoai: addrCustomer.soDienThoai || '', tinhThanhPho: '', quanHuyen: '', phuongXa: '', chiTietDiaChi: '', laMacDinh: false })
+      setAddrProvinceId(0); setAddrDistrictId(0); setAddrWardCode('')
+      const addrs = await getCustomerAddresses(addrCustomer.maNguoiDung)
+      setAddresses(addrs || [])
+    } catch { setError('Thêm địa chỉ thất bại') }
+    finally { setAddrLoading(false) }
+  }
+
+  const handleSetDefaultAddr = async (addressId) => {
+    if (!addrCustomer) return
+    try {
+      await setDefaultCustomerAddress(addrCustomer.maNguoiDung, addressId)
+      const addrs = await getCustomerAddresses(addrCustomer.maNguoiDung)
+      setAddresses(addrs || [])
+    } catch { setError('Cập nhật thất bại') }
+  }
+
+  const handleDeleteAddr = async (addressId) => {
+    setConfirmAddrDelete(null)
+    if (!addrCustomer) return
+    try {
+      await deleteCustomerAddress(addrCustomer.maNguoiDung, addressId)
+      const addrs = await getCustomerAddresses(addrCustomer.maNguoiDung)
+      setAddresses(addrs || [])
+    } catch { setError('Xóa địa chỉ thất bại') }
   }
 
   const openCreate = () => { setEditing(null); setForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '', choPhepBanHang: true }); setShowForm(true) }
@@ -177,48 +254,54 @@ export default function AdminUsers() {
       {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
 
       {tab === 'customers' && (
-        <div className="bg-ivory rounded-2xl shadow-sm border overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-ivory-100 border-b">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="w-10 px-2 py-3 text-center">
-                    <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.length === pagedCustomers.length && pagedCustomers.length > 0} onChange={() => toggleSelectAll(pagedCustomers.map(c => c.maNguoiDung))} />
-                  </th>
-                  {[
-                    { key: 'hoTen', label: 'Khách hàng', align: 'text-left' },
-                    { key: 'email', label: 'Email', align: 'text-left' },
-                    { key: 'soDienThoai', label: 'SĐT', align: 'text-left' },
-                    { key: 'ngayTao', label: 'Ngày tạo', align: 'text-center' },
-                  ].map(({ key, label, align }) => (
-                    <th key={key} className={`${align} px-4 py-3 font-semibold text-stone cursor-pointer hover:text-ink select-none`} onClick={() => toggleSort(key)}>
-                      <span className="inline-flex items-center gap-1">{label} {sortField === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-stone" />}</span>
-                    </th>
-                  ))}
-                  <th className="text-center px-4 py-3 font-semibold text-stone">Trạng thái</th>
-                  <th className="text-center px-4 py-3 font-semibold text-stone">Hành động</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">STT</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">MÃ KH</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">HỌ TÊN</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">SĐT</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">EMAIL</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 text-xs uppercase">ĐỊA CHỈ</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">GIỚI TÍNH</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">TRẠNG THÁI</th>
+                  <th className="px-4 py-3 text-center font-semibold text-gray-600 text-xs uppercase">THAO TÁC</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
-                {pagedCustomers.map((c) => (
-                  <tr key={c.maNguoiDung} className={`hover:bg-ivory-100 ${selectedIds.includes(c.maNguoiDung) ? 'bg-gold/10/50' : ''}`}>
-                    <td className="w-10 px-2 py-3 text-center">
-                      <input type="checkbox" className="h-4 w-4 rounded border-stone/30 cursor-pointer" checked={selectedIds.includes(c.maNguoiDung)} onChange={() => toggleSelect(c.maNguoiDung)} />
-                    </td>
-                    <td className="px-4 py-3 font-medium">{c.hoTen}</td>
-                    <td className="px-4 py-3 text-stone">{c.email}</td>
-                    <td className="px-4 py-3">{c.soDienThoai || '-'}</td>
-                    <td className="px-4 py-3 text-center">{c.ngayTao ? new Date(c.ngayTao).toLocaleDateString('vi-VN') : '-'}</td>
+              <tbody className="divide-y divide-gray-100">
+                {pagedCustomers.map((c, idx) => (
+                  <tr key={c.maNguoiDung} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-center text-gray-500">{page * PAGE_SIZE + idx + 1}</td>
+                    <td className="px-4 py-3 text-center font-medium text-gray-700">{c.maKH || `KH${String(c.maNguoiDung).padStart(3, '0')}`}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-800">{c.hoTen}</td>
+                    <td className="px-4 py-3 text-gray-700">{c.soDienThoai || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{c.email}</td>
+                    <td className="px-4 py-3 text-gray-500 max-w-[180px] truncate">{c.diaChi || '-'}</td>
+                    <td className="px-4 py-3 text-center text-gray-700">{c.gioiTinh === true ? 'Nam' : c.gioiTinh === false ? 'Nữ' : 'N/a'}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.trangThai === 1 ? 'bg-emerald-deep/20 text-emerald-800' : 'bg-bordeaux/20 text-bordeaux'}`}>
-                        {c.trangThai === 1 ? 'Hoạt động' : 'Đã khóa'}
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                        c.trangThai === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {c.trangThai === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex justify-center gap-1">
-                        <button onClick={() => setDetail(c)} className="p-1.5 text-gold hover:bg-gold/10 rounded-lg"><Eye className="h-4 w-4" /></button>
-                        <button onClick={() => setConfirmToggle(c.maNguoiDung)} className={`p-1.5 rounded-lg ${c.trangThai === 1 ? 'text-bordeaux hover:bg-bordeaux/10' : 'text-emerald-deep hover:bg-emerald-deep/10'}`}>
-                          {c.trangThai === 1 ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                        <button onClick={() => setDetail(c)} className="p-1.5 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded-lg transition" title="Xem chi tiết">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => openAddressModal(c)} className="p-1.5 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded-lg transition" title="Địa chỉ">
+                          <MapPin className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setConfirmToggle(c.maNguoiDung)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            c.trangThai === 1 ? 'bg-[var(--primary-color)]' : 'bg-gray-300'
+                          }`}>
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            c.trangThai === 1 ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
                         </button>
                       </div>
                     </td>
@@ -227,16 +310,19 @@ export default function AdminUsers() {
               </tbody>
             </table>
           </div>
-          {pagedCustomers.length === 0 && <p className="text-center text-stone py-8">Chưa có khách hàng</p>}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 p-4 border-t">
-              <button disabled={page === 0} onClick={() => setPage(page - 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Trước</button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button key={i} onClick={() => setPage(i)} className={`px-3 py-1.5 text-xs rounded-lg border ${i === page ? 'bg-gold text-noir border-gold' : 'hover:bg-ivory-100'}`}>{i + 1}</button>
-              ))}
-              <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-ivory-100 disabled:opacity-40">Sau</button>
+          {pagedCustomers.length === 0 && <p className="text-center text-gray-400 py-8">Chưa có khách hàng</p>}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Hiển thị {pagedCustomers.length > 0 ? page * PAGE_SIZE + 1 : 0} - {Math.min((page + 1) * PAGE_SIZE, sortedCustomers.length)} trên tổng số {sortedCustomers.length} khách hàng
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Hiển thị</span>
+              <select value={PAGE_SIZE} className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none">
+                <option value={10}>10</option>
+              </select>
+              <span className="text-sm text-gray-500">dòng</span>
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -418,6 +504,159 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+
+      {/* Address Management Modal */}
+      {addrModal && addrCustomer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setAddrModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-red-500" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg text-gray-800">Sổ địa chỉ khách hàng</h2>
+                  <p className="text-sm text-gray-500">{addrCustomer.hoTen} • {addrCustomer.maKH || `KH${String(addrCustomer.maNguoiDung).padStart(3, '0')}`}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => openAddressModal(addrCustomer)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+                <button onClick={() => setAddrModal(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left: Address list */}
+              <div>
+                <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-[var(--primary-color)] rounded-full inline-block" />
+                  Danh sách địa chỉ
+                </h3>
+                {addresses.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4">Chưa có địa chỉ</p>
+                ) : (
+                  <div className="space-y-3">
+                    {addresses.map((a, idx) => (
+                      <div key={a.maDiaChi} className="border border-gray-200 rounded-xl p-3 hover:border-[var(--primary-color)]/30 transition">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-bold text-gray-400">{idx + 1}</span>
+                              <p className="text-sm font-medium text-gray-800 truncate">{a.chiTietDiaChi}{a.tinhThanhPho ? `, ${a.tinhThanhPho}` : ''}</p>
+                            </div>
+                            <p className="text-xs text-gray-500 ml-5">{a.tenNguoiNhan} • SĐT: {a.soDienThoai}</p>
+                            {a.laMacDinh && (
+                              <span className="ml-5 mt-1 inline-block text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">Mặc định</span>
+                            )}
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            {!a.laMacDinh && (
+                              <button onClick={() => handleSetDefaultAddr(a.maDiaChi)} className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition" title="Đặt mặc định">
+                                <Star className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button onClick={() => setConfirmAddrDelete(a.maDiaChi)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title="Xóa">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Add address form */}
+              <div>
+                <h3 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                  <span className="w-1 h-4 bg-[var(--primary-color)] rounded-full inline-block" />
+                  Thêm nhanh địa chỉ
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">Họ tên người nhận *</label>
+                      <input value={addrForm.tenNguoiNhan} onChange={(e) => setAddrForm({ ...addrForm, tenNguoiNhan: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary-color)]" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">Số điện thoại *</label>
+                      <input value={addrForm.soDienThoai} onChange={(e) => setAddrForm({ ...addrForm, soDienThoai: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary-color)]" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">Thành phố/Tỉnh *</label>
+                      <select value={addrProvinceId} onChange={(e) => {
+                        const id = Number(e.target.value); setAddrProvinceId(id)
+                        const name = e.target.options[e.target.selectedIndex]?.text || ''
+                        setAddrForm({ ...addrForm, tinhThanhPho: name })
+                      }} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary-color)]">
+                        <option value={0}>Chọn hoặc nhập tỉnh/thành</option>
+                        {provinces.map((p) => <option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">Quận/Huyện *</label>
+                      <select value={addrDistrictId} onChange={(e) => {
+                        const id = Number(e.target.value); setAddrDistrictId(id)
+                        const name = e.target.options[e.target.selectedIndex]?.text || ''
+                        setAddrForm({ ...addrForm, quanHuyen: name })
+                      }} disabled={!addrProvinceId} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary-color)] disabled:bg-gray-50">
+                        <option value={0}>Chọn hoặc nhập quận/huyện</option>
+                        {districts.map((d) => <option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">Phường/Xã *</label>
+                      <select value={addrWardCode} onChange={(e) => {
+                        setAddrWardCode(e.target.value)
+                        const name = e.target.options[e.target.selectedIndex]?.text || ''
+                        setAddrForm({ ...addrForm, phuongXa: name })
+                      }} disabled={!addrDistrictId} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary-color)] disabled:bg-gray-50">
+                        <option value="">Chọn hoặc nhập phường/xã</option>
+                        {wards.map((w) => <option key={w.WardCode} value={w.WardCode}>{w.WardName}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">Địa chỉ cụ thể *</label>
+                      <input value={addrForm.chiTietDiaChi} onChange={(e) => setAddrForm({ ...addrForm, chiTietDiaChi: e.target.value })}
+                        placeholder="Số nhà, đường..."
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary-color)]" />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={addrForm.laMacDinh} onChange={(e) => setAddrForm({ ...addrForm, laMacDinh: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-300 text-[var(--primary-color)] focus:ring-[var(--primary-color)]" />
+                    <span className="text-gray-700">Đặt làm địa chỉ mặc định</span>
+                  </label>
+                  <button onClick={handleAddAddress} disabled={addrLoading || !addrForm.tenNguoiNhan || !addrForm.chiTietDiaChi}
+                    className="w-full bg-gray-800 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    {addrLoading ? 'Đang thêm...' : 'Thêm nhanh'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmAddrDelete !== null}
+        title="Xóa địa chỉ"
+        message="Bạn chắc chắn muốn xóa địa chỉ này?"
+        confirmText="Xóa"
+        onConfirm={() => handleDeleteAddr(confirmAddrDelete)}
+        onCancel={() => setConfirmAddrDelete(null)}
+      />
     </div>
   )
 }

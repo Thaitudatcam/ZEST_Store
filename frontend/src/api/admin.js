@@ -29,6 +29,11 @@ export const getCustomers = () => api.get('/admin/customers').then((r) => r.data
 export const toggleCustomerStatus = (id) => api.put(`/admin/customers/${id}/status`).then((r) => r.data)
 export const searchCustomers = (q) => api.get('/admin/customers/search', { params: { q } }).then((r) => r.data)
 export const createCustomer = (data) => api.post('/admin/customers', data).then((r) => r.data)
+export const getCustomerAddresses = (id) => api.get(`/admin/customers/${id}/addresses`).then((r) => r.data)
+export const addCustomerAddress = (id, data) => api.post(`/admin/customers/${id}/addresses`, data).then((r) => r.data)
+export const updateCustomerAddress = (customerId, addressId, data) => api.put(`/admin/customers/${customerId}/addresses/${addressId}`, data).then((r) => r.data)
+export const deleteCustomerAddress = (customerId, addressId) => api.delete(`/admin/customers/${customerId}/addresses/${addressId}`).then((r) => r.data)
+export const setDefaultCustomerAddress = (customerId, addressId) => api.put(`/admin/customers/${customerId}/addresses/${addressId}/default`).then((r) => r.data)
 
 export const getEmployees = () => api.get('/admin/employees').then((r) => r.data)
 export const createEmployee = (data) => api.post('/admin/employees', data).then((r) => r.data)
