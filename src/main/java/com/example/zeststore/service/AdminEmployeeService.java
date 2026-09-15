@@ -39,6 +39,11 @@ public class AdminEmployeeService {
                     m.put("vaiTro", u.getVaiTro().getTenVaiTro());
                     m.put("choPhepBanHang", u.getChoPhepBanHang());
                     m.put("ngayTao", u.getNgayTao());
+                    m.put("gioiTinh", u.getGioiTinh());
+                    m.put("ngaySinh", u.getNgaySinh());
+                    if (u.getDiaChis() != null && !u.getDiaChis().isEmpty()) {
+                        m.put("diaChi", u.getDiaChis().get(0).getChiTietDiaChi());
+                    }
                     return m;
                 }).collect(Collectors.toList());
     }

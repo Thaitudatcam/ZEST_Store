@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, getCustomerAddresses, addCustomerAddress, setDefaultCustomerAddress, deleteCustomerAddress } from '../../api/admin'
 import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, RefreshCw, Download, MapPin, Trash2, Star } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -7,6 +7,7 @@ import { getProvinces, getDistricts, getWards } from '../../api/address'
 
 export default function AdminUsers() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const tab = pathname.includes('employees') ? 'employees' : 'customers'
   const [customers, setCustomers] = useState([])
   const [employees, setEmployees] = useState([])
@@ -243,7 +244,7 @@ export default function AdminUsers() {
             <button className="flex items-center gap-2 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
               <Download className="h-4 w-4" /> Xuất Excel
             </button>
-            <button onClick={openCreate}
+            <button onClick={() => navigate('/admin/employees/create')}
               className="flex items-center gap-2 bg-[var(--primary-color)] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
               <Plus className="h-4 w-4" /> Thêm nhân viên
             </button>
