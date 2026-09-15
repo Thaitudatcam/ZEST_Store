@@ -33,6 +33,7 @@ public class AdminCustomerService {
                 .map(u -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("maNguoiDung", u.getMaNguoiDung());
+                    m.put("maNguoiDungCode", u.getMaNguoiDungCode());
                     m.put("hoTen", u.getHoTen());
                     m.put("email", u.getEmail());
                     m.put("soDienThoai", u.getSoDienThoai());
@@ -40,6 +41,21 @@ public class AdminCustomerService {
                     m.put("ngayTao", u.getNgayTao());
                     m.put("gioiTinh", u.getGioiTinh());
                     m.put("ngaySinh", u.getNgaySinh());
+                    var defaultAddr = diaChiNguoiDungRepository.findByNguoiDung_MaNguoiDung(u.getMaNguoiDung()).stream()
+                            .filter(d -> Boolean.TRUE.equals(d.getLaMacDinh()))
+                            .findFirst()
+                            .orElse(null);
+                    if (defaultAddr == null) {
+                        defaultAddr = diaChiNguoiDungRepository.findByNguoiDung_MaNguoiDung(u.getMaNguoiDung()).stream()
+                                .findFirst().orElse(null);
+                    }
+                    if (defaultAddr != null) {
+                        String diaChi = defaultAddr.getChiTietDiaChi();
+                        if (defaultAddr.getPhuongXa() != null) diaChi += ", " + defaultAddr.getPhuongXa();
+                        if (defaultAddr.getQuanHuyen() != null) diaChi += ", " + defaultAddr.getQuanHuyen();
+                        if (defaultAddr.getTinhThanhPho() != null) diaChi += ", " + defaultAddr.getTinhThanhPho();
+                        m.put("diaChi", diaChi);
+                    }
                     return m;
                 }).collect(Collectors.toList());
     }

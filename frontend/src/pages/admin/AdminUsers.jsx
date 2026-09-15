@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, getCustomerAddresses, addCustomerAddress, setDefaultCustomerAddress, deleteCustomerAddress } from '../../api/admin'
+import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, getCustomerAddresses, addCustomerAddress, setDefaultCustomerAddress, deleteCustomerAddress, createCustomer } from '../../api/admin'
 import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, RefreshCw, Download, MapPin, Trash2, Star } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getProvinces, getDistricts, getWards } from '../../api/address'
@@ -13,6 +13,7 @@ export default function AdminUsers() {
   const [employees, setEmployees] = useState([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [genderFilter, setGenderFilter] = useState('all')
   const [roleFilter, setRoleFilter] = useState('all')
   const [error, setError] = useState('')
   const [detail, setDetail] = useState(null)
@@ -28,6 +29,8 @@ export default function AdminUsers() {
   const [confirmBulk, setConfirmBulk] = useState(null)
   const [confirmEmpToggle, setConfirmEmpToggle] = useState(null)
   const [confirmSave, setConfirmSave] = useState(false)
+  const [showCustForm, setShowCustForm] = useState(false)
+  const [custForm, setCustForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '' })
   const PAGE_SIZE = 20
 
   // Address modal state
@@ -92,7 +95,8 @@ export default function AdminUsers() {
   const filteredCustomers = customers.filter((c) => {
     const matchSearch = !search || (c.hoTen || '').toLowerCase().includes(search.toLowerCase()) || (c.email || '').toLowerCase().includes(search.toLowerCase()) || (c.soDienThoai || '').includes(search)
     const matchStatus = statusFilter === 'all' || (statusFilter === 'active' && c.trangThai === 1) || (statusFilter === 'locked' && c.trangThai !== 1)
-    return matchSearch && matchStatus
+    const matchGender = genderFilter === 'all' || (genderFilter === 'male' && c.gioiTinh === true) || (genderFilter === 'female' && c.gioiTinh === false)
+    return matchSearch && matchStatus && matchGender
   })
 
   const filteredEmployees = employees.filter((e) => {
@@ -176,7 +180,22 @@ export default function AdminUsers() {
     } catch { setError('Xóa địa chỉ thất bại') }
   }
 
-  const openCreate = () => { setEditing(null); setForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '', choPhepBanHang: true }); setShowForm(true) }
+  const openCreate = () => {
+    if (tab === 'customers') {
+      setCustForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '' })
+      setShowCustForm(true)
+    } else {
+      setEditing(null); setForm({ hoTen: '', email: '', soDienThoai: '', matKhau: '', choPhepBanHang: true }); setShowForm(true)
+    }
+  }
+
+  const handleCreateCustomer = async () => {
+    setConfirmSave(false)
+    try {
+      await createCustomer(custForm)
+      setShowCustForm(false); setError(''); loadCustomers()
+    } catch (err) { setError(err.response?.data?.message || 'Thao tác thất bại') }
+  }
 
   const openEdit = (emp) => {
     setEditing(emp)
@@ -203,7 +222,7 @@ export default function AdminUsers() {
     setConfirmSave(true)
   }
 
-  useEffect(() => { setPage(0); setEmpPage(0); setSelectedIds([]) }, [search, statusFilter, roleFilter])
+  useEffect(() => { setPage(0); setEmpPage(0); setSelectedIds([]) }, [search, statusFilter, roleFilter, genderFilter])
   const sortedCustomers = sortData(filteredCustomers)
   const sortedEmployees = sortData(filteredEmployees)
   const totalPages = Math.ceil(sortedCustomers.length / PAGE_SIZE)
@@ -215,7 +234,7 @@ export default function AdminUsers() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
-          {tab === 'employees' ? 'QUẢN LÝ NHÂN VIÊN' : 'Quản lý người dùng'}
+          {tab === 'employees' ? 'QUẢN LÝ NHÂN VIÊN' : 'Quản lý tài khoản / Quản lý khách hàng'}
         </h1>
       </div>
 
@@ -224,9 +243,25 @@ export default function AdminUsers() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder={tab === 'employees' ? 'Tìm theo tên, mã, email, sdt' : 'Tìm khách hàng...'}
+            placeholder="Tìm theo tên, sđt, email"
             className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm w-full focus:outline-none focus:border-[var(--primary-color)] focus:ring-1 focus:ring-[var(--primary-color)]/30" />
         </div>
+        {tab === 'customers' && (
+          <>
+            <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)}
+              className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--primary-color)]">
+              <option value="all">Giới tính (Tất cả)</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--primary-color)]">
+              <option value="all">Trạng thái (Tất cả)</option>
+              <option value="active">Hoạt động</option>
+              <option value="locked">Ngừng hoạt động</option>
+            </select>
+          </>
+        )}
         {tab === 'employees' && (
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             className="border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[var(--primary-color)]">
@@ -234,6 +269,21 @@ export default function AdminUsers() {
             <option value="active">Hoạt động</option>
             <option value="locked">Đã khóa</option>
           </select>
+        )}
+        {tab === 'customers' && (
+          <>
+            <button onClick={loadCustomers}
+              className="flex items-center gap-2 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              <RefreshCw className="h-4 w-4" /> Làm mới
+            </button>
+            <button className="flex items-center gap-2 border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+              <Download className="h-4 w-4" /> Xuất Excel
+            </button>
+            <button onClick={openCreate}
+              className="flex items-center gap-2 bg-[var(--primary-color)] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
+              <Plus className="h-4 w-4" /> Thêm mới
+            </button>
+          </>
         )}
         {tab === 'employees' && (
           <>
@@ -275,15 +325,15 @@ export default function AdminUsers() {
                 {pagedCustomers.map((c, idx) => (
                   <tr key={c.maNguoiDung} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-center text-gray-500">{page * PAGE_SIZE + idx + 1}</td>
-                    <td className="px-4 py-3 text-center font-medium text-gray-700">{c.maKH || `KH${String(c.maNguoiDung).padStart(3, '0')}`}</td>
+                    <td className="px-4 py-3 text-center font-medium text-gray-700">{c.maNguoiDungCode || `KH${String(c.maNguoiDung).padStart(3, '0')}`}</td>
                     <td className="px-4 py-3 font-semibold text-gray-800">{c.hoTen}</td>
                     <td className="px-4 py-3 text-gray-700">{c.soDienThoai || '-'}</td>
                     <td className="px-4 py-3 text-gray-500">{c.email}</td>
-                    <td className="px-4 py-3 text-gray-500 max-w-[180px] truncate">{c.diaChi || '-'}</td>
-                    <td className="px-4 py-3 text-center text-gray-700">{c.gioiTinh === true ? 'Nam' : c.gioiTinh === false ? 'Nữ' : 'N/a'}</td>
+                    <td className="px-4 py-3 text-gray-500 max-w-[180px] truncate" title={c.diaChi}>{c.diaChi || 'Chưa cập nhật'}</td>
+                    <td className="px-4 py-3 text-center text-gray-700">{c.gioiTinh === true ? 'Nam' : c.gioiTinh === false ? 'Nữ' : 'N/A'}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        c.trangThai === 1 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        c.trangThai === 1 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'
                       }`}>
                         {c.trangThai === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                       </span>
@@ -514,7 +564,7 @@ export default function AdminUsers() {
                 </div>
                 <div>
                   <h2 className="font-bold text-lg text-gray-800">Sổ địa chỉ khách hàng</h2>
-                  <p className="text-sm text-gray-500">{addrCustomer.hoTen} • {addrCustomer.maKH || `KH${String(addrCustomer.maNguoiDung).padStart(3, '0')}`}</p>
+                  <p className="text-sm text-gray-500">{addrCustomer.hoTen} • {addrCustomer.maNguoiDungCode || `KH${String(addrCustomer.maNguoiDung).padStart(3, '0')}`}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -654,6 +704,45 @@ export default function AdminUsers() {
         onConfirm={() => handleDeleteAddr(confirmAddrDelete)}
         onCancel={() => setConfirmAddrDelete(null)}
       />
+
+      {showCustForm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCustForm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">Thêm khách hàng mới</h2>
+              <button onClick={() => setShowCustForm(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Họ tên *</label>
+                <input value={custForm.hoTen} onChange={(e) => setCustForm({ ...custForm, hoTen: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Email</label>
+                <input type="email" value={custForm.email} onChange={(e) => setCustForm({ ...custForm, email: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Số điện thoại</label>
+                <input value={custForm.soDienThoai} onChange={(e) => setCustForm({ ...custForm, soDienThoai: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
+                <input type="password" value={custForm.matKhau} onChange={(e) => setCustForm({ ...custForm, matKhau: e.target.value })}
+                  placeholder="Để trống sẽ dùng mặc định: customer123"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => { if (!custForm.hoTen.trim()) { setError('Họ tên không được để trống'); return } handleCreateCustomer() }}
+                  className="bg-[var(--primary-color)] text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90">Tạo</button>
+                <button onClick={() => setShowCustForm(false)} className="border border-gray-300 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
