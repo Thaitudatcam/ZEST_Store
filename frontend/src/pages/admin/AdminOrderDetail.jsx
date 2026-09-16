@@ -550,8 +550,8 @@ export default function AdminOrderDetail() {
         confirmText="Xác nhận"
         variant={confirmStatus === 5 ? 'danger' : 'gold'}
         loading={updating === confirmStatus}
-        onConfirm={() => { setConfirmStatus(null); handleUpdateStatus(confirmStatus) }}
-        onCancel={() => setConfirmStatus(null)}
+        onConfirm={() => { const note = statusNote; setConfirmStatus(null); setStatusNote(''); handleUpdateStatus(confirmStatus, note) }}
+        onCancel={() => { setConfirmStatus(null); setStatusNote('') }}
       />
 
       <ConfirmDialog

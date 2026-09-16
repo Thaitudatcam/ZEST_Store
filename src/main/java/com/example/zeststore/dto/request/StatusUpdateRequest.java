@@ -11,4 +11,5 @@ import lombok.*;
 public class StatusUpdateRequest {
     @NotNull
     private Integer trangThai;
+    private String ghiChu;
 }

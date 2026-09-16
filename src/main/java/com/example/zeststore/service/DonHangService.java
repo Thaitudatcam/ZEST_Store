@@ -459,7 +459,7 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId) {
+    public DonHang updateOrderStatus(Integer orderId, Integer status, Integer adminUserId, String ghiChu) {
         List<Integer> validStatuses = List.of(2, 3, 4, 5, 6, 9);
         if (!validStatuses.contains(status)) {
             throw new BadRequestException("Invalid status: " + status);
@@ -514,6 +514,7 @@ public class DonHangService {
                 .trangThaiCu(oldStatus)
                 .trangThaiMoi(status)
                 .nguoiCapNhat(admin)
+                .ghiChu(ghiChu)
                 .build());
 
         orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", null);
