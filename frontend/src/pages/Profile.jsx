@@ -40,7 +40,7 @@ export default function Profile() {
         hoTen: p.hoTen || '',
         email: p.email || '',
         soDienThoai: p.soDienThoai || '',
-        gioiTinh: p.gioiTinh || '',
+        gioiTinh: p.gioiTinh === true ? 'Nam' : p.gioiTinh === false ? 'Nữ' : '',
         ngaySinh: p.ngaySinh || ''
       })
       setPendingEmail(p.emailMoiChoXacThuc || '')
@@ -75,8 +75,8 @@ export default function Profile() {
     const emailChanged = form.email !== profile.email
     try {
       await updateProfile(emailChanged
-        ? { hoTen: form.hoTen, soDienThoai: form.soDienThoai, email: form.email, gioiTinh: form.gioiTinh, ngaySinh: form.ngaySinh }
-        : { hoTen: form.hoTen, soDienThoai: form.soDienThoai, gioiTinh: form.gioiTinh, ngaySinh: form.ngaySinh })
+        ? { hoTen: form.hoTen, soDienThoai: form.soDienThoai, email: form.email, gioiTinh: form.gioiTinh === 'Nam' ? true : form.gioiTinh === 'Nữ' ? false : null, ngaySinh: form.ngaySinh }
+        : { hoTen: form.hoTen, soDienThoai: form.soDienThoai, gioiTinh: form.gioiTinh === 'Nam' ? true : form.gioiTinh === 'Nữ' ? false : null, ngaySinh: form.ngaySinh })
       if (emailChanged) {
         setPendingEmail(form.email)
         setMsg('Cập nhật thành công. Email mới chưa được xác thực, vui lòng bấm "Xác thực email mới".')
