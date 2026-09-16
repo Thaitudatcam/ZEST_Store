@@ -25,8 +25,8 @@ const STATUS_LABELS = {
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
-function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
-  const isPos = loaiDonHang === 2;
+function OrderStatusStepper({ currentStatus, history, loaiDonHang, delivery }) {
+  const isPos = loaiDonHang === 2 && !delivery;
 
   const POS_STEPS = [
     { status: 1, label: 'Tạo đơn', icon: ShoppingBag },
@@ -112,6 +112,7 @@ export default function AdminOrderDetail() {
   const [updating, setUpdating] = useState(null)
   const [confirmStatus, setConfirmStatus] = useState(null)
   const [statusNote, setStatusNote] = useState('')
+  const [notifyCustomer, setNotifyCustomer] = useState(false)
   const [reconcileMode, setReconcileMode] = useState(null)
   const [reconciling, setReconciling] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
@@ -152,7 +153,8 @@ export default function AdminOrderDetail() {
 
   const ONLINE_NEXT_STATUS = { 1: [2, 5], 2: [3, 5], 3: [4], 4: [6, 9] }
   const POS_NEXT_STATUS = { 1: [6, 5] }
-  const NEXT_STATUS = order.loaiDonHang === 2 ? POS_NEXT_STATUS : ONLINE_NEXT_STATUS
+  const isDelivery = order.loaiDonHang !== 2 || (order.diaChiGiaoHang && order.diaChiGiaoHang !== 'Tại quầy')
+  const NEXT_STATUS = order.loaiDonHang === 2 && !isDelivery ? POS_NEXT_STATUS : ONLINE_NEXT_STATUS
   const baseNextStatuses = NEXT_STATUS[order.trangThaiDon] || []
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
   const nextStatuses = baseNextStatuses.filter(s => {
@@ -180,7 +182,7 @@ export default function AdminOrderDetail() {
   const handleUpdateStatus = async (trangThai, ghiChu = '') => {
     setUpdating(trangThai)
     try {
-      await api.put(`/orders/admin/${id}/status`, { trangThai, ghiChu: ghiChu.trim() || null })
+      await api.put(`/orders/admin/${id}/status`, { trangThai, ghiChu: ghiChu.trim() || null, thongBaoKhachHang: notifyCustomer })
       const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
       setData(updated)
       setStatusNote('')
@@ -275,7 +277,7 @@ export default function AdminOrderDetail() {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-5 mb-5">
         <section className="rounded-2xl border border-stone/10 bg-ivory p-5 sm:p-6 shadow-sm">
           <h2 className="mb-5 flex items-center gap-2 text-base font-bold text-ink"><Truck className="h-5 w-5 text-gold" /> Trạng thái đơn hàng</h2>
-          <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
+          <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} delivery={isDelivery} />
         </section>
         <aside className="rounded-2xl border border-stone/10 bg-ivory p-5 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-ink"><CreditCard className="h-5 w-5 text-gold" /> Tổng kết thanh toán</h2>
@@ -312,7 +314,7 @@ export default function AdminOrderDetail() {
           </h2>
           <div className="flex gap-3 flex-wrap">
             {nextStatuses.map((s) => (
-              <button key={s} onClick={() => { setStatusNote(''); setConfirmStatus(s) }} disabled={updating !== null}
+              <button key={s} onClick={() => { setStatusNote(''); setNotifyCustomer(false); setConfirmStatus(s) }} disabled={updating !== null}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 ${s === 5 ? 'bg-bordeaux/10 text-bordeaux border border-bordeaux/20 hover:bg-bordeaux/20' : 'bg-gold text-noir hover:bg-gold-hover'}`}>
                 {updating === s && <Loader className="h-4 w-4 animate-spin" />}
                 {STATUS_LABELS[s] || s}
@@ -329,7 +331,7 @@ export default function AdminOrderDetail() {
         </section>
         <section className="rounded-2xl border border-stone/10 bg-ivory p-5 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-ink"><MapPin className="h-5 w-5 text-gold" /> Thông tin giao hàng</h2>
-          <dl className="space-y-3 text-sm"><div className="flex items-start justify-between gap-4 border-b border-stone/10 pb-2"><dt className="text-stone">Loại đơn</dt><dd className="font-semibold">{isPos ? 'Tại quầy POS' : 'Online'}</dd></div>{!isPos && <div className="flex items-start justify-between gap-3 border-b border-stone/10 pb-2"><dt className="shrink-0 text-stone">Địa chỉ</dt><dd className="flex items-start gap-1 text-right text-xs leading-5 font-medium">{order.diaChiGiaoHang || '—'}{order.diaChiGiaoHang && <button onClick={() => copyText(order.diaChiGiaoHang, 'địa chỉ')} className="shrink-0 rounded p-1 text-gold hover:bg-gold/10" title="Sao chép"><Copy className="h-3.5 w-3.5" /></button>}</dd></div>}<div className="flex items-start justify-between gap-4"><dt className="text-stone">Ghi chú</dt><dd className="max-w-[65%] text-right text-xs font-medium">{order.ghiChu || '—'}</dd></div></dl>
+          <dl className="space-y-3 text-sm"><div className="flex items-start justify-between gap-4 border-b border-stone/10 pb-2"><dt className="text-stone">Loại đơn</dt><dd className="font-semibold">{isPos ? 'Tại quầy POS' : 'Online'}</dd></div>{isDelivery && <div className="flex items-start justify-between gap-3 border-b border-stone/10 pb-2"><dt className="shrink-0 text-stone">Địa chỉ</dt><dd className="flex items-start gap-1 text-right text-xs leading-5 font-medium">{order.diaChiGiaoHang || '—'}{order.diaChiGiaoHang && <button onClick={() => copyText(order.diaChiGiaoHang, 'địa chỉ')} className="shrink-0 rounded p-1 text-gold hover:bg-gold/10" title="Sao chép"><Copy className="h-3.5 w-3.5" /></button>}</dd></div>}<div className="flex items-start justify-between gap-4"><dt className="text-stone">Ghi chú</dt><dd className="max-w-[65%] text-right text-xs font-medium">{order.ghiChu || '—'}</dd></div></dl>
         </section>
         <section className="rounded-2xl border border-stone/10 bg-ivory p-5 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-ink"><Clock className="h-5 w-5 text-gold" /> Lịch sử thanh toán</h2>
@@ -351,7 +353,7 @@ export default function AdminOrderDetail() {
                   <p className="text-xs text-stone">
                     {h.nguoiCapNhat?.hoTen || 'Hệ thống'} &middot; {h.thoiGian ? new Date(h.thoiGian).toLocaleString('vi-VN') : '-'}
                   </p>
-                  {h.ghiChu && <p className="text-xs text-stone">{h.ghiChu}</p>}
+                  {h.ghiChu && <p className="text-xs text-stone"><span className={`mr-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold ${h.khachHangXem ? 'bg-gold/15 text-gold-hover' : 'bg-stone/10 text-stone'}`}>{h.khachHangXem ? 'Khách hàng thấy' : 'Nội bộ'}</span>{h.ghiChu}</p>}
                 </div>
               </div>
             ))}
@@ -521,6 +523,10 @@ export default function AdminOrderDetail() {
                 />
                 <p className="mt-1.5 text-xs text-stone">Ghi chú sẽ được lưu trong lịch sử trạng thái của đơn hàng.</p>
               </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/20 bg-gold/5 px-3.5 py-3">
+                <input type="checkbox" checked={notifyCustomer} onChange={e => setNotifyCustomer(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--primary-color)]" />
+                <span><span className="block text-sm font-semibold text-ink">Thông báo cho khách hàng</span><span className="mt-0.5 block text-xs text-stone">Khách sẽ thấy ghi chú trong lịch sử đơn hàng và nhận thông báo.</span></span>
+              </label>
             </div>
             <div className="flex gap-3 border-t border-stone/10 bg-white/30 px-6 py-4">
               <button type="button" disabled={updating !== null} onClick={() => { setConfirmStatus(null); setStatusNote('') }} className="flex-1 rounded-xl border border-stone/20 py-2.5 text-sm font-semibold text-ink transition hover:bg-ivory-100 disabled:opacity-50">Hủy bỏ</button>
@@ -557,42 +563,48 @@ export default function AdminOrderDetail() {
         const v = selectedItem.bienThe || {}
         const p = v.sanPham || {}
         const anh = v.urlAnh || p.urlAnhDaiDien || ''
+        const lineTotal = selectedItem.thanhTien ?? Number(selectedItem.donGia || 0) * Number(selectedItem.soLuong || 0)
+        const description = String(p.moTa || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/\s+/g, ' ').trim()
         return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-4" onClick={() => setSelectedItem(null)}>
-          <div className="bg-ivory rounded-2xl max-w-lg w-full animate-scale-in shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="relative">
-              <img src={anh} alt={p.tenSanPham} className="w-full h-72 object-cover object-center bg-ivory-100"
-                onError={(e) => { e.target.src = 'https://placehold.co/600x400/e2e8f0/475569?text=Polo' }} />
-              <button onClick={() => setSelectedItem(null)} className="absolute top-3 right-3 bg-ivory/90 rounded-full p-1.5 hover:bg-ivory transition shadow-sm">
+          <div className="bg-ivory rounded-2xl max-w-xl w-full animate-scale-in shadow-2xl overflow-hidden border border-white/60" onClick={e => e.stopPropagation()}>
+            <div className="relative h-64 sm:h-72 bg-ivory-100">
+              <SafeImg src={anh} alt={p.tenSanPham || 'Sản phẩm'} className="h-full w-full object-cover object-center" fallback="https://placehold.co/600x400/e2e8f0/475569?text=Product" />
+              <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 to-transparent pointer-events-none" />
+              <button onClick={() => setSelectedItem(null)} aria-label="Đóng chi tiết sản phẩm" className="absolute top-3 right-3 bg-white/90 rounded-full p-2 hover:bg-white transition shadow-md">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-5 space-y-3">
-              <div>
-                <h3 className="font-bold text-lg">{p.tenSanPham || 'Sản phẩm'}</h3>
-                <p className="text-xs text-stone">SKU: {v.sku || '—'}</p>
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-xl text-ink leading-tight">{p.tenSanPham || 'Sản phẩm'}</h3>
+                  <p className="text-xs text-stone mt-1">Mã sản phẩm: <span className="font-mono font-semibold text-ink-soft">{p.maSanPhamCode || (p.maSanPham ? `SP${String(p.maSanPham).padStart(4, '0')}` : '—')}</span></p>
+                  <p className="text-xs text-stone mt-0.5">SKU biến thể: <span className="font-mono font-semibold text-ink-soft">{v.sku || '—'}</span></p>
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-gold font-bold text-xl">{VND(selectedItem.donGia || 0)}</span>
-                <span className="text-stone">x{selectedItem.soLuong}</span>
-                <span className="text-stone font-semibold">= {VND(selectedItem.thanhTien || 0)}</span>
+              <div className="rounded-xl border border-gold/20 bg-gold/5 p-3.5 flex items-center justify-between gap-4">
+                <div><p className="text-[11px] uppercase tracking-wide text-stone">Đơn giá</p><p className="text-lg font-bold text-gold-hover">{VND(selectedItem.donGia || 0)}</p></div>
+                <span className="text-stone font-semibold">× {selectedItem.soLuong || 0}</span>
+                <div className="text-right"><p className="text-[11px] uppercase tracking-wide text-stone">Thành tiền</p><p className="text-lg font-bold text-ink">{VND(lineTotal)}</p></div>
               </div>
-              <div className="flex flex-wrap gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-sm">
                 {v.mauSac?.mauSac && (
-                  <span className="bg-ivory-100 px-3 py-1 rounded-full text-ink-soft">
-                    Màu: <span className="font-medium">{v.mauSac.mauSac}</span>
+                  <span className="rounded-lg bg-ivory-100 px-3 py-2 text-ink-soft">
+                    Màu sắc: <span className="font-semibold">{v.mauSac.mauSac}</span>
                   </span>
                 )}
                 {v.kichCo?.kichCo && (
-                  <span className="bg-ivory-100 px-3 py-1 rounded-full text-ink-soft">
-                    Size: <span className="font-medium">{v.kichCo.kichCo}</span>
+                  <span className="rounded-lg bg-ivory-100 px-3 py-2 text-ink-soft">
+                    Kích cỡ: <span className="font-semibold">{v.kichCo.kichCo}</span>
                   </span>
                 )}
+                <span className="rounded-lg bg-ivory-100 px-3 py-2 text-ink-soft">Loại: <span className="font-semibold">Biến thể</span></span>
               </div>
-              {p.moTa && (
-                <div>
-                  <p className="text-xs font-semibold text-stone uppercase tracking-wide mb-1">Mô tả</p>
-                  <p className="text-sm text-stone line-clamp-4">{p.moTa}</p>
+              {description && (
+                <div className="border-t border-stone/10 pt-3">
+                  <p className="text-xs font-semibold text-stone uppercase tracking-wide mb-1.5">Mô tả sản phẩm</p>
+                  <p className="text-sm leading-relaxed text-ink-soft line-clamp-3">{description}</p>
                 </div>
               )}
               {(p.slug || p.maSanPham) && (

@@ -1,7 +1,7 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.config.PaymentConfig;
-import com.example.zeststore.dto.request.PosCartRequest;
+import com.example.zeststore.dto.request.PosDraftRequest;
 import com.example.zeststore.dto.request.PosOrderRequest;
 import com.example.zeststore.entity.BienTheSanPham;
 import com.example.zeststore.entity.ThanhToan;
@@ -52,7 +52,10 @@ public class POSController {
         Integer maNguoiDung = body.get("maNguoiDung") != null
                 ? Integer.valueOf(body.get("maNguoiDung").toString())
                 : null;
-        return ResponseEntity.ok(posService.validateCoupon(maCode, maNguoiDung, tongTien));
+        java.util.List<Integer> productIds = body.get("maSanPhamIds") instanceof java.util.List<?> ids
+                ? ids.stream().map(i -> Integer.valueOf(i.toString())).toList() : java.util.List.of();
+        if (maCode == null || maCode.isBlank()) throw new BadRequestException("Vui lòng nhập mã giảm giá");
+        return ResponseEntity.ok(posService.validateCoupon(maCode, maNguoiDung, tongTien, productIds));
     }
 
     @PostMapping("/orders")
@@ -61,30 +64,29 @@ public class POSController {
     }
 
     @PostMapping("/cart/heartbeat")
-    public ResponseEntity<?> heartbeat(Authentication auth) {
-        posCartService.heartbeat(userService.getUserIdFromAuth(auth));
+    public ResponseEntity<?> heartbeat(Authentication auth, @RequestParam String checkoutKey) {
+        posCartService.heartbeat(userService.getUserIdFromAuth(auth), checkoutKey);
         return ResponseEntity.ok(Map.of("message", "OK"));
     }
 
     @GetMapping("/cart")
-    public ResponseEntity<?> getCart(Authentication auth) {
-        return ResponseEntity.ok(posCartService.getCart(userService.getUserIdFromAuth(auth)));
+    public ResponseEntity<?> getCart(Authentication auth, @RequestParam String checkoutKey) {
+        return ResponseEntity.ok(posCartService.getCart(userService.getUserIdFromAuth(auth), checkoutKey));
     }
 
-    @PostMapping("/cart/add")
-    public ResponseEntity<?> addToCart(Authentication auth, @Valid @RequestBody PosCartRequest request) {
-        return ResponseEntity.ok(posCartService.addItem(userService.getUserIdFromAuth(auth), request));
+    @PutMapping("/cart")
+    public ResponseEntity<?> replaceCart(Authentication auth, @Valid @RequestBody PosDraftRequest request) {
+        return ResponseEntity.ok(posCartService.replace(userService.getUserIdFromAuth(auth), request));
     }
 
-    @PostMapping("/cart/release")
-    public ResponseEntity<?> releaseFromCart(Authentication auth, @Valid @RequestBody PosCartRequest request) {
-        posCartService.releaseItem(userService.getUserIdFromAuth(auth), request);
-        return ResponseEntity.ok(Map.of("message", "Released"));
+    @GetMapping("/cart/availability")
+    public ResponseEntity<?> availability(@RequestParam java.util.List<Integer> ids) {
+        return ResponseEntity.ok(posCartService.availability(ids));
     }
 
     @DeleteMapping("/cart")
-    public ResponseEntity<?> clearCart(Authentication auth) {
-        posCartService.clearCart(userService.getUserIdFromAuth(auth));
+    public ResponseEntity<?> clearCart(Authentication auth, @RequestParam String checkoutKey) {
+        posCartService.clearCart(userService.getUserIdFromAuth(auth), checkoutKey);
         return ResponseEntity.ok(Map.of("message", "Cart cleared"));
     }
 
@@ -96,6 +98,7 @@ public class POSController {
         BigDecimal giaGoc = v.getGia() != null ? v.getGia() : BigDecimal.ZERO;
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maBienThe", v.getMaBienThe());
+        result.put("maSanPham", v.getSanPham().getMaSanPham());
         result.put("tenSanPham", v.getSanPham().getTenSanPham());
         result.put("kichCo", v.getKichCo() != null ? v.getKichCo().getKichCo() : "");
         result.put("mauSac", v.getMauSac() != null ? v.getMauSac().getMauSac() : "");
@@ -149,6 +152,9 @@ public class POSController {
         ThanhToan payment = thanhToanRepository.findByDonHang_MaDonHang(orderId)
                 .stream().findFirst()
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy thanh toán cho đơn hàng " + orderId));
+        if (!Integer.valueOf(2).equals(payment.getDonHang().getLoaiDonHang())
+                || !Integer.valueOf(6).equals(payment.getPhuongThuc()))
+            throw new BadRequestException("Chỉ xác nhận chuyển khoản của đơn tại quầy");
         if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) {
             return ResponseEntity.ok(Map.of("message", "Đã thanh toán trước đó"));
         }

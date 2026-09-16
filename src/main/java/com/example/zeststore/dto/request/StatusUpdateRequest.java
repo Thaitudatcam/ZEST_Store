@@ -15,4 +15,7 @@ public class StatusUpdateRequest {
 
     @Size(max = 500, message = "Ghi chú không được vượt quá 500 ký tự")
     private String ghiChu;
+
+    @Builder.Default
+    private boolean thongBaoKhachHang = false;
 }

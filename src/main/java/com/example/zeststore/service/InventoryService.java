@@ -31,13 +31,18 @@ public class InventoryService {
     }
 
     public int reserved(Integer variantId, Integer excludingOrder, Integer excludingAdmin) {
+        return reserved(variantId, excludingOrder, excludingAdmin, null);
+    }
+
+    public int reserved(Integer variantId, Integer excludingOrder, Integer excludingAdmin, String excludingDraft) {
         Long online = em.createQuery("SELECT COALESCE(SUM(m.soLuong),0) FROM MucDonHang m "
                 + "WHERE m.bienThe.maBienThe = :v AND m.donHang.stockState = 'RESERVED' "
                 + "AND (:o IS NULL OR m.donHang.maDonHang <> :o)", Long.class)
                 .setParameter("v", variantId).setParameter("o", excludingOrder).getSingleResult();
         int pos = carts.findByBienThe_MaBienThe(variantId).stream()
                 .filter(c -> c.getNgayTao().isAfter(LocalDateTime.now().minusMinutes(30)))
-                .filter(c -> excludingAdmin == null || !excludingAdmin.equals(c.getAdmin().getMaNguoiDung()))
+                .filter(c -> excludingAdmin == null || !excludingAdmin.equals(c.getAdmin().getMaNguoiDung())
+                        || (excludingDraft != null && !excludingDraft.equals(c.getDraftKey())))
                 .mapToInt(PosCartItem::getSoLuong).sum();
         return Math.toIntExact(online) + pos;
     }
@@ -53,11 +58,11 @@ public class InventoryService {
         return result;
     }
 
-    public void reserve(DonHang order) { change(order, false, null); }
-    public void deduct(DonHang order) { change(order, true, null); }
-    public void deductPos(DonHang order, Integer adminId) { change(order, true, adminId); }
+    public void reserve(DonHang order) { change(order, false, null, null); }
+    public void deduct(DonHang order) { change(order, true, null, null); }
+    public void deductPos(DonHang order, Integer adminId, String draftKey) { change(order, true, adminId, draftKey); }
 
-    private void change(DonHang order, boolean deduct, Integer adminId) {
+    private void change(DonHang order, boolean deduct, Integer adminId, String draftKey) {
         String state = order.getStockState();
         if ("DEDUCTED".equals(state) || (!deduct && "RESERVED".equals(state))) return;
         if (!"NONE".equals(state) && !"RESERVED".equals(state))
@@ -67,7 +72,7 @@ public class InventoryService {
         quantities.forEach((id, qty) -> {
             BienTheSanPham v = lockVariant(id);
             if ((!"RESERVED".equals(state) && v.getNgayXoa() != null)
-                    || v.getTonKho() - reserved(id, order.getMaDonHang(), adminId) < qty)
+                    || v.getTonKho() - reserved(id, order.getMaDonHang(), adminId, draftKey) < qty)
                 throw new BadRequestException("Không đủ hàng khả dụng cho " + v.getSku());
             locked.put(id, v);
         });

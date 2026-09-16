@@ -7,8 +7,8 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange, cartQty = 0 }) {
   const [added, setAdded] = useState(false)
 
-  const handleAdd = () => {
-    onAdd?.(variant)
+  const handleAdd = async () => {
+    if (await onAdd?.(variant) === false) return
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
   }
@@ -38,7 +38,7 @@ export default function ProductCard({ variant, mode = 'grid', onAdd, onQtyChange
             Màu <span className="font-medium text-ink-soft">{color}</span> | Kích cỡ <span className="font-medium text-ink-soft">{size}</span>
           </p>
           <p className="text-[11px] text-stone">Mã: <span className="font-mono font-medium text-ink-soft">{sku}</span></p>
-          <p className="text-[11px] text-stone">Kho: <span className={`font-semibold ${ton > 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{ton}</span></p>
+          <p className="text-[11px] text-stone">Còn có thể bán: <span className={`font-semibold ${ton > 0 ? 'text-emerald-deep' : 'text-bordeaux'}`}>{ton}</span></p>
           <div className="flex items-center gap-2 mt-1">
             {campaignPct > 0 ? (
               <>

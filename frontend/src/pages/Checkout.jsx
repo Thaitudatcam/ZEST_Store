@@ -60,6 +60,8 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(!selectedItems)
   const [placing, setPlacing] = useState(false)
+  const pendingCheckout = useRef(false)
+  const checkoutKey = useRef(sessionStorage.getItem('onlineCheckoutKey') || crypto.randomUUID())
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
@@ -242,11 +244,12 @@ export default function Checkout() {
     if (selectedWardCode && selectedDistrictId && cart.length > 0) {
       let isCurrent = true
       setGhnLoading(true)
+      setGhnFee(null)
       setGhnError(false)
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       calculateShippingFee({
         // Dataset local dùng mã chữ ("001") — ép số cho backend, mock bỏ qua ID
-        serviceTypeId: selectedServiceId,
+        serviceTypeId: 2,
         toDistrictId: Number(selectedDistrictId),
         toWardCode: selectedWardCode,
         weight: Math.max(weight, 500),
@@ -346,7 +349,7 @@ export default function Checkout() {
     setDiscountMsg('')
     setDiscountLoading(true)
     try {
-      const res = await api.post('/coupons/validate', { maCode: discountCode.trim(), tongTien: rawTotal })
+      const res = await api.post('/coupons/validate', { maCode: discountCode.trim(), tongTien: rawTotal, maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))] })
       setDiscountCoupon(res.data)
     } catch (err) {
       setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
@@ -360,7 +363,7 @@ export default function Checkout() {
     setDiscountMsg('')
     setDiscountCode(v.maCode)
     try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal, maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))] })
       setDiscountCoupon(res.data)
     } catch (err) {
       setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
@@ -371,7 +374,7 @@ export default function Checkout() {
     setFreeshipVoucher(null)
     setFreeshipMsg('')
     try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal })
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal, maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))] })
       setFreeshipVoucher(res.data)
       setVouchersOpen(false)
     } catch (err) {
@@ -410,11 +413,16 @@ export default function Checkout() {
   }
 
   const handlePlaceOrder = async () => {
+    if (pendingCheckout.current) return
+    pendingCheckout.current = true
+    sessionStorage.setItem('onlineCheckoutKey', checkoutKey.current)
     setConfirmOrder(false)
     setPlacing(true)
     try {
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       const orderPayload = {
+        checkoutKey: checkoutKey.current,
+        expectedTotal: finalTotal,
         tenNguoiNhan: form.tenNguoiNhan,
         sdtNguoiNhan: form.sdtNguoiNhan,
         diaChiGiaoHang: form.diaChiGiaoHang,
@@ -433,8 +441,10 @@ export default function Checkout() {
 
       const result = await placeOrder(orderPayload)
 
-      const method = form.phuongThucThanhToan
+      const method = result.phuongThucThanhToan
       if (method === 1) {
+        sessionStorage.removeItem('onlineCheckoutKey')
+        checkoutKey.current = crypto.randomUUID()
         navigate('/order-success', { state: {
           order: {
             ...result,
@@ -442,16 +452,19 @@ export default function Checkout() {
             sdtNguoiNhan: form.sdtNguoiNhan,
             diaChiGiaoHang: form.diaChiGiaoHang,
             phuongThucThanhToan: form.phuongThucThanhToan,
-            tongTien: finalTotal,
+            tongTien: result.tongTien,
           }
         }})
       } else if (method === 2) {
         const paymentRes = await createVnPayPayment(result.maDonHang)
+        sessionStorage.removeItem('onlineCheckoutKey')
+        checkoutKey.current = crypto.randomUUID()
         window.location.href = paymentRes.paymentUrl
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Đặt hàng thất bại')
+      toast.error(err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || 'Đặt hàng thất bại')
     } finally {
+      pendingCheckout.current = false
       setPlacing(false)
     }
   }

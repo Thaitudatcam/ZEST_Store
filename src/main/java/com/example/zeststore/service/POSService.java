@@ -3,7 +3,6 @@ package com.example.zeststore.service;
 import com.example.zeststore.dto.request.PosOrderRequest;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
-import com.example.zeststore.exception.TooManyRequestsException;
 import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,66 +27,19 @@ public class POSService {
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final InventoryService inventoryService;
+    private final CheckoutShippingService checkoutShippingService;
     private final CampaignDiscountService campaignDiscountService;
 
-    public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien) {
-        Optional<PhieuGiamGia> opt = phieuGiamGiaRepository.findByMaCode(maCode);
-        if (opt.isEmpty()) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá không tồn tại");
+    public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien, List<Integer> productIds) {
+        try {
+            Map<String, Object> result = new LinkedHashMap<>(phieuGiamGiaService.validateCoupon(maCode.trim(), tongTien, productIds, maNguoiDung));
+            if (Integer.valueOf(3).equals(result.get("kieuGiamGia")))
+                throw new BadRequestException("Mã freeship không áp dụng tại quầy");
+            result.put("hopLe", true);
+            return result;
+        } catch (BadRequestException ex) {
+            return Map.of("hopLe", false, "lyDoTuChoi", ex.getMessage());
         }
-        PhieuGiamGia coupon = opt.get();
-
-        if (!Integer.valueOf(1).equals(coupon.getTrangThai()) || coupon.getNgayXoa() != null) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá đã ngừng hoạt động");
-        }
-        if (coupon.getNgayBatDau() != null && LocalDateTime.now().isBefore(coupon.getNgayBatDau())) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá chưa đến hạn sử dụng");
-        }
-        if (coupon.getNgayKetThuc() != null && LocalDateTime.now().isAfter(coupon.getNgayKetThuc())) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá đã hết hạn");
-        }
-        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã giảm giá đã hết lượt sử dụng");
-        }
-        if (coupon.getGiaTriDonToiThieu() != null && tongTien.compareTo(coupon.getGiaTriDonToiThieu()) < 0) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi",
-                    "Đơn hàng tối thiểu " + coupon.getGiaTriDonToiThieu() + "đ");
-        }
-        if (Integer.valueOf(3).equals(coupon.getKieuGiamGia())) {
-            return Map.of("hopLe", false, "loaiMa", "COUPON", "lyDoTuChoi", "Mã freeship không áp dụng tại quầy");
-        }
-
-        String loaiMa = "COUPON";
-        if (maNguoiDung != null) {
-            Optional<VoucherNguoiDung> vnd = voucherNguoiDungRepository
-                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(maNguoiDung, coupon.getMaPhieuGiamGia());
-            if (vnd.isPresent()) {
-                // Dùng nhiều lần: voucher DA_DUNG cũ vẫn cho dùng tiếp (chỉ chặn khi hết SL).
-                loaiMa = "VOUCHER";
-            }
-        }
-
-        BigDecimal soTienGiam;
-        if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
-            soTienGiam = tongTien.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
-        } else {
-            soTienGiam = coupon.getGiaTriGiam();
-        }
-        if (soTienGiam.compareTo(tongTien) > 0) {
-            soTienGiam = tongTien;
-        }
-        if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
-            soTienGiam = coupon.getGiaTriGiamToiDa();
-        }
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("hopLe", true);
-        result.put("maCode", coupon.getMaCode());
-        result.put("loaiMa", loaiMa);
-        result.put("kieuGiamGia", coupon.getKieuGiamGia());
-        result.put("soTienGiam", soTienGiam);
-        result.put("lyDoTuChoi", null);
-        return result;
     }
 
     @Transactional
@@ -95,12 +47,9 @@ public class POSService {
         NguoiDung admin = nguoiDungRepository.findByIdForUpdate(adminUserId)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
-        // Frontend quầy hiện không gửi checkoutKey — tự sinh để vẫn bán được,
-        // còn khi client có gửi thì giữ nguyên để chống thu tiền trùng
         String clientKey = request.getCheckoutKey();
-        String checkoutKey = (clientKey == null || clientKey.isBlank())
-                ? "POS:" + adminUserId + ":" + System.currentTimeMillis()
-                : "POS:" + adminUserId + ":" + clientKey;
+        if (clientKey == null || clientKey.isBlank()) throw new BadRequestException("Thiếu mã xác nhận hóa đơn");
+        String checkoutKey = "POS:" + adminUserId + ":" + clientKey.trim();
         DonHang previous = donHangRepository.findByCheckoutKey(checkoutKey).orElse(null);
         if (previous != null) return Map.of("maDonHang", previous.getMaDonHang(),
                 "thanhToan", previous.getTongTien(),
@@ -108,13 +57,6 @@ public class POSService {
         if (!Integer.valueOf(5).equals(request.getPhuongThucThanhToan())
                 && !Integer.valueOf(6).equals(request.getPhuongThucThanhToan()))
             throw new BadRequestException("POS chỉ nhận tiền mặt hoặc chuyển khoản đã được nhân viên xác nhận");
-
-        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-        Long todayPosCount = donHangRepository.countTodayPosOrders(startOfDay);
-        if (todayPosCount >= 10) {
-            throw new TooManyRequestsException("Đã đạt giới hạn 10 đơn hàng POS trong ngày");
-        }
-
 
         List<Map<String, Object>> orderItems = new ArrayList<>();
         BigDecimal tongTien = BigDecimal.ZERO;
@@ -126,24 +68,22 @@ public class POSService {
                     throw new BadRequestException("Số lượng sản phẩm không hợp lệ");
                 quantities.merge(item.getMaBienThe(), item.getSoLuong(), Math::addExact);
             }
-        } else {
-            for (PosCartItem item : posCartRepository.findByAdmin_MaNguoiDung(adminUserId))
-                quantities.merge(item.getBienThe().getMaBienThe(), item.getSoLuong(), Math::addExact);
         }
         if (quantities.isEmpty()) throw new BadRequestException("Giỏ hàng trống");
+        List<PosCartItem> heldItems = posCartRepository.findByAdmin_MaNguoiDungAndDraftKey(adminUserId, clientKey.trim());
+        SortedMap<Integer, Integer> heldQuantities = new TreeMap<>();
+        heldItems.forEach(i -> heldQuantities.merge(i.getBienThe().getMaBienThe(), i.getSoLuong(), Math::addExact));
+        if (!quantities.equals(heldQuantities))
+            throw new BadRequestException("Giỏ hàng chưa được giữ đủ số lượng. Vui lòng giữ lại hàng trước khi thanh toán");
         Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByVariantIds(quantities.keySet());
         for (var entry : quantities.entrySet()) {
             BienTheSanPham variant = inventoryService.lockVariant(entry.getKey());
-            PosCartItem reservation = posCartRepository
-                    .findByAdmin_MaNguoiDungAndBienThe_MaBienThe(adminUserId, entry.getKey()).orElse(null);
-            // Quầy hiện không dùng luồng giữ hàng server (frontend không sync pos-cart):
-            // chỉ chặn khi CÓ bản giữ mà đã hết hạn/thiếu số lượng.
-            // Không có bản giữ thì kiểm tra tồn khả dụng ở bước dưới (đã trừ phần quầy khác giữ).
-            if (reservation != null && (reservation.getNgayTao().isBefore(LocalDateTime.now().minusMinutes(30))
-                    || reservation.getSoLuong() < entry.getValue()))
+            if (heldItems.stream().anyMatch(i -> !i.getNgayTao().isAfter(LocalDateTime.now().minusMinutes(30))))
                 throw new BadRequestException("Giữ hàng đã hết hạn hoặc thay đổi. Vui lòng tải lại giỏ hàng trước khi thu tiền");
-            if (variant.getNgayXoa() != null || variant.getTonKho()
-                    - inventoryService.reserved(entry.getKey(), null, adminUserId) < entry.getValue())
+            if (variant.getNgayXoa() != null || !Integer.valueOf(1).equals(variant.getTrangThai())
+                    || variant.getSanPham().getNgayXoa() != null || !Integer.valueOf(1).equals(variant.getSanPham().getTrangThai())
+                    || variant.getTonKho()
+                    - inventoryService.reserved(entry.getKey(), null, adminUserId, clientKey.trim()) < entry.getValue())
                 throw new BadRequestException("Không đủ hàng khả dụng cho " + variant.getSku());
             BigDecimal donGia = CampaignDiscountService.discountedPrice(
                     variant.getGia(), pctMap.get(entry.getKey()));
@@ -165,7 +105,10 @@ public class POSService {
             coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(request.getMaCode().trim())
                     .orElseThrow(() -> new BadRequestException("Mã giảm giá không hợp lệ"));
 
-            // Dùng nhiều lần tới khi hết số lượng: không chặn theo user.
+            List<Integer> productIds = orderItems.stream()
+                    .map(i -> ((BienTheSanPham) i.get("bienThe")).getSanPham().getMaSanPham()).distinct().toList();
+            phieuGiamGiaService.validateCoupon(coupon.getMaCode(), tongTien, productIds,
+                    customer != null ? customer.getMaNguoiDung() : null);
 
             if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
                 throw new BadRequestException("Mã giảm giá không hoạt động");
@@ -197,31 +140,43 @@ public class POSService {
             }
         }
 
-        String tenNguoiNhan = customer != null ? customer.getHoTen()
+        String tenNguoiNhan = request.isGiaoHang() ? request.getTenKhachHang() : customer != null ? customer.getHoTen()
                 : (request.getTenKhachHang() != null ? request.getTenKhachHang() : "Khách lẻ");
-        String sdtNguoiNhan = customer != null ? customer.getSoDienThoai()
+        String sdtNguoiNhan = request.isGiaoHang() ? request.getSdtKhachHang() : customer != null ? customer.getSoDienThoai()
                 : (request.getSdtKhachHang() != null ? request.getSdtKhachHang() : "0000000000");
 
-        String code = "POS-" + System.currentTimeMillis();
-
-        BigDecimal thanhToanTong = tongTien.subtract(soTienGiam).max(BigDecimal.ZERO);
+        BigDecimal shippingFee = BigDecimal.ZERO;
+        if (request.isGiaoHang()) {
+            if (tenNguoiNhan == null || tenNguoiNhan.isBlank() || sdtNguoiNhan == null
+                    || !sdtNguoiNhan.matches("[0-9]{10,11}") || request.getDiaChiGiaoHang() == null
+                    || request.getDiaChiGiaoHang().isBlank())
+                throw new BadRequestException("Vui lòng nhập đầy đủ tên, số điện thoại và địa chỉ giao hàng");
+            shippingFee = checkoutShippingService.calculate(request.getToDistrictId(), request.getToWardCode(),
+                    quantities.values().stream().mapToInt(Integer::intValue).sum());
+            if (request.isMienPhiVanChuyen()) shippingFee = BigDecimal.ZERO;
+        }
+        BigDecimal thanhToanTong = tongTien.subtract(soTienGiam).max(BigDecimal.ZERO).add(shippingFee);
+        if (request.getExpectedTotal() != null && request.getExpectedTotal().compareTo(thanhToanTong) != 0)
+            throw new BadRequestException("Giá/khuyến mãi hoặc phí vận chuyển đã thay đổi. Vui lòng kiểm tra lại trước khi thu tiền");
 
         DonHang order = DonHang.builder()
                 .nguoiDung(customer)
                 .loaiDonHang(2)
                 .checkoutKey(checkoutKey)
-                .maDonHangCode(code)
                 .tongTien(thanhToanTong)
-                .trangThaiDon(6)
+                .trangThaiDon(request.isGiaoHang() ? 2 : 6)
                 .tenNguoiNhan(tenNguoiNhan)
                 .sdtNguoiNhan(sdtNguoiNhan)
                 .tenKhachTaiQuay(customer == null ? (request.getTenKhachHang() != null ? request.getTenKhachHang() : null) : null)
                 .sdtKhachTaiQuay(customer == null ? (request.getSdtKhachHang() != null ? request.getSdtKhachHang() : null) : null)
-                .diaChiGiaoHang("Tại quầy")
-                .phiVanChuyen(BigDecimal.ZERO)
+                .diaChiGiaoHang(request.isGiaoHang() ? request.getDiaChiGiaoHang().trim() : "Tại quầy")
+                .phiVanChuyen(shippingFee)
                 .soTienGiam(soTienGiam)
                 .phieuGiamGia(coupon)
                 .build();
+        order = donHangRepository.save(order);
+        // Mã đơn ngắn, ổn định và đồng nhất với mã sản phẩm (ví dụ: DH0013).
+        order.setMaDonHangCode(String.format("DH%04d", order.getMaDonHang()));
         order = donHangRepository.save(order);
 
         if (coupon != null) {
@@ -241,7 +196,7 @@ public class POSService {
                     .build());
         }
 
-        inventoryService.deductPos(order, adminUserId);
+        inventoryService.deductPos(order, adminUserId, clientKey.trim());
 
         Integer phuongThuc = request.getPhuongThucThanhToan() != null ? request.getPhuongThucThanhToan() : 5;
         String nhaCungCap = Integer.valueOf(6).equals(phuongThuc) ? "VietQR" : "Tiền mặt";
@@ -261,18 +216,19 @@ public class POSService {
         lichSuDonHangRepository.save(LichSuDonHang.builder()
                 .donHang(order)
                 .trangThaiCu(null)
-                .trangThaiMoi(6)
+                .trangThaiMoi(request.isGiaoHang() ? 2 : 6)
                 .nguoiCapNhat(admin)
-                .ghiChu("Bán tại quầy")
+                .ghiChu(request.isGiaoHang() ? "Bán tại quầy - giao hàng, đã thu tiền" : "Bán tại quầy")
                 .build());
 
-        posCartRepository.deleteByAdmin_MaNguoiDung(adminUserId);
+        posCartRepository.deleteByAdmin_MaNguoiDungAndDraftKey(adminUserId, clientKey.trim());
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("maDonHang", order.getMaDonHang());
         result.put("tongTien", tongTien);
         result.put("soTienGiam", soTienGiam);
         result.put("thanhToan", thanhToanTong);
+        result.put("phiVanChuyen", shippingFee);
         result.put("message", "Counter order created successfully");
         return result;
     }

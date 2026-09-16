@@ -17,11 +17,16 @@ public class GioHangService {
 
     private static final int MAX_QTY_PER_ITEM = 5;
 
+    private int available(BienTheSanPham variant) {
+        return Math.max(0, variant.getTonKho() - inventoryService.reserved(variant.getMaBienThe(), null, null));
+    }
+
     private final GioHangRepository gioHangRepository;
     private final MucGioHangRepository mucGioHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final CampaignDiscountService campaignDiscountService;
+    private final InventoryService inventoryService;
 
     @Transactional(readOnly = true)
     public GioHang getOrCreateCart(Integer userId) {
@@ -71,7 +76,7 @@ public class GioHangService {
             itemMap.put("giaGoc", giaGoc);
             itemMap.put("phanTramGiamGia", pct);
             itemMap.put("soLuong", item.getSoLuong());
-            itemMap.put("tonKho", variant != null ? variant.getTonKho() : 0);
+            itemMap.put("tonKho", available(variant));
             itemMap.put("thanhTien", donGia.multiply(BigDecimal.valueOf(item.getSoLuong())));
             itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
             itemMap.put("ngayXoa", variant != null ? variant.getNgayXoa() : null);
@@ -94,8 +99,8 @@ public class GioHangService {
         if (variant.getNgayXoa() != null) {
             throw new BadRequestException("Variant no longer exists");
         }
-        if (variant.getTonKho() < soLuong) {
-            throw new BadRequestException("Insufficient stock. Available: " + variant.getTonKho());
+        if (available(variant) < soLuong) {
+            throw new BadRequestException("Insufficient stock. Available: " + available(variant));
         }
 
         Optional<MucGioHang> existing = mucGioHangRepository
@@ -107,8 +112,8 @@ public class GioHangService {
         if (newQuantity > MAX_QTY_PER_ITEM) {
             throw new BadRequestException("Bạn đã có số lượng tối đa sản phẩm này trong giỏ hàng");
         }
-        if (newQuantity > variant.getTonKho()) {
-            throw new BadRequestException("Insufficient stock. Available: " + variant.getTonKho());
+        if (newQuantity > available(variant)) {
+            throw new BadRequestException("Insufficient stock. Available: " + available(variant));
         }
         item.setSoLuong(newQuantity);
         mucGioHangRepository.save(item);
@@ -137,8 +142,8 @@ public class GioHangService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
 
         BienTheSanPham variant = item.getBienThe();
-        if (soLuong > variant.getTonKho()) {
-            throw new BadRequestException("Insufficient stock. Available: " + variant.getTonKho());
+        if (soLuong > available(variant)) {
+            throw new BadRequestException("Insufficient stock. Available: " + available(variant));
         }
 
         item.setSoLuong(soLuong);
@@ -160,13 +165,13 @@ public class GioHangService {
                 m.put("type", "deleted");
                 m.put("message", "Sản phẩm đã bị xoá");
                 issues.add(m);
-            } else if (variant.getTonKho() < item.getSoLuong()) {
+            } else if (available(variant) < item.getSoLuong()) {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("maBienThe", variant.getMaBienThe());
                 m.put("type", "insufficient");
                 m.put("currentQty", item.getSoLuong());
-                m.put("availableStock", variant.getTonKho());
-                m.put("message", "Chỉ còn " + variant.getTonKho() + " sản phẩm");
+                m.put("availableStock", available(variant));
+                m.put("message", "Chỉ còn " + available(variant) + " sản phẩm");
                 issues.add(m);
             }
         }

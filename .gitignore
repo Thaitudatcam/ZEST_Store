@@ -39,3 +39,6 @@ application-local.properties
 
 # Uploads (nếu không cần commit)
 uploads/
+
+# Local backup from project folder migration
+/.local-backup/

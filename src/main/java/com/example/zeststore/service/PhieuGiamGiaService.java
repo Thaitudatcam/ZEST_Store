@@ -134,7 +134,7 @@ public class PhieuGiamGiaService {
         if (vnd.isPresent() && TrangThaiVoucher.DA_DUNG.equals(vnd.get().getTrangThai())) {
             return true;
         }
-        return couponUsageLogRepository.existsByMaCodeAndMaNguoiDung(coupon.getMaCode(), userId);
+        return couponUsageLogRepository.hasActiveUsage(coupon.getMaCode(), userId);
     }
 
     /**
@@ -149,10 +149,10 @@ public class PhieuGiamGiaService {
     }
 
     private boolean isCouponApplicableToProducts(PhieuGiamGia c, List<Integer> maSanPhamIds) {
-        if (maSanPhamIds == null || maSanPhamIds.isEmpty()) return true;
         boolean hasCategoryRestriction = c.getDanhMucApDung() != null && !c.getDanhMucApDung().isEmpty();
         boolean hasProductRestriction = c.getSanPhamApDung() != null && !c.getSanPhamApDung().isEmpty();
         if (!hasCategoryRestriction && !hasProductRestriction) return true;
+        if (maSanPhamIds == null || maSanPhamIds.isEmpty()) return false;
         Set<Integer> allowedCategoryIds = c.getDanhMucApDung().stream()
                 .map(DanhMuc::getMaDanhMuc).collect(Collectors.toSet());
         Set<Integer> allowedProductIds = c.getSanPhamApDung().stream()
@@ -240,6 +240,13 @@ public class PhieuGiamGiaService {
 
         if (isCouponUsedByUser(coupon, userId)) {
             throw new BadRequestException("Mã giảm giá đã được sử dụng");
+        }
+
+        if (!Boolean.TRUE.equals(coupon.getCongKhai())) {
+            VoucherNguoiDung personal = userId == null ? null : voucherNguoiDungRepository
+                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, coupon.getMaPhieuGiamGia()).orElse(null);
+            if (personal == null || !TrangThaiVoucher.DA_NHAN.equals(personal.getTrangThai()))
+                throw new BadRequestException("Mã giảm giá chưa được cấp/nhận cho khách hàng này");
         }
 
         int tt = computeTrangThaiThucTe(coupon);
@@ -353,6 +360,8 @@ public class PhieuGiamGiaService {
                            BigDecimal soTienGiam, String loai) {
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(maCode)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
+        if (computeTrangThaiThucTe(coupon) != 2 || isCouponUsedByUser(coupon, maNguoiDung))
+            throw new BadRequestException("Mã giảm giá đã hết lượt hoặc khách hàng đã sử dụng");
         if (coupon.getSoLuong() != null && coupon.getSoLuong() > 0) {
             coupon.setSoLuong(coupon.getSoLuong() - 1);
             if (coupon.getSoLuong() <= 0) {
@@ -377,6 +386,36 @@ public class PhieuGiamGiaService {
     }
 
     // ========== RESTORE ON CANCEL ==========
+    /** Caller holds the order lock. The existing usage log also records the release. */
+    @Transactional
+    public void restoreForOrder(Integer orderId) {
+        for (CouponUsageLog usage : couponUsageLogRepository.findByMaDonHangOrderByMaCodeAsc(orderId)) {
+            if ("RESTORED".equals(usage.getLoai())) continue;
+            PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(usage.getMaCode()).orElse(null);
+            if (coupon == null) continue;
+            boolean depleted = coupon.getSoLuong() != null && coupon.getSoLuong() == 0;
+            if (coupon.getSoLuong() != null) coupon.setSoLuong(Math.addExact(coupon.getSoLuong(), 1));
+            if (depleted && coupon.getNgayXoa() == null
+                    && (coupon.getNgayKetThuc() == null || coupon.getNgayKetThuc().isAfter(LocalDateTime.now())))
+                coupon.setTrangThai(1);
+            phieuGiamGiaRepository.save(coupon);
+            usage.setMoTa("Đã hoàn lượt do hủy đơn/thanh toán thất bại. Nguồn: " + usage.getLoai());
+            usage.setLoai("RESTORED");
+            couponUsageLogRepository.saveAndFlush(usage);
+            if (usage.getMaNguoiDung() != null
+                    && !couponUsageLogRepository.hasActiveUsage(usage.getMaCode(), usage.getMaNguoiDung())) {
+                voucherNguoiDungRepository.findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(
+                        usage.getMaNguoiDung(), coupon.getMaPhieuGiamGia()).ifPresent(v -> {
+                    if (TrangThaiVoucher.DA_DUNG.equals(v.getTrangThai())) {
+                        v.setTrangThai(TrangThaiVoucher.DA_NHAN);
+                        v.setNgaySuDung(null);
+                        voucherNguoiDungRepository.save(v);
+                    }
+                });
+            }
+        }
+    }
+
     @Transactional
     public void restoreCoupon(PhieuGiamGia coupon) {
         if (coupon.getSoLuong() != null) {

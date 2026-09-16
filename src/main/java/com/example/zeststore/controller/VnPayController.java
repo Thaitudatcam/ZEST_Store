@@ -4,6 +4,7 @@ import com.example.zeststore.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +19,7 @@ public class VnPayController {
     private final PaymentService paymentService;
 
     @PostMapping("/create/{orderId}")
+    @PreAuthorize("@paymentAccess.canReadOrder(#orderId, authentication)")
     public ResponseEntity<?> createPayment(@PathVariable Integer orderId, HttpServletRequest request) {
         return ResponseEntity.ok(paymentService.createVnPayPayment(orderId, request.getRemoteAddr()));
     }

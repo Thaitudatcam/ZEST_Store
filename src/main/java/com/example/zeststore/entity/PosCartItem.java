@@ -22,6 +22,9 @@ public class PosCartItem {
     @JoinColumn(name = "admin_id", nullable = false)
     private NguoiDung admin;
 
+    @Column(name = "draft_key", length = 64)
+    private String draftKey;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bien_the_id", nullable = false)
     private BienTheSanPham bienThe;

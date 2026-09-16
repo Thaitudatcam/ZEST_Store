@@ -19,11 +19,13 @@ public class ThanhToanController {
     private final UserService userService;
 
     @GetMapping("/order/{orderId}")
+    @PreAuthorize("@paymentAccess.canReadOrder(#orderId, authentication)")
     public ResponseEntity<?> getPaymentsByOrder(@PathVariable Integer orderId) {
         return ResponseEntity.ok(thanhToanService.getPaymentsByOrder(orderId));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@paymentAccess.canReadPayment(#id, authentication)")
     public ResponseEntity<?> getPaymentById(@PathVariable Integer id) {
         return ResponseEntity.ok(thanhToanService.getPaymentById(id));
     }

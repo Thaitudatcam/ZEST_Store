@@ -106,7 +106,7 @@ export default function AdminOrders() {
 
   useEffect(() => { if (!dateError) loadOrders(0, undefined, search) }, [search, orderTypeFilter, statusFilter, tuNgay, denNgay, dateError])
   const exportExcel = () => {
-    const rows = orders.map(o => ({ 'Mã đơn': `#${o.maDonHang}`, 'Khách hàng': o.nguoiDung?.hoTen || 'Khách lẻ', 'Ngày đặt': o.ngayDat ? new Date(o.ngayDat).toLocaleString('vi-VN') : '', 'Tổng tiền': Number(o.tongTien || 0), 'Thanh toán': PAYMENT_LABELS[o.thanhToans?.[0]?.phuongThuc] || '', 'Trạng thái': o.trangThaiDon }))
+    const rows = orders.map(o => ({ 'Mã đơn': o.maDonHangCode || `DH${String(o.maDonHang).padStart(4, '0')}`, 'Khách hàng': o.nguoiDung?.hoTen || 'Khách lẻ', 'Ngày đặt': o.ngayDat ? new Date(o.ngayDat).toLocaleString('vi-VN') : '', 'Tổng tiền': Number(o.tongTien || 0), 'Thanh toán': PAYMENT_LABELS[o.thanhToans?.[0]?.phuongThuc] || '', 'Trạng thái': o.trangThaiDon }))
     const sheet = XLSX.utils.json_to_sheet(rows); const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, 'Don hang'); XLSX.writeFile(book, 'danh-sach-don-hang.xlsx')
   }
   const applyDatePreset = (preset) => {
@@ -187,7 +187,7 @@ export default function AdminOrders() {
               {orders.map((o) => {
                 return (
                   <tr key={o.maDonHang} className={`hover:bg-ivory-100 transition ${o.trangThaiDon === 1 && o.ngayDat && Date.now() - new Date(o.ngayDat).getTime() > 24 * 60 * 60 * 1000 ? 'bg-gold/5' : ''}`}>
-                    <td className="px-4 py-3 font-bold text-noir">#{o.maDonHang}</td>
+                    <td className="px-4 py-3 font-bold text-noir">{o.maDonHangCode || `DH${String(o.maDonHang).padStart(4, '0')}`}</td>
                     <td className="px-4 py-3 text-center"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${o.loaiDonHang === 2 ? 'bg-noir/10 text-noir' : 'bg-gold/15 text-noir'}`}>{o.loaiDonHang === 2 ? 'Tại quầy' : 'Online'}</span></td>
                     <td className="px-4 py-3"><div className="font-semibold">{o.nguoiDung?.hoTen || 'Khách lẻ'}</div><span className="text-xs text-stone">{o.nguoiDung?.email || ''}</span></td>
                     <td className="px-4 py-3">{o.ngayDat ? new Date(o.ngayDat).toLocaleDateString('vi-VN') : '-'}</td>
