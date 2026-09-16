@@ -74,7 +74,7 @@ export default function ProductListing() {
       list = list.filter(p => p.tenThuongHieu === filterBrand)
     }
     if (filterSize) {
-      list = list.filter(p => p.bienThes?.some(b => b.kichCo?.tenKichCo === filterSize))
+      list = list.filter(p => p.bienThes?.some(b => b.kichCo?.kichCo === filterSize))
     }
     return list
   }, [products, filterBrand, filterSize])
