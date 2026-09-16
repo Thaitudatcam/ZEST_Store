@@ -230,13 +230,35 @@ public class SanPhamService {
             "rẻ", "rẻ nhất", "giá rẻ", "giá thấp", "giá thấp nhất", "hời", "hời nhất", "tiết kiệm nhất"
     );
 
-    public List<Map<String, Object>> searchByPriceQuery(String keyword, int limit) {
+    private static final Map<String, Integer> VIETNAMESE_NUMBERS = Map.ofEntries(
+            Map.entry("một", 1), Map.entry("hai", 2), Map.entry("ba", 3),
+            Map.entry("bốn", 4), Map.entry("bon", 4), Map.entry("năm", 5),
+            Map.entry("sáu", 6), Map.entry("sau", 6), Map.entry("bảy", 7),
+            Map.entry("bay", 7), Map.entry("tám", 8), Map.entry("tam", 8),
+            Map.entry("chín", 9), Map.entry("chin", 9), Map.entry("mười", 10)
+    );
+
+    private int extractQuantity(String keyword) {
+        String lower = keyword.toLowerCase(Locale.ROOT);
+        for (var entry : VIETNAMESE_NUMBERS.entrySet()) {
+            if (lower.contains(entry.getKey())) return Math.min(entry.getValue(), 10);
+        }
+        String digits = lower.replaceAll("[^0-9]", "");
+        if (!digits.isEmpty()) {
+            int n = Integer.parseInt(digits);
+            return Math.max(1, Math.min(n, 10));
+        }
+        return 1;
+    }
+
+    public List<Map<String, Object>> searchByPriceQuery(String keyword, int defaultLimit) {
         if (keyword == null || keyword.isBlank()) return List.of();
         String normalized = keyword.toLowerCase(Locale.ROOT).trim();
         boolean isMostExpensive = MOST_EXPENSIVE_KEYWORDS.stream().anyMatch(normalized::contains);
         boolean isCheapest = CHEAPEST_KEYWORDS.stream().anyMatch(normalized::contains);
         if (!isMostExpensive && !isCheapest) return List.of();
 
+        int limit = extractQuantity(keyword);
         List<SanPham> results;
         if (isMostExpensive) {
             results = sanPhamRepository.findTopByPriceDesc(PageRequest.of(0, limit));

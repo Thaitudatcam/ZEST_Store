@@ -111,13 +111,15 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
     @Query("SELECT MIN(s.ngayTao) FROM SanPham s")
     LocalDateTime minNgayTao();
 
-    @Query("SELECT DISTINCT s FROM SanPham s JOIN s.bienThes b "
-            + "WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND b.ngayXoa IS NULL AND b.gia > 0 "
-            + "ORDER BY b.gia DESC")
+    @Query(value = "SELECT s.* FROM san_pham s WHERE s.trang_thai = 1 AND s.ngay_xoa IS NULL "
+            + "AND EXISTS (SELECT 1 FROM bien_the_san_pham b WHERE b.ma_san_pham = s.ma_san_pham AND b.ngay_xoa IS NULL AND b.gia > 0) "
+            + "ORDER BY (SELECT MAX(b.gia) FROM bien_the_san_pham b WHERE b.ma_san_pham = s.ma_san_pham AND b.ngay_xoa IS NULL AND b.gia > 0) DESC",
+            nativeQuery = true)
     List<SanPham> findTopByPriceDesc(Pageable pageable);
 
-    @Query("SELECT DISTINCT s FROM SanPham s JOIN s.bienThes b "
-            + "WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND b.ngayXoa IS NULL AND b.gia > 0 "
-            + "ORDER BY b.gia ASC")
+    @Query(value = "SELECT s.* FROM san_pham s WHERE s.trang_thai = 1 AND s.ngay_xoa IS NULL "
+            + "AND EXISTS (SELECT 1 FROM bien_the_san_pham b WHERE b.ma_san_pham = s.ma_san_pham AND b.ngay_xoa IS NULL AND b.gia > 0) "
+            + "ORDER BY (SELECT MIN(b.gia) FROM bien_the_san_pham b WHERE b.ma_san_pham = s.ma_san_pham AND b.ngay_xoa IS NULL AND b.gia > 0) ASC",
+            nativeQuery = true)
     List<SanPham> findTopByPriceAsc(Pageable pageable);
 }
