@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Bell } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useNotificationStream } from '../../hooks/useNotificationStream'
-import { markAsRead, markAllRead } from '../../api/notifications'
+import { markAsRead, markAllRead, deleteAllNotifications } from '../../api/notifications'
 
 function timeAgo(dateStr) {
   const now = Date.now()
@@ -45,6 +45,11 @@ export default function NotificationBell() {
     refresh()
   }
 
+  const handleDeleteAll = async () => {
+    await deleteAllNotifications().catch(() => {})
+    refresh()
+  }
+
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen(!open)}
@@ -61,12 +66,22 @@ export default function NotificationBell() {
         <div className="absolute right-0 top-full mt-2 w-80 bg-ivory border border-gold/15 rounded-2xl shadow-xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gold/10">
             <h3 className="text-sm font-semibold text-ink">Thông báo</h3>
-            {unreadCount > 0 && (
-              <button onClick={handleMarkAll}
-                className="text-xs text-gold-dark hover:text-gold font-medium">
-                Đọc tất cả
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {notifications.length > 0 && (
+                <>
+                  {unreadCount > 0 && (
+                    <button onClick={handleMarkAll}
+                      className="text-xs text-gold-dark hover:text-gold font-medium">
+                      Đọc tất cả
+                    </button>
+                  )}
+                  <button onClick={handleDeleteAll}
+                    className="text-xs text-bordeaux hover:text-bordeaux/80 font-medium">
+                    Xóa tất cả
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (

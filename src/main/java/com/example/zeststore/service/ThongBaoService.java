@@ -58,6 +58,11 @@ public class ThongBaoService {
         return thongBaoRepository.markAllRead(maNguoiDung);
     }
 
+    @Transactional
+    public int deleteAll(Integer maNguoiDung) {
+        return thongBaoRepository.deleteAllByUser(maNguoiDung);
+    }
+
     /**
      * Create a notification for a single user and push it live over SSE.
      * Runs in its own transaction so a notification failure never marks the

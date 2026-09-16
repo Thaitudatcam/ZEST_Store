@@ -20,4 +20,9 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     @Modifying
     @Query("UPDATE ThongBao t SET t.daDoc = true WHERE t.nguoiDung.maNguoiDung = :maNguoiDung AND t.daDoc = false")
     int markAllRead(@Param("maNguoiDung") Integer maNguoiDung);
+
+    /** Delete all notifications for a user. */
+    @Modifying
+    @Query("DELETE FROM ThongBao t WHERE t.nguoiDung.maNguoiDung = :maNguoiDung")
+    int deleteAllByUser(@Param("maNguoiDung") Integer maNguoiDung);
 }

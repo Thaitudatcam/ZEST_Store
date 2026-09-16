@@ -38,9 +38,26 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const attachRef = useRef(null)
 
   useEffect(() => {
-    if (open && messages.length === 0) {
-      setMessages([{ nguoiGui: 'ai', noiDung: GREETING, maTinNhan: 'greeting' }])
+    if (!open) return
+    const loadHistory = async () => {
+      try {
+        const convs = await getConversations()
+        if (convs && convs.length > 0) {
+          convs.sort((a, b) => new Date(b.ngayTao || 0) - new Date(a.ngayTao || 0))
+          const latest = convs[0]
+          setConversationId(latest.maHoiThoai)
+          const msgs = await getMessages(latest.maHoiThoai)
+          if (Array.isArray(msgs) && msgs.length > 0) {
+            setMessages(msgs)
+            return
+          }
+        }
+      } catch {}
+      if (messages.length === 0) {
+        setMessages([{ nguoiGui: 'ai', noiDung: GREETING, maTinNhan: 'greeting' }])
+      }
     }
+    loadHistory()
   }, [open])
 
   useEffect(() => {

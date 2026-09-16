@@ -56,6 +56,13 @@ public class ThongBaoController {
         return ResponseEntity.ok(Map.of("success", true, "updated", updated));
     }
 
+    @DeleteMapping
+    public ResponseEntity<?> deleteAll(Authentication auth) {
+        Integer userId = userService.getUserIdFromAuth(auth);
+        int deleted = thongBaoService.deleteAll(userId);
+        return ResponseEntity.ok(Map.of("success", true, "deleted", deleted));
+    }
+
     /**
      * Realtime channel for the signed-in user. Clients subscribe with EventSource
      * and listen for the named event {@code "notification"}.

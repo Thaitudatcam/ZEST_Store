@@ -137,6 +137,9 @@ export default function AdminOrderDetail() {
   const [printData, setPrintData] = useState(null)
   const [printLoading, setPrintLoading] = useState(false)
   const [showPrint, setShowPrint] = useState(false)
+  const [statusModal, setStatusModal] = useState(false)
+  const [selectedNextStatus, setSelectedNextStatus] = useState(null)
+  const [statusNote, setStatusNote] = useState('')
 
   useEffect(() => {
     setLoading(true)
@@ -184,10 +187,10 @@ export default function AdminOrderDetail() {
   const status = order.trangThaiDon
   const canPrint = isPos ? true : status === 5 ? isAdmin : status > 1
 
-  const handleUpdateStatus = async (trangThai) => {
+  const handleUpdateStatus = async (trangThai, ghiChu) => {
     setUpdating(trangThai)
     try {
-      await api.put(`/orders/admin/${id}/status`, { trangThai })
+      await api.put(`/orders/admin/${id}/status`, { trangThai, ghiChu: ghiChu || null })
       const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
       setData(updated)
       toast.success(`Đã cập nhật sang: ${STATUS_LABELS[trangThai]}`)
@@ -419,7 +422,15 @@ export default function AdminOrderDetail() {
                 In hóa đơn
               </button>
               {nextStatuses.length > 0 && (
-                <button onClick={() => setConfirmStatus(nextStatuses[0])} disabled={updating !== null}
+                <button onClick={() => {
+                    if (nextStatuses.length === 1) {
+                      setConfirmStatus(nextStatuses[0])
+                    } else {
+                      setSelectedNextStatus(nextStatuses[0])
+                      setStatusNote('')
+                      setStatusModal(true)
+                    }
+                  }} disabled={updating !== null}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-50">
                   {updating ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                   Cập nhật trạng thái
@@ -493,6 +504,43 @@ export default function AdminOrderDetail() {
           </div>
         </div>
       </div>
+
+      {/* Status Selection Modal */}
+      {statusModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setStatusModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-bold text-lg text-gray-800 mb-4">Cập nhật trạng thái</h2>
+            <div className="mb-4">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">TRẠNG THÁI MỚI *</label>
+              <select value={selectedNextStatus || ''} onChange={(e) => setSelectedNextStatus(Number(e.target.value))}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--primary-color)]">
+                {nextStatuses.map(s => (
+                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-6">
+              <label className="text-sm font-semibold text-gray-700 block mb-1">GHI CHÚ</label>
+              <textarea value={statusNote} onChange={(e) => setStatusNote(e.target.value)} rows={3}
+                placeholder="Nhập ghi chú (không bắt buộc)"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--primary-color)] resize-none" />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setStatusModal(false)}
+                className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                Hủy bỏ
+              </button>
+              <button onClick={() => {
+                  setStatusModal(false)
+                  setConfirmStatus(selectedNextStatus)
+                }}
+                className="px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition">
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Status Dialog */}
       <ConfirmDialog
