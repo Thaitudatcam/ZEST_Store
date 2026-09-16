@@ -25,7 +25,7 @@ const STATUS_LABELS = {
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
-function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
+function OrderStatusStepper({ currentStatus, history, loaiDonHang, onShowHistory }) {
   const isPos = loaiDonHang === 2
 
   const POS_STEPS = [
@@ -112,7 +112,7 @@ function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
       {/* History button */}
       {history && history.length > 0 && (
         <div className="mt-5 text-right">
-          <button onClick={() => document.getElementById('history-section')?.scrollIntoView({ behavior: 'smooth' })}
+          <button onClick={onShowHistory}
             className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary-color)] hover:underline">
             <Clock className="h-4 w-4" /> Lịch sử thao tác
           </button>
@@ -140,6 +140,7 @@ export default function AdminOrderDetail() {
   const [statusModal, setStatusModal] = useState(false)
   const [selectedNextStatus, setSelectedNextStatus] = useState(null)
   const [statusNote, setStatusNote] = useState('')
+  const [historyModal, setHistoryModal] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -261,7 +262,7 @@ export default function AdminOrderDetail() {
         {/* Left column (2/3) */}
         <div className="lg:col-span-2 space-y-0">
           {/* Status Stepper */}
-          <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
+          <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} onShowHistory={() => setHistoryModal(true)} />
 
           {/* Stock reconciliation warning */}
           {order.stockState === 'LEGACY' && (
@@ -439,29 +440,6 @@ export default function AdminOrderDetail() {
             </div>
           </div>
 
-          {/* Status History */}
-          {(history || []).length > 0 && (
-            <div id="history-section" className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-              <h2 className="font-bold text-sm text-gray-800 mb-4 flex items-center gap-2">
-                <span className="w-1 h-5 bg-[var(--primary-color)] rounded-full inline-block" />
-                Lịch sử thao tác
-              </h2>
-              <div className="space-y-3">
-                {[...(history || [])].reverse().map((h, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[var(--primary-color)] mt-1.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{STATUS_LABELS[h.trangThaiMoi] || h.trangThaiMoi}</p>
-                      <p className="text-xs text-gray-500">
-                        {h.nguoiCapNhat?.hoTen || 'Hệ thống'} &middot; {h.thoiGian ? new Date(h.thoiGian).toLocaleString('vi-VN') : '-'}
-                      </p>
-                      {h.ghiChu && <p className="text-xs text-gray-400 mt-0.5">{h.ghiChu}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right column (1/3) */}
@@ -588,6 +566,62 @@ export default function AdminOrderDetail() {
               <button onClick={() => handlePrintOrder()} disabled={printLoading}
                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50">
                 {printLoading ? <Loader className="h-4 w-4 animate-spin" /> : 'In lại'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {historyModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setHistoryModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
+              <h3 className="font-bold text-base text-gray-800 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-[var(--primary-color)]" /> Lịch sử thao tác hóa đơn
+              </h3>
+              <button onClick={() => setHistoryModal(false)} className="text-gray-400 hover:text-gray-600 transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto px-5 py-4 flex-1">
+              {(history || []).length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">Chưa có lịch sử thao tác</p>
+              ) : (
+                <div className="space-y-5">
+                  {[...(history || [])].map((h, i) => {
+                    const oldLabel = h.trangThaiCu != null ? (STATUS_LABELS[h.trangThaiCu] || `Trạng thái ${h.trangThaiCu}`) : null
+                    const newLabel = STATUS_LABELS[h.trangThaiMoi] || `Trạng thái ${h.trangThaiMoi}`
+                    const timeStr = h.thoiGian ? new Date(h.thoiGian).toLocaleString('vi-VN') : '-'
+                    const userStr = h.nguoiCapNhat?.maNhanVien
+                      ? `${h.nguoiCapNhat.maNhanVien} - ${h.nguoiCapNhat.hoTen}`
+                      : (h.nguoiCapNhat?.hoTen || 'Hệ thống')
+                    return (
+                      <div key={i} className="flex gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[var(--primary-color)] mt-1.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800">
+                            Cập nhật trạng thái đơn hàng - Phân thay đổi: Trạng thái đơn hàng
+                            {oldLabel ? <span> Từ <span className="font-semibold">{oldLabel}</span> - Thành <span className="font-semibold">{newLabel}</span></span> : <span> - Thành <span className="font-semibold">{newLabel}</span></span>}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">Thời gian: {timeStr}</p>
+                          <p className="text-xs text-gray-500">Người thực hiện: {userStr}</p>
+                          {h.ghiChu && (
+                            <div className="mt-2 bg-gray-50 rounded-lg px-3 py-2">
+                              <p className="text-xs text-gray-500 italic">"{h.ghiChu}"</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-gray-200 flex justify-end shrink-0">
+              <button onClick={() => setHistoryModal(false)}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition">
+                Đóng lại
               </button>
             </div>
           </div>
