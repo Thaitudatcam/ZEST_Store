@@ -37,8 +37,10 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const cameraInputRef = useRef(null)
   const attachRef = useRef(null)
 
+  const historyLoaded = useRef(false)
+
   useEffect(() => {
-    if (!open) return
+    if (!open || historyLoaded.current) return
     const loadHistory = async () => {
       try {
         const convs = await getConversations()
@@ -49,13 +51,15 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
           const msgs = await getMessages(latest.maHoiThoai)
           if (Array.isArray(msgs) && msgs.length > 0) {
             setMessages(msgs)
+            historyLoaded.current = true
             return
           }
         }
-      } catch {}
-      if (messages.length === 0) {
-        setMessages([{ nguoiGui: 'ai', noiDung: GREETING, maTinNhan: 'greeting' }])
+      } catch (e) {
+        console.error('Failed to load chat history:', e)
       }
+      historyLoaded.current = true
+      setMessages((prev) => prev.length === 0 ? [{ nguoiGui: 'ai', noiDung: GREETING, maTinNhan: 'greeting' }] : prev)
     }
     loadHistory()
   }, [open])

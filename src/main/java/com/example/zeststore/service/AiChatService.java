@@ -89,11 +89,13 @@ public class AiChatService {
         String intent = "OTHER";
         String statsContext = "";
         if (noiDung != null && !noiDung.isBlank()) {
+            matchedProducts = sanPhamService.searchByPriceQuery(noiDung, 5);
+        }
+        if (noiDung != null && !noiDung.isBlank()) {
             intent = openAiService.classifyIntent(noiDung);
         }
         if ("PRODUCT".equals(intent)) {
             try {
-                matchedProducts = sanPhamService.searchByPriceQuery(noiDung, 5);
                 if (matchedProducts.isEmpty()) {
                     matchedProducts = sanPhamService.searchSuggestions(noiDung, 5);
                 }
@@ -142,6 +144,7 @@ public class AiChatService {
             systemContent.append("4. TUYỆT ĐỐI không được nói 'không có sản phẩm', 'cửa hàng chưa có', 'không tìm thấy', hay 'không khớp' khi danh sách đã có sản phẩm. Nếu khách nói 'không có áo polo trắng' nhưng danh sách có áo polo trắng, hãy trả lời rằng áo polo trắng CÓ SẴN.\n");
             systemContent.append("5. Nếu khách hỏi về một sản phẩm cụ thể không có trong danh sách, lịch sự gợi ý sản phẩm TƯƠNG TỰ trong danh sách.\n");
             systemContent.append("6. Không được gợi ý sản phẩm có tồn kho bằng 0.\n");
+            systemContent.append("7. Nếu khách hỏi 'đắt nhất', 'rẻ nhất', 'tốt nhất', 'bán chạy nhất' - chỉ trình bày ĐÚNG 1 sản phẩm phù hợp nhất. Chỉ gợi ý thêm nhiều sản phẩm hơn nếu khách yêu cầu.\n");
         } else if ("PRODUCT".equals(intent)) {
             systemContent.append("\n\nQUY TẮC BẮT BUỘC:\n");
             systemContent.append("1. HIỆN TẠI KHÔNG có sản phẩm nào trong cửa hàng khớp với yêu cầu của khách.\n");

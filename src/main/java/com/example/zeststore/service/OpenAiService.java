@@ -87,10 +87,10 @@ public class OpenAiService {
             system.put("role", "system");
             system.put("content",
                     "Bạn là bộ phân loại ý định của khách hàng. Đọc kỹ câu và chỉ trả lời ĐÚNG MỘT TỪ trong ngoặc.\n"
-                    + "Trả về (PRODUCT) nếu khách ĐANG CÓ NHU CẦU tìm mua, xem, tư vấn, gợi ý, hỏi giá, hỏi size/màu, so sánh, hay chọn MỘT SẢN PHẨM CỤ THỂ nào đó trong cửa hàng.\n"
-                    + "Trả về (STATS) nếu khách hỏi về số liệu, thống kê, số lượng, thống kê doanh thu, số sản phẩm đã bán, số đơn hàng, sản phẩm bán chạy, sản phẩm được đánh giá 5 sao, số lượng cụ thể của shop. Ví dụ: 'tháng này bán được bao nhiêu sản phẩm?', 'có bao nhiêu sản phẩm đánh giá 5 sao?', 'doanh thu tháng này bao nhiêu?'.\n"
+                    + "Trả về (PRODUCT) nếu khách ĐANG CÓ NHU CẦU tìm mua, xem, tư vấn, gợi ý, hỏi giá, hỏi size/màu, so sánh, hay chọn MỘT SẢN PHẨM CỤ THỂ nào đó trong cửa hàng. BAO GỒM CẢ: hỏi sản phẩm đắt nhất, rẻ nhất, sản phẩm tốt nhất, sản phẩm bán chạy.\n"
+                    + "Trả về (STATS) nếu khách hỏi về số liệu, thống kê, số lượng, thống kê doanh thu, số sản phẩm đã bán, số đơn hàng, sản phẩm được đánh giá 5 sao, số lượng cụ thể của shop. Ví dụ: 'tháng này bán được bao nhiêu sản phẩm?', 'có bao nhiêu sản phẩm đánh giá 5 sao?', 'doanh thu tháng này bao nhiêu?'.\n"
                     + "Trả về (OTHER) nếu câu chỉ là chào hỏi, cảm ơn, hỏi về chính sách đổi trả, trả hàng, vận chuyển, thanh toán, khuyến mãi chung, hoặc bất kỳ câu hỏi chung không nhằm mua một sản phẩm cụ thể và không hỏi về số liệu thống kê.\n"
-                    + "Ví dụ: 'có áo polo trắng không?' -> (PRODUCT). 'hello' -> (OTHER). 'có bao nhiêu sản phẩm 5 sao?' -> (STATS). 'tháng này bán bao nhiêu?' -> (STATS). 'tôi muốn trả hàng' -> (OTHER). 'giá áo polo này bao nhiêu?' -> (PRODUCT).\n"
+                    + "Ví dụ: 'có áo polo trắng không?' -> (PRODUCT). 'hello' -> (OTHER). 'sản phẩm đắt nhất' -> (PRODUCT). 'sản phẩm rẻ nhất' -> (PRODUCT). 'có bao nhiêu sản phẩm 5 sao?' -> (STATS). 'tháng này bán bao nhiêu?' -> (STATS). 'tôi muốn trả hàng' -> (OTHER). 'giá áo polo này bao nhiêu?' -> (PRODUCT).\n"
                     + "Ưu tiên: nếu câu vừa có ý tìm mua sản phẩm cụ thể vừa muốn số liệu, hãy chọn (PRODUCT).");
             ObjectNode user = messages.addObject();
             user.put("role", "user");
