@@ -197,8 +197,8 @@ export default function ProductListing() {
               onChange={(e) => { const [sb, sd] = e.target.value.split('-'); setSortBy(sb); setSortDir(sd) }}
               className="border border-noir-600/15 rounded-lg px-3 py-2 text-sm bg-ivory text-ink focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold cursor-pointer">
               <option value="ngayTao-desc">Mới nhất</option>
-              <option value="gia-asc">Giá tăng dần</option>
-              <option value="gia-desc">Giá giảm dần</option>
+              <option value="giaTrungBinh-asc">Giá tăng dần</option>
+              <option value="giaTrungBinh-desc">Giá giảm dần</option>
             </select>
           </div>
         </div>
