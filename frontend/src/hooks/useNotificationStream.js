@@ -83,5 +83,7 @@ export function useNotificationStream({ onNotification } = {}) {
     setUnreadCount(prev => Math.max(0, prev - 1))
   }, [])
 
-  return { notifications, unreadCount, connected, refresh: fetchList, markRead }
+  const refreshAll = useCallback(() => { fetchList(); fetchUnread() }, [fetchList, fetchUnread])
+
+  return { notifications, unreadCount, connected, refresh: refreshAll, markRead }
 }
