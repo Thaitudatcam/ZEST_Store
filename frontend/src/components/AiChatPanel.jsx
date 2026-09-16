@@ -31,6 +31,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const [loading, setLoading] = useState(false)
   const [selectedImage, setSelectedImage] = useState(null)
   const [showAttach, setShowAttach] = useState(false)
+  const [conversationId, setConversationId] = useState(null)
   const bottomRef = useRef(null)
   const fileInputRef = useRef(null)
   const cameraInputRef = useRef(null)
@@ -106,7 +107,8 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
     const tempId = Date.now()
     setMessages((prev) => [...prev, { nguoiGui: 'user', noiDung: userText, hinhAnh: imgData, maTinNhan: tempId }])
     try {
-      const result = await sendMessage(userText, null, imgData)
+      const result = await sendMessage(userText, conversationId, imgData)
+      if (result.maHoiThoai && !conversationId) setConversationId(result.maHoiThoai)
       setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: result.reply, products: result.products || [], maTinNhan: tempId + 1 }])
     } catch {
       setMessages((prev) => [...prev, { nguoiGui: 'ai', noiDung: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.', maTinNhan: tempId + 1 }])
