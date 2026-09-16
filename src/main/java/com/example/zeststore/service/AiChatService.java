@@ -93,7 +93,10 @@ public class AiChatService {
         }
         if ("PRODUCT".equals(intent)) {
             try {
-                matchedProducts = sanPhamService.searchSuggestions(noiDung, 5);
+                matchedProducts = sanPhamService.searchByPriceQuery(noiDung, 5);
+                if (matchedProducts.isEmpty()) {
+                    matchedProducts = sanPhamService.searchSuggestions(noiDung, 5);
+                }
             } catch (Exception e) {
                 // ignore search errors
             }

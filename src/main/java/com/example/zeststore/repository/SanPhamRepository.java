@@ -110,4 +110,14 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
 
     @Query("SELECT MIN(s.ngayTao) FROM SanPham s")
     LocalDateTime minNgayTao();
+
+    @Query("SELECT DISTINCT s FROM SanPham s JOIN s.bienThes b "
+            + "WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND b.ngayXoa IS NULL AND b.gia > 0 "
+            + "ORDER BY b.gia DESC")
+    List<SanPham> findTopByPriceDesc(Pageable pageable);
+
+    @Query("SELECT DISTINCT s FROM SanPham s JOIN s.bienThes b "
+            + "WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND b.ngayXoa IS NULL AND b.gia > 0 "
+            + "ORDER BY b.gia ASC")
+    List<SanPham> findTopByPriceAsc(Pageable pageable);
 }

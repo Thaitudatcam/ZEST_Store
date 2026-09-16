@@ -223,6 +223,77 @@ public class SanPhamService {
         }).collect(Collectors.toList());
     }
 
+    private static final Set<String> MOST_EXPENSIVE_KEYWORDS = Set.of(
+            "đắt", "đắt nhất", "giá cao", "giá cao nhất", "mắc", "mắc nhất", "cao cấp nhất"
+    );
+    private static final Set<String> CHEAPEST_KEYWORDS = Set.of(
+            "rẻ", "rẻ nhất", "giá rẻ", "giá thấp", "giá thấp nhất", "hời", "hời nhất", "tiết kiệm nhất"
+    );
+
+    public List<Map<String, Object>> searchByPriceQuery(String keyword, int limit) {
+        if (keyword == null || keyword.isBlank()) return List.of();
+        String normalized = keyword.toLowerCase(Locale.ROOT).trim();
+        boolean isMostExpensive = MOST_EXPENSIVE_KEYWORDS.stream().anyMatch(normalized::contains);
+        boolean isCheapest = CHEAPEST_KEYWORDS.stream().anyMatch(normalized::contains);
+        if (!isMostExpensive && !isCheapest) return List.of();
+
+        List<SanPham> results;
+        if (isMostExpensive) {
+            results = sanPhamRepository.findTopByPriceDesc(PageRequest.of(0, limit));
+        } else {
+            results = sanPhamRepository.findTopByPriceAsc(PageRequest.of(0, limit));
+        }
+        if (results.isEmpty()) return List.of();
+
+        List<Integer> ids = results.stream().map(SanPham::getMaSanPham).collect(Collectors.toList());
+        Map<Integer, BigDecimal> minGiaMap = bienTheRepository.minGiaBySanPhamIds(ids).stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> row[1] instanceof BigDecimal ? (BigDecimal) row[1] : BigDecimal.valueOf(((Number) row[1]).doubleValue())));
+        Map<Integer, Integer> stockMap = bienTheRepository.sumTonKhoBySanPhamIds(ids).stream()
+                .collect(Collectors.toMap(row -> ((Number) row[0]).intValue(),
+                        row -> ((Number) row[1]).intValue()));
+        results.forEach(sp -> {
+            sp.setGiaThapNhat(minGiaMap.get(sp.getMaSanPham()));
+            sp.setTongTonKho(stockMap.getOrDefault(sp.getMaSanPham(), 0));
+        });
+
+        List<Integer> topIds = results.stream().map(SanPham::getMaSanPham).collect(Collectors.toList());
+        Map<Integer, List<String>> colorsMap = new HashMap<>();
+        Map<Integer, List<String>> sizesMap = new HashMap<>();
+        Map<Integer, String> brandMap = new HashMap<>();
+        List<BienTheSanPham> allVariants = bienTheRepository.findBySanPham_MaSanPhamIn(topIds);
+        for (BienTheSanPham bt : allVariants) {
+            if (bt.getMauSac() != null) {
+                colorsMap.computeIfAbsent(bt.getSanPham().getMaSanPham(), k -> new ArrayList<>())
+                        .add(bt.getMauSac().getMauSac());
+            }
+            if (bt.getKichCo() != null) {
+                sizesMap.computeIfAbsent(bt.getSanPham().getMaSanPham(), k -> new ArrayList<>())
+                        .add(bt.getKichCo().getKichCo());
+            }
+            if (bt.getThuongHieu() != null && !brandMap.containsKey(bt.getSanPham().getMaSanPham())) {
+                brandMap.put(bt.getSanPham().getMaSanPham(), bt.getThuongHieu().getTenThuongHieu());
+            }
+        }
+
+        return results.stream().map(sp -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("maSanPham", sp.getMaSanPham());
+            m.put("maSanPhamCode", sp.getMaSanPhamCode());
+            m.put("tenSanPham", sp.getTenSanPham());
+            m.put("slug", sp.getSlug());
+            m.put("urlAnhDaiDien", sp.getUrlAnhDaiDien());
+            m.put("gia", sp.getGiaThapNhat() != null ? sp.getGiaThapNhat() : sp.getGiaTrungBinh());
+            m.put("giaThapNhat", sp.getGiaThapNhat());
+            m.put("tongTonKho", sp.getTongTonKho());
+            m.put("chatLieu", sp.getChatLieu() != null ? sp.getChatLieu().getGiaTri() : null);
+            m.put("mauSac", colorsMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
+            m.put("kichCo", sizesMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
+            m.put("thuongHieu", brandMap.get(sp.getMaSanPham()));
+            return m;
+        }).collect(Collectors.toList());
+    }
+
     private void populateStock(Page<SanPham> page) {
         if (page.isEmpty()) return;
         List<Integer> ids = page.getContent().stream().map(SanPham::getMaSanPham).collect(Collectors.toList());
