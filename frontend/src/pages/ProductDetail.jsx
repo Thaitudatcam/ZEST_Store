@@ -45,7 +45,7 @@ export default function ProductDetail() {
       const p = await getProductBySlug(slug)
       const prod = p.product || p
       setProduct(prod)
-      setVariants(p.variants || [])
+      setVariants((p.variants || []).map(v => ({ ...v, tonKho: v.tonKhoKhaDung ?? v.tonKho })))
       setImages(p.images || [])
       if (prod.maSanPham) {
         getProductReviews(prod.maSanPham).then((r) => {

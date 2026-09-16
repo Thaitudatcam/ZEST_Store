@@ -70,6 +70,10 @@ public class VnPayService {
     }
 
     public boolean verifyReturn(Map<String, String> rawParams) {
+        if (rawParams == null || rawParams.isEmpty()) {
+            log.warn("VNPay return không có tham số");
+            return false;
+        }
         Map<String, String> params = new HashMap<>(rawParams);
         String secureHash = params.remove("vnp_SecureHash");
         params.remove("vnp_SecureHashType");
@@ -80,6 +84,10 @@ public class VnPayService {
         }
 
         Map<String, String> sorted = new TreeMap<>(params);
+        if (sorted.entrySet().stream().anyMatch(e -> e.getKey() == null || e.getValue() == null)) {
+            log.warn("VNPay return có tham số null");
+            return false;
+        }
         String hashData = buildHashData(sorted);
         String calculated = hmacSHA512(paymentConfig.getVnpay().getHashSecret(), hashData);
         boolean match = calculated.equalsIgnoreCase(secureHash);
@@ -109,9 +117,10 @@ public class VnPayService {
     }
 
     public Map<String, String> buildReturnParams(Map<String, String> params) {
-        boolean verified = verifyReturn(params);
-        String responseCode = params.get("vnp_ResponseCode");
-        String txnRef = params.get("vnp_TxnRef");
+        Map<String, String> safeParams = params == null ? Collections.emptyMap() : params;
+        boolean verified = verifyReturn(safeParams);
+        String responseCode = safeParams.get("vnp_ResponseCode");
+        String txnRef = safeParams.get("vnp_TxnRef");
         Integer orderId = extractOrderId(txnRef);
 
         log.info("VNPay return: verified={}, responseCode={}, orderId={}, txnRef={}",
@@ -122,7 +131,7 @@ public class VnPayService {
         result.put("responseCode", responseCode);
         result.put("txnRef", txnRef);
         result.put("orderId", orderId != null ? orderId.toString() : null);
-        result.put("transactionNo", params.get("vnp_TransactionNo"));
+        result.put("transactionNo", safeParams.get("vnp_TransactionNo"));
         return result;
     }
 

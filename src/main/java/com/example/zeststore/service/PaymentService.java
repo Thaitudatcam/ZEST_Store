@@ -3,6 +3,7 @@ package com.example.zeststore.service;
 import com.example.zeststore.config.PaymentConfig;
 import com.example.zeststore.dto.response.PaymentResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentService {
 
     private final VnPayService vnPayService;
@@ -53,7 +55,7 @@ public class PaymentService {
 
         if (success && result.get("orderId") != null) {
             momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
-        } else if (result.get("orderId") != null) {
+        } else if ("true".equals(result.get("verified")) && result.get("orderId") != null) {
             momoService.handleFailedPayment(result.get("orderId"));
         }
         return Map.of("message", "received");
@@ -71,17 +73,28 @@ public class PaymentService {
     }
 
     public String handleVnPayReturn(Map<String, String> params) {
-        Map<String, String> result = vnPayService.buildReturnParams(params);
-        boolean success = "true".equals(result.get("verified")) && "00".equals(result.get("responseCode"));
         String redirectBase = paymentConfig.getRedirectBaseUrl();
+        try {
+            Map<String, String> result = vnPayService.buildReturnParams(params);
+            boolean success = "true".equals(result.get("verified")) && "00".equals(result.get("responseCode"));
 
-        if (success && result.get("txnRef") != null) {
-            vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
-            return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderId");
+            if (success && result.get("txnRef") != null) {
+                vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
+                return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderId");
+            }
+            String redirect = redirectBase + "/payment/result?success=false";
+            if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
+            return redirect;
+        } catch (RuntimeException ex) {
+            // A gateway callback must never expose a Spring JSON error page to the buyer.
+            // Keep the order id so the result page can poll while VNPay IPN settles.
+            log.error("Không thể xử lý callback VNPay", ex);
+            Integer orderId = null;
+            if (params != null) {
+                orderId = vnPayService.extractOrderId(params.get("vnp_TxnRef"));
+            }
+            return redirectBase + "/payment/result" + (orderId != null ? "?orderId=" + orderId : "");
         }
-        String redirect = redirectBase + "/payment/result?success=false";
-        if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
-        return redirect;
     }
 
     public Map<String, String> handleVnPayIpn(Map<String, String> params) {
@@ -93,7 +106,7 @@ public class PaymentService {
                 vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
                 return Map.of("RspCode", "00", "Message", "Success");
             }
-            if (result.get("txnRef") != null) vnPayService.handleFailedPayment(result.get("txnRef"));
+            if ("true".equals(result.get("verified")) && result.get("txnRef") != null) vnPayService.handleFailedPayment(result.get("txnRef"));
             return Map.of("RspCode", "01", "Message", "Failed");
         } catch (Exception e) {
             return Map.of("RspCode", "01", "Message", "Order not found");

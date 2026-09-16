@@ -104,7 +104,7 @@ public class DonHangController {
     public ResponseEntity<?> updateStatus(@PathVariable Integer id, @Valid @RequestBody StatusUpdateRequest request,
                                            Authentication auth) {
         return ResponseEntity.ok(donHangService.updateOrderStatus(
-                id, request.getTrangThai(), userService.getUserIdFromAuth(auth), request.getGhiChu()));
+                id, request.getTrangThai(), request.getGhiChu(), request.isThongBaoKhachHang(), userService.getUserIdFromAuth(auth)));
     }
 
     @PutMapping("/admin/{id}/inventory-reconciliation")

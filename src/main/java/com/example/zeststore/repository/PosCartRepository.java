@@ -13,6 +13,10 @@ public interface PosCartRepository extends JpaRepository<PosCartItem, Integer> {
 
     List<PosCartItem> findByAdmin_MaNguoiDung(Integer adminId);
 
+    List<PosCartItem> findByAdmin_MaNguoiDungAndDraftKey(Integer adminId, String draftKey);
+
+    void deleteByAdmin_MaNguoiDungAndDraftKey(Integer adminId, String draftKey);
+
     Optional<PosCartItem> findByAdmin_MaNguoiDungAndBienThe_MaBienThe(Integer adminId, Integer bienTheId);
 
     void deleteByAdmin_MaNguoiDung(Integer adminId);

@@ -62,7 +62,7 @@ export const handlers = [
     orderCounter++
     return HttpResponse.json({
       maDonHang: orderCounter,
-      maDonHangCode: `POS-${orderCounter}`,
+      maDonHangCode: `DH${String(orderCounter).padStart(4, '0')}`,
       tongTien: 350000,
       soTienGiam: 0,
       thanhToan: 350000,

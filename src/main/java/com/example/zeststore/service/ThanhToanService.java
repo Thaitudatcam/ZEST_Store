@@ -35,6 +35,7 @@ public class ThanhToanService {
     private final LichSuDonHangRepository lichSuDonHangRepository;
     private final OrderSseService orderSseService;
     private final InventoryService inventoryService;
+    private final PhieuGiamGiaService phieuGiamGiaService;
     private final jakarta.persistence.EntityManager entityManager;
     private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
@@ -157,6 +158,8 @@ public class ThanhToanService {
                 order.setTrangThaiDon(2);
                 donHangRepository.save(order);
                 orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
+                lichSuDonHangRepository.save(LichSuDonHang.builder().donHang(order)
+                        .trangThaiCu(1).trangThaiMoi(2).ghiChu("Đã xác nhận thanh toán").build());
             }
             clearCartForOrder(order);
         }
@@ -182,8 +185,11 @@ public class ThanhToanService {
         DonHang order = payment.getDonHang();
         if (order != null && Integer.valueOf(1).equals(order.getTrangThaiDon())) {
             inventoryService.release(order);
+            phieuGiamGiaService.restoreForOrder(order.getMaDonHang());
             order.setTrangThaiDon(5);
             donHangRepository.save(order);
+            lichSuDonHangRepository.save(LichSuDonHang.builder().donHang(order)
+                    .trangThaiCu(1).trangThaiMoi(5).ghiChu("Thanh toán thất bại hoặc hết hạn").build());
         }
         payment.setTrangThaiThanhToan(3);
         return thanhToanRepository.save(payment);

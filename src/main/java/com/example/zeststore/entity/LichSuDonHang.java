@@ -35,6 +35,10 @@ public class LichSuDonHang {
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 
+    /** Null keeps legacy notes visible; false is an internal staff note. */
+    @Column(name = "khach_hang_xem")
+    private Boolean khachHangXem;
+
     @Column(name = "thoi_gian", nullable = false, updatable = false)
     private LocalDateTime thoiGian;
 

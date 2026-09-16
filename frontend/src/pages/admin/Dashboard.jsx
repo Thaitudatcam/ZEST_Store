@@ -317,7 +317,7 @@ export default function Dashboard() {
                     onClick={() => navigate(`/admin/orders/${order.maDonHang || order.id}`)}
                     className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-5 py-3 font-medium text-gray-800">
-                      #{order.maDonHangCode || order.maDonHang || '-'}
+                      {order.maDonHangCode || `DH${String(order.maDonHang || '').padStart(4, '0')}` || '-'}
                     </td>
                     <td className="px-5 py-3 text-gray-600">
                       {order.khachHang?.hoTen || order.hoTen || order.tenNguoiNhan || 'Khách lẻ'}

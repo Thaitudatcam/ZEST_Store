@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from '../../api/admin'
-import { getBestOffer } from '../../api/coupons'
 import { posApi } from '../../components/admin/pos/apiClient'
+import { createDraft, appendDraft, removeDraft, sameQuantities } from '../../components/admin/pos/drafts'
 import OrderTabs from '../../components/admin/pos/OrderTabs'
 import ProductGrid from '../../components/admin/pos/ProductGrid'
 import CartPanel from '../../components/admin/pos/CartPanel'
@@ -25,21 +25,29 @@ const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'curre
 export default function AdminPOS() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const checkoutKey = useRef(sessionStorage.getItem('posCheckoutKey') || crypto.randomUUID())
+  const draftStorageKey = 'posDrafts:' + (user?.maNguoiDung || user?.email || 'staff')
+  const initialDrafts = useRef(null)
+  if (!initialDrafts.current) {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(draftStorageKey) || 'null')
+      initialDrafts.current = Array.isArray(saved) && saved.length > 0
+        ? saved.slice(0, 10).filter(o => o.checkoutKey && Array.isArray(o.cart)) : [createDraft(1)]
+    } catch { initialDrafts.current = [createDraft(1)] }
+    if (!initialDrafts.current.length) initialDrafts.current = [createDraft(1)]
+  }
+  const initial = initialDrafts.current[0]
   const pendingCheckout = useRef(false)
-  const persistCheckoutKey = () => {
-    sessionStorage.setItem('posCheckoutKey', checkoutKey.current)
-    return checkoutKey.current
-  }
-  const finishCheckout = () => {
-    sessionStorage.removeItem('posCheckoutKey')
-    checkoutKey.current = crypto.randomUUID()
-  }
+  const pendingStock = useRef(false)
+  const stockRequest = useRef(0)
+  const lastActivity = useRef(Date.now())
+  const [stockBusy, setStockBusy] = useState(false)
+  const [stockReady, setStockReady] = useState(initial.cart.length === 0)
+  const [availableStock, setAvailableStock] = useState({})
   const [products, setProducts] = useState([])
   const [allVariants, setAllVariants] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [cart, setCart] = useState([])
+  const [cart, setCart] = useState(initial.cart)
   const [placing, setPlacing] = useState(false)
   const [msg, setMsg] = useState(null)
   const [categories, setCategories] = useState([])
@@ -47,37 +55,38 @@ export default function AdminPOS() {
   const [colors, setColors] = useState([])
   const [sizes, setSizes] = useState([])
 
-  const [orders, setOrders] = useState([])
+  const [orders, setOrders] = useState(initialDrafts.current)
   const [currentOrderIdx, setCurrentOrderIdx] = useState(0)
-  const orderIdCounter = useRef(0)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCustomerPicker, setShowCustomerPicker] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
-  const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [coupon, setCoupon] = useState(null)
+  const [selectedCustomer, setSelectedCustomer] = useState(initial.customer)
+  const [coupon, setCoupon] = useState(initial.coupon)
+  const couponRequest = useRef(0)
+  const [couponChecking, setCouponChecking] = useState(false)
   const [couponMsg, setCouponMsg] = useState('')
   const [couponInput, setCouponInput] = useState('')
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [showCouponPicker, setShowCouponPicker] = useState(false)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
-  const [loaiDon, setLoaiDon] = useState('TAI_QUAY')
-  const [shippingInfo, setShippingInfo] = useState({ hoTen: '', soDienThoai: '', diaChi: '', tinhThanh: '', quanHuyen: '', phuongXa: '', phuongThuc: 'GHN' })
-  const [shippingFee, setShippingFee] = useState(0)
+  const [loaiDon, setLoaiDon] = useState(initial.loaiDon || 'TAI_QUAY')
+  const [shippingInfo, setShippingInfo] = useState(initial.shippingInfo || {})
+  const [shippingFee, setShippingFee] = useState(null)
+  const [shippingRefresh, setShippingRefresh] = useState(0)
   const [shippingLoading, setShippingLoading] = useState(false)
   const [provinces, setProvinces] = useState([])
   const [districts, setDistricts] = useState([])
   const [wards, setWards] = useState([])
-  const [mienPhiVanChuyen, setMienPhiVanChuyen] = useState(false)
-  const shippingDebounceRef = useRef(null)
+  const [mienPhiVanChuyen, setMienPhiVanChuyen] = useState(initial.mienPhiVanChuyen || false)
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
-  const [customerPaid, setCustomerPaid] = useState(0)
+  const [customerPaid, setCustomerPaid] = useState(initial.customerPaid || 0)
   const [showConfirmOrder, setShowConfirmOrder] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState(5)
+  const [paymentMethod, setPaymentMethod] = useState(initial.paymentMethod || 5)
   const [variantModal, setVariantModal] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [selectedColor, setSelectedColor] = useState(null)
@@ -136,82 +145,154 @@ export default function AdminPOS() {
   }, [shippingInfo.quanHuyen])
 
   useEffect(() => {
-    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.tinhThanh || !shippingInfo.quanHuyen || !shippingInfo.phuongXa) { setShippingFee(0); return }
+    let cancelled = false
+    setShippingFee(null)
+    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.quanHuyen || !shippingInfo.phuongXa) {
+      setShippingLoading(false)
+      return
+    }
     setShippingLoading(true)
-    clearTimeout(shippingDebounceRef.current)
-    shippingDebounceRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       posApi.calculateShipping({
-        serviceTypeId: shippingInfo.phuongThuc === 'GHTK' ? 1 : 2,
-        toDistrictId: parseInt(shippingInfo.quanHuyen, 10),
+        serviceTypeId: 2, toDistrictId: Number(shippingInfo.quanHuyen),
         toWardCode: String(shippingInfo.phuongXa),
-        weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
-      }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000)).finally(() => setShippingLoading(false))
+        weight: Math.max(1, cart.reduce((s, c) => s + c.soLuong, 0)) * 500,
+      }).then(r => { if (!cancelled) setShippingFee(r.fee) })
+        .catch(() => { if (!cancelled) setMsg({ type: 'error', text: 'Không tính được phí giao hàng. Vui lòng thử lại.' }) })
+        .finally(() => { if (!cancelled) setShippingLoading(false) })
     }, 300)
-    return () => clearTimeout(shippingDebounceRef.current)
-  }, [loaiDon, shippingInfo.tinhThanh, shippingInfo.quanHuyen, shippingInfo.phuongXa, shippingInfo.phuongThuc, cart])
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [loaiDon, shippingInfo.quanHuyen, shippingInfo.phuongXa, cart, shippingRefresh])
 
   const phiVanChuyen = loaiDon === 'GIAO_HANG' && !mienPhiVanChuyen ? shippingFee : 0
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
   const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) + phiVanChuyen)
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
 
-  const saveCurrentOrder = (idxOverride) => {
-    const idx = idxOverride !== undefined ? idxOverride : currentOrderIdx
-    setOrders(prev => prev.map((o, i) => i === idx ? { ...o, cart, customer: selectedCustomer, coupon } : o))
+  const snapshotOrders = () => orders.map((o, i) => i === currentOrderIdx
+    ? { ...o, cart, customer: selectedCustomer, coupon, loaiDon, shippingInfo, shippingFee, mienPhiVanChuyen, customerPaid, paymentMethod }
+    : o)
+
+  const liveDrafts = useRef([])
+  liveDrafts.current = snapshotOrders()
+  const activeDraftKey = orders[currentOrderIdx].checkoutKey
+  const refreshStock = useCallback(async () => {
+    const ids = [...new Set(allVariants.map(v => v.maBienThe).filter(Boolean))]
+    if (ids.length) setAvailableStock(await posApi.availability(ids))
+  }, [allVariants])
+
+  useEffect(() => {
+    let active = true
+    const requestId = ++stockRequest.current
+    const draft = liveDrafts.current.find(d => d.checkoutKey === activeDraftKey)
+    if (!draft?.cart.length) { setStockReady(true); return }
+    setStockReady(false)
+    posApi.getDraft(activeDraftKey).then(result => {
+      if (active && requestId === stockRequest.current) setStockReady(sameQuantities(draft.cart, result.items || []))
+    }).catch(() => { if (active && requestId === stockRequest.current) setStockReady(false) })
+    return () => { active = false }
+  }, [activeDraftKey])
+
+  useEffect(() => {
+    let active = true
+    let checking = false
+    const check = async () => {
+      if (checking || document.visibilityState !== 'visible' || pendingStock.current || pendingCheckout.current) return
+      checking = true
+      const requestId = stockRequest.current
+      try {
+        if (Date.now() - lastActivity.current < 25 * 60 * 1000) {
+          for (const draft of liveDrafts.current.filter(d => d.cart.length)) {
+            try { await posApi.heartbeatDraft(draft.checkoutKey) }
+            catch { if (active && requestId === stockRequest.current && draft.checkoutKey === activeDraftKey) setStockReady(false) }
+          }
+        } else if (active) setStockReady(false)
+        if (active) await refreshStock()
+      } catch { /* Checkout always rechecks authoritative stock. */ }
+      finally { checking = false }
+    }
+    check()
+    const timer = setInterval(check, 60000)
+    window.addEventListener('focus', check)
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', check) }
+  }, [activeDraftKey, refreshStock])
+
+  const commitCart = async (nextCart) => {
+    if (pendingStock.current || pendingCheckout.current) return false
+    pendingStock.current = true
+    ++stockRequest.current
+    setStockBusy(true)
+    lastActivity.current = Date.now()
+    try {
+      await posApi.replaceDraft(activeDraftKey, nextCart)
+      setCart(nextCart)
+      setStockReady(true)
+      await refreshStock().catch(() => {})
+      return true
+    } catch (err) {
+      setStockReady(false)
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Không cập nhật được giữ hàng. Vui lòng thử lại.' })
+      return false
+    } finally { pendingStock.current = false; setStockBusy(false) }
+  }
+
+  useEffect(() => {
+    sessionStorage.setItem(draftStorageKey, JSON.stringify(snapshotOrders()))
+  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, loaiDon, shippingInfo, shippingFee, mienPhiVanChuyen, customerPaid, paymentMethod])
+
+  const loadDraft = (draft) => {
+    ++stockRequest.current
+    lastActivity.current = Date.now()
+    setStockReady(draft.cart.length === 0)
+    setCart(draft.cart)
+    setSelectedCustomer(draft.customer)
+    setCoupon(draft.coupon)
+    setCouponInput(draft.coupon?.maCode || '')
+    setLoaiDon(draft.loaiDon || 'TAI_QUAY')
+    setShippingInfo(draft.shippingInfo || {})
+    setShippingFee(null)
+    setMienPhiVanChuyen(draft.mienPhiVanChuyen || false)
+    setCustomerPaid(draft.customerPaid || 0)
+    setPaymentMethod(draft.paymentMethod || 5)
+    setAvailableCoupons([])
+    setCouponMsg('')
+    setBankInfo(null)
+    setQrDataUrl(null)
   }
 
   const switchOrder = (idx) => {
-    if (idx === currentOrderIdx) return
-    saveCurrentOrder(currentOrderIdx)
-    const target = orders[idx]
-    setCart(target.cart)
-    setSelectedCustomer(target.customer)
-    setCoupon(target.coupon)
-    setCouponInput(target.coupon?.maCode || '')
-    setAvailableCoupons([])
-    setCouponMsg('')
+    if (idx === currentOrderIdx || pendingCheckout.current || pendingStock.current) return
+    const saved = snapshotOrders()
+    setOrders(saved)
+    loadDraft(saved[idx])
     setCurrentOrderIdx(idx)
   }
 
   const addNewOrder = () => {
-    if (orders.length >= 10) {
-      setMsg({ type: 'error', text: 'Đã đạt giới hạn 10 đơn hàng mở. Vui lòng thanh toán hoặc đóng đơn hiện tại.' })
+    if (pendingCheckout.current || pendingStock.current) return
+    const next = appendDraft(snapshotOrders())
+    if (next.index < 0) {
+      setMsg({ type: 'error', text: 'Chỉ được mở tối đa 10 hóa đơn cùng lúc. Hãy thanh toán hoặc đóng một hóa đơn.' })
       return
     }
-    if (orders.length > 0) saveCurrentOrder()
-    orderIdCounter.current += 1
-    const newOrder = { id: orderIdCounter.current, cart: [], customer: null, coupon: null }
-    setOrders(prev => [...prev, newOrder])
-    setCart([])
-    setSelectedCustomer(null)
-    setCoupon(null)
-    setCouponInput('')
-    setCouponMsg('')
-    setAvailableCoupons([])
-    setCurrentOrderIdx(0)
+    setOrders(next.orders)
+    loadDraft(next.orders[next.index])
+    setCurrentOrderIdx(next.index)
   }
 
-  const removeOrder = (idx) => {
-    const newOrders = orders.filter((_, i) => i !== idx)
-    setOrders(newOrders)
-    if (newOrders.length === 0) {
-      setCart([])
-      setSelectedCustomer(null)
-      setCoupon(null)
-      setCouponInput('')
-      setCouponMsg('')
-      setCurrentOrderIdx(0)
-    } else if (idx === currentOrderIdx) {
-      const newIdx = Math.min(idx, newOrders.length - 1)
-      const target = newOrders[newIdx]
-      setCart(target.cart)
-      setSelectedCustomer(target.customer)
-      setCoupon(target.coupon)
-      setCouponInput(target.coupon?.maCode || '')
-      setCurrentOrderIdx(newIdx)
-    } else if (idx < currentOrderIdx) {
-      setCurrentOrderIdx(prev => prev - 1)
-    }
+  const removeOrder = async (idx) => {
+    if (pendingCheckout.current || pendingStock.current) return
+    pendingStock.current = true
+    setStockBusy(true)
+    try {
+      await posApi.clearDraft(orders[idx].checkoutKey)
+      const next = removeDraft(snapshotOrders(), currentOrderIdx, idx)
+      setOrders(next.orders)
+      if (idx === currentOrderIdx) loadDraft(next.orders[next.index])
+      setCurrentOrderIdx(next.index)
+      await refreshStock().catch(() => {})
+    } catch (err) { setMsg({ type: 'error', text: err.response?.data?.message || 'Chưa giải phóng được hàng; vui lòng thử lại' }) }
+    finally { pendingStock.current = false; setStockBusy(false) }
   }
 
   // Chuẩn hóa giá KM đợt: grid/scan trả gia đã trừ + giaGoc,
@@ -224,49 +305,46 @@ export default function AdminPOS() {
     return { gia: base, giaGoc: undefined, pct: 0 }
   }
 
-  const addToCart = (variant) => {
-    const qtyInCart = cart.filter(c => c.maBienThe === variant.maBienThe).reduce((s, c) => s + c.soLuong, 0)
-    if (qtyInCart >= (variant.tonKho || 0)) { setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' }); return }
+  const addToCart = async (variant, quantity = 1) => {
+    if (!Number.isInteger(quantity) || quantity < 1) return false
     const price = effPrice(variant)
-    setCart(prev => {
+    const nextCart = (() => {
+      const prev = cart
       const existing = prev.findIndex(c => c.maBienThe === variant.maBienThe)
       if (existing >= 0) {
         const next = [...prev]
-        next[existing] = { ...next[existing], soLuong: next[existing].soLuong + 1, gia: price.gia, giaGoc: price.giaGoc, phanTramGiamGia: price.pct || undefined }
+        next[existing] = { ...next[existing], soLuong: next[existing].soLuong + quantity, gia: price.gia, giaGoc: price.giaGoc, phanTramGiamGia: price.pct || undefined }
         return next
       }
       return [...prev, {
         maBienThe: variant.maBienThe,
+        maSanPham: variant.maSanPham || variant.sanPham?.maSanPham,
         tenSanPham: variant.tenSanPham,
         kichCo: variant.kichCo || '',
         mauSac: variant.mauSac || '',
         gia: price.gia,
         giaGoc: price.giaGoc,
         phanTramGiamGia: price.pct || undefined,
-        soLuong: 1,
+        soLuong: quantity,
         tonKho: variant.tonKho || 0,
         urlAnh: variant.urlAnhDaiDien || variant.urlAnh || '',
         maSanPhamCode: variant.sku || '',
         sku: variant.sku || '',
       }]
-    })
+    })()
+    if (!await commitCart(nextCart)) return false
     setMsg({ type: 'success', text: `Đã thêm ${variant.tenSanPham} (${variant.mauSac || ''} ${variant.kichCo || ''}) vào giỏ hàng` })
+    return true
   }
 
   const updateQtyCart = (idx, delta) => {
-    setCart(prev => {
-      const updated = prev.map((c, i) => {
+    const updated = cart.map((c, i) => {
         if (i !== idx) return c
         const newQty = c.soLuong + delta
         if (newQty <= 0) return null
-        if (delta > 0 && newQty > c.tonKho) {
-          setMsg({ type: 'error', text: `Chỉ còn ${c.tonKho} sản phẩm trong kho` })
-          return c
-        }
         return { ...c, soLuong: newQty }
       }).filter(Boolean)
-      return updated
-    })
+    return commitCart(updated)
   }
 
   const updateQtyModal = (variant, delta) => {
@@ -278,8 +356,8 @@ export default function AdminPOS() {
     }
   }
 
-  const removeItem = (idx) => setCart(prev => prev.filter((_, i) => i !== idx))
-  const clearCart = () => setCart([])
+  const removeItem = (idx) => commitCart(cart.filter((_, i) => i !== idx))
+  const clearCart = () => commitCart([])
 
   const handleScannedSku = async (rawSku) => {
     const sku = rawSku.trim().toUpperCase()
@@ -293,64 +371,57 @@ export default function AdminPOS() {
 
   const handleApplyCoupon = async (code) => {
     if (!code?.trim()) return
+    const requestId = ++couponRequest.current
+    setCouponChecking(true)
     setCoupon(null)
     setCouponMsg('')
     try {
       const res = await posApi.validateCoupon({
         maCode: code.trim(),
+        maSanPhamIds: [...new Set(cart.map(c => c.maSanPham).filter(Boolean))],
         tongTien: total,
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       })
-      if (res.hopLe) { setCoupon(res); setCouponInput(code); setCouponCodeState(code) }
+      if (requestId !== couponRequest.current) return
+      if (res.hopLe) { setCoupon(res); setCouponInput(code) }
       else { setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không hợp lệ') }
     } catch (err) {
-      setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+      if (requestId === couponRequest.current) setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
+    } finally {
+      if (requestId === couponRequest.current) setCouponChecking(false)
     }
   }
 
-  const autoApplyBestCoupon = useCallback(async () => {
-    if (cart.length === 0) {
-      setCoupon(null)
-      setCouponMsg('')
-      return
-    }
-    try {
-      const res = await getBestOffer(total, [], selectedCustomer?.maNguoiDung)
-      if (res.found) {
-        setCoupon({ hopLe: true, maCode: res.maCode, soTienGiam: res.soTienGiam, kieuGiamGia: res.kieuGiamGia, loaiMa: res.loaiMa || 'COUPON' })
-        setCouponInput(res.maCode)
-        setCouponMsg('')
-      } else {
-        setCoupon(null)
-        setCouponInput('')
-        setCouponMsg('')
-      }
-    } catch {
-      // silently ignore
-    }
-  }, [cart.length, total, selectedCustomer?.maNguoiDung])
-
   useEffect(() => {
-    autoApplyBestCoupon()
-  }, [autoApplyBestCoupon])
-
-  const [couponCodeState, setCouponCodeState] = useState('')
-
-  const fetchAvailableCoupons = useCallback(async () => {
-    if (cart.length === 0) { setAvailableCoupons([]); return }
-    try {
-      const res = await getBestOffer(total, [], selectedCustomer?.maNguoiDung)
-      if (res.found) {
-        setAvailableCoupons([res])
-      } else {
-        setAvailableCoupons([])
-      }
-    } catch { setAvailableCoupons([]) }
-  }, [cart.length, total, selectedCustomer?.maNguoiDung])
-
-  useEffect(() => {
-    if (showCouponPicker) fetchAvailableCoupons()
-  }, [showCouponPicker, fetchAvailableCoupons])
+    let active = true
+    const requestId = ++couponRequest.current
+    const selectedCode = coupon?.maCode
+    setBankInfo(null)
+    setQrDataUrl(null)
+    setCoupon(null)
+    setCouponChecking(false)
+    if (!cart.length) { setAvailableCoupons([]); return }
+    // Revalidate a restored draft's coupon against its own cart and customer.
+    if (selectedCode) {
+      setCouponChecking(true)
+      posApi.validateCoupon({ maCode: selectedCode, tongTien: total,
+        maSanPhamIds: [...new Set(cart.map(c => c.maSanPham).filter(Boolean))],
+        maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
+      }).then(res => {
+        if (!active || requestId !== couponRequest.current) return
+        if (res.hopLe) setCoupon(res)
+        else setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không còn phù hợp với hóa đơn')
+      }).catch(() => {
+        if (active && requestId === couponRequest.current) setCouponMsg('Vui lòng áp dụng lại mã giảm giá')
+      }).finally(() => {
+        if (active && requestId === couponRequest.current) setCouponChecking(false)
+      })
+    }
+    posApi.getAvailableCoupons(total, [...new Set(cart.map(c => c.maSanPham).filter(Boolean))], selectedCustomer?.maNguoiDung)
+      .then(list => { if (active) setAvailableCoupons(list.filter(c => c.kieuGiamGia !== 3)) })
+      .catch(() => { if (active) setAvailableCoupons([]) })
+    return () => { active = false }
+  }, [cart, selectedCustomer, currentOrderIdx])
 
   useEffect(() => {
     if (!showCouponPicker) return
@@ -362,17 +433,39 @@ export default function AdminPOS() {
   }, [showCouponPicker])
 
   const resetOrderState = () => {
-    const newOrders = orders.filter((_, i) => i !== currentOrderIdx)
-    if (newOrders.length === 0) newOrders.push({ id: ++orderIdCounter.current, cart: [], customer: null, coupon: null })
-    setOrders(newOrders)
-    setCart(newOrders[0]?.cart || [])
-    setSelectedCustomer(newOrders[0]?.customer || null)
-    setCoupon(newOrders[0]?.coupon || null)
-    setCouponInput(newOrders[0]?.coupon?.maCode || '')
-    setCurrentOrderIdx(0)
-    setCustomerPaid(0)
+    const next = removeDraft(snapshotOrders(), currentOrderIdx, currentOrderIdx)
+    sessionStorage.setItem(draftStorageKey, JSON.stringify(next.orders))
+    setOrders(next.orders)
+    loadDraft(next.orders[next.index])
+    setCurrentOrderIdx(next.index)
     setShowConfirmOrder(false)
-    setPaymentMethod(5)
+  }
+
+  const checkoutPayload = (method) => {
+    if (pendingStock.current || !stockReady) throw new Error('Vui lòng giữ đủ hàng cho hóa đơn trước khi thanh toán')
+    if (couponChecking) throw new Error('Vui lòng chờ kiểm tra mã giảm giá')
+    const delivery = loaiDon === 'GIAO_HANG'
+    const name = (shippingInfo.hoTen || selectedCustomer?.hoTen || '').trim()
+    const phone = (shippingInfo.soDienThoai || selectedCustomer?.soDienThoai || '').trim()
+    if (delivery && (!name || !/^[0-9]{10,11}$/.test(phone) || !shippingInfo.diaChi?.trim()
+        || !shippingInfo.quanHuyen || !shippingInfo.phuongXa))
+      throw new Error('Vui lòng nhập đầy đủ tên, SĐT và địa chỉ giao hàng')
+    if (delivery && (shippingLoading || shippingFee === null))
+      throw new Error('Chưa tính được phí vận chuyển. Vui lòng thử lại trước khi thanh toán.')
+    const province = provinces.find(p => String(p.ProvinceID) === String(shippingInfo.tinhThanh))?.ProvinceName
+    const district = districts.find(d => String(d.DistrictID) === String(shippingInfo.quanHuyen))?.DistrictName
+    const ward = wards.find(w => String(w.WardCode) === String(shippingInfo.phuongXa))?.WardName
+    return {
+      checkoutKey: orders[currentOrderIdx].checkoutKey,
+      items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
+      maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
+      maCode: coupon?.maCode || undefined, phuongThucThanhToan: method,
+      giaoHang: delivery, tenKhachHang: name || undefined, sdtKhachHang: phone || undefined,
+      diaChiGiaoHang: delivery ? [shippingInfo.diaChi.trim(), ward, district, province].filter(Boolean).join(', ') : undefined,
+      toDistrictId: delivery ? Number(shippingInfo.quanHuyen) : undefined,
+      toWardCode: delivery ? String(shippingInfo.phuongXa) : undefined,
+      mienPhiVanChuyen, expectedTotal: thanhTien,
+    }
   }
 
   const handleCheckout = async (paymentMethod = 5) => {
@@ -382,23 +475,19 @@ export default function AdminPOS() {
     setPlacing(true)
     try {
       if (paymentMethod === 6) {
-        const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
+        checkoutPayload(6)
+        const totalAmount = thanhTien
         const vqRes = await posApi.vietQRPreview(totalAmount)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
       } else {
-        const res = await posApi.createOrder({
-          items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
-          maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
-          maCode: coupon?.maCode || undefined,
-          phuongThucThanhToan: 5,
-        })
+        const res = await posApi.createOrder(checkoutPayload(5))
         if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
         resetOrderState()
         setPayResult(res)
       }
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Tạo đơn thất bại' })
+      setMsg({ type: 'error', text: err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || err.message || 'Tạo đơn thất bại' })
     } finally {
       pendingCheckout.current = false
       setPlacing(false)
@@ -411,19 +500,14 @@ export default function AdminPOS() {
     setShowPaymentModal(false)
     setPlacing(true)
     try {
-      const res = await posApi.createOrder({
-        items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
-        maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
-        maCode: coupon?.maCode || undefined,
-        phuongThucThanhToan: 6,
-      })
+      const res = await posApi.createOrder(checkoutPayload(6))
       if (!res || !res.maDonHang) throw new Error('Phản hồi không hợp lệ')
       resetOrderState()
       setBankInfo(null)
       setQrDataUrl(null)
       setPayResult(res)
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Xác nhận thất bại' })
+      setMsg({ type: 'error', text: err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || err.message || 'Xác nhận thất bại' })
     } finally {
       pendingCheckout.current = false
       setPlacing(false)
@@ -431,14 +515,15 @@ export default function AdminPOS() {
   }
 
   const handleTransferTabActive = async () => {
-    if (!bankInfo && cart.length > 0) {
+    if (cart.length > 0) {
       try {
-        const totalAmount = Math.max(0, total - (coupon?.soTienGiam || 0))
+        checkoutPayload(6)
+        const totalAmount = thanhTien
         const vqRes = await posApi.vietQRPreview(totalAmount)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
       } catch (err) {
-        setMsg({ type: 'error', text: err.response?.data?.message || err.message || 'Không thể tạo mã QR' })
+        setMsg({ type: 'error', text: err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || err.message || 'Không thể tạo mã QR' })
       }
     }
   }
@@ -480,14 +565,13 @@ export default function AdminPOS() {
     } catch { setMsg({ type: 'error', text: 'Không thể tải thông tin sản phẩm' }) }
   }
 
-  const addToCartFromModal = () => {
+  const addToCartFromModal = async () => {
     if (!variantModal) return
     const variant = variantModal.variants?.find(v => v.kichCo?.kichCo === selectedSize && v.mauSac?.mauSac === selectedColor)
     if (!variant) return
-    const qtyInCart = cart.filter(c => c.maBienThe === variant.maBienThe).reduce((s, c) => s + c.soLuong, 0)
-    if (qtyInCart >= (variant.tonKho || 0)) { setMsg({ type: 'error', text: 'Sản phẩm đã hết hàng' }); return }
-    addToCart({
+    const added = await addToCart({
       ...variant,
+      maSanPham: variant.maSanPham || variantModal.product?.maSanPham,
       tenSanPham: variantModal.product?.tenSanPham || '',
       urlAnhDaiDien: variant.urlAnh || variantModal.product?.urlAnhDaiDien,
       gia: variant.gia || 0,
@@ -495,8 +579,8 @@ export default function AdminPOS() {
       mauSac: variant.mauSac?.mauSac || '',
       kichCo: variant.kichCo?.kichCo || '',
       sku: variant.sku || '',
-    })
-    setVariantModal(null)
+    }, Number(vQty))
+    if (added) setVariantModal(null)
   }
 
   return (
@@ -519,6 +603,16 @@ export default function AdminPOS() {
       {orders.length > 0 && (
         <div className="mb-4">
           <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={removeOrder} />
+          <div className="mt-3 flex items-center gap-3 text-sm" role="status" aria-live="polite">
+            <span className={stockReady ? 'text-emerald-deep' : 'text-bordeaux'}>
+              {stockBusy ? 'Đang cập nhật số lượng giữ hàng…' : stockReady
+                ? `Đã giữ ${soLuongSanPham} sản phẩm cho hóa đơn này`
+                : 'Chưa giữ đủ hàng hoặc giữ hàng đã hết hạn'}
+            </span>
+            {!stockReady && !stockBusy && cart.length > 0 && <button type="button" onClick={() => commitCart(cart)}
+              className="font-semibold underline text-[var(--primary-color)]">Kiểm tra và giữ lại hàng</button>}
+            <span className="text-xs text-stone">Giữ hàng hết hạn sau 30 phút không được gia hạn.</span>
+          </div>
         </div>
       )}
 
@@ -702,14 +796,7 @@ export default function AdminPOS() {
                         ) : (
                           <span className="text-xs font-bold text-ink">{mienPhiVanChuyen ? 'Miễn phí' : VND(shippingFee || 0)}</span>
                         )}
-                        <button onClick={() => {
-                          shippingDebounceRef.current = setTimeout(() => {
-                            calcShippingFee({
-                              toWard: shippingInfo.phuongXa, toDistrict: shippingInfo.quanHuyen,
-                              weight: (cart.reduce((s, c) => s + c.soLuong, 0) || 1) * 500,
-                            }).then(r => setShippingFee(r.fee || 0)).catch(() => setShippingFee(30000))
-                          }, 100)
-                        }} className="text-stone hover:text-ink transition p-0.5" title="Tính lại phí">
+                        <button onClick={() => setShippingRefresh(n => n + 1)} className="text-stone hover:text-ink transition p-0.5" title="Tính lại phí">
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
                         </button>
                       </div>
@@ -742,7 +829,7 @@ export default function AdminPOS() {
                       disabled={cart.length === 0}
                       className="flex-1 border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50"
                       onKeyDown={e => { if (e.key === 'Enter') { handleApplyCoupon(e.target.value); setShowCouponPicker(false) } }} />
-                    <button onClick={() => { fetchAvailableCoupons(); setShowCouponPicker(v => !v) }}
+                    <button onClick={() => setShowCouponPicker(v => !v)}
                       disabled={cart.length === 0}
                       className="text-xs font-semibold text-white bg-[var(--primary-color)] hover:bg-[var(--primary-hover)] px-3 py-2 rounded-lg whitespace-nowrap disabled:opacity-40 transition">Chọn mã</button>
                     <span className="text-xs text-stone whitespace-nowrap">Giá trị</span>
@@ -831,7 +918,13 @@ export default function AdminPOS() {
                 </div>
 
                 {/* Checkout */}
-                <button onClick={() => setShowConfirmOrder(true)} disabled={cart.length === 0 || placing}
+                <button onClick={() => {
+                  try {
+                    checkoutPayload(paymentMethod)
+                    if (customerPaid < thanhTien) { setShowPaymentModal(true); return }
+                    setShowConfirmOrder(true)
+                  } catch (err) { setMsg({ type: 'error', text: err.message }) }
+                }} disabled={cart.length === 0 || placing || stockBusy || !stockReady || (loaiDon === 'GIAO_HANG' && (shippingLoading || shippingFee === null))}
                   className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
                   {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
                 </button>
@@ -843,7 +936,7 @@ export default function AdminPOS() {
 
       {/* Modals */}
       <AddProductModal open={showAddModal} onClose={() => setShowAddModal(false)}
-        variants={allVariants} colors={colors} sizes={sizes} cart={cart}
+        variants={allVariants.map(v => ({ ...v, tonKho: availableStock[v.maBienThe] ?? v.tonKhoKhaDung ?? v.tonKho }))} colors={colors} sizes={sizes} cart={cart}
         onAdd={addToCart} onQtyChange={updateQtyModal} />
 
       <CustomerPickerModal open={showCustomerPicker} onClose={() => setShowCustomerPicker(false)}

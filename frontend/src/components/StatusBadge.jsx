@@ -5,6 +5,8 @@ const styles = {
   4: 'bg-emerald-deep/10 text-emerald-deep border-emerald-deep/20',
   5: 'bg-bordeaux/10 text-bordeaux border-bordeaux/20',
   6: 'bg-emerald-deep/10 text-emerald-deep border-emerald-deep/20',
+  7: 'bg-gold/10 text-gold-hover border-gold/20',
+  8: 'bg-royal/10 text-royal border-royal/20',
   9: 'bg-stone/10 text-stone border-stone/20',
 }
 
@@ -15,6 +17,8 @@ const labels = {
   4: 'Chờ giao hàng',
   5: 'Đã hủy',
   6: 'Giao hàng thành công',
+  7: 'Yêu cầu trả hàng',
+  8: 'Đã trả hàng',
   9: 'Giao hàng không thành công',
 }
 

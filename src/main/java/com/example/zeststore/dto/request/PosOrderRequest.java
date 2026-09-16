@@ -11,6 +11,17 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class PosOrderRequest {
+    private boolean giaoHang;
+    private boolean mienPhiVanChuyen;
+
+    @Size(max = 500)
+    private String diaChiGiaoHang;
+
+    private Integer toDistrictId;
+    private String toWardCode;
+
+    @PositiveOrZero
+    private java.math.BigDecimal expectedTotal;
 
     @Valid
     private List<PosItem> items;
@@ -29,7 +40,7 @@ public class PosOrderRequest {
     @Size(max = 50)
     private String maCode;
 
-    @Min(1)
+    @NotNull @Min(5)
     @Max(6)
     private Integer phuongThucThanhToan;
 

@@ -9,6 +9,7 @@ import { Plus, Pencil, Search, Eye, EyeOff, Loader, X, SlidersHorizontal, Packag
 import { Link, useNavigate } from 'react-router-dom'
 import SafeImg from '../../components/SafeImg'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import AdminWorkspaceHeader from '../../components/admin/AdminWorkspaceHeader'
 
 const PAGE_SIZE = 15
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
@@ -102,19 +103,9 @@ export default function AdminProducts() {
 
   return (
     <div className="max-w-[1440px] mx-auto pb-8">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-noir via-noir-800 to-noir p-5 sm:p-6 mb-5 shadow-xl">
-        <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-gold/20 blur-3xl" />
-        <div className="absolute right-24 -bottom-16 h-32 w-32 rounded-full bg-gold/10 blur-2xl" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-gold text-noir flex items-center justify-center shadow-lg"><Package className="h-6 w-6" /></div>
-            <div><p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-1">Hàng hóa & tồn kho</p><h1 className="text-2xl sm:text-3xl font-bold text-ivory">Sản phẩm</h1><p className="text-sm text-ivory/60 mt-1">Tra cứu nhanh, kiểm soát hiển thị và tồn kho như tại quầy POS.</p></div>
-          </div>
-          <Link to="/admin/products/create" className="inline-flex items-center gap-2 bg-gold text-noir px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-gold-hover hover:-translate-y-0.5 transition">
-            <Plus className="h-4 w-4" /> Thêm sản phẩm
-          </Link>
-        </div>
-      </div>
+      <AdminWorkspaceHeader icon={Package} eyebrow="Hàng hóa & tồn kho" title="Sản phẩm" description="Tra cứu nhanh, kiểm soát hiển thị và tồn kho như tại quầy POS.">
+        <Link to="/admin/products/create" className="inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-noir shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-gold-hover"><Plus className="h-4 w-4" /> Thêm sản phẩm</Link>
+      </AdminWorkspaceHeader>
 
       {error && <div className="bg-bordeaux/10 border border-bordeaux/20 text-bordeaux text-sm rounded-lg px-4 py-2 mb-4">{error}</div>}
 

@@ -4,10 +4,47 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8962ec28-7d71-40e4-84ca-f7f567f5743c" name="Changes" comment="">
+    <list default="true" id="55edc808-e804-42b6-a4f1-e80d3758edf6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/admin/pos/ProductCard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/admin/pos/ProductCard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/admin/pos/apiClient.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/admin/pos/apiClient.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/mocks/handlers.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/mocks/handlers.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Checkout.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Checkout.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/ProductDetail.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/ProductDetail.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/AdminOrderDetail.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/AdminOrderDetail.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/AdminOrders.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/AdminOrders.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/AdminPOS.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/AdminPOS.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/admin/Dashboard.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/admin/Dashboard.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/DonHangController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/DonHangController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/MomoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/MomoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/POSController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/POSController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/ThanhToanController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/ThanhToanController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/VietQrController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/VietQrController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/VnPayController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/VnPayController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/ZaloPayController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/controller/ZaloPayController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/dto/request/OrderRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/dto/request/OrderRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/dto/request/PosOrderRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/dto/request/PosOrderRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/dto/request/StatusUpdateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/dto/request/StatusUpdateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/entity/BienTheSanPham.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/entity/BienTheSanPham.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/entity/LichSuDonHang.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/entity/LichSuDonHang.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/entity/PosCartItem.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/entity/PosCartItem.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/repository/CouponUsageLogRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/repository/CouponUsageLogRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/repository/PosCartRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/repository/PosCartRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/DonHangService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/DonHangService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/GioHangService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/GioHangService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/InventoryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/InventoryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/POSService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/POSService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/PaymentService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/PaymentService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/PhieuGiamGiaService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/PhieuGiamGiaService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/PosCartService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/PosCartService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/SanPhamService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/SanPhamService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/ThanhToanService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/ThanhToanService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/VietQrService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/VietQrService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/VnPayService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/example/zeststore/service/VnPayService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/start_backend.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/start_backend.ps1" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/start_jar.bat" beforeDir="false" afterPath="$PROJECT_DIR$/start_jar.bat" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,117 +52,63 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="trung" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="KubernetesApiPersistence">{}</component>
-  <component name="KubernetesApiProvider">{
-  &quot;isMigrated&quot;: true
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;trungtran15326&quot;
+  }
 }</component>
-  <component name="MavenImportPreferences">
-    <option name="generalSettings">
-      <MavenGeneralSettings>
-        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
-      </MavenGeneralSettings>
-    </option>
-  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Thaitudatcam/ZEST_Store.git&quot;,
+    &quot;accountId&quot;: &quot;53a3f788-0421-40df-9380-69bc4650b198&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
-  &quot;customColor&quot;: &quot;&quot;,
-  &quot;associatedIndex&quot;: 5
+  &quot;associatedIndex&quot;: 7
 }</component>
-  <component name="ProjectId" id="3H7hpeul6WStESyaIYsrs7TSew2" />
+  <component name="ProjectId" id="3FlxzRRf7S7G03jpFE4ReEBHuCe" />
   <component name="ProjectViewState">
-    <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Notification.DisplayName-DoNotAsk-DatabaseConfigFileWatcher.found": "New/updated database configurations found",
-    "Notification.DoNotAsk-DatabaseConfigFileWatcher.found": "true",
-    "RequestMappingsPanelOrder0": "0",
-    "RequestMappingsPanelOrder1": "1",
-    "RequestMappingsPanelWidth0": "75",
-    "RequestMappingsPanelWidth1": "75",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "Spring Boot.ZestStoreApplication.executor": "Run",
-    "git-widget-placeholder": "master",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/ZEST_Store/ZestStore",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.0",
-    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;Application.ZestStoreApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.eZestStoreApplication.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/ZEST_Store&quot;
   }
-}]]></component>
-  <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\ZEST_Store\ZestStore\frontend\src\pictures" />
-    </key>
-  </component>
-  <component name="RunManager">
-    <configuration name="ZestStoreApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
-      <module name="ZestStore" />
-      <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.zeststore.ZestStoreApplication" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-  </component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
         <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.26199.169" />
-        <option value="bundled-js-predefined-d6986cc7102b-9c94529fcfe0-JavaScript-IU-252.26199.169" />
       </set>
     </attachedChunks>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="8962ec28-7d71-40e4-84ca-f7f567f5743c" name="Changes" comment="" />
-      <created>1785225199833</created>
+      <changelist id="55edc808-e804-42b6-a4f1-e80d3758edf6" name="Changes" comment="" />
+      <created>1782663719416</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1785225199833</updated>
-      <workItem from="1785225201214" duration="7970000" />
-      <workItem from="1785301834133" duration="620000" />
-      <workItem from="1785345914434" duration="11317000" />
-      <workItem from="1785435432704" duration="2859000" />
-      <workItem from="1785470400429" duration="4022000" />
-      <workItem from="1785504911418" duration="18000" />
-      <workItem from="1785505040102" duration="241000" />
-      <workItem from="1785505298695" duration="6381000" />
-      <workItem from="1785564334913" duration="17959000" />
-      <workItem from="1785652388020" duration="13330000" />
-      <workItem from="1785731729443" duration="371000" />
-      <workItem from="1785733569907" duration="44000" />
-      <workItem from="1785745122188" duration="14363000" />
-      <workItem from="1785812470046" duration="975000" />
-      <workItem from="1788794281170" duration="1706000" />
-      <workItem from="1788879130375" duration="3477000" />
-      <workItem from="1788966811160" duration="3013000" />
-      <workItem from="1789052489202" duration="5548000" />
-      <workItem from="1789137711283" duration="3196000" />
-      <workItem from="1789227517129" duration="3785000" />
-      <workItem from="1789314010723" duration="2330000" />
-      <workItem from="1789393592481" duration="3771000" />
+      <updated>1782663719416</updated>
     </task>
     <servers />
-  </component>
-  <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="3" />
-  </component>
-  <component name="VcsManagerConfiguration">
-    <ignored-roots>
-      <path value="$PROJECT_DIR$/.." />
-    </ignored-roots>
   </component>
 </project>

@@ -64,6 +64,9 @@ public class VietQrService {
         ThanhToan payment = thanhToanRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
         String txId;
+        if (!Integer.valueOf(6).equals(payment.getPhuongThuc())) {
+            throw new BadRequestException("Chỉ xác nhận thủ công giao dịch chuyển khoản VietQR");
+        }
         if (payment.getDonHang() != null) {
             txId = "VIETQR-" + payment.getDonHang().getMaDonHang() + "-" + System.currentTimeMillis();
         } else {

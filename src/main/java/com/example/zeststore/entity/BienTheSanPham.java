@@ -54,6 +54,9 @@ public class BienTheSanPham {
     @Builder.Default
     private Integer tonKho = 0;
 
+    @Transient
+    private Integer tonKhoKhaDung;
+
     @Column(name = "trang_thai")
     @Builder.Default
     private Integer trangThai = 1;

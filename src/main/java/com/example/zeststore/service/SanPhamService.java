@@ -370,6 +370,7 @@ public class SanPhamService {
     public Map<String, Object> getProductDetail(Integer id) {
         SanPham product = getById(id);
         List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPhamAndNgayXoaIsNull(id);
+        variants.forEach(v -> v.setTonKhoKhaDung(Math.max(0, v.getTonKho() - inventoryService.reserved(v.getMaBienThe(), null, null))));
         List<Integer> variantIds = variants.stream().map(BienTheSanPham::getMaBienThe).collect(Collectors.toList());
         List<AnhSanPham> images = variantIds.isEmpty() ? List.of()
                 : anhSanPhamRepository.findByBienThe_MaBienTheIn(variantIds);
@@ -498,6 +499,7 @@ public class SanPhamService {
 
     public List<BienTheSanPham> getVariants(Integer productId) {
         List<BienTheSanPham> variants = bienTheRepository.findBySanPham_MaSanPham(productId);
+        variants.forEach(v -> v.setTonKhoKhaDung(Math.max(0, v.getTonKho() - inventoryService.reserved(v.getMaBienThe(), null, null))));
         campaignDiscountService.applyToVariants(variants);
         return variants;
     }
@@ -744,6 +746,7 @@ public class SanPhamService {
                     row.put("phanTramGiamGia", v.getPhanTramGiamGia());
                     row.put("giaNhap", v.getGiaNhap() != null ? v.getGiaNhap() : 0);
                     row.put("tonKho", v.getTonKho() != null ? v.getTonKho() : 0);
+                    row.put("tonKhoKhaDung", Math.max(0, (v.getTonKho() != null ? v.getTonKho() : 0) - inventoryService.reserved(v.getMaBienThe(), null, null)));
                     row.put("sku", v.getSku() != null ? v.getSku() : "-");
                     result.add(row);
                 }

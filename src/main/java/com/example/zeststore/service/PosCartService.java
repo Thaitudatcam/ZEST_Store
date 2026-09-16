@@ -1,153 +1,128 @@
 package com.example.zeststore.service;
 
-import com.example.zeststore.dto.request.PosCartRequest;
-import com.example.zeststore.entity.BienTheSanPham;
-import com.example.zeststore.entity.NguoiDung;
-import com.example.zeststore.entity.PosCartItem;
+import com.example.zeststore.dto.request.PosDraftRequest;
+import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
-import com.example.zeststore.repository.BienTheSanPhamRepository;
-import com.example.zeststore.repository.NguoiDungRepository;
-import com.example.zeststore.repository.PosCartRepository;
+import com.example.zeststore.repository.*;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class PosCartService {
-
     private final PosCartRepository posCartRepository;
-    private final BienTheSanPhamRepository bienTheRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final DonHangRepository donHangRepository;
     private final InventoryService inventoryService;
-    private final CampaignDiscountService campaignDiscountService;
 
-    /**
-     * Tổng số lượng đang được dự trữ (reserved) cho 1 biến thể trên toàn bộ các quầy POS.
-     * Việc này KHÔNG làm thay đổi ton_kho vật lý - chỉ đếm trên bảng pos_cart_item.
-     */
-    private int totalReservedForVariant(Integer maBienThe) {
-        return inventoryService.reserved(maBienThe, null, null);
+    private String key(String value) {
+        if (value == null || value.isBlank() || value.trim().length() > 64)
+            throw new BadRequestException("Thiếu mã hóa đơn đang giữ hàng");
+        return value.trim();
     }
 
+    /** Absolute quantities make network retries safe (never add twice). */
     @Transactional
-    public PosCartItem addItem(Integer adminUserId, PosCartRequest request) {
-        NguoiDung admin = nguoiDungRepository.findByIdForUpdate(adminUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
-        BienTheSanPham variant = inventoryService.lockVariant(request.getMaBienThe());
+    public Map<String, Object> replace(Integer adminId, PosDraftRequest request) {
+        String draft = key(request.getCheckoutKey());
+        NguoiDung admin = nguoiDungRepository.findByIdForUpdate(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", adminId));
+        if (donHangRepository.findByCheckoutKey("POS:" + adminId + ":" + draft).isPresent())
+            throw new BadRequestException("Hóa đơn đã thanh toán. Vui lòng mở hóa đơn mới");
+        if (request.getItems() == null || request.getItems().size() > 200)
+            throw new BadRequestException("Danh sách sản phẩm không hợp lệ");
+        SortedMap<Integer, Integer> desired = new TreeMap<>();
+        request.getItems().forEach(i -> {
+            if (i == null || i.getMaBienThe() == null || i.getSoLuong() == null || i.getSoLuong() <= 0)
+                throw new BadRequestException("Số lượng phải lớn hơn 0");
+            desired.merge(i.getMaBienThe(), i.getSoLuong(), Math::addExact);
+        });
+        LocalDateTime now = LocalDateTime.now();
+        long otherDrafts = posCartRepository.findByAdmin_MaNguoiDung(adminId).stream()
+                .filter(i -> i.getNgayTao().isAfter(now.minusMinutes(30)))
+                .map(PosCartItem::getDraftKey).filter(Objects::nonNull)
+                .filter(k -> !draft.equals(k)).distinct().count();
+        if (!desired.isEmpty() && otherDrafts >= 10)
+            throw new BadRequestException("Chỉ được giữ hàng cho tối đa 10 hóa đơn cùng lúc");
 
-        if (variant.getNgayXoa() != null) {
-            throw new BadRequestException("Variant no longer exists");
-        }
-
-        // Tồn kho khả dụng cho quầy này = tồn vật lý - tổng số đang dự trữ của mọi quầy (kể cả quầy này).
-        int physical = variant.getTonKho() != null ? variant.getTonKho() : 0;
-        int reserved = totalReservedForVariant(request.getMaBienThe());
-        int available = physical - reserved;
-
-        if (request.getSoLuong() > available) {
-            throw new BadRequestException("Insufficient stock for " + variant.getSku()
-                    + " (available: " + available + ")");
-        }
-
-        PosCartItem existing = posCartRepository
-                .findByAdmin_MaNguoiDungAndBienThe_MaBienThe(adminUserId, request.getMaBienThe())
-                .orElse(null);
-
-        if (existing != null) {
-            boolean expired = existing.getNgayTao().isBefore(LocalDateTime.now().minusMinutes(30));
-            existing.setSoLuong((expired ? 0 : existing.getSoLuong()) + request.getSoLuong());
-            existing.setNgayTao(LocalDateTime.now());
-            return posCartRepository.save(existing);
-        }
-
-        PosCartItem item = PosCartItem.builder()
-                .admin(admin)
-                .bienThe(variant)
-                .soLuong(request.getSoLuong())
-                .build();
-        return posCartRepository.save(item);
-    }
-
-    @Transactional
-    public void releaseItem(Integer adminUserId, PosCartRequest request) {
-        nguoiDungRepository.findByIdForUpdate(adminUserId);
-        inventoryService.lockVariant(request.getMaBienThe());
-        PosCartItem existing = posCartRepository
-                .findByAdmin_MaNguoiDungAndBienThe_MaBienThe(adminUserId, request.getMaBienThe())
-                .orElseThrow(() -> new BadRequestException("Item not found in cart"));
-
-        if (existing.getSoLuong() < request.getSoLuong()) {
-            throw new BadRequestException("Cannot release more than cart quantity");
-        }
-
-        int newQty = existing.getSoLuong() - request.getSoLuong();
-        if (newQty <= 0) {
-            posCartRepository.delete(existing);
-        } else {
-            existing.setSoLuong(newQty);
-            posCartRepository.save(existing);
-        }
+        List<PosCartItem> existing = posCartRepository.findByAdmin_MaNguoiDungAndDraftKey(adminId, draft);
+        SortedSet<Integer> ids = new TreeSet<>(desired.keySet());
+        existing.forEach(i -> ids.add(i.getBienThe().getMaBienThe()));
+        Map<Integer, BienTheSanPham> locked = new HashMap<>();
+        ids.forEach(id -> locked.put(id, inventoryService.lockVariant(id)));
+        desired.forEach((id, qty) -> {
+            BienTheSanPham v = locked.get(id);
+            if (v.getNgayXoa() != null || !Integer.valueOf(1).equals(v.getTrangThai())
+                    || v.getSanPham().getNgayXoa() != null || !Integer.valueOf(1).equals(v.getSanPham().getTrangThai()))
+                throw new BadRequestException("Sản phẩm đã ngừng bán: " + v.getSku());
+            int available = Math.max(0, v.getTonKho() - inventoryService.reserved(id, null, adminId, draft));
+            if (qty > available)
+                throw new BadRequestException("Chỉ còn " + available + " sản phẩm khả dụng cho " + v.getSku());
+        });
+        Map<Integer, PosCartItem> byVariant = new HashMap<>();
+        existing.forEach(i -> byVariant.put(i.getBienThe().getMaBienThe(), i));
+        existing.stream().filter(i -> !desired.containsKey(i.getBienThe().getMaBienThe())).forEach(posCartRepository::delete);
+        desired.forEach((id, qty) -> {
+            PosCartItem item = byVariant.getOrDefault(id, PosCartItem.builder()
+                    .admin(admin).draftKey(draft).bienThe(locked.get(id)).build());
+            item.setSoLuong(qty);
+            item.setNgayTao(now);
+            posCartRepository.save(item);
+        });
+        posCartRepository.flush();
+        return getCart(adminId, draft);
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getCart(Integer adminUserId) {
-        List<PosCartItem> items = posCartRepository.findByAdmin_MaNguoiDung(adminUserId);
-        java.util.Set<Integer> variantIds = items.stream()
-                .map(item -> item.getBienThe().getMaBienThe())
-                .collect(Collectors.toSet());
-        Map<Integer, BigDecimal> pctMap = campaignDiscountService.pctByVariantIds(variantIds);
-        return items.stream().filter(item -> item.getNgayTao().isAfter(LocalDateTime.now().minusMinutes(30))).map(item -> {
-            BienTheSanPham v = item.getBienThe();
-            int physical = v.getTonKho() != null ? v.getTonKho() : 0;
-            // Dự trữ của CÁC QUẦY KHÁC (không kể quầy này) để hiển thị số còn khả dụng cho quầy hiện tại.
-            int reservedOthers = totalReservedForVariant(v.getMaBienThe()) - item.getSoLuong();
-            int tonKhoKhaDung = Math.max(0, physical - reservedOthers);
-            BigDecimal giaGoc = v.getGia() != null ? v.getGia() : BigDecimal.ZERO;
-            BigDecimal pct = pctMap.get(v.getMaBienThe());
-            Map<String, Object> m = new java.util.LinkedHashMap<>();
-            m.put("id", item.getId());
-            m.put("maBienThe", v.getMaBienThe());
-            m.put("tenSanPham", v.getSanPham().getTenSanPham());
-            m.put("kichCo", v.getKichCo().getKichCo());
-            m.put("mauSac", v.getMauSac().getMauSac());
-            m.put("gia", CampaignDiscountService.discountedPrice(giaGoc, pct));
-            m.put("giaGoc", giaGoc);
-            m.put("phanTramGiamGia", pct);
-            m.put("soLuong", item.getSoLuong());
-            m.put("tonKho", physical);
-            m.put("tonKhoKhaDung", tonKhoKhaDung);
-            m.put("urlAnh", v.getUrlAnh() != null ? v.getUrlAnh() : v.getSanPham().getUrlAnhDaiDien());
-            return m;
-        }).collect(Collectors.toList());
+    public Map<String, Object> getCart(Integer adminId, String checkoutKey) {
+        String draft = key(checkoutKey);
+        var active = posCartRepository.findByAdmin_MaNguoiDungAndDraftKey(adminId, draft).stream()
+                .filter(i -> i.getNgayTao().isAfter(LocalDateTime.now().minusMinutes(30))).toList();
+        List<Map<String, Object>> items = active.stream().map(i -> {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("maBienThe", i.getBienThe().getMaBienThe());
+            row.put("soLuong", i.getSoLuong());
+            row.put("expiresAt", i.getNgayTao().plusMinutes(30));
+            return row;
+        }).toList();
+        return Map.of("checkoutKey", draft, "items", items);
     }
 
     @Transactional
-    public void clearCart(Integer adminUserId) {
-        nguoiDungRepository.findByIdForUpdate(adminUserId);
-        posCartRepository.deleteByAdmin_MaNguoiDung(adminUserId);
+    public void clearCart(Integer adminId, String checkoutKey) {
+        String draft = key(checkoutKey);
+        nguoiDungRepository.findByIdForUpdate(adminId);
+        var items = posCartRepository.findByAdmin_MaNguoiDungAndDraftKey(adminId, draft);
+        items.stream().map(i -> i.getBienThe().getMaBienThe()).distinct().sorted().forEach(inventoryService::lockVariant);
+        posCartRepository.deleteAll(items);
     }
 
     @Transactional
-    public void heartbeat(Integer adminUserId) {
-        nguoiDungRepository.findByIdForUpdate(adminUserId);
-        List<PosCartItem> active = posCartRepository.findByAdmin_MaNguoiDung(adminUserId);
-        for (PosCartItem item : active) {
-            // Never resurrect an expired hold: another sale may have taken it.
-            if (item.getNgayTao().isAfter(LocalDateTime.now().minusMinutes(30)))
-                item.setNgayTao(LocalDateTime.now());
-        }
-        posCartRepository.saveAll(active);
+    public void heartbeat(Integer adminId, String checkoutKey) {
+        String draft = key(checkoutKey);
+        nguoiDungRepository.findByIdForUpdate(adminId);
+        var items = posCartRepository.findByAdmin_MaNguoiDungAndDraftKey(adminId, draft);
+        items.stream().map(i -> i.getBienThe().getMaBienThe()).distinct().sorted().forEach(inventoryService::lockVariant);
+        LocalDateTime now = LocalDateTime.now();
+        if (items.isEmpty() || items.stream().anyMatch(i -> !i.getNgayTao().isAfter(now.minusMinutes(30))))
+            throw new BadRequestException("Giữ hàng đã hết hạn. Vui lòng kiểm tra và giữ lại hàng");
+        items.forEach(i -> i.setNgayTao(now));
+        posCartRepository.saveAll(items);
     }
 
+    @Transactional
+    public Map<Integer, Integer> availability(List<Integer> ids) {
+        if (ids.size() > 300) throw new BadRequestException("Tối đa 300 biến thể mỗi lần kiểm tra");
+        Map<Integer, Integer> result = new LinkedHashMap<>();
+        // Use the same locked read for a consistent physical/reserved stock pair.
+        ids.stream().distinct().sorted().forEach(id -> {
+            BienTheSanPham v = inventoryService.lockVariant(id);
+            result.put(id, Math.max(0, v.getTonKho() - inventoryService.reserved(id, null, null)));
+        });
+        return result;
+    }
 }

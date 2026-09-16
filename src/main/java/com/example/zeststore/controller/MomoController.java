@@ -3,6 +3,7 @@ package com.example.zeststore.controller;
 import com.example.zeststore.service.PaymentService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ public class MomoController {
     private final PaymentService paymentService;
 
     @PostMapping("/create/{orderId}")
+    @PreAuthorize("@paymentAccess.canReadOrder(#orderId, authentication)")
     public ResponseEntity<?> createPayment(@PathVariable Integer orderId) {
         return ResponseEntity.ok(paymentService.createMomoPayment(orderId));
     }

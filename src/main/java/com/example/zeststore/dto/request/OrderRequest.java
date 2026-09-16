@@ -15,6 +15,11 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class OrderRequest {
+    @NotBlank @Size(max = 64)
+    private String checkoutKey;
+
+    @PositiveOrZero
+    private BigDecimal expectedTotal;
 
     @NotBlank @Size(max = 100)
     private String tenNguoiNhan;
@@ -32,6 +37,8 @@ public class OrderRequest {
     private String maCodeFreeship;
 
     @NotNull
+    @jakarta.validation.constraints.Min(1)
+    @jakarta.validation.constraints.Max(2)
     private Integer phuongThucThanhToan;
 
     @PositiveOrZero

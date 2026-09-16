@@ -2,6 +2,7 @@ package com.example.zeststore.controller;
 
 import com.example.zeststore.service.VietQrService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,11 +16,13 @@ public class VietQrController {
     private final VietQrService vietQrService;
 
     @PostMapping("/create/{orderId}")
+    @PreAuthorize("@paymentAccess.canReadOrder(#orderId, authentication)")
     public ResponseEntity<?> createPayment(@PathVariable Integer orderId) {
         return ResponseEntity.ok(vietQrService.createQrPayment(orderId));
     }
 
     @PostMapping("/confirm/{paymentId}")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> confirmPayment(@PathVariable Integer paymentId) {
         vietQrService.confirmPayment(paymentId);
         return ResponseEntity.ok(Map.of("message", "Payment confirmed"));
