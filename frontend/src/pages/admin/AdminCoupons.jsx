@@ -230,10 +230,10 @@ export default function AdminCoupons() {
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditing(null)}>
-          <div className="bg-ivory rounded-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Sửa mã giảm giá</h2>
-              <button onClick={() => setEditing(null)} className="text-stone hover:text-ink"><X className="h-5 w-5" /></button>
+          <div className="bg-ivory rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-ivory z-10 flex items-center justify-between p-6 pb-0">
+              <h2 className="text-lg font-bold text-ink">Sửa mã giảm giá</h2>
+              <button onClick={() => setEditing(null)} className="text-stone hover:text-ink p-1"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={(e) => {
               e.preventDefault()
@@ -250,57 +250,97 @@ export default function AdminCoupons() {
               if (v('ngayKetThuc')) payload.ngayKetThuc = v('ngayKetThuc') + 'T23:59:59'
               if (v('soLuong') !== '') payload.soLuong = n('soLuong')
               if (v('giaTriGiamToiDa') !== '') payload.giaTriGiamToiDa = n('giaTriGiamToiDa')
-              payload.congKhai = t.congKhai.checked
+              if (v('kieuGiamGia')) payload.kieuGiamGia = n('kieuGiamGia')
+              const congKhaiRadio = t.querySelectorAll('input[name="congKhai"]')
+              payload.congKhai = congKhaiRadio[0]?.checked ?? true
               setEditPayload(payload); setConfirmEdit(true)
             }}>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 space-y-5">
                 <div>
-                  <label className="text-xs text-stone font-medium">Mã code</label>
-                  <input value={editing.maCode} disabled className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 bg-gray-50 text-stone text-sm" />
+                  <label className="block text-sm font-medium text-ink mb-1.5">Mã code</label>
+                  <input value={editing.maCode} disabled
+                    className="w-full border border-stone/20 rounded-lg px-4 py-2.5 bg-gray-50 text-stone text-sm cursor-not-allowed" />
                 </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Kiểu giảm</label>
-                  <input value={editing.kieuGiamGia === 1 ? 'Giảm %' : editing.kieuGiamGia === 2 ? 'Giảm tiền' : 'Freeship'} disabled
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 bg-gray-50 text-stone text-sm" />
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">Kiểu áp dụng</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4 text-[var(--primary-color)]" />
+                        <span className="text-sm text-ink">Tất cả</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="congKhai" defaultChecked={editing.congKhai === false} className="h-4 w-4 text-[var(--primary-color)]" />
+                        <span className="text-sm text-ink">Cá nhân</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-2">Loại ưu đãi</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="kieuGiamGia" value={1} defaultChecked={editing.kieuGiamGia === 1} className="h-4 w-4 text-[var(--primary-color)]" />
+                        <span className="text-sm text-ink">Giảm %</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="kieuGiamGia" value={2} defaultChecked={editing.kieuGiamGia === 2} className="h-4 w-4 text-[var(--primary-color)]" />
+                        <span className="text-sm text-ink">Giảm tiền</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Giá trị giảm</label>
-                  <input type="number" name="giaTriGiam" defaultValue={editing.giaTriGiam}
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Giá trị giảm {editing.kieuGiamGia === 1 ? '(%)' : '(đ)'}</label>
+                    <input type="number" name="giaTriGiam" defaultValue={editing.giaTriGiam}
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Đơn tối thiểu (đ)</label>
+                    <input type="number" name="giaTriDonToiThieu" defaultValue={editing.giaTriDonToiThieu || ''} placeholder="Để trống = không giới hạn"
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Đơn tối thiểu</label>
-                  <input type="number" name="giaTriDonToiThieu" defaultValue={editing.giaTriDonToiThieu || ''}
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Ngày bắt đầu</label>
+                    <input type="date" name="ngayBatDau" defaultValue={editing.ngayBatDau ? editing.ngayBatDau.slice(0, 10) : ''}
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Ngày kết thúc</label>
+                    <input type="date" name="ngayKetThuc" defaultValue={editing.ngayKetThuc ? editing.ngayKetThuc.slice(0, 10) : ''}
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Ngày bắt đầu</label>
-                  <input type="date" name="ngayBatDau" defaultValue={editing.ngayBatDau ? editing.ngayBatDau.slice(0, 10) : ''}
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Số lượng</label>
+                    <input type="number" name="soLuong" defaultValue={editing.soLuong ?? ''} placeholder="Để trống = không giới hạn"
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Giảm tối đa (đ)</label>
+                    <input type="number" name="giaTriGiamToiDa" defaultValue={editing.giaTriGiamToiDa || ''} placeholder="Để trống = không giới hạn"
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Ngày kết thúc</label>
-                  <input type="date" name="ngayKetThuc" defaultValue={editing.ngayKetThuc ? editing.ngayKetThuc.slice(0, 10) : ''}
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-                </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Số lượng</label>
-                  <input type="number" name="soLuong" defaultValue={editing.soLuong ?? ''} placeholder="Để trống = không giới hạn"
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-                </div>
-                <div>
-                  <label className="text-xs text-stone font-medium">Giảm tối đa</label>
-                  <input type="number" name="giaTriGiamToiDa" defaultValue={editing.giaTriGiamToiDa || ''} placeholder="Để trống = không giới hạn"
-                    className="w-full border border-stone/20 rounded-lg px-4 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-                </div>
+
+                <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
+                  <input type="checkbox" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4 text-[var(--primary-color)]" />
+                  Công khai — hiển thị cho người dùng
+                </label>
               </div>
-              <label className="flex items-center gap-2 text-sm text-ink-soft mt-4">
-                <input type="checkbox" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4" />
-                Công khai — hiển thị cho người dùng
-              </label>
-              <div className="flex gap-3 mt-6">
-                <button type="submit" className="bg-[var(--primary-color)] text-white px-6 py-2 rounded-lg font-semibold hover:opacity-90">Lưu</button>
-                <button type="button" onClick={() => setEditing(null)} className="border border-stone/20 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50">Hủy</button>
+
+              <div className="flex gap-3 p-6 pt-0">
+                <button type="submit"
+                  className="bg-[var(--primary-color)] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition">Lưu</button>
+                <button type="button" onClick={() => setEditing(null)}
+                  className="border border-stone/20 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-50 transition">Hủy</button>
               </div>
             </form>
           </div>
