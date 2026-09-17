@@ -119,6 +119,29 @@ export default function AdminCampaignForm() {
     )
   }
 
+  const toggleAllProducts = () => {
+    const ids = filteredProducts.map(sp => sp.maSanPham)
+    const allSelected = ids.length > 0 && ids.every(x => selectedProducts.includes(x))
+    if (allSelected) {
+      ids.forEach(pid => {
+        const vids = new Set((variantCache[pid] || []).map(v => v.maBienThe))
+        setSelectedVariants(sv => sv.filter(x => !vids.has(x)))
+      })
+      setSelectedProducts(prev => prev.filter(x => !ids.includes(x)))
+    } else {
+      ids.forEach(pid => loadVariants(pid))
+      setSelectedProducts(prev => [...new Set([...prev, ...ids])])
+    }
+  }
+
+  const toggleAllFilteredVariants = () => {
+    const ids = filteredVariants.map(v => v.maBienThe)
+    const all = ids.length > 0 && ids.every(x => selectedVariants.includes(x))
+    setSelectedVariants(prev =>
+      all ? prev.filter(x => !ids.includes(x)) : [...new Set([...prev, ...ids])],
+    )
+  }
+
   const preview = useMemo(() => {
     const val = Number(form.giaTriGiam)
     if (!val || val <= 0) return null
@@ -350,7 +373,12 @@ export default function AdminCampaignForm() {
               <table className="w-full text-sm">
                 <thead className="bg-ivory-100 border-b sticky top-0">
                   <tr>
-                    <th className="w-10 px-2 py-2"></th>
+                    <th className="w-10 px-2 py-2">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleAllProducts() }}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${filteredProducts.length > 0 && filteredProducts.every(sp => selectedProducts.includes(sp.maSanPham)) ? 'bg-gold text-noir' : 'bg-ivory-100 text-stone hover:bg-gold/30'}`}>
+                        {filteredProducts.length > 0 && filteredProducts.every(sp => selectedProducts.includes(sp.maSanPham)) ? '✓' : '+'}
+                      </button>
+                    </th>
                     <th className="text-center px-2 py-2 font-semibold text-stone w-14">Ảnh</th>
                     <th className="text-left px-2 py-2 font-semibold text-stone">MÃ SẢN PHẨM</th>
                     <th className="text-left px-2 py-2 font-semibold text-stone">TÊN SẢN PHẨM</th>
@@ -437,7 +465,12 @@ export default function AdminCampaignForm() {
               <table className="w-full text-sm">
                 <thead className="bg-ivory-100 border-y">
                   <tr>
-                    <th className="w-10 px-2 py-2"></th>
+                    <th className="w-10 px-2 py-2">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleAllFilteredVariants() }}
+                        className={`w-5 h-5 rounded flex items-center justify-center text-xs font-bold transition ${filteredVariants.length > 0 && filteredVariants.every(v => selectedVariants.includes(v.maBienThe)) ? 'bg-gold text-noir' : 'bg-ivory-100 text-stone hover:bg-gold/30'}`}>
+                        {filteredVariants.length > 0 && filteredVariants.every(v => selectedVariants.includes(v.maBienThe)) ? '✓' : '+'}
+                      </button>
+                    </th>
                     <th className="text-center px-2 py-2 font-semibold text-stone w-14">Ảnh</th>
                     <th className="text-left px-2 py-2 font-semibold text-stone">TÊN SẢN PHẨM</th>
                     <th className="text-left px-2 py-2 font-semibold text-stone">MÃ CHI TIẾT</th>
