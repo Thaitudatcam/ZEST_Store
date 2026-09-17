@@ -447,7 +447,7 @@ export default function AdminCoupons() {
                       </div>
                     )}
 
-                    {(editUserSearch.trim().length >= 2 && allEditCustomers.length > 0) && (
+                    {(editUserSearch.trim().length < 2 && allEditCustomers.length > 0) && (
                       <div className="flex items-center justify-center gap-2 py-2 border-t border-stone/10">
                         <button disabled={editUserPage === 0} onClick={() => setEditUserPage(p => p - 1)}
                           className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Trước</button>
