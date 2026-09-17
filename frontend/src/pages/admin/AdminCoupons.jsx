@@ -427,7 +427,9 @@ export default function AdminCoupons() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-stone/10">
-                            {(editUserSearch.trim().length >= 2 ? editUserResults : allEditCustomers).map((u, idx) => {
+                            {(editUserSearch.trim().length >= 2 ? editUserResults : allEditCustomers)
+                              .slice(editUserPage * EDIT_USER_PAGE_SIZE, (editUserPage + 1) * EDIT_USER_PAGE_SIZE)
+                              .map((u, idx) => {
                               const isAssigned = editUsers.some(eu => eu.maNguoiDung === u.maNguoiDung)
                               const displayIdx = editUserSearch.trim().length >= 2 ? idx + 1 : (editUserPage * EDIT_USER_PAGE_SIZE + idx + 1)
                               return (
