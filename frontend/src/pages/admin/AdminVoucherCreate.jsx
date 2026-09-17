@@ -27,7 +27,7 @@ export default function AdminVoucherCreate() {
   const [confirmSave, setConfirmSave] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [userPage, setUserPage] = useState(0)
-  const USER_PAGE_SIZE = 10
+  const USER_PAGE_SIZE = 5
 
   const searchTimerRef = useState({ current: null })[0]
 
