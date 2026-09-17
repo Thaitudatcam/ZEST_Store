@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createCoupon, searchCustomers } from '../../api/admin'
+import { createCoupon, searchCustomers, getCustomers } from '../../api/admin'
 import { grantVoucher } from '../../api/userVoucher'
 import { ArrowLeft, Search } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -22,6 +22,8 @@ export default function AdminVoucherCreate() {
   const [userSearch, setUserSearch] = useState('')
   const [userResults, setUserResults] = useState([])
   const [searchingUser, setSearchingUser] = useState(false)
+  const [allCustomers, setAllCustomers] = useState([])
+  const [allCustomersLoaded, setAllCustomersLoaded] = useState(false)
   const [confirmSave, setConfirmSave] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -36,6 +38,18 @@ export default function AdminVoucherCreate() {
     } catch { setUserResults([]) }
     finally { setSearchingUser(false) }
   }, [])
+
+  useEffect(() => {
+    if (form.kieuApDung === 'ca-nhan' && !allCustomersLoaded) {
+      getCustomers().then(res => {
+        setAllCustomers(Array.isArray(res) ? res : [])
+        setAllCustomersLoaded(true)
+      }).catch(() => { setAllCustomersLoaded(true) })
+    }
+    if (form.kieuApDung !== 'ca-nhan') {
+      setAllCustomersLoaded(false)
+    }
+  }, [form.kieuApDung, allCustomersLoaded])
 
   useEffect(() => {
     const timer = searchTimerRef
@@ -232,7 +246,7 @@ export default function AdminVoucherCreate() {
 
             {searchingUser && <p className="text-xs text-stone mb-2">Đang tìm...</p>}
 
-            {userResults.length > 0 && (
+            {(userSearch.trim().length >= 2 && userResults.length > 0) || (userSearch.trim().length < 2 && allCustomers.length > 0) && (
               <div className="border border-stone/10 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-stone/10">
@@ -248,7 +262,7 @@ export default function AdminVoucherCreate() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone/10">
-                    {userResults.map((u, idx) => {
+                    {(userSearch.trim().length >= 2 ? userResults : allCustomers).map((u, idx) => {
                       const isSelected = selectedUsers.some(s => s.maNguoiDung === u.maNguoiDung)
                       return (
                         <tr key={u.maNguoiDung}
@@ -272,7 +286,7 @@ export default function AdminVoucherCreate() {
               </div>
             )}
 
-            {userResults.length === 0 && userSearch.trim().length >= 2 && !searchingUser && (
+            {userResults.length === 0 && allCustomers.length === 0 && userSearch.trim().length >= 2 && !searchingUser && (
               <p className="text-xs text-stone text-center py-4">Không tìm thấy khách hàng</p>
             )}
           </div>
