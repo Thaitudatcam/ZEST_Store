@@ -400,11 +400,6 @@ export default function AdminCoupons() {
                   <div className="border-t border-stone/10 pt-5">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-bold text-ink uppercase tracking-wide">DANH SÁCH KHÁCH HÀNG</h3>
-                      {editUsers.length > 0 && (
-                        <span className="bg-[var(--primary-color)] text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-                          {editUsers.length} khách hàng
-                        </span>
-                      )}
                     </div>
 
                     <div className="relative mb-4">
