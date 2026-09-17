@@ -449,12 +449,12 @@ export default function AdminCoupons() {
 
                     {(editUserSearch.trim().length < 2 && allEditCustomers.length > 0) && (
                       <div className="flex items-center justify-center gap-2 py-2 border-t border-stone/10">
-                        <button disabled={editUserPage === 0} onClick={() => setEditUserPage(p => p - 1)}
+                        <button type="button" disabled={editUserPage === 0} onClick={() => setEditUserPage(p => p - 1)}
                           className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Trước</button>
                         <span className="text-xs text-stone">
                           Trang {editUserPage + 1} / {Math.ceil(allEditCustomers.length / EDIT_USER_PAGE_SIZE)}
                         </span>
-                        <button disabled={editUserPage >= Math.ceil(allEditCustomers.length / EDIT_USER_PAGE_SIZE) - 1} onClick={() => setEditUserPage(p => p + 1)}
+                        <button type="button" disabled={editUserPage >= Math.ceil(allEditCustomers.length / EDIT_USER_PAGE_SIZE) - 1} onClick={() => setEditUserPage(p => p + 1)}
                           className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Sau</button>
                       </div>
                     )}
