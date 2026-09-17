@@ -23,6 +23,8 @@ export default function AdminUsers() {
   const [form, setForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '', choPhepBanHang: true })
   const [page, setPage] = useState(0)
   const [empPage, setEmpPage] = useState(0)
+  const [pageSize, setPageSize] = useState(5)
+  const [empPageSize, setEmpPageSize] = useState(5)
   const [sortField, setSortField] = useState('')
   const [sortDir, setSortDir] = useState('asc')
   const [selectedIds, setSelectedIds] = useState([])
@@ -31,7 +33,6 @@ export default function AdminUsers() {
   const [confirmSave, setConfirmSave] = useState(false)
   const [showCustForm, setShowCustForm] = useState(false)
   const [custForm, setCustForm] = useState({ hoTen: '', email: '', soDienThoai: '', matKhau: '' })
-  const PAGE_SIZE = 20
 
   // Address modal state
   const [addrModal, setAddrModal] = useState(false)
@@ -225,10 +226,10 @@ export default function AdminUsers() {
   useEffect(() => { setPage(0); setEmpPage(0); setSelectedIds([]) }, [search, statusFilter, roleFilter, genderFilter])
   const sortedCustomers = sortData(filteredCustomers)
   const sortedEmployees = sortData(filteredEmployees)
-  const totalPages = Math.ceil(sortedCustomers.length / PAGE_SIZE)
-  const empTotalPages = Math.ceil(sortedEmployees.length / PAGE_SIZE)
-  const pagedCustomers = sortedCustomers.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-  const pagedEmployees = sortedEmployees.slice(empPage * PAGE_SIZE, (empPage + 1) * PAGE_SIZE)
+  const totalPages = Math.ceil(sortedCustomers.length / pageSize)
+  const empTotalPages = Math.ceil(sortedEmployees.length / empPageSize)
+  const pagedCustomers = sortedCustomers.slice(page * pageSize, (page + 1) * pageSize)
+  const pagedEmployees = sortedEmployees.slice(empPage * empPageSize, (empPage + 1) * empPageSize)
 
   return (
     <div>
@@ -324,7 +325,7 @@ export default function AdminUsers() {
               <tbody className="divide-y divide-gray-100">
                 {pagedCustomers.map((c, idx) => (
                   <tr key={c.maNguoiDung} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-center text-gray-500">{page * PAGE_SIZE + idx + 1}</td>
+                    <td className="px-4 py-3 text-center text-gray-500">{page * pageSize + idx + 1}</td>
                     <td className="px-4 py-3 text-center font-medium text-gray-700">{c.maNguoiDungCode || `KH${String(c.maNguoiDung).padStart(3, '0')}`}</td>
                     <td className="px-4 py-3 font-semibold text-gray-800">{c.hoTen}</td>
                     <td className="px-4 py-3 text-gray-700">{c.soDienThoai || '-'}</td>
@@ -360,18 +361,24 @@ export default function AdminUsers() {
                 ))}
               </tbody>
             </table>
-          </div>
-          {pagedCustomers.length === 0 && <p className="text-center text-gray-400 py-8">Chưa có khách hàng</p>}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
-              Hiển thị {pagedCustomers.length > 0 ? page * PAGE_SIZE + 1 : 0} - {Math.min((page + 1) * PAGE_SIZE, sortedCustomers.length)} trên tổng số {sortedCustomers.length} khách hàng
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Hiển thị</span>
-              <span className="text-sm font-medium">{PAGE_SIZE}</span>
-              <span className="text-sm text-gray-500">dòng</span>
+</div>
+            {pagedCustomers.length === 0 && <p className="text-center text-gray-400 py-8">Chưa có khách hàng</p>}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+              <p className="text-sm text-gray-500">
+                Hiển thị {pagedCustomers.length > 0 ? page * pageSize + 1 : 0} - {Math.min((page + 1) * pageSize, sortedCustomers.length)} trên tổng số {sortedCustomers.length} khách hàng
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Hiển thị</span>
+                <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}
+                  className="text-sm font-medium border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--primary-color)]">
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+                <span className="text-sm text-gray-500">dòng</span>
+              </div>
             </div>
-          </div>
         </div>
       )}
 
@@ -400,7 +407,7 @@ export default function AdminUsers() {
                   const colorIdx = (e.hoTen || '').charCodeAt(0) % avatarColors.length
                   return (
                     <tr key={e.maNguoiDung} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-center text-gray-500">{empPage * PAGE_SIZE + idx + 1}</td>
+                      <td className="px-4 py-3 text-center text-gray-500">{empPage * empPageSize + idx + 1}</td>
                       <td className="px-4 py-3 text-center">
                         <div className={`w-10 h-10 rounded-full ${avatarColors[colorIdx]} flex items-center justify-center text-white font-bold text-sm mx-auto`}>
                           {initials}
@@ -440,11 +447,17 @@ export default function AdminUsers() {
           {pagedEmployees.length === 0 && <p className="text-center text-gray-400 py-8">Chưa có nhân viên</p>}
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
             <p className="text-sm text-gray-500">
-              Hiển thị {pagedEmployees.length > 0 ? empPage * PAGE_SIZE + 1 : 0} - {Math.min((empPage + 1) * PAGE_SIZE, sortedEmployees.length)} trên tổng số {sortedEmployees.length} nhân viên
+              Hiển thị {pagedEmployees.length > 0 ? empPage * empPageSize + 1 : 0} - {Math.min((empPage + 1) * empPageSize, sortedEmployees.length)} trên tổng số {sortedEmployees.length} nhân viên
             </p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Hiển thị</span>
-              <span className="text-sm font-medium">{PAGE_SIZE}</span>
+              <select value={empPageSize} onChange={(e) => { setEmpPageSize(Number(e.target.value)); setEmpPage(0); }}
+                className="text-sm font-medium border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--primary-color)]">
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
               <span className="text-sm text-gray-500">dòng</span>
             </div>
           </div>
