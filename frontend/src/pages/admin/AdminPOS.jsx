@@ -72,15 +72,7 @@ export default function AdminPOS() {
   const [showCouponPicker, setShowCouponPicker] = useState(false)
   const [bankInfo, setBankInfo] = useState(null)
   const [qrDataUrl, setQrDataUrl] = useState(null)
-  const [loaiDon, setLoaiDon] = useState(initial.loaiDon || 'TAI_QUAY')
-  const [shippingInfo, setShippingInfo] = useState(initial.shippingInfo || {})
-  const [shippingFee, setShippingFee] = useState(null)
-  const [shippingRefresh, setShippingRefresh] = useState(0)
-  const [shippingLoading, setShippingLoading] = useState(false)
-  const [provinces, setProvinces] = useState([])
-  const [districts, setDistricts] = useState([])
-  const [wards, setWards] = useState([])
-  const [mienPhiVanChuyen, setMienPhiVanChuyen] = useState(initial.mienPhiVanChuyen || false)
+  const [loaiDon] = useState('TAI_QUAY')
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
@@ -130,47 +122,13 @@ export default function AdminPOS() {
     }).catch(() => {})
   }, [categoryId])
 
-  useEffect(() => {
-    posApi.getProvinces().then(setProvinces).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (!shippingInfo.tinhThanh) { setDistricts([]); setWards([]); return }
-    posApi.getDistricts(shippingInfo.tinhThanh).then(setDistricts).catch(() => setDistricts([]))
-  }, [shippingInfo.tinhThanh])
-
-  useEffect(() => {
-    if (!shippingInfo.quanHuyen) { setWards([]); return }
-    posApi.getWards(shippingInfo.quanHuyen).then(setWards).catch(() => setWards([]))
-  }, [shippingInfo.quanHuyen])
-
-  useEffect(() => {
-    let cancelled = false
-    setShippingFee(null)
-    if (loaiDon !== 'GIAO_HANG' || !shippingInfo.quanHuyen || !shippingInfo.phuongXa) {
-      setShippingLoading(false)
-      return
-    }
-    setShippingLoading(true)
-    const timer = setTimeout(() => {
-      posApi.calculateShipping({
-        serviceTypeId: 2, toDistrictId: Number(shippingInfo.quanHuyen),
-        toWardCode: String(shippingInfo.phuongXa),
-        weight: Math.max(1, cart.reduce((s, c) => s + c.soLuong, 0)) * 500,
-      }).then(r => { if (!cancelled) setShippingFee(r.fee) })
-        .catch(() => { if (!cancelled) setMsg({ type: 'error', text: 'Không tính được phí giao hàng. Vui lòng thử lại.' }) })
-        .finally(() => { if (!cancelled) setShippingLoading(false) })
-    }, 300)
-    return () => { cancelled = true; clearTimeout(timer) }
-  }, [loaiDon, shippingInfo.quanHuyen, shippingInfo.phuongXa, cart, shippingRefresh])
-
-  const phiVanChuyen = loaiDon === 'GIAO_HANG' && !mienPhiVanChuyen ? shippingFee : 0
+  const phiVanChuyen = 0
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
-  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0) + phiVanChuyen)
+  const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0))
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
 
   const snapshotOrders = () => orders.map((o, i) => i === currentOrderIdx
-    ? { ...o, cart, customer: selectedCustomer, coupon, loaiDon, shippingInfo, shippingFee, mienPhiVanChuyen, customerPaid, paymentMethod }
+    ? { ...o, cart, customer: selectedCustomer, coupon, loaiDon: 'TAI_QUAY', customerPaid, paymentMethod }
     : o)
 
   const liveDrafts = useRef([])
@@ -238,7 +196,7 @@ export default function AdminPOS() {
 
   useEffect(() => {
     sessionStorage.setItem(draftStorageKey, JSON.stringify(snapshotOrders()))
-  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, loaiDon, shippingInfo, shippingFee, mienPhiVanChuyen, customerPaid, paymentMethod])
+  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, loaiDon, customerPaid, paymentMethod])
 
   const loadDraft = (draft) => {
     ++stockRequest.current
@@ -248,10 +206,6 @@ export default function AdminPOS() {
     setSelectedCustomer(draft.customer)
     setCoupon(draft.coupon)
     setCouponInput(draft.coupon?.maCode || '')
-    setLoaiDon(draft.loaiDon || 'TAI_QUAY')
-    setShippingInfo(draft.shippingInfo || {})
-    setShippingFee(null)
-    setMienPhiVanChuyen(draft.mienPhiVanChuyen || false)
     setCustomerPaid(draft.customerPaid || 0)
     setPaymentMethod(draft.paymentMethod || 5)
     setAvailableCoupons([])
@@ -444,27 +398,18 @@ export default function AdminPOS() {
   const checkoutPayload = (method) => {
     if (pendingStock.current || !stockReady) throw new Error('Vui lòng giữ đủ hàng cho hóa đơn trước khi thanh toán')
     if (couponChecking) throw new Error('Vui lòng chờ kiểm tra mã giảm giá')
-    const delivery = loaiDon === 'GIAO_HANG'
-    const name = (shippingInfo.hoTen || selectedCustomer?.hoTen || '').trim()
-    const phone = (shippingInfo.soDienThoai || selectedCustomer?.soDienThoai || '').trim()
-    if (delivery && (!name || !/^[0-9]{10,11}$/.test(phone) || !shippingInfo.diaChi?.trim()
-        || !shippingInfo.quanHuyen || !shippingInfo.phuongXa))
-      throw new Error('Vui lòng nhập đầy đủ tên, SĐT và địa chỉ giao hàng')
-    if (delivery && (shippingLoading || shippingFee === null))
-      throw new Error('Chưa tính được phí vận chuyển. Vui lòng thử lại trước khi thanh toán.')
-    const province = provinces.find(p => String(p.ProvinceID) === String(shippingInfo.tinhThanh))?.ProvinceName
-    const district = districts.find(d => String(d.DistrictID) === String(shippingInfo.quanHuyen))?.DistrictName
-    const ward = wards.find(w => String(w.WardCode) === String(shippingInfo.phuongXa))?.WardName
+    const name = (selectedCustomer?.hoTen || '').trim()
+    const phone = (selectedCustomer?.soDienThoai || '').trim()
     return {
       checkoutKey: orders[currentOrderIdx].checkoutKey,
       items: cart.map(c => ({ maBienThe: c.maBienThe, soLuong: c.soLuong })),
       maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       maCode: coupon?.maCode || undefined, phuongThucThanhToan: method,
-      giaoHang: delivery, tenKhachHang: name || undefined, sdtKhachHang: phone || undefined,
-      diaChiGiaoHang: delivery ? [shippingInfo.diaChi.trim(), ward, district, province].filter(Boolean).join(', ') : undefined,
-      toDistrictId: delivery ? Number(shippingInfo.quanHuyen) : undefined,
-      toWardCode: delivery ? String(shippingInfo.phuongXa) : undefined,
-      mienPhiVanChuyen, expectedTotal: thanhTien,
+      giaoHang: false, tenKhachHang: name || undefined, sdtKhachHang: phone || undefined,
+      diaChiGiaoHang: undefined,
+      toDistrictId: undefined,
+      toWardCode: undefined,
+      mienPhiVanChuyen: false, expectedTotal: thanhTien,
     }
   }
 
@@ -745,79 +690,13 @@ export default function AdminPOS() {
               ) : (
                 <p className="text-sm text-stone">Đơn đang được đặt dưới dạng "Khách lẻ" (Mua ẩn danh)</p>
               )}
-
-              {/* Shipping Address (when delivery mode) */}
-              {loaiDon === 'GIAO_HANG' && (
-                <div className="mt-4 pt-4 border-t border-stone/10">
-                  <p className="text-xs font-bold text-ink mb-3">Địa chỉ nhận hàng</p>
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-[11px] font-semibold text-stone mb-1 block">Họ và tên người nhận</label>
-                      <input value={shippingInfo?.hoTen || selectedCustomer?.hoTen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, hoTen: e.target.value }))}
-                        placeholder="Nguyễn Văn A" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-stone mb-1 block">Số điện thoại</label>
-                      <input value={shippingInfo?.soDienThoai || selectedCustomer?.soDienThoai || ''} onChange={e => setShippingInfo(prev => ({ ...prev, soDienThoai: e.target.value }))}
-                        placeholder="0912345678" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-stone mb-1 block">Địa chỉ cụ thể</label>
-                      <input value={shippingInfo?.diaChi || ''} onChange={e => setShippingInfo(prev => ({ ...prev, diaChi: e.target.value }))}
-                        placeholder="Ký túc xá khu B, Đại học Quốc gia" className="w-full border border-stone/20 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <select value={shippingInfo?.tinhThanh || ''} onChange={e => setShippingInfo(prev => ({ ...prev, tinhThanh: e.target.value, quanHuyen: '', phuongXa: '' }))}
-                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]">
-                        <option value="">Tỉnh/TP</option>
-                        {provinces?.map(p => <option key={p.ProvinceID || p.ma} value={p.ProvinceID || p.ma}>{p.ProvinceName || p.ten}</option>)}
-                      </select>
-                      <select value={shippingInfo?.quanHuyen || ''} onChange={e => setShippingInfo(prev => ({ ...prev, quanHuyen: e.target.value, phuongXa: '' }))}
-                        disabled={!shippingInfo?.tinhThanh}
-                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
-                        <option value="">Quận/Huyện</option>
-                        {districts?.map(d => <option key={d.DistrictID || d.ma} value={d.DistrictID || d.ma}>{d.DistrictName || d.ten}</option>)}
-                      </select>
-                      <select value={shippingInfo?.phuongXa || ''} onChange={e => setShippingInfo(prev => ({ ...prev, phuongXa: e.target.value }))}
-                        disabled={!shippingInfo?.quanHuyen}
-                        className="border border-stone/20 rounded-lg px-2 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] disabled:opacity-50">
-                        <option value="">Phường/Xã</option>
-                        {wards?.map(w => <option key={w.WardCode || w.ma} value={w.WardCode || w.ma}>{w.WardName || w.ten}</option>)}
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between bg-ivory-100 rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-stone">Phí vận chuyển</span>
-                        <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-semibold">GHN</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {shippingLoading ? (
-                          <span className="text-xs text-stone">Đang tính...</span>
-                        ) : (
-                          <span className="text-xs font-bold text-ink">{mienPhiVanChuyen ? 'Miễn phí' : VND(shippingFee || 0)}</span>
-                        )}
-                        <button onClick={() => setShippingRefresh(n => n + 1)} className="text-stone hover:text-ink transition p-0.5" title="Tính lại phí">
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" /></svg>
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-stone italic">Phí cập nhật theo thời gian thực.</p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Payment Info */}
             <div className="bg-white rounded-2xl border border-stone/10 p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-ink">Thông tin thanh toán</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-stone">{loaiDon === 'GIAO_HANG' ? 'Giao hàng' : 'Tại quầy'}</span>
-                  <button onClick={() => setLoaiDon(loaiDon === 'TAI_QUAY' ? 'GIAO_HANG' : 'TAI_QUAY')}
-                    className={`relative w-11 h-6 rounded-full transition-colors ${loaiDon === 'GIAO_HANG' ? 'bg-[var(--primary-color)]' : 'bg-stone/30'}`}>
-                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${loaiDon === 'GIAO_HANG' ? 'translate-x-5' : ''}`} />
-                  </button>
-                </div>
+                <span className="text-xs text-stone">Tại quầy</span>
               </div>
               <div className="space-y-3">
                 {/* Coupon */}
@@ -880,12 +759,6 @@ export default function AdminPOS() {
                   <div className="flex justify-between text-stone">
                     <span>Tiền hàng</span><span>{VND(total)}</span>
                   </div>
-                  {loaiDon === 'GIAO_HANG' && (
-                    <div className="flex justify-between text-stone">
-                      <span>Phí vận chuyển (GHN)</span>
-                      <span>{mienPhiVanChuyen ? <span className="text-emerald-deep">Miễn phí</span> : VND(shippingFee || 0)}</span>
-                    </div>
-                  )}
                   {coupon && (
                     <div className="flex justify-between text-emerald-deep">
                       <span>Giảm giá</span><span>-{VND(coupon.soTienGiam)}</span>
@@ -924,7 +797,7 @@ export default function AdminPOS() {
                     if (customerPaid < thanhTien) { setShowPaymentModal(true); return }
                     setShowConfirmOrder(true)
                   } catch (err) { setMsg({ type: 'error', text: err.message }) }
-                }} disabled={cart.length === 0 || placing || stockBusy || !stockReady || (loaiDon === 'GIAO_HANG' && (shippingLoading || shippingFee === null))}
+                }} disabled={cart.length === 0 || placing || stockBusy || !stockReady}
                   className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
                   {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
                 </button>
@@ -942,21 +815,6 @@ export default function AdminPOS() {
       <CustomerPickerModal open={showCustomerPicker} onClose={() => setShowCustomerPicker(false)}
         onSelect={async (c) => {
           setSelectedCustomer(c)
-          try {
-            const addrs = await posApi.getCustomerAddresses(c.maNguoiDung)
-            const defaultAddr = addrs.find(a => a.laMacDinh) || addrs[0]
-            if (defaultAddr) {
-              setShippingInfo(prev => ({
-                ...prev,
-                hoTen: defaultAddr.tenNguoiNhan || c.hoTen || '',
-                soDienThoai: defaultAddr.soDienThoai || c.soDienThoai || '',
-                diaChi: defaultAddr.chiTietDiaChi || '',
-                tinhThanh: defaultAddr.provinceId ? String(defaultAddr.provinceId) : (defaultAddr.tinhThanhPho || ''),
-                quanHuyen: defaultAddr.districtId ? String(defaultAddr.districtId) : (defaultAddr.quanHuyen || ''),
-                phuongXa: defaultAddr.wardCode || (defaultAddr.phuongXa || ''),
-              }))
-            }
-          } catch {}
         }} />
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
