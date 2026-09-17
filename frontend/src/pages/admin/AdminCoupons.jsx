@@ -39,7 +39,7 @@ export default function AdminCoupons() {
   const [allEditCustomers, setAllEditCustomers] = useState([])
   const [allEditCustomersLoaded, setAllEditCustomersLoaded] = useState(false)
   const [editUserPage, setEditUserPage] = useState(0)
-  const EDIT_USER_PAGE_SIZE = 10
+  const EDIT_USER_PAGE_SIZE = 5
   const [confirmRevokeUser, setConfirmRevokeUser] = useState(null)
 
   const load = (filterParams = {}) => {
