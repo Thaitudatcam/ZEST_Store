@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon, getCouponUsers, revokeCouponUser } from '../../api/admin'
+import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon, getCouponUsers, revokeCouponUser, getCustomers } from '../../api/admin'
 import { grantVoucher } from '../../api/userVoucher'
 import { Plus, RefreshCw, X, PenSquare, Search } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -36,6 +36,10 @@ export default function AdminCoupons() {
   const [editUserSearch, setEditUserSearch] = useState('')
   const [editUserResults, setEditUserResults] = useState([])
   const [searchingEditUser, setSearchingEditUser] = useState(false)
+  const [allEditCustomers, setAllEditCustomers] = useState([])
+  const [allEditCustomersLoaded, setAllEditCustomersLoaded] = useState(false)
+  const [editUserPage, setEditUserPage] = useState(0)
+  const EDIT_USER_PAGE_SIZE = 10
   const [confirmRevokeUser, setConfirmRevokeUser] = useState(null)
 
   const load = (filterParams = {}) => {
@@ -100,7 +104,17 @@ export default function AdminCoupons() {
 
   const doEdit = async () => {
     setConfirmEdit(false)
-    try { await updateCoupon(editing.maPhieuGiamGia, editPayload); setEditing(null); load() }
+    try { 
+      await updateCoupon(editing.maPhieuGiamGia, editPayload); 
+      setEditing(null); 
+      setEditUsers([]); 
+      setEditUserSearch(''); 
+      setEditUserResults([]); 
+      setAllEditCustomers([]); 
+      setAllEditCustomersLoaded(false); 
+      setEditUserPage(0); 
+      load() 
+    }
     catch (err) { alert(err.response?.data?.message || 'Lỗi sửa') }
   }
 
@@ -108,8 +122,14 @@ export default function AdminCoupons() {
     try {
       const users = await getCouponUsers(couponId)
       setEditUsers(Array.isArray(users) ? users : [])
+      if (!allEditCustomersLoaded) {
+        getCustomers().then(res => {
+          setAllEditCustomers(Array.isArray(res) ? res : [])
+          setAllEditCustomersLoaded(true)
+        }).catch(() => { setAllEditCustomersLoaded(true) })
+      }
     } catch { setEditUsers([]) }
-  }, [])
+  }, [allEditCustomersLoaded])
 
   const doRevokeUser = async () => {
     if (!confirmRevokeUser) return
@@ -277,11 +297,11 @@ export default function AdminCoupons() {
       {editing && (() => {
         const isCaNhan = editing.congKhai === false
         return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]) }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]); setAllEditCustomers([]); setAllEditCustomersLoaded(false); setEditUserPage(0) }}>
           <div className="bg-ivory rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-ivory z-10 flex items-center justify-between p-6 pb-0">
               <h2 className="text-lg font-bold text-ink">Sửa mã giảm giá</h2>
-              <button onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]) }} className="text-stone hover:text-ink p-1"><X className="h-5 w-5" /></button>
+              <button onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]); setAllEditCustomers([]); setAllEditCustomersLoaded(false); setEditUserPage(0) }} className="text-stone hover:text-ink p-1"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={(e) => {
               e.preventDefault()
@@ -396,8 +416,8 @@ export default function AdminCoupons() {
 
                     {searchingEditUser && <p className="text-xs text-stone mb-2">Đang tìm...</p>}
 
-                    {editUserResults.length > 0 && (
-                      <div className="border border-stone/10 rounded-lg overflow-hidden mb-4 max-h-48 overflow-y-auto">
+                    {(editUserSearch.trim().length >= 2 && editUserResults.length > 0) || (editUserSearch.trim().length < 2 && allEditCustomers.length > 0) && (
+                      <div className="border border-stone/10 rounded-lg overflow-hidden mb-4 max-h-60 overflow-y-auto">
                         <table className="w-full text-sm">
                           <thead className="bg-gray-50 border-b border-stone/10 sticky top-0">
                             <tr>
@@ -407,8 +427,9 @@ export default function AdminCoupons() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-stone/10">
-                            {editUserResults.map(u => {
+                            {(editUserSearch.trim().length >= 2 ? editUserResults : allEditCustomers).map((u, idx) => {
                               const isAssigned = editUsers.some(eu => eu.maNguoiDung === u.maNguoiDung)
+                              const displayIdx = editUserSearch.trim().length >= 2 ? idx + 1 : (editUserPage * EDIT_USER_PAGE_SIZE + idx + 1)
                               return (
                                 <tr key={u.maNguoiDung} className="hover:bg-gray-50">
                                   <td className="px-3 py-2 text-xs font-medium text-ink">{u.hoTen || '—'}</td>
@@ -429,7 +450,19 @@ export default function AdminCoupons() {
                       </div>
                     )}
 
-                    {editUserResults.length === 0 && editUserSearch.trim().length >= 2 && !searchingEditUser && (
+                    {(editUserSearch.trim().length >= 2 && allEditCustomers.length > 0) && (
+                      <div className="flex items-center justify-center gap-2 py-2 border-t border-stone/10">
+                        <button disabled={editUserPage === 0} onClick={() => setEditUserPage(p => p - 1)}
+                          className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Trước</button>
+                        <span className="text-xs text-stone">
+                          Trang {editUserPage + 1} / {Math.ceil(allEditCustomers.length / EDIT_USER_PAGE_SIZE)}
+                        </span>
+                        <button disabled={editUserPage >= Math.ceil(allEditCustomers.length / EDIT_USER_PAGE_SIZE) - 1} onClick={() => setEditUserPage(p => p + 1)}
+                          className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Sau</button>
+                      </div>
+                    )}
+
+                    {editUserResults.length === 0 && allEditCustomers.length === 0 && editUserSearch.trim().length >= 2 && !searchingEditUser && (
                       <p className="text-xs text-stone text-center py-3 mb-4">Không tìm thấy khách hàng</p>
                     )}
 
@@ -453,7 +486,7 @@ export default function AdminCoupons() {
               <div className="flex gap-3 p-6 pt-0">
                 <button type="submit"
                   className="bg-[var(--primary-color)] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition">Lưu</button>
-                <button type="button" onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]) }}
+                <button type="button" onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]); setAllEditCustomers([]); setAllEditCustomersLoaded(false); setEditUserPage(0) }}
                   className="border border-stone/20 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-50 transition">Hủy</button>
               </div>
             </form>
