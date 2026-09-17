@@ -45,4 +45,6 @@ public interface VoucherNguoiDungRepository extends JpaRepository<VoucherNguoiDu
     List<VoucherNguoiDung> findByUserAndLoaiTrigger(
             @Param("userId") Integer userId,
             @Param("loaiTrigger") LoaiTrigger loaiTrigger);
+
+    List<VoucherNguoiDung> findByPhieuGiamGia_MaPhieuGiamGia(Integer maPhieuGiamGia);
 }

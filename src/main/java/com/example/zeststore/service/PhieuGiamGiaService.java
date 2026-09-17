@@ -561,4 +561,35 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.save(coupon);
     }
 
+    public List<Map<String, Object>> getCouponUsers(Integer couponId) {
+        PhieuGiamGia coupon = getById(couponId);
+        List<VoucherNguoiDung> vouchers = voucherNguoiDungRepository
+                .findByPhieuGiamGia_MaPhieuGiamGia(coupon.getMaPhieuGiamGia());
+        return vouchers.stream().map(v -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            NguoiDung u = v.getNguoiDung();
+            m.put("maNguoiDung", u.getMaNguoiDung());
+            m.put("hoTen", u.getHoTen());
+            m.put("email", u.getEmail());
+            m.put("maVoucherNguoiDung", v.getMaVoucherNguoiDung());
+            m.put("trangThai", v.getTrangThai().getValue());
+            m.put("ngayNhan", v.getNgayNhan());
+            return m;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, String> revokeCouponUser(Integer couponId, Integer userId) {
+        VoucherNguoiDung v = voucherNguoiDungRepository
+                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, couponId)
+                .orElseThrow(() -> new ResourceNotFoundException("Voucher assignment", userId));
+        if (TrangThaiVoucher.DA_DUNG.equals(v.getTrangThai())) {
+            throw new BadRequestException("Không thể thu hồi voucher đã sử dụng");
+        }
+        PhieuGiamGia coupon = v.getPhieuGiamGia();
+        v.setTrangThai(TrangThaiVoucher.DA_THU_HOI);
+        voucherNguoiDungRepository.save(v);
+        restoreCoupon(coupon);
+        return Map.of("message", "Thu hồi voucher thành công");
+    }
 }

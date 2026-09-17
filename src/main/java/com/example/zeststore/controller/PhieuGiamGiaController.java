@@ -107,4 +107,16 @@ public class PhieuGiamGiaController {
                                      @Valid @RequestBody UpdateCouponRequest request) {
         return ResponseEntity.ok(phieuGiamGiaService.update(id, request));
     }
+
+    @GetMapping("/{id}/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getCouponUsers(@PathVariable Integer id) {
+        return ResponseEntity.ok(phieuGiamGiaService.getCouponUsers(id));
+    }
+
+    @DeleteMapping("/{couponId}/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> revokeCouponUser(@PathVariable Integer couponId, @PathVariable Integer userId) {
+        return ResponseEntity.ok(phieuGiamGiaService.revokeCouponUser(couponId, userId));
+    }
 }

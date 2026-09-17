@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
+import { getCoupons, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon, getCouponUsers, revokeCouponUser } from '../../api/admin'
 import { grantVoucher } from '../../api/userVoucher'
 import { Plus, RefreshCw, X, PenSquare, Search } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
@@ -30,6 +30,13 @@ export default function AdminCoupons() {
   const [searchingUser, setSearchingUser] = useState(false)
   const [showEditName, setShowEditName] = useState(false)
   const [editName, setEditName] = useState('')
+
+  // Edit modal states
+  const [editUsers, setEditUsers] = useState([])
+  const [editUserSearch, setEditUserSearch] = useState('')
+  const [editUserResults, setEditUserResults] = useState([])
+  const [searchingEditUser, setSearchingEditUser] = useState(false)
+  const [confirmRevokeUser, setConfirmRevokeUser] = useState(null)
 
   const load = (filterParams = {}) => {
     const hasFilter = Object.values(filterParams).some(v => v !== '')
@@ -95,6 +102,45 @@ export default function AdminCoupons() {
     setConfirmEdit(false)
     try { await updateCoupon(editing.maPhieuGiamGia, editPayload); setEditing(null); load() }
     catch (err) { alert(err.response?.data?.message || 'Lỗi sửa') }
+  }
+
+  const loadEditUsers = useCallback(async (couponId) => {
+    try {
+      const users = await getCouponUsers(couponId)
+      setEditUsers(Array.isArray(users) ? users : [])
+    } catch { setEditUsers([]) }
+  }, [])
+
+  const doRevokeUser = async () => {
+    if (!confirmRevokeUser) return
+    try {
+      await revokeCouponUser(editing.maPhieuGiamGia, confirmRevokeUser.maNguoiDung)
+      setConfirmRevokeUser(null)
+      loadEditUsers(editing.maPhieuGiamGia)
+    } catch (err) { alert(err.response?.data?.message || 'Lỗi thu hồi') }
+  }
+
+  const handleEditUserSearch = useCallback(async (q) => {
+    if (q.trim().length < 2) { setEditUserResults([]); return }
+    setSearchingEditUser(true)
+    try {
+      const res = await searchCustomers(q.trim())
+      setEditUserResults(Array.isArray(res) ? res : [])
+    } catch { setEditUserResults([]) }
+    finally { setSearchingEditUser(false) }
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => handleEditUserSearch(editUserSearch), 300)
+    return () => clearTimeout(timer)
+  }, [editUserSearch, handleEditUserSearch])
+
+  const handleGrantToEdit = async (user) => {
+    try {
+      await grantVoucher(user.maNguoiDung, editing.maPhieuGiamGia)
+      loadEditUsers(editing.maPhieuGiamGia)
+      setEditUserSearch(''); setEditUserResults([])
+    } catch (err) { alert(err.response?.data?.message || 'Lỗi cấp voucher') }
   }
 
   return (
@@ -202,7 +248,7 @@ export default function AdminCoupons() {
                       </div>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <button onClick={() => setEditing(c)} title="Sửa mã giảm giá"
+                      <button onClick={() => { setEditing(c); if (c.congKhai === false) loadEditUsers(c.maPhieuGiamGia) }} title="Sửa mã giảm giá"
                         className="p-1.5 text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 rounded-lg transition">
                         <PenSquare className="h-4 w-4" />
                       </button>
@@ -228,12 +274,14 @@ export default function AdminCoupons() {
         )}
       </div>
 
-      {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditing(null)}>
+      {editing && (() => {
+        const isCaNhan = editing.congKhai === false
+        return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]) }}>
           <div className="bg-ivory rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-ivory z-10 flex items-center justify-between p-6 pb-0">
               <h2 className="text-lg font-bold text-ink">Sửa mã giảm giá</h2>
-              <button onClick={() => setEditing(null)} className="text-stone hover:text-ink p-1"><X className="h-5 w-5" /></button>
+              <button onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]) }} className="text-stone hover:text-ink p-1"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={(e) => {
               e.preventDefault()
@@ -251,8 +299,7 @@ export default function AdminCoupons() {
               if (v('soLuong') !== '') payload.soLuong = n('soLuong')
               if (v('giaTriGiamToiDa') !== '') payload.giaTriGiamToiDa = n('giaTriGiamToiDa')
               if (v('kieuGiamGia')) payload.kieuGiamGia = n('kieuGiamGia')
-              const congKhaiRadio = t.querySelectorAll('input[name="congKhai"]')
-              payload.congKhai = congKhaiRadio[0]?.checked ?? true
+              payload.congKhai = editing.congKhai
               setEditPayload(payload); setConfirmEdit(true)
             }}>
               <div className="p-6 space-y-5">
@@ -264,17 +311,9 @@ export default function AdminCoupons() {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-2">Kiểu áp dụng</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4 text-[var(--primary-color)]" />
-                        <span className="text-sm text-ink">Tất cả</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="congKhai" defaultChecked={editing.congKhai === false} className="h-4 w-4 text-[var(--primary-color)]" />
-                        <span className="text-sm text-ink">Cá nhân</span>
-                      </label>
-                    </div>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Kiểu áp dụng</label>
+                    <input value={editing.congKhai ? 'Tất cả' : 'Cá nhân'} disabled
+                      className="w-full border border-stone/20 rounded-lg px-4 py-2.5 bg-gray-50 text-stone text-sm cursor-not-allowed" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-ink mb-2">Loại ưu đãi</label>
@@ -330,22 +369,98 @@ export default function AdminCoupons() {
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-ink cursor-pointer">
-                  <input type="checkbox" name="congKhai" defaultChecked={editing.congKhai ?? true} className="h-4 w-4 text-[var(--primary-color)]" />
-                  Công khai — hiển thị cho người dùng
-                </label>
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl border border-stone/10">
+                  <input type="checkbox" checked={editing.congKhai ?? true} disabled className="h-4 w-4 text-[var(--primary-color)] cursor-not-allowed" />
+                  <span className="text-sm text-stone">{editing.congKhai ? 'Công khai — hiển thị cho tất cả người dùng' : 'Cá nhân — chỉ hiển thị cho khách hàng được chỉ định'}</span>
+                </div>
               </div>
+
+              {isCaNhan && (
+                <div className="px-6 pb-6">
+                  <div className="border-t border-stone/10 pt-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-ink uppercase tracking-wide">DANH SÁCH KHÁCH HÀNG</h3>
+                      {editUsers.length > 0 && (
+                        <span className="bg-[var(--primary-color)] text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                          {editUsers.length} khách hàng
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
+                      <input value={editUserSearch} onChange={e => setEditUserSearch(e.target.value)}
+                        placeholder="Nhập tên hoặc email khách hàng để thêm"
+                        className="w-full pl-9 pr-4 py-2.5 border border-stone/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+                    </div>
+
+                    {searchingEditUser && <p className="text-xs text-stone mb-2">Đang tìm...</p>}
+
+                    {editUserResults.length > 0 && (
+                      <div className="border border-stone/10 rounded-lg overflow-hidden mb-4 max-h-48 overflow-y-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 border-b border-stone/10 sticky top-0">
+                            <tr>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-stone">TÊN</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-stone">EMAIL</th>
+                              <th className="px-3 py-2 text-center text-xs font-semibold text-stone w-20"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone/10">
+                            {editUserResults.map(u => {
+                              const isAssigned = editUsers.some(eu => eu.maNguoiDung === u.maNguoiDung)
+                              return (
+                                <tr key={u.maNguoiDung} className="hover:bg-gray-50">
+                                  <td className="px-3 py-2 text-xs font-medium text-ink">{u.hoTen || '—'}</td>
+                                  <td className="px-3 py-2 text-xs text-stone">{u.email || '—'}</td>
+                                  <td className="px-3 py-2 text-center">
+                                    {isAssigned ? (
+                                      <span className="text-xs text-green-600 font-medium">Đã thêm</span>
+                                    ) : (
+                                      <button type="button" onClick={() => handleGrantToEdit(u)}
+                                        className="bg-[var(--primary-color)] text-white text-xs font-semibold px-3 py-1 rounded-full hover:opacity-90">Thêm</button>
+                                    )}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {editUserResults.length === 0 && editUserSearch.trim().length >= 2 && !searchingEditUser && (
+                      <p className="text-xs text-stone text-center py-3 mb-4">Không tìm thấy khách hàng</p>
+                    )}
+
+                    {editUsers.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {editUsers.map(u => (
+                          <span key={u.maNguoiDung} className="inline-flex items-center gap-1.5 bg-[var(--primary-color)]/10 text-[var(--primary-color)] text-xs font-medium px-2.5 py-1 rounded-full">
+                            {u.hoTen || u.email}
+                            <button type="button" onClick={() => setConfirmRevokeUser(u)}
+                              className="hover:text-red-500"><X className="h-3 w-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-stone text-center py-3">Chưa có khách hàng nào được cấp voucher này</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 p-6 pt-0">
                 <button type="submit"
                   className="bg-[var(--primary-color)] text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition">Lưu</button>
-                <button type="button" onClick={() => setEditing(null)}
+                <button type="button" onClick={() => { setEditing(null); setEditUsers([]); setEditUserSearch(''); setEditUserResults([]) }}
                   className="border border-stone/20 px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-gray-50 transition">Hủy</button>
               </div>
             </form>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {grantModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => { setGrantModal(null); setUserResults([]); setUserSearch(''); setGrantMsg('') }}>
@@ -388,6 +503,7 @@ export default function AdminCoupons() {
       <ConfirmDialog open={confirmToggle !== null} title="Đổi trạng thái" message="Bạn có chắc muốn đổi trạng thái mã giảm giá này?" confirmText="Xác nhận" variant="gold" onConfirm={() => handleToggleStatus(confirmToggle)} onCancel={() => setConfirmToggle(null)} />
       <ConfirmDialog open={confirmEdit} title="Cập nhật mã giảm giá" message={`Lưu thay đổi cho mã "${editing?.maCode}"?`} confirmText="Lưu" variant="gold" onConfirm={doEdit} onCancel={() => setConfirmEdit(false)} />
       <ConfirmDialog open={confirmGrant !== null} title="Cấp voucher" message={`Cấp voucher "${grantModal?.maCode}" cho ${confirmGrant?.hoTen || confirmGrant?.email}?`} confirmText="Cấp" variant="gold" onConfirm={() => doGrant(confirmGrant)} onCancel={() => setConfirmGrant(null)} />
+      <ConfirmDialog open={confirmRevokeUser !== null} title="Thu hồi voucher" message={`Thu hồi voucher "${editing?.maCode}" khỏi ${confirmRevokeUser?.hoTen || confirmRevokeUser?.email}?`} confirmText="Thu hồi" variant="gold" onConfirm={doRevokeUser} onCancel={() => setConfirmRevokeUser(null)} />
     </div>
   )
 }
