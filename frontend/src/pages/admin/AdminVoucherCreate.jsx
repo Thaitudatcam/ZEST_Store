@@ -26,6 +26,8 @@ export default function AdminVoucherCreate() {
   const [allCustomersLoaded, setAllCustomersLoaded] = useState(false)
   const [confirmSave, setConfirmSave] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [userPage, setUserPage] = useState(0)
+  const USER_PAGE_SIZE = 10
 
   const searchTimerRef = useState({ current: null })[0]
 
@@ -50,6 +52,10 @@ export default function AdminVoucherCreate() {
       setAllCustomersLoaded(false)
     }
   }, [form.kieuApDung, allCustomersLoaded])
+
+  useEffect(() => {
+    setUserPage(0)
+  }, [userSearch])
 
   useEffect(() => {
     const timer = searchTimerRef
@@ -246,7 +252,12 @@ export default function AdminVoucherCreate() {
 
             {searchingUser && <p className="text-xs text-stone mb-2">Đang tìm...</p>}
 
-            {(userSearch.trim().length >= 2 && userResults.length > 0) || (userSearch.trim().length < 2 && allCustomers.length > 0) && (
+            {(userSearch.trim().length >= 2 && userResults.length > 0) || (userSearch.trim().length < 2 && allCustomers.length > 0) && (() => {
+              const list = userSearch.trim().length >= 2 ? userResults : allCustomers
+              const totalPages = Math.ceil(list.length / USER_PAGE_SIZE)
+              const paged = list.slice(userPage * USER_PAGE_SIZE, (userPage + 1) * USER_PAGE_SIZE)
+              return (
+              <>
               <div className="border border-stone/10 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-stone/10">
@@ -262,7 +273,7 @@ export default function AdminVoucherCreate() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone/10">
-                    {(userSearch.trim().length >= 2 ? userResults : allCustomers).map((u, idx) => {
+                    {paged.map((u, idx) => {
                       const isSelected = selectedUsers.some(s => s.maNguoiDung === u.maNguoiDung)
                       return (
                         <tr key={u.maNguoiDung}
@@ -271,7 +282,7 @@ export default function AdminVoucherCreate() {
                           <td className="px-3 py-2.5 text-center">
                             <input type="checkbox" checked={isSelected} onChange={() => toggleUser(u)} className="h-4 w-4" />
                           </td>
-                          <td className="px-3 py-2.5 text-center text-xs text-stone">{idx + 1}</td>
+                          <td className="px-3 py-2.5 text-center text-xs text-stone">{userPage * USER_PAGE_SIZE + idx + 1}</td>
                           <td className="px-3 py-2.5 text-xs font-medium text-ink">{u.hoTen || '—'}</td>
                           <td className="px-3 py-2.5 text-xs text-stone">{u.email || '—'}</td>
                           <td className="px-3 py-2.5 text-center text-xs text-stone">{u.ngaySinh ? new Date(u.ngaySinh).toLocaleDateString('vi-VN') : '—'}</td>
@@ -284,7 +295,22 @@ export default function AdminVoucherCreate() {
                   </tbody>
                 </table>
               </div>
-            )}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  <button disabled={userPage === 0} onClick={() => setUserPage(userPage - 1)}
+                    className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Trước</button>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button key={i} onClick={() => setUserPage(i)}
+                      className={`px-3 py-1.5 text-xs rounded-lg border ${i === userPage ? 'bg-[var(--primary-color)] text-white border-[var(--primary-color)]' : 'border-stone/20 hover:bg-gray-50'}`}>{i + 1}</button>
+                  ))}
+                  <button disabled={userPage >= totalPages - 1} onClick={() => setUserPage(userPage + 1)}
+                    className="px-3 py-1.5 text-xs border border-stone/20 rounded-lg hover:bg-gray-50 disabled:opacity-40">Sau</button>
+                </div>
+              )}
+              <p className="text-[10px] text-stone text-right mt-1">Hiển thị {userPage * USER_PAGE_SIZE + 1}–{Math.min((userPage + 1) * USER_PAGE_SIZE, list.length)} / {list.length} khách hàng</p>
+              </>
+              )
+            })()}
 
             {userResults.length === 0 && allCustomers.length === 0 && userSearch.trim().length >= 2 && !searchingUser && (
               <p className="text-xs text-stone text-center py-4">Không tìm thấy khách hàng</p>
