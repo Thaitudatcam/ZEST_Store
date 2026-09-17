@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { getStats, getOrderStats, getRevenueByDay, getRevenueByDate, getRevenueByMonth, getRevenueByYear, getRecentOrders, getBestSellingProducts, getAllOrders } from '../../api/admin'
-import { Package, DollarSign, Users, TrendingUp, ShoppingBag, AlertCircle, CheckCircle, Mail, ToggleLeft, ToggleRight, Filter, RefreshCw, Calendar, Clock, BarChart3, ShoppingCart } from 'lucide-react'
+import { Package, DollarSign, Users, TrendingUp, ShoppingBag, AlertCircle, CheckCircle, Filter, RefreshCw, Calendar, Clock, BarChart3, ShoppingCart } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { SkeletonTable } from '../../components/Skeleton'
 
@@ -48,9 +48,6 @@ export default function AdminThongKe() {
   const [revenueChartMode, setRevenueChartMode] = useState('year')
   const [chartYear, setChartYear] = useState(new Date().getFullYear())
 
-  // Email settings
-  const [emailEnabled, setEmailEnabled] = useState(false)
-  const [adminEmail, setAdminEmail] = useState(user?.email || 'minhphong26012006@gmail.com')
 
   const loadAll = useCallback(async () => {
     try {
@@ -165,15 +162,13 @@ export default function AdminThongKe() {
             <p className="text-xs text-stone">Doanh thu hôm nay theo chỉ số từ Hóa đơn đã hoàn thành (Khớp 100% với Danh sách Hóa đơn)</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-gold text-noir rounded-xl text-xs font-bold hover:bg-gold-hover transition">
-          <Mail className="h-4 w-4" /> Tùy chọn báo cáo qua Email
-        </button>
+
       </div>
 
-      {/* Top Section: Revenue + Email Settings */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+      {/* Top Section: Revenue */}
+      <div className="grid grid-cols-1 gap-5">
         {/* Today Revenue */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-bold text-ink uppercase tracking-wide">DOANH THU HÔM NAY CHO QUẢN LÝ</h2>
             <span className="text-[10px] font-semibold text-emerald-deep bg-emerald-deep/10 px-2.5 py-1 rounded-full">
@@ -200,25 +195,6 @@ export default function AdminThongKe() {
           </div>
         </div>
 
-        {/* Email Report Settings */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
-          <h2 className="text-xs font-bold text-ink uppercase tracking-wide mb-4">GỬI EMAIL BÁO CÁO CHO QUẢN LÝ</h2>
-          <p className="text-xs text-stone mb-4">Bật/tắt định kỳ gửi báo cáo doanh thu hóa đơn thực tế cuối ngày của Email cho Quản lý.</p>
-          <div className="flex items-center justify-between mb-4 p-3 bg-ivory/50 rounded-xl">
-            <span className="text-sm font-medium text-ink">Tự động gửi email báo cáo</span>
-            <button onClick={() => setEmailEnabled(!emailEnabled)} className="text-gold">
-              {emailEnabled ? <ToggleRight className="h-7 w-7" /> : <ToggleLeft className="h-7 w-7 text-stone" />}
-            </button>
-          </div>
-          <div className="mb-4">
-            <label className="text-xs text-stone mb-1 block">Email Quản lý sẽ nhận báo cáo:</label>
-            <input value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)}
-              className="w-full px-3 py-2.5 border border-stone/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/30" />
-          </div>
-          <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gold text-noir rounded-xl text-sm font-bold hover:bg-gold-hover transition">
-            <Mail className="h-4 w-4" /> Gửi email báo cáo doanh thu ngay
-          </button>
-        </div>
       </div>
 
       {/* Summary Cards: Today, Week, Month, Year */}
