@@ -437,7 +437,7 @@ export default function Checkout() {
         window.location.href = paymentRes.paymentUrl
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Đặt hàng thất bại')
+      toast.error(err.response?.data?.message || 'Đặt hàng thất bại')
     } finally {
       setPlacing(false)
     }
@@ -451,7 +451,7 @@ export default function Checkout() {
       setVietQrData(null)
       navigate(`/orders/${vietQrData.orderId}`)
     } catch (err) {
-      alert('Xác nhận thanh toán thất bại')
+      toast.error('Xác nhận thanh toán thất bại')
     } finally {
       setConfirmingQr(false)
     }

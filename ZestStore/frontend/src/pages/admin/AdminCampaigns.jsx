@@ -1,3 +1,4 @@
+import { useToast } from '../../context/ToastContext'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCampaigns, deleteCampaign, toggleCampaignStatus, launchCampaign } from '../../api/admin'
@@ -5,6 +6,7 @@ import { Plus, Play, PenSquare, Trash2 } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminCampaigns() {
+  const toast = useToast()
   const navigate = useNavigate()
   const [campaigns, setCampaigns] = useState([])
   const [launching, setLaunching] = useState(null)
@@ -24,7 +26,7 @@ export default function AdminCampaigns() {
       await toggleCampaignStatus(id)
       load()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi')
+      toast.error(err.response?.data?.message || 'Lỗi')
     }
   }
 
@@ -35,7 +37,7 @@ export default function AdminCampaigns() {
       await launchCampaign(id)
       load()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi phát động')
+      toast.error(err.response?.data?.message || 'Lỗi phát động')
     } finally { setLaunching(null) }
   }
 
@@ -127,7 +129,7 @@ export default function AdminCampaigns() {
             setConfirmDelete(null)
             load()
           } catch (err) {
-            alert(err.response?.data?.message || 'Lỗi xóa')
+            toast.error(err.response?.data?.message || 'Lỗi xóa')
           }
         }}
         onCancel={() => setConfirmDelete(null)}

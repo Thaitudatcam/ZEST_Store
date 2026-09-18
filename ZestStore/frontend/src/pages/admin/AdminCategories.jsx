@@ -1,3 +1,4 @@
+import { useToast } from '../../context/ToastContext'
 import { useState, useEffect } from 'react'
 import { getCategoryTree } from '../../api/categories'
 import { createCategory, updateCategory, toggleCategory } from '../../api/admin'
@@ -26,6 +27,7 @@ function TreeNode({ cat, onEdit, onToggle, depth = 0 }) {
 }
 
 export default function AdminCategories() {
+  const toast = useToast()
   const [cats, setCats] = useState([])
   const [form, setForm] = useState({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true })
   const [editing, setEditing] = useState(null)
@@ -43,11 +45,11 @@ export default function AdminCategories() {
       if (editing) await updateCategory(editing.maDanhMuc, form)
       else await createCategory(form)
       setShowForm(false); setEditing(null); setForm({ tenDanhMuc: '', slug: '', maDanhMucCha: '', hienThi: true }); load()
-    } catch { alert('Lỗi') }
+    } catch { toast.error('Lỗi') }
   }
 
   const handleToggle = async (id) => {
-    try { await toggleCategory(id); load() } catch { alert('Lỗi khi đổi trạng thái danh mục') }
+    try { await toggleCategory(id); load() } catch { toast.error('Lỗi khi đổi trạng thái danh mục') }
   }
 
   const flatten = (items, depth = 0) => {

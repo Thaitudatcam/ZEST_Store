@@ -1,3 +1,4 @@
+import { useToast } from '../../context/ToastContext'
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Search, Package, Layers } from 'lucide-react'
@@ -15,6 +16,7 @@ const variantSize = (v) =>
   v.kichCo?.kichCo || (typeof v.kichCo === 'string' ? v.kichCo : '') || v.tenKichCo || '—'
 
 export default function AdminCampaignForm() {
+  const toast = useToast()
   const navigate = useNavigate()
   const { id } = useParams()
   const isEdit = Boolean(id)
@@ -60,7 +62,7 @@ export default function AdminCampaignForm() {
         setVariantCache(cache)
       })
       .catch(() => {
-        alert('Không tải được chương trình (backend có thể chưa restart để có API chi tiết)')
+        toast.error('Không tải được chương trình (backend có thể chưa restart để có API chi tiết)')
         navigate('/admin/campaigns')
       })
       .finally(() => setLoadingDetail(false))
@@ -167,11 +169,11 @@ export default function AdminCampaignForm() {
 
   const requestCreate = (e) => {
     e.preventDefault()
-    if (!form.tenChuongTrinh.trim()) { alert('Vui lòng nhập tên chương trình'); return }
-    if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) { alert('Giá trị giảm phải lớn hơn 0!'); return }
-    if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) { alert('Phần trăm giảm không được vượt quá 100%!'); return }
+    if (!form.tenChuongTrinh.trim()) { toast.warning('Vui lòng nhập tên chương trình'); return }
+    if (!form.giaTriGiam || Number(form.giaTriGiam) <= 0) { toast.warning('Giá trị giảm phải lớn hơn 0!'); return }
+    if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) { toast.error('Phần trăm giảm không được vượt quá 100%!'); return }
     if (form.ngayBatDau && form.ngayKetThuc && new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) {
-      alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
+      toast.warning('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
     }
     setConfirmSave(true)
   }
@@ -214,7 +216,7 @@ export default function AdminCampaignForm() {
       else await createCampaign(payload)
       navigate('/admin/campaigns')
     } catch (err) {
-      alert(err.response?.data?.message || (isEdit ? 'Lỗi sửa chương trình' : 'Lỗi tạo chương trình'))
+      toast.error(err.response?.data?.message || (isEdit ? 'Lỗi sửa chương trình' : 'Lỗi tạo chương trình'))
     } finally {
       setSaving(false)
     }

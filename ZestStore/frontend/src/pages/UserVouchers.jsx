@@ -1,3 +1,4 @@
+import { useToast } from '../context/ToastContext'
 import { useState, useEffect } from 'react'
 import { getUserVouchers, claimVoucher, acceptVoucher } from '../api/userVoucher'
 import { getAvailableCoupons } from '../api/coupons'
@@ -17,6 +18,7 @@ const STATUS = {
 }
 
 export default function UserVouchers() {
+  const toast = useToast()
   const { refreshVoucherCount } = useVoucher()
   const [personal, setPersonal] = useState([])
   const [publicVouchers, setPublicVouchers] = useState([])
@@ -71,7 +73,7 @@ export default function UserVouchers() {
       load()
       refreshVoucherCount()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi nhận voucher')
+      toast.error(err.response?.data?.message || 'Lỗi nhận voucher')
     }
   }
 

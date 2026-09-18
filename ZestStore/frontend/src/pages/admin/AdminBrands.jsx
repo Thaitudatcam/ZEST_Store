@@ -1,9 +1,11 @@
+import { useToast } from '../../context/ToastContext'
 import { useState, useEffect } from 'react'
 import { getBrands, createBrand, updateBrand, toggleBrand } from '../../api/admin'
 import { Plus, Pencil, Check, X, Eye, EyeOff } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 export default function AdminBrands() {
+  const toast = useToast()
   const [brands, setBrands] = useState([])
   const [name, setName] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -19,7 +21,7 @@ export default function AdminBrands() {
     setConfirmSave(false)
     if (!name.trim()) return
     try { await createBrand({ tenThuongHieu: name.trim() }); setName(''); setShowForm(false); load() }
-    catch { alert('Lỗi khi thêm thương hiệu') }
+    catch { toast.error('Lỗi khi thêm thương hiệu') }
   }
 
   const startEdit = (b) => { setEditingId(b.maThuongHieu); setEditName(b.tenThuongHieu) }
@@ -28,12 +30,12 @@ export default function AdminBrands() {
     setConfirmEdit(null)
     if (!editName.trim()) return
     try { await updateBrand(editingId, { tenThuongHieu: editName.trim() }); setEditingId(null); load() }
-    catch { alert('Lỗi khi cập nhật thương hiệu') }
+    catch { toast.error('Lỗi khi cập nhật thương hiệu') }
   }
 
   const handleToggle = async (id) => {
     try { await toggleBrand(id); load() }
-    catch { alert('Lỗi khi đổi trạng thái thương hiệu') }
+    catch { toast.error('Lỗi khi đổi trạng thái thương hiệu') }
   }
 
   return (

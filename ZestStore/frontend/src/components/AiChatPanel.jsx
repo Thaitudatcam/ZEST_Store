@@ -1,3 +1,4 @@
+import { useToast } from '../context/ToastContext'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Send, Paperclip, Image, Camera, Trash2, Plus, MessageSquare, ArrowRight } from 'lucide-react'
@@ -50,6 +51,7 @@ export function useBlink() {
 }
 
 export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
+  const toast = useToast()
   const navigate = useNavigate()
   const [showSidebar, setShowSidebar] = useState(false)
   const [conversations, setConversations] = useState([])
@@ -122,7 +124,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { alert('Ảnh không được quá 5MB'); return }
+    if (file.size > 5 * 1024 * 1024) { toast.warning('Ảnh không được quá 5MB'); return }
     setSelectedImage(await readFileAsBase64(file))
     setShowAttach(false)
     e.target.value = ''
@@ -131,7 +133,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
   const handleCameraCapture = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { alert('Ảnh không được quá 5MB'); return }
+    if (file.size > 5 * 1024 * 1024) { toast.warning('Ảnh không được quá 5MB'); return }
     setSelectedImage(await readFileAsBase64(file))
     setShowAttach(false)
     e.target.value = ''
@@ -144,7 +146,7 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
       if (item.type.startsWith('image/')) {
         e.preventDefault()
         const file = item.getAsFile()
-        if (!file || file.size > 5 * 1024 * 1024) { alert('Ảnh không được quá 5MB'); return }
+        if (!file || file.size > 5 * 1024 * 1024) { toast.warning('Ảnh không được quá 5MB'); return }
         setSelectedImage(await readFileAsBase64(file))
         break
       }

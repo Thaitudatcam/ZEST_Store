@@ -1,3 +1,4 @@
+import { useToast } from '../../context/ToastContext'
 import { useState, useEffect, useRef } from 'react'
 import { getCoupons, generateCouponCode, createCoupon, deleteCoupon, filterCoupons, toggleCouponStatus, searchCustomers, updateCoupon } from '../../api/admin'
 import { getActiveCategories } from '../../api/categories'
@@ -12,6 +13,7 @@ const STA_LABELS = { 0: 'Đã huỷ', 1: 'Chưa BĐ', 2: 'Đang HĐ', 3: 'Hết 
 const STA_COLORS = { 0: 'bg-bordeaux/20 text-bordeaux', 1: 'bg-yellow-100 text-yellow-700', 2: 'bg-emerald-deep/20 text-emerald-deep', 3: 'bg-gold/20 text-gold-hover', 4: 'bg-ivory-100 text-stone', 5: 'bg-ivory-100 text-stone' }
 
 export default function AdminCoupons() {
+  const toast = useToast()
   const [coupons, setCoupons] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState({ ngayBatDau: '', ngayKetThuc: '', kieuGiamGia: '', giaTriGiam: '' })
@@ -64,11 +66,11 @@ export default function AdminCoupons() {
 
   const handleFilter = () => {
     if (filter.ngayBatDau && filter.ngayKetThuc && new Date(filter.ngayBatDau) > new Date(filter.ngayKetThuc)) {
-      alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
+      toast.warning('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
     }
-    if (filter.giaTriGiam && Number(filter.giaTriGiam) < 0) { alert('Giá trị giảm không được âm!'); return }
-    if (filter.giaTriGiam && Number(filter.giaTriGiam) > 100000000) { alert('Giá trị giảm quá lớn!'); return }
-    if (filter.kieuGiamGia === '1' && filter.giaTriGiam && Number(filter.giaTriGiam) > 100) { alert('Phần trăm giảm không được vượt quá 100%!'); return }
+    if (filter.giaTriGiam && Number(filter.giaTriGiam) < 0) { toast.warning('Giá trị giảm không được âm!'); return }
+    if (filter.giaTriGiam && Number(filter.giaTriGiam) > 100000000) { toast.warning('Giá trị giảm quá lớn!'); return }
+    if (filter.kieuGiamGia === '1' && filter.giaTriGiam && Number(filter.giaTriGiam) > 100) { toast.error('Phần trăm giảm không được vượt quá 100%!'); return }
     load(filter)
   }
 
@@ -82,16 +84,16 @@ export default function AdminCoupons() {
 
   const validate = () => {
     // Mã code được tự gen nếu để trống — chỉ validate khi user nhập tay.
-    if (form.maCode.trim() && !/^[A-Z0-9-]{3,50}$/i.test(form.maCode.trim())) { alert('Mã code chỉ gồm chữ, số, gạch ngang (3-50 ký tự)!'); return false }
-    if (form.kieuGiamGia !== 3 && (!form.giaTriGiam || Number(form.giaTriGiam) <= 0)) { alert('Giá trị giảm phải lớn hơn 0!'); return false }
-    if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) { alert('Phần trăm giảm không được vượt quá 100%!'); return false }
-    if (!form.ngayBatDau) { alert('Vui lòng chọn ngày bắt đầu!'); return false }
-    if (!form.ngayKetThuc) { alert('Vui lòng chọn ngày kết thúc!'); return false }
-    if (new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) { alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return false }
-    if (new Date(form.ngayBatDau) < new Date(new Date().toDateString())) { alert('Ngày bắt đầu không được là ngày quá khứ!'); return false }
-    if (form.giaTriDonToiThieu && Number(form.giaTriDonToiThieu) < 0) { alert('Giá trị đơn tối thiểu không được âm!'); return false }
-    if (form.soLuong && Number(form.soLuong) <= 0) { alert('Số lượng phải lớn hơn 0!'); return false }
-    if (form.kieuGiamGia === 1 && form.giaTriGiamToiDa && Number(form.giaTriGiamToiDa) <= 0) { alert('Giá trị giảm tối đa phải lớn hơn 0!'); return false }
+    if (form.maCode.trim() && !/^[A-Z0-9-]{3,50}$/i.test(form.maCode.trim())) { toast.warning('Mã code chỉ gồm chữ, số, gạch ngang (3-50 ký tự)!'); return false }
+    if (form.kieuGiamGia !== 3 && (!form.giaTriGiam || Number(form.giaTriGiam) <= 0)) { toast.error('Giá trị giảm phải lớn hơn 0!'); return false }
+    if (form.kieuGiamGia === 1 && Number(form.giaTriGiam) > 100) { toast.error('Phần trăm giảm không được vượt quá 100%!'); return false }
+    if (!form.ngayBatDau) { toast.warning('Vui lòng chọn ngày bắt đầu!'); return false }
+    if (!form.ngayKetThuc) { toast.warning('Vui lòng chọn ngày kết thúc!'); return false }
+    if (new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) { toast.warning('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return false }
+    if (new Date(form.ngayBatDau) < new Date(new Date().toDateString())) { toast.warning('Ngày bắt đầu không được là ngày quá khứ!'); return false }
+    if (form.giaTriDonToiThieu && Number(form.giaTriDonToiThieu) < 0) { toast.warning('Giá trị đơn tối thiểu không được âm!'); return false }
+    if (form.soLuong && Number(form.soLuong) <= 0) { toast.warning('Số lượng phải lớn hơn 0!'); return false }
+    if (form.kieuGiamGia === 1 && form.giaTriGiamToiDa && Number(form.giaTriGiamToiDa) <= 0) { toast.error('Giá trị giảm tối đa phải lớn hơn 0!'); return false }
     return true
   }
 
@@ -121,7 +123,7 @@ export default function AdminCoupons() {
       setForm({ maCode: '', kieuGiamGia: 1, giaTriGiam: '', giaTriDonToiThieu: '', ngayBatDau: '', ngayKetThuc: '', soLuong: '', giaTriGiamToiDa: '', maDanhMucIds: [], maSanPhamIds: [], congKhai: true })
       load()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi tạo coupon')
+      toast.error(err.response?.data?.message || 'Lỗi tạo coupon')
     }
   }
 
@@ -153,7 +155,7 @@ export default function AdminCoupons() {
       setConfirmDelete(null)
       load()
     } catch (err) {
-      alert(err.response?.data?.message || err.message || 'Lỗi xóa coupon')
+      toast.error(err.response?.data?.message || err.message || 'Lỗi xóa coupon')
     }
   }
 
@@ -163,7 +165,7 @@ export default function AdminCoupons() {
       await toggleCouponStatus(id)
       load(filter)
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi thay đổi trạng thái')
+      toast.error(err.response?.data?.message || 'Lỗi thay đổi trạng thái')
     }
   }
 
@@ -187,7 +189,7 @@ export default function AdminCoupons() {
       setEditing(null)
       load()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi sửa coupon')
+      toast.error(err.response?.data?.message || 'Lỗi sửa coupon')
     }
   }
 
@@ -207,7 +209,7 @@ export default function AdminCoupons() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Mã giảm giá</h1>
-        <button onClick={() => { if (coupons.length >= 70) { alert('Đã đạt giới hạn 70 mã giảm giá'); return }; setShowForm(true) }}
+        <button onClick={() => { if (coupons.length >= 70) { toast.warning('Đã đạt giới hạn 70 mã giảm giá'); return }; setShowForm(true) }}
           className="bg-gold text-noir px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gold-hover flex items-center gap-2">
           <Plus className="h-4 w-4" /> Thêm mã
         </button>
@@ -375,7 +377,7 @@ export default function AdminCoupons() {
                   try {
                     const r = await generateCouponCode()
                     setForm(f => ({ ...f, maCode: r.maCode || '' }))
-                  } catch { alert('Không gen được mã, vui lòng nhập tay') }
+                  } catch { toast.warning('Không gen được mã, vui lòng nhập tay') }
                 }}
                   className="shrink-0 border px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ivory-100 text-gold border-gold/30">
                   Tự gen
@@ -529,7 +531,7 @@ export default function AdminCoupons() {
               e.preventDefault()
               const t = e.target
               if (t.ngayBatDau.value && t.ngayKetThuc.value && new Date(t.ngayBatDau.value) >= new Date(t.ngayKetThuc.value)) {
-                alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
+                toast.warning('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return
               }
               const payload = {}
               const v = (name) => t[name]?.value
