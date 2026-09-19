@@ -54,8 +54,20 @@ public class POSController {
                 : null;
         java.util.List<Integer> productIds = body.get("maSanPhamIds") instanceof java.util.List<?> ids
                 ? ids.stream().map(i -> Integer.valueOf(i.toString())).toList() : java.util.List.of();
+        Map<Integer, BigDecimal> productSubtotals = new LinkedHashMap<>();
+        if (body.get("items") instanceof java.util.List<?> items) {
+            for (Object raw : items) {
+                if (!(raw instanceof Map<?, ?> item) || item.get("maSanPham") == null || item.get("thanhTien") == null)
+                    continue;
+                Integer productId = Integer.valueOf(item.get("maSanPham").toString());
+                BigDecimal subtotal = new BigDecimal(item.get("thanhTien").toString());
+                if (subtotal.signum() < 0) throw new BadRequestException("Thành tiền sản phẩm không hợp lệ");
+                productSubtotals.merge(productId, subtotal, BigDecimal::add);
+            }
+        }
         if (maCode == null || maCode.isBlank()) throw new BadRequestException("Vui lòng nhập mã giảm giá");
-        return ResponseEntity.ok(posService.validateCoupon(maCode, maNguoiDung, tongTien, productIds));
+        return ResponseEntity.ok(posService.validateCoupon(maCode, maNguoiDung, tongTien, productIds,
+                productSubtotals.isEmpty() ? null : productSubtotals));
     }
 
     @PostMapping("/orders")

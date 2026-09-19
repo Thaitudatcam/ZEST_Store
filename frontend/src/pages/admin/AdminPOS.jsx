@@ -333,6 +333,7 @@ export default function AdminPOS() {
       const res = await posApi.validateCoupon({
         maCode: code.trim(),
         maSanPhamIds: [...new Set(cart.map(c => c.maSanPham).filter(Boolean))],
+        items: cart.filter(c => c.maSanPham).map(c => ({ maSanPham: c.maSanPham, thanhTien: c.gia * c.soLuong })),
         tongTien: total,
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       })
@@ -360,6 +361,7 @@ export default function AdminPOS() {
       setCouponChecking(true)
       posApi.validateCoupon({ maCode: selectedCode, tongTien: total,
         maSanPhamIds: [...new Set(cart.map(c => c.maSanPham).filter(Boolean))],
+        items: cart.filter(c => c.maSanPham).map(c => ({ maSanPham: c.maSanPham, thanhTien: c.gia * c.soLuong })),
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       }).then(res => {
         if (!active || requestId !== couponRequest.current) return

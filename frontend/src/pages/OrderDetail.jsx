@@ -121,7 +121,8 @@ export default function OrderDetail() {
   const items = data.items || []
   const payments = data.payments || []
 
-  const canCancel = order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3
+  const hasSuccessfulPayment = payments.some(p => p.trangThaiThanhToan === 2)
+  const canCancel = !hasSuccessfulPayment && (order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3)
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
   const canConfirmReceived = order.trangThaiDon === 4 && !hasUnpaidOnline
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)

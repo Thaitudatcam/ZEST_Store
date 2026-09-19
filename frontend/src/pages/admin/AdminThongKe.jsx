@@ -37,6 +37,7 @@ export default function AdminThongKe() {
   const [revenueData, setRevenueData] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
   const [bestSelling, setBestSelling] = useState([])
+  const [dailyRevenue, setDailyRevenue] = useState([])
   const [loading, setLoading] = useState(true)
   const [revenueLoading, setRevenueLoading] = useState(false)
 
@@ -52,18 +53,20 @@ export default function AdminThongKe() {
   const loadAll = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0]
-      const [s, os, rev, recent, best] = await Promise.all([
+      const [s, os, rev, recent, best, daily] = await Promise.all([
         getStats().catch(() => null),
         getOrderStats().catch(() => null),
         getRevenueByDay(today, today).then(r => Array.isArray(r) ? r.reduce((s, d) => s + Number(d.doanhThu || 0), 0) : 0).catch(() => 0),
         getRecentOrders(10).then(r => Array.isArray(r) ? r : []).catch(() => []),
         getBestSellingProducts(10).then(r => Array.isArray(r) ? r : []).catch(() => []),
+        getRevenueByDate(370).then(r => Array.isArray(r) ? r : []).catch(() => []),
       ])
       setStats(s)
       setOrderStats(os)
       setTodayRevenue(rev)
       setRecentOrders(recent)
       setBestSelling(best)
+      setDailyRevenue(daily)
     } catch {} finally { setLoading(false) }
   }, [])
 
@@ -118,10 +121,10 @@ export default function AdminThongKe() {
   // Time period revenue
   const periodRevenue = (days) => {
     const now = new Date()
-    const from = new Date(now); from.setDate(now.getDate() - days)
-    return recentOrders
-      .filter(o => o.ngayDat && new Date(o.ngayDat) >= from && o.trangThaiDon !== 5)
-      .reduce((s, o) => s + Number(o.tongTien || 0), 0)
+    const from = new Date(now); from.setDate(now.getDate() - days); from.setHours(0, 0, 0, 0)
+    return dailyRevenue
+      .filter(row => row.ngay && new Date(`${row.ngay}T00:00:00`) >= from)
+      .reduce((s, row) => s + Number(row.doanhThu || 0), 0)
   }
 
   const periodCounts = (days) => {

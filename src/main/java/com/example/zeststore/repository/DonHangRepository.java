@@ -39,49 +39,76 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
     Page<DonHang> findByLoaiDonHangAndNgayDatBetween(@Param("loai") Integer loaiDonHang, @Param("tuNgay") LocalDateTime tuNgay, @Param("denNgay") LocalDateTime denNgay, Pageable pageable);
 
-    @Query("SELECT d FROM DonHang d WHERE "
+    @Query("SELECT d FROM DonHang d WHERE d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
+    Page<DonHang> findByNgayDatInRange(@Param("tuNgay") LocalDateTime tuNgay,
+                                      @Param("denNgay") LocalDateTime denNgay, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d WHERE d.trangThaiDon = :trangThai AND d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
+    Page<DonHang> findByTrangThaiDonAndNgayDatInRange(@Param("trangThai") Integer trangThai,
+                                                      @Param("tuNgay") LocalDateTime tuNgay,
+                                                      @Param("denNgay") LocalDateTime denNgay, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE "
             + "CAST(d.maDonHang AS string) LIKE %:q% "
-            + "OR d.nguoiDung.hoTen LIKE %:q% "
-            + "OR d.nguoiDung.email LIKE %:q% "
-            + "OR d.nguoiDung.soDienThoai LIKE %:q%")
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% "
+            + "OR d.tenKhachTaiQuay LIKE %:q% OR d.sdtKhachTaiQuay LIKE %:q% "
+            + "OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%")
     Page<DonHang> searchByKeyword(@Param("q") String q, Pageable pageable);
 
-    @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND ("
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE d.loaiDonHang = :loai AND ("
             + "CAST(d.maDonHang AS string) LIKE %:q% "
-            + "OR d.nguoiDung.hoTen LIKE %:q% "
-            + "OR d.nguoiDung.email LIKE %:q% "
-            + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% "
+            + "OR d.tenKhachTaiQuay LIKE %:q% OR d.sdtKhachTaiQuay LIKE %:q% "
+            + "OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%)")
     Page<DonHang> searchByKeywordAndLoai(@Param("q") String q, @Param("loai") Integer loai, Pageable pageable);
 
-    @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND ("
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE d.loaiDonHang = :loai AND ("
             + "CAST(d.maDonHang AS string) LIKE %:q% "
-            + "OR d.nguoiDung.hoTen LIKE %:q% "
-            + "OR d.nguoiDung.email LIKE %:q% "
-            + "OR d.nguoiDung.soDienThoai LIKE %:q%)"
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% "
+            + "OR d.tenKhachTaiQuay LIKE %:q% OR d.sdtKhachTaiQuay LIKE %:q% "
+            + "OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%)"
             + " AND d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
     Page<DonHang> searchByKeywordAndLoaiAndNgayDatBetween(@Param("q") String q, @Param("loai") Integer loai, @Param("tuNgay") LocalDateTime tuNgay, @Param("denNgay") LocalDateTime denNgay, Pageable pageable);
 
-    @Query("SELECT d FROM DonHang d WHERE d.trangThaiDon = :trangThai AND ("
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE d.trangThaiDon = :trangThai AND ("
             + "CAST(d.maDonHang AS string) LIKE %:q% "
-            + "OR d.nguoiDung.hoTen LIKE %:q% "
-            + "OR d.nguoiDung.email LIKE %:q% "
-            + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% "
+            + "OR d.tenKhachTaiQuay LIKE %:q% OR d.sdtKhachTaiQuay LIKE %:q% "
+            + "OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%)")
     Page<DonHang> searchByKeywordAndTrangThai(@Param("q") String q, @Param("trangThai") Integer trangThai, Pageable pageable);
 
-    @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND d.trangThaiDon = :trangThai AND ("
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE d.loaiDonHang = :loai AND d.trangThaiDon = :trangThai AND ("
             + "CAST(d.maDonHang AS string) LIKE %:q% "
-            + "OR d.nguoiDung.hoTen LIKE %:q% "
-            + "OR d.nguoiDung.email LIKE %:q% "
-            + "OR d.nguoiDung.soDienThoai LIKE %:q%)")
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% "
+            + "OR d.tenKhachTaiQuay LIKE %:q% OR d.sdtKhachTaiQuay LIKE %:q% "
+            + "OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%)")
     Page<DonHang> searchByKeywordAndLoaiAndTrangThai(@Param("q") String q, @Param("loai") Integer loai, @Param("trangThai") Integer trangThai, Pageable pageable);
 
-    @Query("SELECT d FROM DonHang d WHERE d.loaiDonHang = :loai AND d.trangThaiDon = :trangThai AND ("
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE d.loaiDonHang = :loai AND d.trangThaiDon = :trangThai AND ("
             + "CAST(d.maDonHang AS string) LIKE %:q% "
-            + "OR d.nguoiDung.hoTen LIKE %:q% "
-            + "OR d.nguoiDung.email LIKE %:q% "
-            + "OR d.nguoiDung.soDienThoai LIKE %:q%)"
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% "
+            + "OR d.tenKhachTaiQuay LIKE %:q% OR d.sdtKhachTaiQuay LIKE %:q% "
+            + "OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%)"
             + " AND d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
     Page<DonHang> searchByKeywordAndLoaiAndTrangThaiAndNgayDatBetween(@Param("q") String q, @Param("loai") Integer loai, @Param("trangThai") Integer trangThai, @Param("tuNgay") LocalDateTime tuNgay, @Param("denNgay") LocalDateTime denNgay, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE (CAST(d.maDonHang AS string) LIKE %:q% "
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% OR d.tenKhachTaiQuay LIKE %:q% "
+            + "OR d.sdtKhachTaiQuay LIKE %:q% OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%) "
+            + "AND d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
+    Page<DonHang> searchByKeywordAndNgayDatBetween(@Param("q") String q,
+                                                   @Param("tuNgay") LocalDateTime tuNgay,
+                                                   @Param("denNgay") LocalDateTime denNgay, Pageable pageable);
+
+    @Query("SELECT d FROM DonHang d LEFT JOIN d.nguoiDung n WHERE d.trangThaiDon = :trangThai AND (CAST(d.maDonHang AS string) LIKE %:q% "
+            + "OR n.hoTen LIKE %:q% OR n.email LIKE %:q% OR n.soDienThoai LIKE %:q% OR d.tenKhachTaiQuay LIKE %:q% "
+            + "OR d.sdtKhachTaiQuay LIKE %:q% OR d.tenNguoiNhan LIKE %:q% OR d.sdtNguoiNhan LIKE %:q%) "
+            + "AND d.ngayDat >= :tuNgay AND d.ngayDat < :denNgay")
+    Page<DonHang> searchByKeywordAndTrangThaiAndNgayDatBetween(@Param("q") String q,
+                                                               @Param("trangThai") Integer trangThai,
+                                                               @Param("tuNgay") LocalDateTime tuNgay,
+                                                               @Param("denNgay") LocalDateTime denNgay,
+                                                               Pageable pageable);
 
     @Query("SELECT d FROM DonHang d WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay")
     List<DonHang> findByNgayDatBetween(@Param("tuNgay") LocalDateTime tuNgay,
@@ -94,8 +121,9 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     Long countByNgayDatBetween(@Param("tuNgay") LocalDateTime tuNgay,
                                @Param("denNgay") LocalDateTime denNgay);
 
-    @Query("SELECT COALESCE(SUM(d.tongTien), 0) FROM DonHang d "
-            + "WHERE d.trangThaiDon IN (4, 6) AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
+    @Query("SELECT COALESCE(SUM(t.soTien), 0) FROM ThanhToan t "
+            + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
                                      @Param("denNgay") LocalDateTime denNgay);
 
@@ -103,30 +131,35 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     @Query("SELECT d.trangThaiDon, COUNT(d) FROM DonHang d GROUP BY d.trangThaiDon")
     List<Object[]> countOrdersByStatus();
 
-    @Query("SELECT FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd'), COALESCE(SUM(d.tongTien), 0) "
-            + "FROM DonHang d WHERE d.trangThaiDon IN (4, 6) AND d.ngayDat BETWEEN :tuNgay AND :denNgay "
-            + "GROUP BY FUNCTION('FORMAT', d.ngayDat, 'yyyy-MM-dd') ORDER BY 1")
+    @Query("SELECT FUNCTION('FORMAT', t.thoiGianTt, 'yyyy-MM-dd'), COALESCE(SUM(t.soTien), 0) "
+            + "FROM ThanhToan t WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', t.thoiGianTt, 'yyyy-MM-dd') ORDER BY 1")
     List<Object[]> sumRevenueByDay(@Param("tuNgay") LocalDateTime tuNgay,
                                    @Param("denNgay") LocalDateTime denNgay);
 
 
-    @Query("SELECT FUNCTION('MONTH', d.ngayDat), COALESCE(SUM(d.tongTien), 0) "
-            + "FROM DonHang d WHERE d.trangThaiDon IN (4, 6) AND FUNCTION('YEAR', d.ngayDat) = :nam "
-            + "GROUP BY FUNCTION('MONTH', d.ngayDat) ORDER BY 1")
+    @Query("SELECT FUNCTION('MONTH', t.thoiGianTt), COALESCE(SUM(t.soTien), 0) "
+            + "FROM ThanhToan t WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "AND FUNCTION('YEAR', t.thoiGianTt) = :nam "
+            + "GROUP BY FUNCTION('MONTH', t.thoiGianTt) ORDER BY 1")
     List<Object[]> sumRevenueByMonth(@Param("nam") int nam);
 
 
-    @Query("SELECT FUNCTION('YEAR', d.ngayDat), COALESCE(SUM(d.tongTien), 0) "
-            + "FROM DonHang d WHERE d.trangThaiDon IN (4, 6) "
-            + "GROUP BY FUNCTION('YEAR', d.ngayDat) ORDER BY 1")
+    @Query("SELECT FUNCTION('YEAR', t.thoiGianTt), COALESCE(SUM(t.soTien), 0) "
+            + "FROM ThanhToan t WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "GROUP BY FUNCTION('YEAR', t.thoiGianTt) ORDER BY 1")
     List<Object[]> sumRevenueByYear();
 
-    @Query("SELECT d.ngayDat, d.tongTien FROM DonHang d "
-            + "WHERE d.trangThaiDon IN (4, 6) AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
+    @Query("SELECT t.thoiGianTt, t.soTien FROM ThanhToan t "
+            + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay")
     List<Object[]> findRevenueData(@Param("tuNgay") LocalDateTime tuNgay,
                                     @Param("denNgay") LocalDateTime denNgay);
 
-    @Query("SELECT COUNT(d) FROM DonHang d WHERE d.trangThaiDon IN (4, 6) AND d.ngayDat BETWEEN :tuNgay AND :denNgay")
+    @Query("SELECT COUNT(DISTINCT t.donHang.maDonHang) FROM ThanhToan t "
+            + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay")
     Long countCompletedOrders(@Param("tuNgay") LocalDateTime tuNgay,
                               @Param("denNgay") LocalDateTime denNgay);
 

@@ -349,7 +349,9 @@ export default function Checkout() {
     setDiscountMsg('')
     setDiscountLoading(true)
     try {
-      const res = await api.post('/coupons/validate', { maCode: discountCode.trim(), tongTien: rawTotal, maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))] })
+      const res = await api.post('/coupons/validate', { maCode: discountCode.trim(), tongTien: rawTotal,
+        maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))],
+        items: cart.filter(i => i.maSanPham).map(i => ({ maSanPham: i.maSanPham, thanhTien: Number(i.donGia || 0) * Number(i.soLuong || 1) })) })
       setDiscountCoupon(res.data)
     } catch (err) {
       setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
@@ -363,7 +365,9 @@ export default function Checkout() {
     setDiscountMsg('')
     setDiscountCode(v.maCode)
     try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal, maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))] })
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal,
+        maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))],
+        items: cart.filter(i => i.maSanPham).map(i => ({ maSanPham: i.maSanPham, thanhTien: Number(i.donGia || 0) * Number(i.soLuong || 1) })) })
       setDiscountCoupon(res.data)
     } catch (err) {
       setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
@@ -374,7 +378,9 @@ export default function Checkout() {
     setFreeshipVoucher(null)
     setFreeshipMsg('')
     try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal, maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))] })
+      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal,
+        maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))],
+        items: cart.filter(i => i.maSanPham).map(i => ({ maSanPham: i.maSanPham, thanhTien: Number(i.donGia || 0) * Number(i.soLuong || 1) })) })
       setFreeshipVoucher(res.data)
       setVouchersOpen(false)
     } catch (err) {

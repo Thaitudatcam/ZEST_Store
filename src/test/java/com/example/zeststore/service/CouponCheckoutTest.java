@@ -37,6 +37,31 @@ class CouponCheckoutTest {
         when(sanPhamRepository.findAllById(List.of(4))).thenReturn(List.of(SanPham.builder().maSanPham(4).build()));
         assertThrows(BadRequestException.class, () -> service.validateCoupon("SALE", BigDecimal.valueOf(100), List.of(4), null));
     }
+    @Test void restrictedPercentageCouponDiscountsOnlyEligibleProducts() {
+        var c = coupon();
+        c.setKieuGiamGia(1);
+        c.setGiaTriGiam(BigDecimal.TEN);
+        c.setSanPhamApDung(Set.of(SanPham.builder().maSanPham(5).build()));
+        when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));
+        when(sanPhamRepository.findAllById(any())).thenReturn(List.of(
+                SanPham.builder().maSanPham(5).build(),
+                SanPham.builder().maSanPham(6).build()));
+
+        Map<String, Object> result = service.validateCoupon("SALE", BigDecimal.valueOf(1000),
+                List.of(5, 6), null,
+                new LinkedHashMap<>(Map.of(5, BigDecimal.valueOf(100), 6, BigDecimal.valueOf(900))));
+
+        assertEquals(0, BigDecimal.TEN.compareTo((BigDecimal) result.get("soTienGiam")));
+    }
+
+    @Test void createRejectsEndBeforeStart() {
+        when(phieuGiamGiaRepository.findByMaCode("BAD-DATE")).thenReturn(Optional.empty());
+        var request = com.example.zeststore.dto.request.CouponRequest.builder()
+                .maCode("BAD-DATE").kieuGiamGia(1).giaTriGiam(BigDecimal.TEN)
+                .ngayBatDau(java.time.LocalDateTime.now().plusDays(2))
+                .ngayKetThuc(java.time.LocalDateTime.now().plusDays(1)).build();
+        assertThrows(BadRequestException.class, () -> service.create(request));
+    }
     @Test void privateCouponRequiresClaimedPersonalVoucher() {
         var c = coupon(); c.setCongKhai(false);
         when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));

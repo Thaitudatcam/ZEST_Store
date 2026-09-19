@@ -72,6 +72,10 @@ public class DonHangService {
                 if (hasLoai) {
                     return donHangRepository.searchByKeywordAndLoaiAndNgayDatBetween(q.trim(), loaiDonHang, from, to, pageable);
                 }
+                if (hasTrangThai) {
+                    return donHangRepository.searchByKeywordAndTrangThaiAndNgayDatBetween(q.trim(), trangThai, from, to, pageable);
+                }
+                return donHangRepository.searchByKeywordAndNgayDatBetween(q.trim(), from, to, pageable);
             }
             if (hasLoai && hasTrangThai) {
                 return donHangRepository.findByLoaiDonHangAndTrangThaiDonAndNgayDatBetween(loaiDonHang, trangThai, from, to, pageable);
@@ -79,6 +83,10 @@ public class DonHangService {
             if (hasLoai) {
                 return donHangRepository.findByLoaiDonHangAndNgayDatBetween(loaiDonHang, from, to, pageable);
             }
+            if (hasTrangThai) {
+                return donHangRepository.findByTrangThaiDonAndNgayDatInRange(trangThai, from, to, pageable);
+            }
+            return donHangRepository.findByNgayDatInRange(from, to, pageable);
         }
 
         if (hasSearch) {
@@ -345,18 +353,11 @@ public class DonHangService {
                 throw new BadRequestException("Mã freeship chỉ áp dụng ở mục miễn phí vận chuyển");
             }
 
-            if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
-                soTienGiam = tongTien.multiply(coupon.getGiaTriGiam())
-                        .divide(BigDecimal.valueOf(100));
-            } else {
-                soTienGiam = coupon.getGiaTriGiam();
-            }
-            if (soTienGiam.compareTo(tongTien) > 0) {
-                soTienGiam = tongTien;
-            }
-            if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
-                soTienGiam = coupon.getGiaTriGiamToiDa();
-            }
+            Map<Integer, BigDecimal> productSubtotals = new LinkedHashMap<>();
+            orderItems.forEach(item -> productSubtotals.merge(
+                    ((BienTheSanPham) item.get("bienThe")).getSanPham().getMaSanPham(),
+                    (BigDecimal) item.get("thanhTien"), BigDecimal::add));
+            soTienGiam = phieuGiamGiaService.calculateDiscount(coupon, tongTien, productSubtotals);
         }
 
         BigDecimal phiVanChuyen = recalculateShippingFee(request, orderItems);
@@ -643,6 +644,11 @@ public class DonHangService {
     }
 
     private void cancelLockedOrder(DonHang order) {
+        boolean hasSuccessfulPayment = thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang()).stream()
+                .anyMatch(payment -> Integer.valueOf(2).equals(payment.getTrangThaiThanhToan()));
+        if (hasSuccessfulPayment) {
+            throw new BadRequestException("Đơn đã thanh toán; cần hoàn tiền thành công trước khi hủy đơn");
+        }
         inventoryService.release(order);
         phieuGiamGiaService.restoreForOrder(order.getMaDonHang());
         for (ThanhToan payment : thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang())) {
@@ -655,7 +661,7 @@ public class DonHangService {
     public Map<String, String> cancelOrder(Integer orderId, Integer userId) {
         DonHang order = donHangRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (!order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+        if (order.getNguoiDung() == null || !order.getNguoiDung().getMaNguoiDung().equals(userId)) {
             throw new BadRequestException("Order does not belong to user");
         }
         Integer stt = order.getTrangThaiDon();

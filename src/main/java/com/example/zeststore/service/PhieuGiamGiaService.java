@@ -234,6 +234,11 @@ public class PhieuGiamGiaService {
     }
 
     public Map<String, Object> validateCoupon(String code, BigDecimal giaTriDon, List<Integer> maSanPhamIds, Integer userId) {
+        return validateCoupon(code, giaTriDon, maSanPhamIds, userId, null);
+    }
+
+    public Map<String, Object> validateCoupon(String code, BigDecimal giaTriDon, List<Integer> maSanPhamIds,
+                                               Integer userId, Map<Integer, BigDecimal> productSubtotals) {
         if (giaTriDon == null) giaTriDon = BigDecimal.ZERO;
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(code)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
@@ -263,11 +268,12 @@ public class PhieuGiamGiaService {
             throw new BadRequestException("Mã giảm giá không áp dụng cho sản phẩm trong giỏ hàng");
         }
 
+        BigDecimal discountBase = discountBase(coupon, giaTriDon, productSubtotals);
         BigDecimal giamGia;
         if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
-            giamGia = giaTriDon.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
+            giamGia = discountBase.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
         } else if (Integer.valueOf(2).equals(coupon.getKieuGiamGia())) {
-            giamGia = coupon.getGiaTriGiam();
+            giamGia = coupon.getGiaTriGiam().min(discountBase);
         } else {
             giamGia = BigDecimal.ZERO;
         }
@@ -285,6 +291,47 @@ public class PhieuGiamGiaService {
                 "soTienGiam", giamGia,
                 "moTa", "Coupon applied successfully"
         );
+    }
+
+    public BigDecimal calculateDiscount(PhieuGiamGia coupon, BigDecimal orderTotal,
+                                        Map<Integer, BigDecimal> productSubtotals) {
+        BigDecimal base = discountBase(coupon, orderTotal, productSubtotals);
+        BigDecimal discount;
+        if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
+            discount = base.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
+        } else if (Integer.valueOf(2).equals(coupon.getKieuGiamGia())) {
+            discount = coupon.getGiaTriGiam().min(base);
+        } else {
+            return BigDecimal.ZERO;
+        }
+        if (coupon.getGiaTriGiamToiDa() != null) discount = discount.min(coupon.getGiaTriGiamToiDa());
+        return discount.min(orderTotal).max(BigDecimal.ZERO);
+    }
+
+    private BigDecimal discountBase(PhieuGiamGia coupon, BigDecimal orderTotal,
+                                    Map<Integer, BigDecimal> productSubtotals) {
+        boolean categoryRestricted = coupon.getDanhMucApDung() != null && !coupon.getDanhMucApDung().isEmpty();
+        boolean productRestricted = coupon.getSanPhamApDung() != null && !coupon.getSanPhamApDung().isEmpty();
+        if (!categoryRestricted && !productRestricted) return orderTotal;
+        if (productSubtotals == null || productSubtotals.isEmpty()) return orderTotal;
+
+        Set<Integer> allowedCategories = categoryRestricted ? coupon.getDanhMucApDung().stream()
+                .map(DanhMuc::getMaDanhMuc).collect(Collectors.toSet()) : Set.of();
+        Set<Integer> allowedProducts = productRestricted ? coupon.getSanPhamApDung().stream()
+                .map(SanPham::getMaSanPham).collect(Collectors.toSet()) : Set.of();
+        Map<Integer, SanPham> products = sanPhamRepository.findAllById(productSubtotals.keySet()).stream()
+                .collect(Collectors.toMap(SanPham::getMaSanPham, p -> p));
+
+        BigDecimal eligible = BigDecimal.ZERO;
+        for (Map.Entry<Integer, BigDecimal> line : productSubtotals.entrySet()) {
+            SanPham product = products.get(line.getKey());
+            if (product == null) continue;
+            boolean matchesProduct = productRestricted && allowedProducts.contains(product.getMaSanPham());
+            boolean matchesCategory = categoryRestricted && product.getDanhMuc() != null
+                    && allowedCategories.contains(product.getDanhMuc().getMaDanhMuc());
+            if (matchesProduct || matchesCategory) eligible = eligible.add(line.getValue());
+        }
+        return eligible.min(orderTotal).max(BigDecimal.ZERO);
     }
 
     // ========== RESERVATION ==========
@@ -447,6 +494,8 @@ public class PhieuGiamGiaService {
         if (request.getSoLuong() != null && request.getSoLuong() <= 0) {
             throw new IllegalArgumentException("Số lượng mã phải lớn hơn 0");
         }
+        validateDefinition(request.getKieuGiamGia(), request.getGiaTriGiam(), request.getNgayBatDau(),
+                request.getNgayKetThuc(), request.getTrangThai() != null ? request.getTrangThai() : 1);
 
         PhieuGiamGia.PhieuGiamGiaBuilder builder = PhieuGiamGia.builder()
                 .maCode(request.getMaCode())
@@ -517,6 +566,12 @@ public class PhieuGiamGiaService {
     public PhieuGiamGia update(Integer id, UpdateCouponRequest request) {
         PhieuGiamGia coupon = getById(id);
 
+        validateDefinition(coupon.getKieuGiamGia(),
+                request.getGiaTriGiam() != null ? request.getGiaTriGiam() : coupon.getGiaTriGiam(),
+                request.getNgayBatDau() != null ? request.getNgayBatDau() : coupon.getNgayBatDau(),
+                request.getNgayKetThuc() != null ? request.getNgayKetThuc() : coupon.getNgayKetThuc(),
+                request.getTrangThai() != null ? request.getTrangThai() : coupon.getTrangThai());
+
         if (request.getGiaTriGiam() != null) {
             coupon.setGiaTriGiam(request.getGiaTriGiam());
         }
@@ -552,6 +607,20 @@ public class PhieuGiamGiaService {
         }
 
         return phieuGiamGiaRepository.save(coupon);
+    }
+
+    private void validateDefinition(Integer type, BigDecimal value, LocalDateTime start,
+                                    LocalDateTime end, Integer status) {
+        if (type == null || !Set.of(1, 2, 3).contains(type))
+            throw new BadRequestException("Loại giảm giá không hợp lệ");
+        if (value == null || value.signum() < 0 || (!Integer.valueOf(3).equals(type) && value.signum() == 0))
+            throw new BadRequestException("Giá trị giảm phải lớn hơn 0");
+        if (Integer.valueOf(1).equals(type) && value.compareTo(BigDecimal.valueOf(100)) > 0)
+            throw new BadRequestException("Phần trăm giảm không được vượt quá 100%");
+        if (start != null && end != null && !start.isBefore(end))
+            throw new BadRequestException("Ngày bắt đầu phải trước ngày kết thúc");
+        if (status == null || !Set.of(0, 1).contains(status))
+            throw new BadRequestException("Trạng thái voucher không hợp lệ");
     }
 
     @Transactional

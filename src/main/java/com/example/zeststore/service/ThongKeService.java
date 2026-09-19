@@ -30,35 +30,9 @@ public class ThongKeService {
 
     // === ĐỌC TỪ BẢNG TỔNG HỢP THONG_KE_NGAY ===
 
-    private BigDecimal doanhThuLiveNgay(LocalDate ngay) {
-        LocalDateTime start = ngay.atStartOfDay();
-        LocalDateTime end = ngay.plusDays(1).atStartOfDay().minusNanos(1);
-        return donHangRepository.sumRevenueByDateRange(start, end);
-    }
-
-    private long soDonHoanThanhLiveNgay(LocalDate ngay) {
-        LocalDateTime start = ngay.atStartOfDay();
-        LocalDateTime end = ngay.plusDays(1).atStartOfDay().minusNanos(1);
-        return donHangRepository.countCompletedOrders(start, end);
-    }
-
-    private Map<LocalDate, ThongKeNgay> bangTheoNgay(LocalDate tuNgay, LocalDate denNgay) {
-        LocalDate homNay = LocalDate.now();
-        return thongKeNgayRepository.findByNgayBetween(tuNgay, denNgay).stream()
-                .filter(t -> !t.getNgay().isEqual(homNay))
-                .collect(Collectors.toMap(ThongKeNgay::getNgay, t -> t));
-    }
-
     private BigDecimal doanhThuTrongKhoang(LocalDate tuNgay, LocalDate denNgay) {
-        LocalDate homNay = LocalDate.now();
-        BigDecimal total = thongKeNgayRepository.findByNgayBetween(tuNgay, denNgay).stream()
-                .filter(t -> !t.getNgay().isEqual(homNay))
-                .map(ThongKeNgay::getDoanhThu)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (!tuNgay.isAfter(homNay) && !homNay.isAfter(denNgay)) {
-            total = total.add(doanhThuLiveNgay(homNay));
-        }
-        return total;
+        return donHangRepository.sumRevenueByDateRange(
+                tuNgay.atStartOfDay(), denNgay.plusDays(1).atStartOfDay().minusNanos(1));
     }
 
     public Map<String, Object> getDashboardStats() {
@@ -78,17 +52,9 @@ public class ThongKeService {
     public Map<String, Object> getRevenueByDateRange(LocalDateTime tuNgay, LocalDateTime denNgay) {
         LocalDate tuDate = tuNgay.toLocalDate();
         LocalDate denDate = denNgay.toLocalDate();
-        LocalDate homNay = LocalDate.now();
-
         BigDecimal doanhThu = doanhThuTrongKhoang(tuDate, denDate);
 
-        long soDonHoanThanh = thongKeNgayRepository.findByNgayBetween(tuDate, denDate).stream()
-                .filter(t -> !t.getNgay().isEqual(homNay))
-                .mapToLong(t -> (long) t.getSoDonDaGiao() + t.getSoDonChoGiao())
-                .sum();
-        if (!tuDate.isAfter(homNay) && !homNay.isAfter(denDate)) {
-            soDonHoanThanh += soDonHoanThanhLiveNgay(homNay);
-        }
+        long soDonHoanThanh = donHangRepository.countCompletedOrders(tuNgay, denNgay);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("doanhThu", doanhThu);
@@ -97,61 +63,28 @@ public class ThongKeService {
     }
 
     public List<Map<String, Object>> getRevenueByDay(LocalDateTime tuNgay, LocalDateTime denNgay) {
-        LocalDate tuDate = tuNgay.toLocalDate();
-        LocalDate denDate = denNgay.toLocalDate();
-        LocalDate homNay = LocalDate.now();
-
-        Map<LocalDate, ThongKeNgay> bang = bangTheoNgay(tuDate, denDate);
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (LocalDate d = tuDate; !d.isAfter(denDate); d = d.plusDays(1)) {
-            BigDecimal dt = d.isEqual(homNay) ? doanhThuLiveNgay(homNay)
-                    : bang.getOrDefault(d, ThongKeNgay.builder().doanhThu(BigDecimal.ZERO).build()).getDoanhThu();
-            if (dt.compareTo(BigDecimal.ZERO) > 0) {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("ngay", d.toString());
-                item.put("doanhThu", dt);
-                result.add(item);
-            }
-        }
-        return result;
+        return donHangRepository.sumRevenueByDay(tuNgay, denNgay).stream().map(row -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("ngay", row[0].toString());
+            item.put("doanhThu", row[1]);
+            return item;
+        }).collect(Collectors.toList());
     }
 
     // === DOANH THU THEO THÁNG ===
     public List<Map<String, Object>> getRevenueByMonth(int thang, int nam) {
         LocalDate tuDate = LocalDate.of(nam, thang, 1);
         LocalDate denDate = tuDate.plusMonths(1).minusDays(1);
-        LocalDate homNay = LocalDate.now();
-
-        Map<LocalDate, ThongKeNgay> bang = bangTheoNgay(tuDate, denDate);
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (LocalDate d = tuDate; !d.isAfter(denDate); d = d.plusDays(1)) {
-            BigDecimal dt = d.isEqual(homNay) ? doanhThuLiveNgay(homNay)
-                    : bang.getOrDefault(d, ThongKeNgay.builder().doanhThu(BigDecimal.ZERO).build()).getDoanhThu();
-            if (dt.compareTo(BigDecimal.ZERO) > 0) {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("ngay", d.toString());
-                item.put("doanhThu", dt);
-                result.add(item);
-            }
-        }
-        return result;
+        return getRevenueByDay(tuDate.atStartOfDay(), denDate.atTime(java.time.LocalTime.MAX));
     }
 
     // === DOANH THU THEO NĂM ===
     public List<Map<String, Object>> getRevenueByYear() {
-        LocalDate homNay = LocalDate.now();
-        Map<Integer, BigDecimal> byYear = new TreeMap<>();
-        for (ThongKeNgay t : thongKeNgayRepository.findAll()) {
-            if (t.getNgay().isEqual(homNay)) continue;
-            byYear.merge(t.getNgay().getYear(), t.getDoanhThu(), BigDecimal::add);
-        }
-        byYear.merge(homNay.getYear(), doanhThuLiveNgay(homNay), BigDecimal::add);
-
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Map.Entry<Integer, BigDecimal> e : byYear.entrySet()) {
+        for (Object[] row : donHangRepository.sumRevenueByYear()) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("nam", e.getKey());
-            item.put("doanhThu", e.getValue());
+            item.put("nam", row[0]);
+            item.put("doanhThu", row[1]);
             result.add(item);
         }
         return result;
@@ -221,18 +154,14 @@ public class ThongKeService {
     public List<Map<String, Object>> getRevenueByDate(int days) {
         LocalDate homNay = LocalDate.now();
         LocalDate tuDate = homNay.minusDays(days);
-
-        Map<LocalDate, ThongKeNgay> bang = bangTheoNgay(tuDate, homNay);
+        Map<LocalDate, BigDecimal> live = getRevenueByDay(tuDate.atStartOfDay(), homNay.atTime(java.time.LocalTime.MAX))
+                .stream().collect(Collectors.toMap(
+                        row -> LocalDate.parse(row.get("ngay").toString()),
+                        row -> (BigDecimal) row.get("doanhThu")));
         List<Map<String, Object>> result = new ArrayList<>();
         for (int i = days; i >= 0; i--) {
             LocalDate date = homNay.minusDays(i);
-            BigDecimal dt;
-            if (date.isEqual(homNay)) {
-                dt = doanhThuLiveNgay(homNay);
-            } else {
-                ThongKeNgay t = bang.get(date);
-                dt = t != null ? t.getDoanhThu() : BigDecimal.ZERO;
-            }
+            BigDecimal dt = live.getOrDefault(date, BigDecimal.ZERO);
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("ngay", date.toString());
             entry.put("doanhThu", dt);

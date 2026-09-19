@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/coupons")
@@ -29,8 +31,14 @@ public class PhieuGiamGiaController {
     @PostMapping("/validate")
     public ResponseEntity<?> validate(@Valid @RequestBody CouponValidateRequest request, Authentication auth) {
         Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
+        Map<Integer, BigDecimal> productSubtotals = new LinkedHashMap<>();
+        if (request.getItems() != null) {
+            request.getItems().forEach(item -> productSubtotals.merge(
+                    item.getMaSanPham(), item.getThanhTien(), BigDecimal::add));
+        }
         return ResponseEntity.ok(phieuGiamGiaService.validateCoupon(
-                request.getMaCode(), request.getTongTien(), request.getMaSanPhamIds(), userId));
+                request.getMaCode(), request.getTongTien(), request.getMaSanPhamIds(), userId,
+                productSubtotals.isEmpty() ? null : productSubtotals));
     }
 
     @GetMapping("/available")
@@ -39,7 +47,10 @@ public class PhieuGiamGiaController {
             @RequestParam(required = false) List<Integer> maSanPhamIds,
             @RequestParam(required = false) Integer maNguoiDung,
             Authentication auth) {
-        Integer userId = maNguoiDung != null ? maNguoiDung : (auth != null ? userService.getUserIdFromAuth(auth) : null);
+        Integer authenticatedUserId = auth != null ? userService.getUserIdFromAuth(auth) : null;
+        boolean staff = auth != null && auth.getAuthorities().stream().anyMatch(a ->
+                "ROLE_ADMIN".equals(a.getAuthority()) || "ROLE_STAFF".equals(a.getAuthority()));
+        Integer userId = staff && maNguoiDung != null && maNguoiDung > 0 ? maNguoiDung : authenticatedUserId;
         return ResponseEntity.ok(phieuGiamGiaService.getAvailableCoupons(tongTien, userId, maSanPhamIds));
     }
 

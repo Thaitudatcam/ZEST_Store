@@ -30,9 +30,12 @@ public class POSService {
     private final CheckoutShippingService checkoutShippingService;
     private final CampaignDiscountService campaignDiscountService;
 
-    public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien, List<Integer> productIds) {
+    public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien,
+                                               List<Integer> productIds,
+                                               Map<Integer, BigDecimal> productSubtotals) {
         try {
-            Map<String, Object> result = new LinkedHashMap<>(phieuGiamGiaService.validateCoupon(maCode.trim(), tongTien, productIds, maNguoiDung));
+            Map<String, Object> result = new LinkedHashMap<>(phieuGiamGiaService.validateCoupon(
+                    maCode.trim(), tongTien, productIds, maNguoiDung, productSubtotals));
             if (Integer.valueOf(3).equals(result.get("kieuGiamGia")))
                 throw new BadRequestException("Mã freeship không áp dụng tại quầy");
             result.put("hopLe", true);
@@ -127,17 +130,11 @@ public class POSService {
                 throw new BadRequestException("Mã freeship không áp dụng tại quầy");
             }
 
-            if (Integer.valueOf(1).equals(coupon.getKieuGiamGia())) {
-                soTienGiam = tongTien.multiply(coupon.getGiaTriGiam()).divide(BigDecimal.valueOf(100));
-            } else {
-                soTienGiam = coupon.getGiaTriGiam();
-            }
-            if (soTienGiam.compareTo(tongTien) > 0) {
-                soTienGiam = tongTien;
-            }
-            if (coupon.getGiaTriGiamToiDa() != null && soTienGiam.compareTo(coupon.getGiaTriGiamToiDa()) > 0) {
-                soTienGiam = coupon.getGiaTriGiamToiDa();
-            }
+            Map<Integer, BigDecimal> productSubtotals = new LinkedHashMap<>();
+            orderItems.forEach(item -> productSubtotals.merge(
+                    ((BienTheSanPham) item.get("bienThe")).getSanPham().getMaSanPham(),
+                    (BigDecimal) item.get("thanhTien"), BigDecimal::add));
+            soTienGiam = phieuGiamGiaService.calculateDiscount(coupon, tongTien, productSubtotals);
         }
 
         String tenNguoiNhan = request.isGiaoHang() ? request.getTenKhachHang() : customer != null ? customer.getHoTen()

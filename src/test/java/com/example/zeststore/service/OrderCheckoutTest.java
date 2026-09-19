@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,6 +28,32 @@ class OrderCheckoutTest {
     @Mock CheckoutShippingService checkoutShippingService;
     @InjectMocks POSService pos;
     @InjectMocks DonHangService online;
+
+    @Test void paidOrderCannotBeCancelledWithoutRefund() {
+        var customer = NguoiDung.builder().maNguoiDung(1).build();
+        var order = DonHang.builder().maDonHang(9).nguoiDung(customer).trangThaiDon(2).build();
+        when(donHangRepository.findByIdForUpdate(9)).thenReturn(Optional.of(order));
+        when(thanhToanRepository.findByDonHang_MaDonHang(9)).thenReturn(List.of(
+                ThanhToan.builder().trangThaiThanhToan(2).build()));
+
+        assertThrows(com.example.zeststore.exception.BadRequestException.class,
+                () -> online.cancelOrder(9, 1));
+        verify(inventoryService, never()).release(any());
+        assertEquals(2, order.getTrangThaiDon());
+    }
+
+    @Test void dateOnlyOrderFilterDoesNotDropDateRange() {
+        when(donHangRepository.findByNgayDatInRange(any(), any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        online.getAllOrders(0, 20, null, null, null,
+                LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 2));
+
+        verify(donHangRepository).findByNgayDatInRange(
+                eq(LocalDate.of(2026, 9, 1).atStartOfDay()),
+                eq(LocalDate.of(2026, 9, 3).atStartOfDay()),
+                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class));
+    }
 
     private OrderRequest onlineRequest() {
         var product = SanPham.builder().maSanPham(2).trangThai(1).build();

@@ -179,11 +179,13 @@ export default function AdminOrderDetail() {
   const NEXT_STATUS = order.loaiDonHang === 2 ? POS_NEXT_STATUS : ONLINE_NEXT_STATUS
   const baseNextStatuses = NEXT_STATUS[order.trangThaiDon] || []
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
+  const hasSuccessfulPayment = payments.some(p => p.trangThaiThanhToan === 2)
   // Legacy orders have no trusted stock movement record. The API deliberately
   // blocks status changes until an admin reconciles inventory first.
   const needsInventoryReconciliation = order.stockState === 'LEGACY'
   const nextStatuses = (needsInventoryReconciliation ? [] : baseNextStatuses).filter(s => {
     if (hasUnpaidOnline && (s === 2 || s === 3 || s === 4 || s === 6)) return false
+    if (hasSuccessfulPayment && (s === 5 || s === 9)) return false
     return true
   })
 
