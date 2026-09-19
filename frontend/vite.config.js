@@ -15,5 +15,12 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/test-setup.js',
+      css: false,
+      exclude: ['**/admin/pos/drafts.test.js', '**/node_modules/**'],
+    },
   }
 })

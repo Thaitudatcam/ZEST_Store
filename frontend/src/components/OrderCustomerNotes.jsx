@@ -16,8 +16,8 @@ const STATUS_LABELS = {
  * Customer-facing order updates. The API already filters internal notes, but
  * we keep the defensive check here so a private note can never leak in the UI.
  */
-export default function OrderCustomerNotes({ history = [] }) {
-  const notes = history.filter((entry) => (
+export default function OrderCustomerNotes({ history }) {
+  const notes = (history || []).filter((entry) => (
     entry
     && entry.khachHangXem !== false
     && entry.ghiChu
