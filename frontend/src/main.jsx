@@ -7,27 +7,19 @@ import { VoucherProvider } from './context/VoucherContext'
 import App from './App'
 import './index.css'
 
-async function enableMocking() {
-  // Tắt MSW để chạy BE thật. Muốn bật lại thì đổi thành true
-  const USE_MSW = false
-  if (import.meta.env.DEV && USE_MSW) {
-    const { worker } = await import('./mocks/browser')
-    return worker.start({ onUnhandledRequest: 'bypass' })
-  }
-}
-
-enableMocking().then(() => {
-  createRoot(document.getElementById('root')).render(
-    <StrictMode>
-      <BrowserRouter>
-        <AuthProvider>
-          <CartProvider>
-              <VoucherProvider>
-                <App />
-              </VoucherProvider>
-          </CartProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </StrictMode>
-  )
-})
+// MSW mocks were removed from this build; the frontend always talks to the
+// real Spring Boot API. Keeping the render path synchronous also prevents Vite
+// from trying to resolve a removed dynamic mock module during import analysis.
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <CartProvider>
+          <VoucherProvider>
+            <App />
+          </VoucherProvider>
+        </CartProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>
+)

@@ -5,7 +5,7 @@ import { addToCart } from '../api/cart'
 import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { ShoppingCart, Star, ChevronRight, ChevronLeft, ChevronDown, Tag } from 'lucide-react'
+import { ShoppingCart, Star, ChevronRight, ChevronLeft, ChevronDown } from 'lucide-react'
 import { VND } from '../components/ProductCard'
 import Toast from '../components/Toast'
 import CartAddedToast from '../components/CartAddedToast'
@@ -263,6 +263,21 @@ export default function ProductDetail() {
           {/* RIGHT: Info */}
           <div className="flex flex-col">
             <h1 className="text-xl font-bold text-ink mb-4">{product.tenSanPham}</h1>
+
+            {/* Compact identification row: understated so price and options stay primary. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-5 text-xs text-stone">
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <span className="uppercase tracking-[0.08em] text-[10px] font-semibold text-stone">Mã SP</span>
+                <code className="font-mono font-semibold text-ink">
+                  {product.maSanPhamCode || `SP${String(product.maSanPham || '').padStart(3, '0')}`}
+                </code>
+              </div>
+              <span className="text-[var(--primary-color)]" aria-hidden="true">•</span>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <span className="uppercase tracking-[0.08em] text-[10px] font-semibold text-stone">SKU</span>
+                <code className="font-mono font-semibold text-ink">{selectedVariant?.sku || '—'}</code>
+              </div>
+            </div>
 
             {/* Price */}
             <div className="flex items-center gap-3 mb-5">

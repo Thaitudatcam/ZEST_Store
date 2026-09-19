@@ -9,6 +9,7 @@ import StatusBadge from '../components/StatusBadge'
 import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
 import ConfirmDialog from '../components/ConfirmDialog'
+import OrderCustomerNotes from '../components/OrderCustomerNotes'
 import { Package, MapPin, CreditCard, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, Clock, Loader, X } from 'lucide-react'
 
 const STATUS_LABELS = {
@@ -143,6 +144,8 @@ export default function OrderDetail() {
           <StatusBadge status={order.trangThaiDon || order.trangThai} loaiDonHang={order.loaiDonHang} />
         </div>
       </div>
+
+      <OrderCustomerNotes history={data.history} />
 
       {/* Recipient Info */}
       <div className="bg-white rounded-xl border border-stone/10 p-5 mb-4">

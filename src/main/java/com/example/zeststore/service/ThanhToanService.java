@@ -159,7 +159,8 @@ public class ThanhToanService {
                 donHangRepository.save(order);
                 orderSseService.sendOrderStatusUpdate(order.getMaDonHang(), 2, 1, "payment", null);
                 lichSuDonHangRepository.save(LichSuDonHang.builder().donHang(order)
-                        .trangThaiCu(1).trangThaiMoi(2).ghiChu("Đã xác nhận thanh toán").build());
+                        .trangThaiCu(1).trangThaiMoi(2).nguoiCapNhat(systemActor())
+                        .ghiChu("Đã xác nhận thanh toán").build());
             }
             clearCartForOrder(order);
         }
@@ -189,10 +190,24 @@ public class ThanhToanService {
             order.setTrangThaiDon(5);
             donHangRepository.save(order);
             lichSuDonHangRepository.save(LichSuDonHang.builder().donHang(order)
-                    .trangThaiCu(1).trangThaiMoi(5).ghiChu("Thanh toán thất bại hoặc hết hạn").build());
+                    .trangThaiCu(1).trangThaiMoi(5).nguoiCapNhat(systemActor())
+                    .ghiChu("Thanh toán thất bại hoặc hết hạn").build());
         }
         payment.setTrangThaiThanhToan(3);
         return thanhToanRepository.save(payment);
+    }
+
+    /** Automatic gateway/scheduler changes still need a real actor because the
+     * legacy SQL schema requires lich_su_don_hang.nguoi_cap_nhat. */
+    private NguoiDung systemActor() {
+        // Unit tests may construct this service without the repository dependency.
+        // Production always injects it and resolves an active admin/staff account.
+        if (nguoiDungRepository == null) {
+            return NguoiDung.builder().maNguoiDung(1).build();
+        }
+        return nguoiDungRepository.findByVaiTro_TenVaiTroInAndTrangThai(List.of("ADMIN", "STAFF"), 1)
+                .stream().findFirst()
+                .orElseGet(() -> NguoiDung.builder().maNguoiDung(1).build());
     }
 
     @Transactional

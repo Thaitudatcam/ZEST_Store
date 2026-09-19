@@ -20,7 +20,9 @@ public class ThongKeNgay {
     @Column(name = "ngay")
     private LocalDate ngay;
 
-    @Column(name = "doanh_thu", nullable = false)
+    // Keep Hibernate's schema metadata aligned with the existing SQL Server
+    // DECIMAL(18,2) column so ddl-auto does not try to alter it on every boot.
+    @Column(name = "doanh_thu", nullable = false, precision = 18, scale = 2)
     private BigDecimal doanhThu = BigDecimal.ZERO;
 
     @Column(name = "so_don_moi", nullable = false)

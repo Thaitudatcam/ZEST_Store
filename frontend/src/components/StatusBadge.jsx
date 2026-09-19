@@ -32,7 +32,9 @@ export default function StatusBadge({ status, loaiDonHang }) {
   const isPos = loaiDonHang === 2
   const label = isPos && posLabels[s] ? posLabels[s] : labels[s]
   return (
-    <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${styles[s] || 'bg-stone/10 text-stone border-stone/20'}`}>
+    <span
+      title={label || status}
+      className={`inline-flex w-[150px] min-h-[34px] max-w-full items-center justify-center rounded-full border px-3 py-1.5 text-center text-xs font-semibold leading-tight whitespace-normal transition-colors ${styles[s] || 'bg-stone/10 text-stone border-stone/20'}`}>
       {label || status}
     </span>
   )

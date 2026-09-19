@@ -140,6 +140,7 @@ export default function AdminOrderDetail() {
   const [statusModal, setStatusModal] = useState(false)
   const [selectedNextStatus, setSelectedNextStatus] = useState(null)
   const [statusNote, setStatusNote] = useState('')
+  const [notifyCustomer, setNotifyCustomer] = useState(false)
   const [historyModal, setHistoryModal] = useState(false)
 
   useEffect(() => {
@@ -178,7 +179,10 @@ export default function AdminOrderDetail() {
   const NEXT_STATUS = order.loaiDonHang === 2 ? POS_NEXT_STATUS : ONLINE_NEXT_STATUS
   const baseNextStatuses = NEXT_STATUS[order.trangThaiDon] || []
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
-  const nextStatuses = baseNextStatuses.filter(s => {
+  // Legacy orders have no trusted stock movement record. The API deliberately
+  // blocks status changes until an admin reconciles inventory first.
+  const needsInventoryReconciliation = order.stockState === 'LEGACY'
+  const nextStatuses = (needsInventoryReconciliation ? [] : baseNextStatuses).filter(s => {
     if (hasUnpaidOnline && (s === 2 || s === 3 || s === 4 || s === 6)) return false
     return true
   })
@@ -188,10 +192,14 @@ export default function AdminOrderDetail() {
   const status = order.trangThaiDon
   const canPrint = isPos ? true : status === 5 ? isAdmin : status > 1
 
-  const handleUpdateStatus = async (trangThai, ghiChu) => {
+  const handleUpdateStatus = async (trangThai, ghiChu, shouldNotify = notifyCustomer) => {
     setUpdating(trangThai)
     try {
-      await api.put(`/orders/admin/${id}/status`, { trangThai, ghiChu: ghiChu || null })
+      await api.put(`/orders/admin/${id}/status`, {
+        trangThai,
+        ghiChu: ghiChu || null,
+        thongBaoKhachHang: Boolean(shouldNotify),
+      })
       const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
       setData(updated)
       toast.success(`Đã cập nhật sang: ${STATUS_LABELS[trangThai]}`)
@@ -424,13 +432,12 @@ export default function AdminOrderDetail() {
               </button>
               {nextStatuses.length > 0 && (
                 <button onClick={() => {
-                    if (nextStatuses.length === 1) {
-                      setConfirmStatus(nextStatuses[0])
-                    } else {
-                      setSelectedNextStatus(nextStatuses[0])
-                      setStatusNote('')
-                      setStatusModal(true)
-                    }
+                    // Always open the form so every transition can carry an
+                    // optional note and a customer-visibility choice.
+                    setSelectedNextStatus(nextStatuses[0])
+                    setStatusNote('')
+                    setNotifyCustomer(false)
+                    setStatusModal(true)
                   }} disabled={updating !== null}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--primary-color)] text-white rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-50">
                   {updating ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
@@ -499,10 +506,22 @@ export default function AdminOrderDetail() {
             </div>
             <div className="mb-6">
               <label className="text-sm font-semibold text-gray-700 block mb-1">GHI CHÚ</label>
-              <textarea value={statusNote} onChange={(e) => setStatusNote(e.target.value)} rows={3}
+              <textarea value={statusNote} onChange={(e) => setStatusNote(e.target.value)} rows={3} maxLength={500}
                 placeholder="Nhập ghi chú (không bắt buộc)"
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--primary-color)] resize-none" />
             </div>
+            <label className="flex items-start gap-2.5 mb-6 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={notifyCustomer}
+                onChange={(e) => setNotifyCustomer(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[var(--primary-color)]"
+              />
+              <span className="text-sm text-gray-700">
+                <span className="font-semibold block">Thông báo cho khách hàng</span>
+                <span className="text-xs text-gray-500">Khách hàng sẽ thấy ghi chú này trong lịch sử đơn hàng.</span>
+              </span>
+            </label>
             <div className="flex justify-end gap-3">
               <button onClick={() => setStatusModal(false)}
                 className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
@@ -528,8 +547,15 @@ export default function AdminOrderDetail() {
         confirmText="Xác nhận"
         variant={confirmStatus === 5 ? 'danger' : 'gold'}
         loading={updating === confirmStatus}
-        onConfirm={() => { const note = statusNote; setConfirmStatus(null); setStatusNote(''); handleUpdateStatus(confirmStatus, note) }}
-        onCancel={() => { setConfirmStatus(null); setStatusNote('') }}
+        onConfirm={() => {
+          const note = statusNote
+          const notify = notifyCustomer
+          setConfirmStatus(null)
+          setStatusNote('')
+          setNotifyCustomer(false)
+          handleUpdateStatus(confirmStatus, note, notify)
+        }}
+        onCancel={() => { setConfirmStatus(null); setStatusNote(''); setNotifyCustomer(false) }}
       />
 
       <ConfirmDialog

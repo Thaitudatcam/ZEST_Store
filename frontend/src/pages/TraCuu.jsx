@@ -3,6 +3,7 @@ import { Search, Package, MapPin, CreditCard, CheckCircle, Truck, Home, Shopping
 import StatusBadge, { VND } from '../components/StatusBadge'
 import SafeImg from '../components/SafeImg'
 import api from '../api/axios'
+import OrderCustomerNotes from '../components/OrderCustomerNotes'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
@@ -179,6 +180,8 @@ export default function TraCuu() {
 
             {/* Status stepper */}
             <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} />
+
+            <OrderCustomerNotes history={history} />
 
             {/* Sản phẩm */}
             <div className="bg-white rounded-2xl border border-stone/10 shadow-sm p-6">
