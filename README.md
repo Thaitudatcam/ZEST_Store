@@ -12,7 +12,8 @@ npm install
 npm run dev
 ```
 
-Chạy tại `http://localhost:5173`. MSW mock server tự động bật trong dev mode.
+Chạy tại `http://localhost:5173`. Frontend luôn gọi backend thật qua proxy `/api`,
+vì vậy cần khởi động Spring Boot trước khi kiểm thử các luồng có dữ liệu.
 
 ### Backend (BE) - Spring Boot
 

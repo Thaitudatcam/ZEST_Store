@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getProducts } from '../api/products'
 import { getActiveCategories } from '../api/categories'
 import { getBestSelling, getPopular, getPersonalized } from '../api/recommendations'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
-import { Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles, Filter, ChevronDown } from 'lucide-react'
+import { Shield, RefreshCw, Headphones, ArrowRight, ShoppingBag, TrendingUp, Sparkles, Filter, ChevronDown, Search } from 'lucide-react'
 import ZS from '../pictures/ZS.png'
 import PromoBanner from '../components/PromoBanner'
 import Aurora from '../components/ui/Aurora'
@@ -23,6 +23,7 @@ const stripData = rawStrip
   }))
 
 export default function Home() {
+  const navigate = useNavigate()
   const productRef = useRef(null)
   const [latestProducts, setLatestProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -80,14 +81,16 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
     setAllLoading(true)
     const params = { page: 0, size: 50, sortBy, sortDir }
     if (searchQuery) params.keyword = searchQuery
     if (filterCategory) params.categoryId = filterCategory
     getProducts(params)
-      .then(d => setAllProducts(d.content ?? d ?? []))
+      .then(d => { if (!cancelled) setAllProducts(d.content ?? d ?? []) })
       .catch(() => {})
-      .finally(() => setAllLoading(false))
+      .finally(() => { if (!cancelled) setAllLoading(false) })
+    return () => { cancelled = true }
   }, [searchQuery, filterCategory, filterSize, sortBy, sortDir])
 
   const scrollToProducts = (e) => {
