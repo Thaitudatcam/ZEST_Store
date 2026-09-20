@@ -126,9 +126,27 @@ public class POSController {
 
     @PostMapping("/vietqr/preview")
     public ResponseEntity<?> previewVietQr(@RequestBody Map<String, Object> body) {
-        BigDecimal amount = BigDecimal.valueOf(((Number) body.get("amount")).doubleValue());
+        Object rawAmount = body == null ? null : body.get("amount");
+        if (!(rawAmount instanceof Number)) {
+            throw new BadRequestException("Số tiền thanh toán QR không hợp lệ");
+        }
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(rawAmount.toString());
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException("Số tiền thanh toán QR không hợp lệ");
+        }
+        if (amount.signum() <= 0 || amount.scale() > 2) {
+            throw new BadRequestException("Số tiền thanh toán QR phải lớn hơn 0");
+        }
         PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();
-        String addInfo = "Thanh+toan+tai+quay+ZestStore";
+        String reference = body.get("reference") == null ? "" : body.get("reference").toString().trim();
+        if (reference.length() > 64 || !reference.matches("[A-Za-z0-9_-]*")) {
+            throw new BadRequestException("Mã tham chiếu QR không hợp lệ");
+        }
+        String addInfo = URLEncoder.encode(
+                reference.isBlank() ? "Thanh toan tai quay ZestStore" : "ZestStore POS " + reference,
+                StandardCharsets.UTF_8);
         String qrUrl = String.format(
                 "https://img.vietqr.io/image/%s-%s-%s.jpg?amount=%s&addInfo=%s&accountName=%s",
                 config.getBankBin(),

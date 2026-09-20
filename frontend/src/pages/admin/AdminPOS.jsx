@@ -424,7 +424,7 @@ export default function AdminPOS() {
       if (paymentMethod === 6) {
         checkoutPayload(6)
         const totalAmount = thanhTien
-        const vqRes = await posApi.vietQRPreview(totalAmount)
+        const vqRes = await posApi.vietQRPreview(totalAmount, activeDraftKey)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
       } else {
@@ -466,7 +466,7 @@ export default function AdminPOS() {
       try {
         checkoutPayload(6)
         const totalAmount = thanhTien
-        const vqRes = await posApi.vietQRPreview(totalAmount)
+        const vqRes = await posApi.vietQRPreview(totalAmount, activeDraftKey)
         setQrDataUrl(vqRes.qrUrl)
         setBankInfo(vqRes)
       } catch (err) {

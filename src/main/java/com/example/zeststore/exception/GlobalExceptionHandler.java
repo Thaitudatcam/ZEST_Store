@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
@@ -116,6 +117,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AsyncRequestTimeoutException.class)
     public void handleAsyncTimeout(AsyncRequestTimeoutException ex) {
+    }
+
+    /**
+     * The browser closed an SSE connection while Spring was writing to it.
+     * The response is already committed as text/event-stream, so returning a
+     * JSON error body would produce a misleading HttpMessageNotWritableException.
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleDisconnectedAsyncRequest(AsyncRequestNotUsableException ex) {
     }
 
     @ExceptionHandler(Exception.class)

@@ -10,6 +10,7 @@ export default function PaymentResult() {
   const [searchParams] = useSearchParams()
   const [done, setDone] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [pending, setPending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [manualCheckLoading, setManualCheckLoading] = useState(false)
   const pollRef = useRef(null)
@@ -25,11 +26,11 @@ export default function PaymentResult() {
       const payment = (data.payments || [])[0]
       if (payment) {
         if (payment.trangThaiThanhToan === 2) {
-          setSuccess(true); setDone(true); setLoading(false)
+          setPending(false); setSuccess(true); setDone(true); setLoading(false)
           return true
         }
         if (payment.trangThaiThanhToan === 3) {
-          setSuccess(false); setDone(true); setLoading(false)
+          setPending(false); setSuccess(false); setDone(true); setLoading(false)
           return true
         }
       }
@@ -56,6 +57,9 @@ export default function PaymentResult() {
 
     const poll = async () => {
       if (Date.now() - startedAt > POLL_TIMEOUT) {
+        // A delayed gateway callback is not the same as a failed payment.
+        setPending(true)
+        setDone(true)
         setLoading(false)
         return
       }
@@ -65,11 +69,11 @@ export default function PaymentResult() {
         const payment = (data.payments || [])[0]
         if (payment) {
           if (payment.trangThaiThanhToan === 2) {
-            setSuccess(true); setDone(true); setLoading(false)
+            setPending(false); setSuccess(true); setDone(true); setLoading(false)
             return
           }
           if (payment.trangThaiThanhToan === 3) {
-            setSuccess(false); setDone(true); setLoading(false)
+            setPending(false); setSuccess(false); setDone(true); setLoading(false)
             return
           }
         }
@@ -101,19 +105,30 @@ export default function PaymentResult() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16 text-center">
-      {success ? (
+      {pending ? (
+        <Loader className="h-20 w-20 mx-auto text-gold animate-spin mb-4" />
+      ) : success ? (
         <CheckCircle className="h-20 w-20 mx-auto text-emerald-deep mb-4" />
       ) : (
         <XCircle className="h-20 w-20 mx-auto text-bordeaux mb-4" />
       )}
       <h1 className="text-2xl font-bold mb-2">
-        {success ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
+        {pending ? 'Đang chờ xác nhận thanh toán' : success ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
       </h1>
       <p className="text-stone mb-6">
-        {success
+        {pending
+          ? 'Cổng thanh toán chưa trả kết quả. Đơn hàng vẫn được giữ, bạn có thể kiểm tra lại sau ít phút.'
+          : success
           ? 'Cảm ơn bạn! Đơn hàng đã được xác nhận.'
           : 'Đã có lỗi xảy ra trong quá trình thanh toán.'}
       </p>
+      {pending && orderId && (
+        <button onClick={checkOrderStatus} disabled={manualCheckLoading}
+          className="inline-flex items-center gap-2 bg-gold text-noir px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gold-hover transition disabled:opacity-50">
+          {manualCheckLoading ? <Loader className="h-4 w-4 animate-spin" /> : null}
+          Kiểm tra lại
+        </button>
+      )}
       {orderId && (
         <Link
           to={`/orders/${orderId}`}

@@ -2,6 +2,7 @@ package com.example.zeststore.service;
 
 import com.example.zeststore.repository.DanhMucRepository;
 import com.example.zeststore.repository.ThuongHieuRepository;
+import com.example.zeststore.exception.BadRequestException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,6 +19,9 @@ public class ProductAiService {
     private final ObjectMapper objectMapper;
 
     public String generateDescription(String tenSanPham, Integer maDanhMuc, Integer maThuongHieu) {
+        if (tenSanPham == null || tenSanPham.isBlank()) {
+            throw new BadRequestException("Vui lòng nhập tên sản phẩm trước khi tạo mô tả");
+        }
         String tenDanhMuc = "";
         if (maDanhMuc != null) {
             tenDanhMuc = danhMucRepo.findById(maDanhMuc)
@@ -42,6 +46,14 @@ public class ProductAiService {
         userNode.put("role", "user");
         userNode.put("content", prompt.toString());
 
-        return openAiService.chat(messages);
+        String description = openAiService.chat(messages);
+        // OpenAiService keeps a safe fallback for the customer chat flow. Do not
+        // put that fallback sentence into the product editor as if it were a
+        // generated description; report the configuration/provider error instead.
+        if (description == null || description.isBlank() || description.startsWith("Xin lỗi")) {
+            throw new BadRequestException(
+                    "Dịch vụ AI chưa khả dụng. Vui lòng kiểm tra lại AI_OPENAI_API_KEY rồi thử lại.");
+        }
+        return description.trim();
     }
 }

@@ -43,8 +43,8 @@ export const posApi = {
   createOrder: (data) =>
     api.post('/admin/pos/orders', data).then(r => r.data),
 
-  vietQRPreview: (amount) =>
-    api.post('/admin/pos/vietqr/preview', { amount }).then(r => r.data),
+  vietQRPreview: (amount, reference) =>
+    api.post('/admin/pos/vietqr/preview', { amount, reference }).then(r => r.data),
 
   confirmQRPayment: (data) =>
     api.post('/admin/pos/orders', data).then(r => r.data),

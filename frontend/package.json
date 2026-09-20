@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:component": "vitest run src/components/OrderCustomerNotes.test.jsx",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "axios": "^1.7.0",
@@ -31,9 +33,11 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^29.1.1",
     "msw": "^2.15.0",

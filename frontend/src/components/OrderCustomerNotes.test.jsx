@@ -8,14 +8,17 @@ describe('OrderCustomerNotes', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('renders nothing when history has no notes with ghiChu', () => {
+  it('renders status updates even when they have no ghiChu', () => {
     const history = [
       { maLichSu: 1, trangThaiMoi: 2, ghiChu: null, khachHangXem: null },
       { maLichSu: 2, trangThaiMoi: 3, ghiChu: '', khachHangXem: true },
       { maLichSu: 3, trangThaiMoi: 4, ghiChu: '   ', khachHangXem: true },
     ]
-    const { container } = render(<OrderCustomerNotes history={history} />)
-    expect(container.innerHTML).toBe('')
+    render(<OrderCustomerNotes history={history} />)
+    expect(screen.getByText('Đã xác nhận')).toBeInTheDocument()
+    expect(screen.getByText('Chờ lấy hàng')).toBeInTheDocument()
+    expect(screen.getByText('Chờ giao hàng')).toBeInTheDocument()
+    expect(screen.getAllByText('Trạng thái được cập nhật')).toHaveLength(3)
   })
 
   it('renders notes that are visible to customers (khachHangXem=true)', () => {
@@ -114,12 +117,13 @@ describe('OrderCustomerNotes', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('filters out entries with whitespace-only ghiChu', () => {
+  it('shows an update when ghiChu contains only whitespace', () => {
     const history = [
       { maLichSu: 1, trangThaiMoi: 2, ghiChu: '   \n\t  ', khachHangXem: true },
     ]
-    const { container } = render(<OrderCustomerNotes history={history} />)
-    expect(container.innerHTML).toBe('')
+    render(<OrderCustomerNotes history={history} />)
+    expect(screen.getByText('Đã xác nhận')).toBeInTheDocument()
+    expect(screen.getByText('Trạng thái được cập nhật')).toBeInTheDocument()
   })
 
   it('renders long note content without truncation', () => {

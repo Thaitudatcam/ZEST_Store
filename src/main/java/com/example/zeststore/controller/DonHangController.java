@@ -8,15 +8,18 @@ import com.example.zeststore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +32,7 @@ public class DonHangController {
     private final UserService userService;
     private final OrderSseService orderSseService;
     private static final Logger log = LoggerFactory.getLogger(DonHangController.class);
+    private final ConcurrentHashMap<String, LookupWindow> lookupWindows = new ConcurrentHashMap<>();
 
     @GetMapping
     public ResponseEntity<?> getMyOrders(Authentication auth) {
@@ -37,8 +41,35 @@ public class DonHangController {
     }
 
     @GetMapping("/lookup")
-    public ResponseEntity<?> lookupOrder(@RequestParam String maDonHangCode, @RequestParam String email) {
-        return ResponseEntity.ok(donHangService.lookupOrder(maDonHangCode, email));
+    public ResponseEntity<?> lookupOrder(@RequestParam String maDonHangCode, @RequestParam String email,
+                                         HttpServletRequest request) {
+        String code = maDonHangCode == null ? "" : maDonHangCode.trim();
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        if (code.isBlank() || code.length() > 20 || normalizedEmail.isBlank() || normalizedEmail.length() > 254) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Mã đơn hàng hoặc email không hợp lệ"));
+        }
+        String key = request.getRemoteAddr() == null ? "unknown" : request.getRemoteAddr();
+        if (lookupWindows.size() > 10_000) lookupWindows.clear();
+        LookupWindow window = lookupWindows.computeIfAbsent(key, ignored -> new LookupWindow());
+        if (!window.allow()) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("message", "Bạn tra cứu quá nhiều lần. Vui lòng thử lại sau một phút"));
+        }
+        return ResponseEntity.ok(donHangService.lookupOrder(code, normalizedEmail));
+    }
+
+    private static final class LookupWindow {
+        private long startedAt = System.currentTimeMillis();
+        private int attempts;
+
+        synchronized boolean allow() {
+            long now = System.currentTimeMillis();
+            if (now - startedAt >= 60_000) {
+                startedAt = now;
+                attempts = 0;
+            }
+            return ++attempts <= 10;
+        }
     }
 
     @GetMapping("/{id}")
@@ -87,7 +118,12 @@ public class DonHangController {
     }
 
     @GetMapping(value = "/{orderId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamOrderStatus(@PathVariable Integer orderId) {
+    public SseEmitter streamOrderStatus(@PathVariable Integer orderId, Authentication auth) {
+        // The stream contains status notes and recipient information.  Customers
+        // may subscribe only to their own order; staff can monitor any order.
+        if (!authHasRole(auth, "ADMIN") && !authHasRole(auth, "STAFF")) {
+            donHangService.getOrderDetailForUser(orderId, userService.getUserIdFromAuth(auth));
+        }
         SseEmitter emitter = orderSseService.addEmitter(orderId);
         try {
             emitter.send(SseEmitter.event()

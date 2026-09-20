@@ -101,6 +101,7 @@ public class ThongKeService {
             item.put("tenSanPham", row[1]);
             item.put("urlAnh", row[2]);
             item.put("soLuongDaBan", row[3]);
+            item.put("doanhThu", row.length > 4 && row[4] != null ? row[4] : BigDecimal.ZERO);
             sanPhamRepository.findById(maSanPham).ifPresent(sp ->
                 item.put("ngayXoa", sp.getNgayXoa())
             );

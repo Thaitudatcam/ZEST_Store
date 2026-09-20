@@ -71,7 +71,14 @@ public class OpenAiService {
             log.warn("OpenAI returned empty response");
             return "Xin lỗi, tôi không thể trả lời ngay lúc này.";
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
-            log.error("OpenAI HTTP error: {} - {} - body: {}", e.getStatusCode(), e.getMessage(), e.getResponseBodyAsString(), e);
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                // A revoked/expired key is a configuration problem, not an
+                // application exception. Keep the log actionable without
+                // flooding the console with a full stack trace on every click.
+                log.error("OpenAI authentication failed (401). Check AI_OPENAI_API_KEY.");
+            } else {
+                log.error("OpenAI HTTP error: {} - body: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            }
             return "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.";
         } catch (Exception e) {
             log.error("OpenAI call failed: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);

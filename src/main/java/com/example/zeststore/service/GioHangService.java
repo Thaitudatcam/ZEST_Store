@@ -21,6 +21,16 @@ public class GioHangService {
         return Math.max(0, variant.getTonKho() - inventoryService.reserved(variant.getMaBienThe(), null, null));
     }
 
+    private void ensurePurchasable(BienTheSanPham variant) {
+        SanPham product = variant == null ? null : variant.getSanPham();
+        if (variant == null || variant.getNgayXoa() != null
+                || !Integer.valueOf(1).equals(variant.getTrangThai())
+                || product == null || product.getNgayXoa() != null
+                || !Integer.valueOf(1).equals(product.getTrangThai())) {
+            throw new BadRequestException("Sản phẩm đã ngừng bán hoặc không còn tồn tại");
+        }
+    }
+
     private final GioHangRepository gioHangRepository;
     private final MucGioHangRepository mucGioHangRepository;
     private final BienTheSanPhamRepository bienTheRepository;
@@ -96,9 +106,7 @@ public class GioHangService {
         BienTheSanPham variant = bienTheRepository.findById(maBienThe)
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", maBienThe));
 
-        if (variant.getNgayXoa() != null) {
-            throw new BadRequestException("Variant no longer exists");
-        }
+        ensurePurchasable(variant);
         if (available(variant) < soLuong) {
             throw new BadRequestException("Insufficient stock. Available: " + available(variant));
         }
@@ -142,6 +150,7 @@ public class GioHangService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
 
         BienTheSanPham variant = item.getBienThe();
+        ensurePurchasable(variant);
         if (soLuong > available(variant)) {
             throw new BadRequestException("Insufficient stock. Available: " + available(variant));
         }

@@ -15,7 +15,8 @@ public interface MucDonHangRepository extends JpaRepository<MucDonHang, Integer>
     List<MucDonHang> findByDonHang_MaDonHang(Integer maDonHang);
 
     @Query("SELECT m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, "
-            + "m.bienThe.sanPham.urlAnhDaiDien, SUM(m.soLuong) as totalSold "
+            + "m.bienThe.sanPham.urlAnhDaiDien, SUM(m.soLuong) as totalSold, "
+            + "COALESCE(SUM(m.thanhTien), 0) as revenue "
             + "FROM MucDonHang m "
             + "WHERE m.donHang.trangThaiDon IN (4, 6) "
             + "GROUP BY m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, m.bienThe.sanPham.urlAnhDaiDien "
@@ -23,7 +24,8 @@ public interface MucDonHangRepository extends JpaRepository<MucDonHang, Integer>
     List<Object[]> findBestSellingProducts(Pageable pageable);
 
     @Query("SELECT m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, "
-            + "m.bienThe.sanPham.urlAnhDaiDien, SUM(m.soLuong) as totalSold "
+            + "m.bienThe.sanPham.urlAnhDaiDien, SUM(m.soLuong) as totalSold, "
+            + "COALESCE(SUM(m.thanhTien), 0) as revenue "
             + "FROM MucDonHang m "
             + "WHERE m.donHang.trangThaiDon IN (4, 6) AND m.donHang.ngayDat BETWEEN :tuNgay AND :denNgay "
             + "GROUP BY m.bienThe.sanPham.maSanPham, m.bienThe.sanPham.tenSanPham, m.bienThe.sanPham.urlAnhDaiDien "

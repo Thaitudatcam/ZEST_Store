@@ -36,11 +36,22 @@ public class GhnController {
 
     @PostMapping("/ghn/fee")
     public ResponseEntity<?> calculateFee(@RequestBody Map<String, Object> request) {
-        int serviceTypeId = ((Number) request.getOrDefault("serviceTypeId", 2)).intValue();
-        int toDistrictId = ((Number) request.get("toDistrictId")).intValue();
-        String toWardCode = String.valueOf(request.get("toWardCode"));
-        int weight = ((Number) request.getOrDefault("weight", 500)).intValue();
-        return ResponseEntity.ok(ghnService.calculateFee(serviceTypeId, toDistrictId, toWardCode, weight));
+        try {
+            if (request == null || !(request.get("toDistrictId") instanceof Number)
+                    || !(request.get("toWardCode") instanceof String)) {
+                return badRequest("Thiếu quận/huyện hoặc phường/xã giao hàng");
+            }
+            int serviceTypeId = number(request.getOrDefault("serviceTypeId", 2));
+            int toDistrictId = number(request.get("toDistrictId"));
+            String toWardCode = ((String) request.get("toWardCode")).trim();
+            int weight = number(request.getOrDefault("weight", 500));
+            if (serviceTypeId <= 0 || toDistrictId <= 0 || toWardCode.isBlank() || weight <= 0) {
+                return badRequest("Thông tin giao hàng không hợp lệ");
+            }
+            return ResponseEntity.ok(ghnService.calculateFee(serviceTypeId, toDistrictId, toWardCode, weight));
+        } catch (RuntimeException ex) {
+            return badRequest("Không thể tính phí vận chuyển");
+        }
     }
 
     @PostMapping("/calculate")
@@ -81,5 +92,14 @@ public class GhnController {
                 "message", "Không thể tính phí vận chuyển"
             ));
         }
+    }
+
+    private int number(Object value) {
+        if (!(value instanceof Number)) throw new IllegalArgumentException("number required");
+        return ((Number) value).intValue();
+    }
+
+    private ResponseEntity<?> badRequest(String message) {
+        return ResponseEntity.badRequest().body(Map.of("error", true, "message", message));
     }
 }

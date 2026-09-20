@@ -1,88 +1,14 @@
 import { useState } from 'react'
-import { Search, Package, MapPin, CreditCard, CheckCircle, Truck, Home, ShoppingBag, XCircle, AlertTriangle, Clock, X } from 'lucide-react'
+import { Search, Package, MapPin, CreditCard, CheckCircle, XCircle, Clock, X } from 'lucide-react'
 import StatusBadge, { VND } from '../components/StatusBadge'
 import SafeImg from '../components/SafeImg'
 import api from '../api/axios'
 import OrderCustomerNotes from '../components/OrderCustomerNotes'
-
-const STATUS_STEPS = [
-  { status: 1, label: 'Chờ xác nhận', icon: ShoppingBag },
-  { status: 2, label: 'Đã xác nhận', icon: CheckCircle },
-  { status: 3, label: 'Chờ lấy hàng', icon: Package },
-  { status: 4, label: 'Chờ giao hàng', icon: Truck },
-  { status: 6, label: 'Giao hàng thành công', icon: Home },
-]
-
-const STATUS_LABELS = {
-  1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
-}
+import OrderStatusStepper from '../components/OrderStatusStepper'
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
 
-function OrderStatusStepper({ currentStatus, history, loaiDonHang }) {
-  const isPos = loaiDonHang === 2
-  const steps = isPos ? [1, 6] : [1, 2, 3, 4, 6]
-  const isSpecial = [5, 9].includes(currentStatus)
-
-  let maxNormalStatus = currentStatus
-  if (isSpecial) {
-    const normalHistory = (history || []).filter(h => ![5, 9].includes(h.trangThaiMoi)).map(h => h.trangThaiMoi)
-    maxNormalStatus = normalHistory.length > 0 ? Math.max(...normalHistory) : -1
-  }
-  const maxIdx = steps.indexOf(maxNormalStatus)
-  const visibleSteps = maxIdx >= 0 ? steps.slice(0, maxIdx + 1) : []
-
-  const getTimeForStatus = (status) => {
-    const h = history?.find(item => item.trangThaiMoi === status)
-    return h ? new Date(h.thoiGian).toLocaleString('vi-VN') : null
-  }
-
-  return (
-    <div className="bg-ivory rounded-2xl border border-stone/10 shadow-sm p-6 mb-6 overflow-x-auto">
-      <div className="flex items-center min-w-fit">
-        {visibleSteps.map((s, i) => {
-          const stepDef = STATUS_STEPS.find(st => st.status === s)
-          const Icon = stepDef?.icon || Package
-          const isCurrent = !isSpecial && s === currentStatus
-          const time = getTimeForStatus(s)
-
-          return (
-            <div key={s} className="flex items-center">
-              {i > 0 && <div className="w-8 sm:w-12 h-0.5 bg-gold/100 mx-1 sm:mx-2" />}
-              <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 transition-all duration-300
-                  ${isCurrent ? 'bg-gold text-noir ring-4 ring-blue-200 animate-pulse' : 'bg-gold text-noir'}`}>
-                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <p className="text-[10px] sm:text-xs font-semibold mt-1.5 text-center whitespace-nowrap text-ink">{stepDef?.label}</p>
-                {time && <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{time}</p>}
-              </div>
-            </div>
-          )
-        })}
-        {isSpecial && (
-          <div className="flex items-center ml-2">
-            <div className="w-8 sm:w-12 h-0.5 bg-bordeaux/30 mx-1 sm:mx-2" />
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-bordeaux/20 text-bordeaux">
-                {currentStatus === 5 || currentStatus === 9 ? <XCircle className="h-5 w-5 sm:h-6 sm:w-6" /> : <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6" />}
-              </div>
-              <p className="text-[10px] sm:text-xs font-semibold mt-1.5 whitespace-nowrap text-bordeaux">{STATUS_LABELS[currentStatus]}</p>
-              <p className="text-[9px] sm:text-[10px] text-stone mt-0.5">{getTimeForStatus(currentStatus)}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function getTimeForStatus(status, history) {
-  const h = history?.find(item => item.trangThaiMoi === status)
-  return h ? new Date(h.thoiGian).toLocaleString('vi-VN') : null
-}
 
 export default function TraCuu() {
   const [maDonHang, setMaDonHang] = useState('')
@@ -115,7 +41,7 @@ export default function TraCuu() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f5f0e8] to-[#faf7f2]">
-      <div className="max-w-4xl mx-auto px-4 py-10 pb-28 lg:pb-10">
+      <div className="max-w-5xl mx-auto px-4 py-10 pb-28 lg:pb-10">
         {/* Form tra cứu */}
         <div className="max-w-2xl mx-auto mb-10">
           <h1 className="text-2xl sm:text-3xl font-bold text-center text-ink mb-2">TRA CỨU ĐƠN HÀNG</h1>
@@ -299,12 +225,20 @@ export default function TraCuu() {
                 <div className="p-5 space-y-3">
                   <div>
                     <h3 className="font-bold text-lg">{p.tenSanPham || 'Sản phẩm'}</h3>
-                    <p className="text-xs text-stone">SKU: {v.sku || '—'}</p>
                   </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-gold font-bold text-xl">{VND(selectedItem.donGia || 0)}</span>
-                    <span className="text-stone">x{selectedItem.soLuong}</span>
-                    <span className="text-stone font-semibold">= {VND(selectedItem.thanhTien || 0)}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border border-stone/10 bg-white/60 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-stone">Mã sản phẩm</p>
+                      <p className="mt-0.5 text-xs font-bold text-ink">{p.maSanPhamCode || (p.maSanPham ? `SP${p.maSanPham}` : '—')}</p>
+                    </div>
+                    <div className="rounded-lg border border-stone/10 bg-white/60 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-stone">SKU biến thể</p>
+                      <p className="mt-0.5 truncate text-xs font-bold text-ink">{v.sku || '—'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-stone">Giá sản phẩm</p>
+                    <p className="mt-0.5 text-gold font-bold text-xl">{VND(selectedItem.donGia || 0)}</p>
                   </div>
                   <div className="flex flex-wrap gap-3 text-sm">
                     {v.mauSac?.mauSac && (

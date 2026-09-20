@@ -1,6 +1,6 @@
 # POS Visual Acceptance Checklist
 
-Dùng để verify giao diện POS pixel-perfect theo Bee Stylish screenshots.
+Dùng để verify giao diện POS theo bộ nhận diện ZestStore.
 
 ## Sidebar
 - [ ] Dark background (`bg-noir-900`)

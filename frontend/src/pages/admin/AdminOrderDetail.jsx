@@ -271,6 +271,11 @@ export default function AdminOrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column (2/3) */}
         <div className="lg:col-span-2 space-y-0">
+          {order.trangThaiDon === 9 && hasSuccessfulPayment && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-6 text-sm text-amber-800">
+              <strong>Đơn giao thất bại đã thanh toán.</strong> Vui lòng hoàn tiền cho khách và lưu mã giao dịch hoàn tiền trong ghi chú nội bộ.
+            </div>
+          )}
           {/* Status Stepper */}
           <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} onShowHistory={() => setHistoryModal(true)} />
 

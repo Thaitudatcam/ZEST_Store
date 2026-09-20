@@ -41,7 +41,17 @@ public class PaymentService {
             momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
             return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderIdInt");
         }
-        String redirect = redirectBase + "/payment/result?success=false";
+        if ("true".equals(result.get("verified")) && result.get("orderId") != null) {
+            // A signed unsuccessful return is authoritative enough to release the
+            // reservation immediately.  The IPN handler remains idempotent.
+            momoService.handleFailedPayment(result.get("orderId"));
+            String redirect = redirectBase + "/payment/result?success=false";
+            if (result.get("orderIdInt") != null) redirect += "&orderId=" + result.get("orderIdInt");
+            return redirect;
+        }
+        // An unverified browser return must not be treated as a failed payment;
+        // the signed IPN or the result page will settle it later.
+        String redirect = redirectBase + "/payment/result";
         if (result.get("orderIdInt") != null) redirect += "&orderId=" + result.get("orderIdInt");
         return redirect;
     }
@@ -82,7 +92,16 @@ public class PaymentService {
                 vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
                 return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderId");
             }
-            String redirect = redirectBase + "/payment/result?success=false";
+            if ("true".equals(result.get("verified")) && result.get("txnRef") != null) {
+                // Do not leave a failed, signed gateway response pending until
+                // the two-hour cleanup job runs.
+                vnPayService.handleFailedPayment(result.get("txnRef"));
+                String redirect = redirectBase + "/payment/result?success=false";
+                if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
+                return redirect;
+            }
+            // Invalid/missing signatures are pending, not a payment failure.
+            String redirect = redirectBase + "/payment/result";
             if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
             return redirect;
         } catch (RuntimeException ex) {

@@ -8,6 +8,7 @@ import com.example.zeststore.repository.ThanhToanRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -22,6 +23,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ZaloPayService {
 
     private final PaymentConfig paymentConfig;
@@ -135,12 +137,20 @@ public class ZaloPayService {
     @Transactional
     public String handleReturn(Map<String, String> params) {
         String appTransId = params.get("apptransid");
+        String base = paymentConfig.getRedirectBaseUrl() + "/payment/result";
         if (appTransId == null || appTransId.isBlank()) {
-            return paymentConfig.getRedirectBaseUrl() + "/payment/result?success=false";
+            // Missing gateway parameters are not a verified payment failure.
+            return base;
         }
 
         String maGiaoDich = appTransId.contains("_") ? appTransId.split("_", 2)[1] : appTransId;
-        Map<String, Object> queryResult = queryOrder(appTransId);
+        Map<String, Object> queryResult;
+        try {
+            queryResult = queryOrder(appTransId);
+        } catch (RuntimeException ex) {
+            log.warn("Không thể truy vấn trạng thái ZaloPay cho {}", appTransId, ex);
+            return base + "?orderId=" + orderIdFromReference(maGiaoDich);
+        }
 
         boolean processing = queryResult.get("is_processing") == Boolean.TRUE;
         if (processing) {
@@ -150,7 +160,11 @@ public class ZaloPayService {
             return paymentConfig.getRedirectBaseUrl() + "/payment/result?orderId=" + (orderId != null ? orderId : "");
         }
 
-        int returnCode = ((Number) queryResult.get("return_code")).intValue();
+        Object rawReturnCode = queryResult.get("return_code");
+        if (!(rawReturnCode instanceof Number)) {
+            return base + "?orderId=" + orderIdFromReference(maGiaoDich);
+        }
+        int returnCode = ((Number) rawReturnCode).intValue();
         if (returnCode == 1) {
             String zpTransId = String.valueOf(queryResult.get("zp_trans_id"));
             ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
@@ -170,11 +184,19 @@ public class ZaloPayService {
         String[] parts = maGiaoDich.split("-", 3);
         if (parts.length >= 2) try { orderId = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) {}
 
-        String base = paymentConfig.getRedirectBaseUrl() + "/payment/result";
         if (returnCode == 1) {
             return base + "?success=true&orderId=" + (orderId != null ? orderId : "");
         }
         return base + "?success=false&orderId=" + (orderId != null ? orderId : "");
+    }
+
+    private String orderIdFromReference(String reference) {
+        String[] parts = reference == null ? new String[0] : reference.split("-", 3);
+        if (parts.length >= 2) {
+            try { return String.valueOf(Integer.parseInt(parts[1])); }
+            catch (NumberFormatException ignored) {}
+        }
+        return "";
     }
 
     @SuppressWarnings("unchecked")

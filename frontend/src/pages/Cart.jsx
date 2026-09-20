@@ -36,21 +36,34 @@ export default function Cart() {
         const issues = await validateCart()
         if (issues.length > 0) {
           let changed = false
+          let mustReload = false
           for (const issue of issues) {
             if (issue.type === 'insufficient') {
-              await updateCartItem(issue.maBienThe, { soLuong: issue.availableStock })
-              setItems(prev => prev.map(i =>
-                i.maBienThe === issue.maBienThe
-                  ? { ...i, soLuong: issue.availableStock, tonKho: issue.availableStock }
-                  : i
-              ))
+              if (Number(issue.availableStock) <= 0) {
+                // The API does not accept quantity 0. Remove an item that has
+                // sold out instead of repeatedly retrying an invalid update.
+                await removeCartItem(issue.maBienThe)
+                setItems(prev => prev.filter(i => i.maBienThe !== issue.maBienThe))
+                setSelectedIds(prev => { const next = new Set(prev); next.delete(issue.maBienThe); return next })
+              } else {
+                await updateCartItem(issue.maBienThe, { soLuong: issue.availableStock })
+                setItems(prev => prev.map(i =>
+                  i.maBienThe === issue.maBienThe
+                    ? { ...i, soLuong: issue.availableStock, tonKho: issue.availableStock }
+                    : i
+                ))
+              }
               setToast({ message: issue.message, type: 'warning' })
               changed = true
             }
             if (issue.type === 'deleted') {
+              // A deleted variant may no longer have a maBienThe, so reload
+              // the server cart to remove the orphaned row safely.
+              mustReload = true
               changed = true
             }
           }
+          if (mustReload) await load()
           if (changed) refreshCount()
         }
       } catch {}
@@ -177,7 +190,7 @@ export default function Cart() {
 
             {/* Trust */}
             <div className="bg-ivory rounded-xl border border-stone/10 p-4 mb-5">
-              <p className="text-sm font-semibold text-ink mb-1.5">An tâm mua sắm hàng chính hàng tại <span className="text-[var(--primary-color)]">BeeStylish.vn</span></p>
+              <p className="text-sm font-semibold text-ink mb-1.5">An tâm mua sắm hàng chính hãng tại <span className="text-[var(--primary-color)]">ZestStore</span></p>
               <ul className="text-xs text-stone space-y-0.5">
                 <li>Được kiểm tra hàng trước khi thanh toán & hài lòng</li>
                 <li>Được đổi trả trong 15 ngày theo chính sách (*)</li>
@@ -331,7 +344,7 @@ export default function Cart() {
               </button>
 
               <p className="text-xs text-stone text-center mt-3">
-                Dùng mã giảm giá của <span className="font-semibold text-ink">BeeStylish</span> trong bước tiếp theo
+                Dùng mã giảm giá của <span className="font-semibold text-ink">ZestStore</span> trong bước tiếp theo
               </p>
             </div>
           </div>

@@ -691,9 +691,15 @@ export default function AdminProductForm() {
                   setGeneratingDesc(true)
                   try {
                     const res = await generateDescription({ tenSanPham: product.tenSanPham, maDanhMuc: product.maDanhMuc || null, maThuongHieu: product.maThuongHieu || null })
-                    updateProductField('moTa', res.description)
+                    const description = res?.description?.trim()
+                    if (!description || description.startsWith('Xin lỗi')) {
+                      throw new Error('Dịch vụ AI chưa khả dụng. Vui lòng kiểm tra lại khóa API OpenAI.')
+                    }
+                    updateProductField('moTa', description)
                     toast.success('Đã tạo mô tả bằng AI')
-                  } catch { toast.error('Tạo mô tả thất bại') }
+                  } catch (err) {
+                    toast.error(err.response?.data?.message || err.message || 'Tạo mô tả thất bại')
+                  }
                   finally { setGeneratingDesc(false) }
                 }} disabled={generatingDesc}
                   className="flex items-center gap-1 text-xs text-gold hover:text-gold-hover font-medium disabled:opacity-50">

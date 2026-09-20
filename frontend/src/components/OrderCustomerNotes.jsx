@@ -15,16 +15,17 @@ const STATUS_LABELS = {
 /**
  * Customer-facing order updates. The API already filters internal notes, but
  * we keep the defensive check here so a private note can never leak in the UI.
+ * Status changes are shown even when the staff member did not enter a note.
  */
 export default function OrderCustomerNotes({ history }) {
-  const notes = (history || []).filter((entry) => (
+  const updates = (history || []).filter((entry) => (
     entry
     && entry.khachHangXem !== false
-    && entry.ghiChu
-    && String(entry.ghiChu).trim()
+    && entry.trangThaiMoi !== null
+    && entry.trangThaiMoi !== undefined
   ))
 
-  if (!notes.length) return null
+  if (!updates.length) return null
 
   return (
     <section className="bg-white rounded-xl border border-stone/10 p-5 mb-4">
@@ -32,15 +33,16 @@ export default function OrderCustomerNotes({ history }) {
         <Clock className="h-4 w-4 text-gold" /> CẬP NHẬT ĐƠN HÀNG
       </h2>
       <div className="relative space-y-4 pl-1">
-        {notes.map((entry, index) => {
+        {updates.map((entry, index) => {
           const time = entry.thoiGian
             ? new Date(entry.thoiGian).toLocaleString('vi-VN')
             : null
           const statusLabel = STATUS_LABELS[entry.trangThaiMoi]
+          const note = entry.ghiChu && String(entry.ghiChu).trim()
 
           return (
             <div key={`${entry.maLichSu || entry.thoiGian || 'note'}-${index}`} className="relative flex gap-3">
-              {index < notes.length - 1 && (
+              {index < updates.length - 1 && (
                 <span className="absolute left-[5px] top-3 bottom-[-16px] w-px bg-gold/25" aria-hidden="true" />
               )}
               <span className="relative mt-1.5 h-2.5 w-2.5 rounded-full bg-gold ring-4 ring-gold/10 shrink-0" aria-hidden="true" />
@@ -51,9 +53,13 @@ export default function OrderCustomerNotes({ history }) {
                   </span>
                   {time && <span className="text-xs text-stone">{time}</span>}
                 </div>
-                <p className="mt-1.5 rounded-lg bg-ivory-50 px-3 py-2 text-sm leading-relaxed text-ink-soft">
-                  {String(entry.ghiChu).trim()}
-                </p>
+                {note ? (
+                  <p className="mt-1.5 rounded-lg bg-ivory-50 px-3 py-2 text-sm leading-relaxed text-ink-soft">
+                    {note}
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-xs italic text-stone">Trạng thái được cập nhật</p>
+                )}
                 <p className="mt-1 text-[11px] text-stone">Thông báo từ ZestStore</p>
               </div>
             </div>

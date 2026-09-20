@@ -48,6 +48,9 @@ public class OrderRequest {
 
     private String toWardCode;
 
+    @jakarta.validation.constraints.Positive
+    private Integer serviceTypeId;
+
     private Integer weight;
 
     private List<Integer> maBienTheList;

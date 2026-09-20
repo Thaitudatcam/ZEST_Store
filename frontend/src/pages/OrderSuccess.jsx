@@ -27,7 +27,7 @@ export default function OrderSuccess() {
 
           <h1 className="text-xl font-bold text-[var(--primary-color)] mb-3">ĐẶT HÀNG THÀNH CÔNG!</h1>
           <p className="text-sm text-stone mb-1">
-            Cảm ơn <span className="font-semibold text-ink">{order.tenNguoiNhan || 'Quý khách'}</span> đã tin tưởng mua sắm tại Bee Stylish.
+            Cảm ơn <span className="font-semibold text-ink">{order.tenNguoiNhan || 'Quý khách'}</span> đã tin tưởng mua sắm tại ZestStore.
           </p>
           <p className="text-sm text-stone mb-6">
             Mã đơn hàng của bạn là: <span className="font-bold text-ink">{order.maDonHangCode || order.maDonHang}</span>

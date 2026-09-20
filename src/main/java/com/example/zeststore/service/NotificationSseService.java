@@ -47,6 +47,12 @@ public class NotificationSseService {
                         .data(payload));
             } catch (IOException e) {
                 deadEmitters.add(emitter);
+                log.debug("Removing disconnected notification SSE emitter for user {}", maNguoiDung);
+            } catch (IllegalStateException e) {
+                // Some servlet containers expose an unusable emitter as a generic
+                // illegal-state failure instead of IOException.
+                deadEmitters.add(emitter);
+                log.debug("Removing illegal-state notification SSE emitter for user {}", maNguoiDung);
             }
         }
 

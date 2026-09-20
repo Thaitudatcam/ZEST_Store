@@ -10,6 +10,7 @@ import { VND } from '../components/ProductCard'
 import SafeImg from '../components/SafeImg'
 import ConfirmDialog from '../components/ConfirmDialog'
 import OrderCustomerNotes from '../components/OrderCustomerNotes'
+import OrderStatusStepper from '../components/OrderStatusStepper'
 import { Package, MapPin, CreditCard, ExternalLink, ShoppingBag, CheckCircle, Truck, Home, AlertTriangle, XCircle, Clock, Loader, X } from 'lucide-react'
 
 const STATUS_LABELS = {
@@ -120,6 +121,13 @@ export default function OrderDetail() {
   const order = data.order || data
   const items = data.items || []
   const payments = data.payments || []
+  // Payment information is returned as a collection by the API.  Do not read
+  // payment fields from the order entity (they are not persisted there).
+  const primaryPayment = payments.find(p => p.trangThaiThanhToan === 2)
+    || payments.find(p => p.trangThaiThanhToan === 1)
+    || payments[0]
+  const paymentMethod = primaryPayment?.phuongThuc
+  const paymentStatus = primaryPayment?.trangThaiThanhToan
 
   const hasSuccessfulPayment = payments.some(p => p.trangThaiThanhToan === 2)
   const canCancel = !hasSuccessfulPayment && (order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3)
@@ -128,7 +136,7 @@ export default function OrderDetail() {
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 pb-28 lg:pb-8">
+    <div className="max-w-5xl mx-auto px-4 py-6 pb-28 lg:pb-8">
       {/* Header */}
       <div className="bg-gradient-to-r from-noir via-noir/95 to-noir/80 rounded-2xl p-6 md:p-8 mb-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20">
@@ -145,6 +153,12 @@ export default function OrderDetail() {
           <StatusBadge status={order.trangThaiDon || order.trangThai} loaiDonHang={order.loaiDonHang} />
         </div>
       </div>
+
+      <OrderStatusStepper
+        currentStatus={order.trangThaiDon || order.trangThai}
+        history={data.history}
+        loaiDonHang={order.loaiDonHang}
+      />
 
       <OrderCustomerNotes history={data.history} />
 
@@ -239,12 +253,12 @@ export default function OrderDetail() {
           </div>
           <div className="flex justify-between">
             <span className="text-stone">Phương thức thanh toán</span>
-            <span className="font-medium text-ink">{PAYMENT_LABELS[order.phuongThucThanhToan] || 'COD'}</span>
+            <span className="font-medium text-ink">{PAYMENT_LABELS[paymentMethod] || (order.loaiDonHang === 2 ? 'Tiền mặt' : 'COD')}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-stone">Trạng thái thanh toán</span>
-            <span className={`font-semibold ${order.trangThaiThanhToan === 2 ? 'text-emerald-deep' : 'text-gold'}`}>
-              {PAYMENT_STATUS[order.trangThaiThanhToan] || 'Chưa thanh toán'}
+            <span className={`font-semibold ${paymentStatus === 2 ? 'text-emerald-deep' : paymentStatus === 3 ? 'text-bordeaux' : 'text-gold'}`}>
+              {PAYMENT_STATUS[paymentStatus] || 'Chưa thanh toán'}
             </span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t border-stone/10 pt-3 mt-2">
@@ -313,12 +327,20 @@ export default function OrderDetail() {
             <div className="p-5 space-y-3">
               <div>
                 <h3 className="font-bold text-lg">{p.tenSanPham || 'Sản phẩm'}</h3>
-                <p className="text-xs text-stone">SKU: {v.sku || '—'}</p>
               </div>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-gold font-bold text-xl">{VND(selectedItem.donGia || 0)}</span>
-                <span className="text-stone">x{selectedItem.soLuong}</span>
-                <span className="text-stone font-semibold">= {VND(selectedItem.thanhTien || 0)}</span>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-stone/10 bg-white/60 px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone">Mã sản phẩm</p>
+                  <p className="mt-0.5 text-xs font-bold text-ink">{p.maSanPhamCode || (p.maSanPham ? `SP${p.maSanPham}` : '—')}</p>
+                </div>
+                <div className="rounded-lg border border-stone/10 bg-white/60 px-3 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-stone">SKU biến thể</p>
+                  <p className="mt-0.5 truncate text-xs font-bold text-ink">{v.sku || '—'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-stone">Giá sản phẩm</p>
+                <p className="mt-0.5 text-gold font-bold text-xl">{VND(selectedItem.donGia || 0)}</p>
               </div>
               <div className="flex flex-wrap gap-3 text-sm">
                 {v.mauSac?.mauSac && (

@@ -1,6 +1,6 @@
 # ZestStore POS System
 
-Hệ thống bán hàng tại quầy (POS) cho ZestStore, tái tạo giao diện Bee Stylish.
+Hệ thống bán hàng tại quầy (POS) cho thương hiệu ZestStore.
 
 ## Quick Start
 

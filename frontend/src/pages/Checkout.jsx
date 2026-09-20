@@ -92,6 +92,10 @@ export default function Checkout() {
   // provinces đã đủ 63 tỉnh (api/address tự chuyển sang dataset local khi GHN mock)
   const provinceOptions = provinces
   const [services, setServices] = useState([])
+  const serviceOptions = services.map((service) => ({
+    id: service.service_type_id ?? service.serviceTypeId ?? service.service_id ?? service.id,
+    name: service.short_name ?? service.service_name ?? service.serviceName ?? service.name,
+  })).filter((service) => service.id != null)
   const [selectedProvinceId, setSelectedProvinceId] = useState(0)
   const [selectedDistrictId, setSelectedDistrictId] = useState(0)
   const [selectedWardCode, setSelectedWardCode] = useState('')
@@ -157,7 +161,16 @@ export default function Checkout() {
       setSelectedWardCode(''); setGhnFee(null)
       Promise.all([
         getWards(selectedDistrictId).then(setWards).catch(() => setWards([])),
-        getServices(selectedDistrictId).then(setServices).catch(() => setServices([])),
+        getServices(selectedDistrictId).then((result) => {
+          const next = result || []
+          setServices(next)
+          const first = next.map((service) => service.service_type_id ?? service.serviceTypeId ?? service.service_id ?? service.id)
+            .find((id) => id != null)
+          if (first != null) setSelectedServiceId(Number(first))
+        }).catch(() => {
+          setServices([])
+          setSelectedServiceId(2)
+        }),
       ])
     }
   }, [selectedDistrictId])
@@ -249,7 +262,7 @@ export default function Checkout() {
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       calculateShippingFee({
         // Dataset local dùng mã chữ ("001") — ép số cho backend, mock bỏ qua ID
-        serviceTypeId: 2,
+        serviceTypeId: selectedServiceId,
         toDistrictId: Number(selectedDistrictId),
         toWardCode: selectedWardCode,
         weight: Math.max(weight, 500),
@@ -439,6 +452,7 @@ export default function Checkout() {
         phiVanChuyen: shippingFee,
         toDistrictId: selectedDistrictId || undefined,
         toWardCode: selectedWardCode || undefined,
+        serviceTypeId: selectedServiceId || undefined,
         weight: Math.max(weight, 500),
       }
       if (selectedItems) {
@@ -583,6 +597,18 @@ export default function Checkout() {
                   onChange={(code, name) => { setSelectedWardCode(code); setForm((f) => ({ ...f, phuongXa: name })) }}
                 />
               </div>
+              {serviceOptions.length > 0 && (
+                <div>
+                  <label className="text-xs font-medium text-stone uppercase tracking-wide mb-1 block">Đơn vị vận chuyển</label>
+                  <select
+                    value={selectedServiceId}
+                    onChange={(e) => { setSelectedServiceId(Number(e.target.value)); setGhnFee(null); setGhnError(false) }}
+                    className="border border-stone/20 rounded-lg px-3 py-2.5 text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold"
+                  >
+                    {serviceOptions.map((service) => <option key={service.id} value={service.id}>{service.name || `Dịch vụ ${service.id}`}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="text-xs font-medium text-stone uppercase tracking-wide mb-1 block">Địa chỉ</label>
                 <input value={form.diaChiGiaoHang} onChange={(e) => setForm((f) => ({ ...f, diaChiGiaoHang: e.target.value }))} placeholder="Số nhà, đường..."

@@ -43,8 +43,27 @@ public class DonHangService {
     private final CampaignDiscountService campaignDiscountService;
 
     @Transactional(readOnly = true)
-    public List<DonHang> getOrdersByUser(Integer userId) {
-        return donHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(userId);
+    public List<Map<String, Object>> getOrdersByUser(Integer userId) {
+        return donHangRepository.findByNguoiDung_MaNguoiDungOrderByNgayDatDesc(userId).stream().map(order -> {
+            List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang());
+            List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(order.getMaDonHang());
+            ThanhToan payment = payments.stream().findFirst().orElse(null);
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("maDonHang", order.getMaDonHang());
+            row.put("maDonHangCode", order.getMaDonHangCode());
+            row.put("ngayDat", order.getNgayDat());
+            row.put("tenNguoiNhan", order.getTenNguoiNhan());
+            row.put("sdtNguoiNhan", order.getSdtNguoiNhan());
+            row.put("tongTien", order.getTongTien());
+            row.put("soTienGiam", order.getSoTienGiam());
+            row.put("phiVanChuyen", order.getPhiVanChuyen());
+            row.put("loaiDonHang", order.getLoaiDonHang());
+            row.put("trangThaiDon", order.getTrangThaiDon());
+            row.put("soLuongSanPham", items.size());
+            row.put("phuongThucThanhToan", payment != null ? payment.getPhuongThuc() : null);
+            row.put("trangThaiThanhToan", payment != null ? payment.getTrangThaiThanhToan() : null);
+            return row;
+        }).toList();
     }
 
     @Transactional(readOnly = true)
@@ -515,7 +534,8 @@ public class DonHangService {
         }
 
         if (Integer.valueOf(2).equals(status) || Integer.valueOf(6).equals(status)
-                || Integer.valueOf(3).equals(status) || Integer.valueOf(4).equals(status)) {
+                || Integer.valueOf(3).equals(status) || Integer.valueOf(4).equals(status)
+                || Integer.valueOf(9).equals(status)) {
             boolean hasUnpaidOnline = thanhToanRepository.findByDonHang_MaDonHang(orderId).stream()
                     .anyMatch(t -> t.getPhuongThuc() > 1 && !Integer.valueOf(2).equals(t.getTrangThaiThanhToan()));
             if (hasUnpaidOnline) {
@@ -527,7 +547,10 @@ public class DonHangService {
             inventoryService.deduct(order);
         }
         if (Integer.valueOf(9).equals(status)) {
-            cancelLockedOrder(order);
+            // Delivery failure is not the same as cancellation: a prepaid
+            // order must remain auditable and be refunded separately, while
+            // its reserved/deducted stock is returned to inventory.
+            releaseFailedDelivery(order);
         }
 
         if (Integer.valueOf(6).equals(status)) {
@@ -640,7 +663,10 @@ public class DonHangService {
 
     private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
         int quantity = orderItems.stream().mapToInt(item -> (Integer) item.get("soLuong")).sum();
-        return checkoutShippingService.calculate(request.getToDistrictId(), request.getToWardCode(), quantity);
+        if (request.getServiceTypeId() == null) {
+            return checkoutShippingService.calculate(request.getToDistrictId(), request.getToWardCode(), quantity);
+        }
+        return checkoutShippingService.calculate(request.getServiceTypeId(), request.getToDistrictId(), request.getToWardCode(), quantity);
     }
 
     private void cancelLockedOrder(DonHang order) {
@@ -655,6 +681,14 @@ public class DonHangService {
             if (!Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) payment.setTrangThaiThanhToan(3);
             thanhToanRepository.save(payment);
         }
+    }
+
+    private void releaseFailedDelivery(DonHang order) {
+        if ("LEGACY".equals(order.getStockState())) {
+            throw new BadRequestException("Đơn cũ cần đối soát tồn kho trước khi giao thất bại");
+        }
+        inventoryService.release(order);
+        phieuGiamGiaService.restoreForOrder(order.getMaDonHang());
     }
 
     @Transactional
