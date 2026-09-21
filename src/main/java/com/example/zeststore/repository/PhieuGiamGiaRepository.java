@@ -31,7 +31,13 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
             + "AND (p.soLuong IS NULL OR p.soLuong > 0)")
     List<PhieuGiamGia> findValidCoupons(@Param("now") LocalDateTime now,
                                          @Param("giaTriDon") BigDecimal giaTriDon);
-    List<PhieuGiamGia> findByNgayXoaIsNull();
+    /**
+     * Admin list: newest coupons first.  Keep the id as a deterministic
+     * tie-breaker for records created in the same timestamp.
+     */
+    @Query("SELECT p FROM PhieuGiamGia p WHERE p.ngayXoa IS NULL "
+            + "ORDER BY p.ngayTao DESC, p.maPhieuGiamGia DESC")
+    List<PhieuGiamGia> findByNgayXoaIsNullOrderByNgayTaoDescMaPhieuGiamGiaDesc();
 
     @Query("""
         SELECT p FROM PhieuGiamGia p
@@ -40,6 +46,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
         AND (:kieuGiamGia IS NULL OR p.kieuGiamGia = :kieuGiamGia)
         AND (:giaTriGiam IS NULL OR p.giaTriGiam = :giaTriGiam)
         AND p.ngayXoa IS NULL
+        ORDER BY p.ngayTao DESC, p.maPhieuGiamGia DESC
         """)
     List<PhieuGiamGia> filterPhieuGiamGia(
             @Param("ngayBatDau") LocalDateTime ngayBatDau,

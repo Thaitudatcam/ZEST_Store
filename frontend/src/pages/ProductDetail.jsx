@@ -34,6 +34,7 @@ export default function ProductDetail() {
   const [previewIdx, setPreviewIdx] = useState(0)
   const [relatedProducts, setRelatedProducts] = useState([])
   const [descOpen, setDescOpen] = useState(false)
+  const [buyingNow, setBuyingNow] = useState(false)
 
   const sanitizedDescription = useMemo(
     () => DOMPurify.sanitize(product?.moTa || ''),
@@ -92,6 +93,7 @@ export default function ProductDetail() {
   }
 
   const handleBuyNow = async () => {
+    if (buyingNow) return
     if (!user) return navigate('/login')
     if (isOutOfStock) return setToast({ message: 'Sản phẩm đã hết hàng', type: 'error' })
     if (variants.length > 1 && !selectedSizeId) {
@@ -99,22 +101,19 @@ export default function ProductDetail() {
       return
     }
     try {
+      setBuyingNow(true)
       const variantId = selectedVar || (variants[0]?.maBienThe)
       if (!variantId) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
       await addToCart({ maBienThe: variantId, soLuong: qty })
       refreshCount()
-      const selected = [{
-        maBienThe: variantId,
-        soLuong: qty,
-        tenSanPham: product.tenSanPham,
-        donGia: discountedPrice,
-        giaGoc: variantPrice,
-        urlAnh: mainImg,
-        maSanPham: product.maSanPham,
-      }]
-      navigate('/checkout', { state: { selectedItems: selected } })
+      // Checkout reloads the authoritative cart from the server. Passing only
+      // the variant id prevents a stale price/quantity snapshot from causing
+      // a total mismatch when the item already exists in the cart.
+      navigate('/checkout', { state: { selectedVariantIds: [variantId] } })
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Mua thất bại', type: 'error' })
+    } finally {
+      setBuyingNow(false)
     }
   }
 
@@ -369,13 +368,13 @@ export default function ProductDetail() {
                 }`}>
                 <ShoppingCart className="h-5 w-5" /> THÊM GIỎ HÀNG
               </button>
-              <button onClick={handleBuyNow} disabled={isOutOfStock}
+              <button onClick={handleBuyNow} disabled={isOutOfStock || buyingNow}
                 className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                   isOutOfStock
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-[var(--primary-color)] text-white hover:opacity-90'
                 }`}>
-                MUA NGAY
+                {buyingNow ? 'ĐANG XỬ LÝ...' : 'MUA NGAY'}
               </button>
             </div>
           </div>

@@ -66,7 +66,7 @@ public class PhieuGiamGiaService {
 
     // ========== CRUD ==========
     public List<PhieuGiamGia> getAll() {
-        List<PhieuGiamGia> list = phieuGiamGiaRepository.findByNgayXoaIsNull();
+        List<PhieuGiamGia> list = phieuGiamGiaRepository.findByNgayXoaIsNullOrderByNgayTaoDescMaPhieuGiamGiaDesc();
         LocalDateTime now = LocalDateTime.now();
         boolean changed = false;
         for (PhieuGiamGia c : list) {
@@ -289,6 +289,7 @@ public class PhieuGiamGiaService {
                 "kieuGiamGia", coupon.getKieuGiamGia(),
                 "giaTriGiam", coupon.getGiaTriGiam(),
                 "soTienGiam", giamGia,
+                "exclusive", Boolean.TRUE.equals(coupon.getExclusive()),
                 "moTa", "Coupon applied successfully"
         );
     }
@@ -536,7 +537,9 @@ public class PhieuGiamGiaService {
 
     private CouponResponse mapToResponse(PhieuGiamGia coupon) {
         CouponResponse.CouponResponseBuilder b = CouponResponse.builder()
+                .maPhieuGiamGia(coupon.getMaPhieuGiamGia())
                 .maCode(coupon.getMaCode())
+                .ngayTao(coupon.getNgayTao())
                 .kieuGiamGia(coupon.getKieuGiamGia())
                 .giaTriGiam(coupon.getGiaTriGiam())
                 .giaTriDonToiThieu(coupon.getGiaTriDonToiThieu())

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getCart } from '../api/cart'
 import { getProfile, getAddresses, addAddress } from '../api/users'
@@ -7,8 +7,7 @@ import { placeOrder } from '../api/orders'
 import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
 import { getServices, calculateShippingFee } from '../api/ghn'
 import { getProvinces, getDistricts, getWards } from '../api/address'
-import { getUserVouchers } from '../api/userVoucher'
-import { getAvailableCoupons } from '../api/coupons'
+import CheckoutCoupons from '../components/CheckoutCoupons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
 import { VND } from '../components/ProductCard'
@@ -53,27 +52,24 @@ const matchWard = (name, list) => flexibleMatch(name, list, 'WardName', 'NameExt
 export default function Checkout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const selectedItems = location.state?.selectedItems
+  const selectedVariantIds = useMemo(() => location.state?.selectedVariantIds
+    ?? location.state?.selectedItems?.map(item => item.maBienThe), [location.state])
 
   const toast = useToast()
-  const [cart, setCart] = useState(selectedItems || [])
+  const [cart, setCart] = useState([])
   const [addresses, setAddresses] = useState([])
-  const [loading, setLoading] = useState(!selectedItems)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [checkoutError, setCheckoutError] = useState('')
+  const [reloadCheckout, setReloadCheckout] = useState(0)
   const [placing, setPlacing] = useState(false)
   const pendingCheckout = useRef(false)
   const checkoutKey = useRef(sessionStorage.getItem('onlineCheckoutKey') || crypto.randomUUID())
   const [vietQrData, setVietQrData] = useState(null)
   const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
-  const [discountMsg, setDiscountMsg] = useState('')
-  const [discountLoading, setDiscountLoading] = useState(false)
-  const [discountCode, setDiscountCode] = useState('')
-  const [discountVouchersOpen, setDiscountVouchersOpen] = useState(false)
   const [freeshipVoucher, setFreeshipVoucher] = useState(null)
-  const [freeshipMsg, setFreeshipMsg] = useState('')
-  const [userVouchers, setUserVouchers] = useState([])
-  const [availableDiscount, setAvailableDiscount] = useState([])
-  const [vouchersOpen, setVouchersOpen] = useState(false)
+  const [couponPending, setCouponPending] = useState(false)
   const [form, setForm] = useState({
     maDiaChi: '',
     tenNguoiNhan: '',
@@ -120,10 +116,23 @@ export default function Checkout() {
   const [confirmAddr, setConfirmAddr] = useState(false)
 
   useEffect(() => {
+    let current = true
+    setLoading(true)
+    setLoadError('')
+    setCheckoutError('')
     const provPromise = getProvinces().catch(() => [])
-    Promise.all([!selectedItems ? getCart() : Promise.resolve([]), getAddresses(), getProfile().catch(() => null)])
+    Promise.all([getCart(), getAddresses(), getProfile().catch(() => null)])
       .then(([cartData, addrData, profileData]) => {
-        if (!selectedItems) setCart(cartData)
+        if (!current) return
+        // Router state selects variants only; quantities and prices come from the server.
+        const selectedIds = selectedVariantIds == null ? null : new Set(selectedVariantIds.map(String))
+        const checkoutItems = selectedIds ? cartData.filter(item => selectedIds.has(String(item.maBienThe))) : cartData
+        if (selectedIds && checkoutItems.length !== selectedIds.size) {
+          throw new Error('Một số sản phẩm đã chọn không còn trong giỏ hàng. Vui lòng quay lại giỏ hàng để kiểm tra.')
+        }
+        setCart(checkoutItems)
+        setDiscountCoupon(null)
+        setFreeshipVoucher(null)
         setAddresses(addrData)
         if (profileData) setProfile(profileData)
         const def = addrData.find((a) => a.laMacDinh) || addrData[0]
@@ -141,24 +150,27 @@ export default function Checkout() {
           }))
         }
         provPromise.then((provData) => {
+          if (!current) return
           const provs = provData || []
           setProvinces(provs)
           if (def) cascadeAddress(def.tinhThanhPho, def.quanHuyen, provs, def.phuongXa, def)
         })
       })
-      .finally(() => setLoading(false))
-  }, [])
+      .catch(err => {
+        if (current) setLoadError(err.response?.data?.message || err.message || 'Không thể tải thông tin thanh toán. Vui lòng thử lại.')
+      })
+      .finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
+  }, [selectedVariantIds, reloadCheckout])
 
   useEffect(() => {
-    if (selectedProvinceId && !cascadingRef.current) {
-      setSelectedDistrictId(0); setSelectedWardCode(''); setWards([]); setGhnFee(null); setGhnError(false)
+    if (selectedProvinceId) {
       getDistricts(selectedProvinceId).then(setDistricts).catch(() => setDistricts([]))
     }
   }, [selectedProvinceId])
 
   useEffect(() => {
-    if (selectedDistrictId && !cascadingRef.current) {
-      setSelectedWardCode(''); setGhnFee(null)
+    if (selectedDistrictId) {
       Promise.all([
         getWards(selectedDistrictId).then(setWards).catch(() => setWards([])),
         getServices(selectedDistrictId).then((result) => {
@@ -340,81 +352,15 @@ export default function Checkout() {
   }
 
   useEffect(() => {
-    if (!cart.length) { setDiscountCoupon(null); setDiscountMsg(''); setDiscountCode(''); setFreeshipVoucher(null); setFreeshipMsg(''); return }
-  }, [cart.length])
-
-  useEffect(() => {
-    if (!cart.length) { setAvailableDiscount([]); return }
-    let cancelled = false
-    const total = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
-    const productIds = [...new Set(cart.map(i => i.maSanPham).filter(Boolean))]
-    const timer = setTimeout(() => {
-      getAvailableCoupons(total, productIds)
-        .then(res => { if (!cancelled) setAvailableDiscount(res || []) })
-        .catch(() => { if (!cancelled) setAvailableDiscount([]) })
-    }, 400)
-    return () => { cancelled = true; clearTimeout(timer) }
-  }, [cart])
-
-  const handleApplyDiscount = async () => {
-    if (!discountCode.trim()) return
     setDiscountCoupon(null)
-    setDiscountMsg('')
-    setDiscountLoading(true)
-    try {
-      const res = await api.post('/coupons/validate', { maCode: discountCode.trim(), tongTien: rawTotal,
-        maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))],
-        items: cart.filter(i => i.maSanPham).map(i => ({ maSanPham: i.maSanPham, thanhTien: Number(i.donGia || 0) * Number(i.soLuong || 1) })) })
-      setDiscountCoupon(res.data)
-    } catch (err) {
-      setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
-    } finally {
-      setDiscountLoading(false)
-    }
-  }
-
-  const handleSelectDiscountVoucher = async (v) => {
-    setDiscountCoupon(null)
-    setDiscountMsg('')
-    setDiscountCode(v.maCode)
-    try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal,
-        maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))],
-        items: cart.filter(i => i.maSanPham).map(i => ({ maSanPham: i.maSanPham, thanhTien: Number(i.donGia || 0) * Number(i.soLuong || 1) })) })
-      setDiscountCoupon(res.data)
-    } catch (err) {
-      setDiscountMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
-    }
-  }
-
-  const handleSelectFreeship = async (v) => {
     setFreeshipVoucher(null)
-    setFreeshipMsg('')
-    try {
-      const res = await api.post('/coupons/validate', { maCode: v.maCode, tongTien: rawTotal,
-        maSanPhamIds: [...new Set(cart.map(i => i.maSanPham).filter(Boolean))],
-        items: cart.filter(i => i.maSanPham).map(i => ({ maSanPham: i.maSanPham, thanhTien: Number(i.donGia || 0) * Number(i.soLuong || 1) })) })
-      setFreeshipVoucher(res.data)
-      setVouchersOpen(false)
-    } catch (err) {
-      setFreeshipMsg(err.response?.data?.message || 'Mã freeship không hợp lệ')
-    }
-  }
-
-  useEffect(() => {
-    getUserVouchers().then(setUserVouchers).catch(() => {})
-  }, [])
+  }, [cart])
 
   const rawTotal = cart.reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
   const shippingFee = ghnFee !== null ? Number(ghnFee) : 0
-  const suggestedCoupons = (availableDiscount || [])
-    .filter(v => v.kieuGiamGia !== 3 && (!discountCoupon || v.maCode !== discountCoupon.maCode))
-  const suggestedDiscount = suggestedCoupons.length
-    ? suggestedCoupons.reduce((a, b) => (Number(b.soTienGiam || 0) > Number(a.soTienGiam || 0) ? b : a))
-    : null
-  const discount = discountCoupon?.soTienGiam || 0
-  const freeshipDiscount = freeshipVoucher?.kieuGiamGia === 3
-    ? (freeshipVoucher.giaTriGiam === 0 ? shippingFee : Math.min(freeshipVoucher.giaTriGiam, shippingFee))
+  const discount = Number(discountCoupon?.soTienGiam || 0)
+  const freeshipDiscount = Number(freeshipVoucher?.kieuGiamGia) === 3
+    ? (Number(freeshipVoucher.giaTriGiam) === 0 ? shippingFee : Math.min(Number(freeshipVoucher.giaTriGiam), shippingFee))
     : 0
   const effectiveShippingFee = shippingFee - freeshipDiscount
 
@@ -423,20 +369,23 @@ export default function Checkout() {
   const validatePhone = (phone) => /^[0-9]{10,11}$/.test(phone)
 
   const requestPlace = () => {
+    if (couponPending) { toast.error('Vui lòng chờ kiểm tra mã giảm giá'); return }
     if (!form.tenNguoiNhan || !form.sdtNguoiNhan || !form.diaChiGiaoHang) { toast.error('Vui lòng điền đầy đủ thông tin giao hàng'); return }
     if (!validatePhone(form.sdtNguoiNhan)) { toast.error('Số điện thoại phải có 10-11 chữ số'); return }
     if (cart.length === 0) { return }
     if (!selectedDistrictId || !selectedWardCode) { toast.error('Vui lòng chọn Tỉnh/Quận/Phường trong danh sách để tính phí ship'); return }
     if (ghnFee === null) { toast.error('Chưa tính được phí vận chuyển, kiểm tra lại Tỉnh/Quận/Phường đã chọn'); return }
+    setCheckoutError('')
     setConfirmOrder(true)
   }
 
   const handlePlaceOrder = async () => {
-    if (pendingCheckout.current) return
+    if (pendingCheckout.current || couponPending) return
     pendingCheckout.current = true
     sessionStorage.setItem('onlineCheckoutKey', checkoutKey.current)
     setConfirmOrder(false)
     setPlacing(true)
+    setCheckoutError('')
     try {
       const weight = cart.reduce((s, i) => s + ((i.soLuong || 1) * 500), 0)
       const orderPayload = {
@@ -454,9 +403,7 @@ export default function Checkout() {
         toWardCode: selectedWardCode || undefined,
         serviceTypeId: selectedServiceId || undefined,
         weight: Math.max(weight, 500),
-      }
-      if (selectedItems) {
-        orderPayload.maBienTheList = selectedItems.map(i => i.maBienThe)
+        maBienTheList: cart.map(item => item.maBienThe),
       }
 
       const result = await placeOrder(orderPayload)
@@ -482,7 +429,9 @@ export default function Checkout() {
         window.location.href = paymentRes.paymentUrl
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || 'Đặt hàng thất bại')
+      const message = err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || 'Đặt hàng thất bại. Vui lòng thử lại.'
+      setCheckoutError(message)
+      toast.error(message)
     } finally {
       pendingCheckout.current = false
       setPlacing(false)
@@ -504,6 +453,17 @@ export default function Checkout() {
   }
 
   if (loading) return <LoadingSpinner className="py-20" />
+
+  if (loadError) return (
+    <div className="max-w-3xl mx-auto px-4 py-12 text-center space-y-4">
+      <h1 className="text-2xl font-bold">Chưa thể tải trang thanh toán</h1>
+      <p role="alert" className="text-bordeaux">{loadError}</p>
+      <div className="flex justify-center gap-4">
+        <button onClick={() => navigate('/cart')} className="font-semibold text-stone hover:text-ink">Về giỏ hàng</button>
+        <button onClick={() => setReloadCheckout(value => value + 1)} className="rounded-lg bg-gold px-4 py-2 font-semibold text-noir">Thử lại</button>
+      </div>
+    </div>
+  )
 
   if (cart.length === 0) {
     return (
@@ -586,7 +546,18 @@ export default function Checkout() {
                   idKey="DistrictID" labelKey="DistrictName"
                   placeholder="Quận/Huyện" searchPlaceholder="Gõ để tìm quận/huyện..."
                   disabled={!selectedProvinceId}
-                  onChange={(id, name) => { setSelectedDistrictId(id); setSelectedWardCode(''); setWards([]); setGhnFee(null); setForm((f) => ({ ...f, quanHuyen: name })) }}
+                  onChange={(id, name) => {
+                    setSelectedDistrictId(id)
+                    setSelectedWardCode('')
+                    setWards([])
+                    setGhnFee(null)
+                    setForm((f) => ({ ...f, quanHuyen: name }))
+                    // Re-selecting the currently loaded district (for example
+                    // after a checkout retry) must still refresh its wards.
+                    if (String(id) === String(selectedDistrictId) && id) {
+                      getWards(id).then(setWards).catch(() => setWards([]))
+                    }
+                  }}
                 />
                 <SearchableSelect
                   value={selectedWardCode}
@@ -660,7 +631,9 @@ export default function Checkout() {
                           </div>
                           <div className="min-w-0">
                             <p className="font-semibold text-gold">{item.tenSanPham}</p>
-                            <p className="text-xs text-stone">Mã SP: {item.maSanPhamCode || item.sku || '---'}</p>
+                            <p className="text-xs text-stone">Mã SP: {item.maSanPhamCode && !/^[-—]+$/.test(String(item.maSanPhamCode).trim())
+                              ? item.maSanPhamCode
+                              : (item.maSanPham ? `SP${String(item.maSanPham).padStart(3, '0')}` : (item.sku || '---'))}</p>
                             {(item.tenKichCo || item.tenMauSac) && (
                               <p className="text-xs text-stone">
                                 {item.tenKichCo && `Kích thước: ${item.tenKichCo}`}
@@ -691,6 +664,16 @@ export default function Checkout() {
           <div className="bg-white border border-stone/10 rounded-xl p-6 sticky top-4 space-y-5">
             <h2 className="font-semibold text-base">Tóm tắt đơn hàng</h2>
 
+            <CheckoutCoupons
+              cart={cart}
+              subtotal={rawTotal}
+              discountCoupon={discountCoupon}
+              freeshipVoucher={freeshipVoucher}
+              onChange={next => { setDiscountCoupon(next.discountCoupon); setFreeshipVoucher(next.freeshipVoucher) }}
+              onPendingChange={setCouponPending}
+              disabled={placing || confirmOrder}
+            />
+
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-stone">Tạm tính</span>
@@ -698,17 +681,17 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between">
                 <span className="text-stone">Phí vận chuyển</span>
-                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-bordeaux text-xs">Lỗi</span> : ghnFee !== null ? VND(effectiveShippingFee) : '---'}</span>
+                <span>{ghnLoading ? <Loader className="h-4 w-4 animate-spin inline" /> : ghnError ? <span className="text-bordeaux text-xs">Lỗi</span> : ghnFee !== null ? VND(shippingFee) : '---'}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-emerald-deep">
-                  <span>Mã giảm giá</span>
+                  <span>Giảm tiền hàng ({discountCoupon.maCode})</span>
                   <span>-{VND(discount)}</span>
                 </div>
               )}
               {freeshipDiscount > 0 && (
                 <div className="flex justify-between text-emerald-deep">
-                  <span>Miễn phí vận chuyển</span>
+                  <span>Giảm phí vận chuyển ({freeshipVoucher.maCode})</span>
                   <span>-{VND(freeshipDiscount)}</span>
                 </div>
               )}
@@ -727,7 +710,16 @@ export default function Checkout() {
               <p>Được đổi hàng trong 15 ngày theo chính sách (*)</p>
             </div>
 
-            <button onClick={requestPlace} disabled={placing || ghnError || cart.length === 0}
+            {checkoutError && (
+              <div role="alert" className="rounded-xl border border-bordeaux/20 bg-bordeaux/5 p-3 text-sm text-bordeaux space-y-2">
+                <p>{checkoutError}</p>
+                <button type="button" onClick={() => setReloadCheckout(value => value + 1)} className="font-semibold underline">
+                  Tải lại thông tin đơn hàng
+                </button>
+              </div>
+            )}
+
+            <button onClick={requestPlace} disabled={placing || couponPending || ghnLoading || ghnFee === null || ghnError || cart.length === 0}
               className="w-full bg-gold text-noir py-3.5 rounded-xl font-bold text-base hover:bg-gold-hover transition disabled:opacity-50 flex items-center justify-center gap-2">
               {placing ? <><Loader className="h-5 w-5 animate-spin" /> Đang xử lý...</> : 'ĐẶT HÀNG'}
             </button>
@@ -951,12 +943,18 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone">Phí vận chuyển</span>
-                  <span className="text-ink">{VND(effectiveShippingFee)}</span>
+                  <span className="text-ink">{VND(shippingFee)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-emerald-600">
-                    <span>Mã giảm giá</span>
+                    <span>Giảm tiền hàng ({discountCoupon.maCode})</span>
                     <span>-{VND(discount)}</span>
+                  </div>
+                )}
+                {freeshipDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Giảm phí vận chuyển ({freeshipVoucher.maCode})</span>
+                    <span>-{VND(freeshipDiscount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200">

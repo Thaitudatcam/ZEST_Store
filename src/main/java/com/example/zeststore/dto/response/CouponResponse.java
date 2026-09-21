@@ -14,7 +14,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CouponResponse {
+    private Integer maPhieuGiamGia;
     private String maCode;
+    private LocalDateTime ngayTao;
     private Integer kieuGiamGia;
     private BigDecimal giaTriGiam;
     private BigDecimal giaTriDonToiThieu;

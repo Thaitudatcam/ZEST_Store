@@ -208,7 +208,7 @@ export default function AdminInvoices() {
                       </td>
                       <td className="px-5 py-3.5 text-right font-bold text-gold">{VND(o.tongTien || 0)}</td>
                       <td className="px-5 py-3.5 text-center">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-full ${loaiBadge.className}`}>
+                        <span className={`inline-flex min-w-[78px] shrink-0 items-center justify-center whitespace-nowrap leading-none text-[10px] font-bold uppercase px-2 py-1.5 rounded-full ${loaiBadge.className}`}>
                           {loaiBadge.label}
                         </span>
                       </td>

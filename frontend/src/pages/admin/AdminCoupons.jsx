@@ -70,6 +70,11 @@ export default function AdminCoupons() {
       if (st !== filter.trangThai) return false
     }
     return true
+  }).sort((a, b) => {
+    // New coupons must stay first, including after applying a filter.
+    const dateDiff = new Date(b.ngayTao || 0).getTime() - new Date(a.ngayTao || 0).getTime()
+    if (dateDiff !== 0) return dateDiff
+    return Number(b.maPhieuGiamGia || 0) - Number(a.maPhieuGiamGia || 0)
   })
 
   useEffect(() => { setPage(0) }, [search, filter])
