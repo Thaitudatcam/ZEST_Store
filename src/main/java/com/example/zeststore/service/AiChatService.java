@@ -95,6 +95,19 @@ public class AiChatService {
                 // ignore search errors
             }
         }
+        // Price-ranked results already answer the question using catalog data.
+        // Do not depend on two external AI calls to present these results.
+        if (!matchedProducts.isEmpty()) {
+            StringBuilder answer = new StringBuilder("Mình tìm thấy sản phẩm phù hợp với yêu cầu về giá của bạn:");
+            java.text.NumberFormat priceFormat = java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("vi-VN"));
+            for (Map<String, Object> product : matchedProducts) {
+                answer.append("\n• ").append(product.get("tenSanPham"));
+                Object price = product.get("gia");
+                if (price instanceof Number) answer.append(" — ").append(priceFormat.format(price)).append("đ");
+                if (product.get("maSanPhamCode") != null) answer.append(" (mã ").append(product.get("maSanPhamCode")).append(")");
+            }
+            return saveReply(maHoiThoai, answer.toString(), matchedProducts);
+        }
         if (noiDung != null && !noiDung.isBlank()) {
             intent = openAiService.classifyIntent(noiDung);
         }
@@ -187,6 +200,11 @@ public class AiChatService {
         }
 
         String reply = openAiService.chat(messagesNode);
+
+        return saveReply(maHoiThoai, reply, matchedProducts);
+    }
+
+    private Map<String, Object> saveReply(Integer maHoiThoai, String reply, List<Map<String, Object>> matchedProducts) {
 
         TinNhanAi aiMsg = TinNhanAi.builder()
                 .maHoiThoai(maHoiThoai)

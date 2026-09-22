@@ -63,6 +63,14 @@ public class AdminCampaignController {
         }
 
         LoaiTrigger trigger = LoaiTrigger.fromValue(loaiTrigger);
+        Integer kieuGiamGia = body.get("kieuGiamGia") != null
+                ? ((Number) body.get("kieuGiamGia")).intValue() : null;
+        BigDecimal giaTriGiam = toBigDecimal(body.get("giaTriGiam"));
+        java.time.LocalDateTime ngayBatDau = body.get("ngayBatDau") != null
+                ? java.time.LocalDateTime.parse((String) body.get("ngayBatDau")) : null;
+        java.time.LocalDateTime ngayKetThuc = body.get("ngayKetThuc") != null
+                ? java.time.LocalDateTime.parse((String) body.get("ngayKetThuc")) : null;
+        validateDiscountDefinition(kieuGiamGia, giaTriGiam, ngayBatDau, ngayKetThuc);
 
         if (trigger == LoaiTrigger.DANG_KY_MOI || trigger == LoaiTrigger.QUAY_LAI) {
             List<ChuongTrinhQuaTang> existing = campaignRepository
@@ -77,9 +85,8 @@ public class AdminCampaignController {
                 .tenChuongTrinh(ten)
                 .loaiTrigger(trigger)
                 .phieuGiamGia(coupon)
-                .kieuGiamGia(body.get("kieuGiamGia") != null
-                        ? ((Number) body.get("kieuGiamGia")).intValue() : null)
-                .giaTriGiam(toBigDecimal(body.get("giaTriGiam")))
+                .kieuGiamGia(kieuGiamGia)
+                .giaTriGiam(giaTriGiam)
                 .sanPhamApDung(new HashSet<>(findSanPhams(body.get("maSanPhamIds"))))
                 .bienTheApDung(new HashSet<>(findBienThes(body.get("maBienTheIds"))))
                 .soNgayKhongHoatDong(body.get("soNgayKhongHoatDong") != null
@@ -88,10 +95,8 @@ public class AdminCampaignController {
                         ? DoiTuongEnum.fromValue(((Number) body.get("doiTuong")).intValue()) : null)
                 .dieuKien(body.get("dieuKien") != null
                         ? DieuKienEnum.fromValue(((Number) body.get("dieuKien")).intValue()) : null)
-                .ngayBatDau(body.get("ngayBatDau") != null
-                        ? java.time.LocalDateTime.parse((String) body.get("ngayBatDau")) : null)
-                .ngayKetThuc(body.get("ngayKetThuc") != null
-                        ? java.time.LocalDateTime.parse((String) body.get("ngayKetThuc")) : null)
+                .ngayBatDau(ngayBatDau)
+                .ngayKetThuc(ngayKetThuc)
                 .trangThai(1)
                 .build();
         campaign = campaignRepository.save(campaign);
@@ -168,6 +173,8 @@ public class AdminCampaignController {
             c.setBienTheApDung(new HashSet<>(findBienThes(body.get("maBienTheIds"))));
         }
 
+        validateDiscountDefinition(c.getKieuGiamGia(), c.getGiaTriGiam(), c.getNgayBatDau(), c.getNgayKetThuc());
+
         campaignRepository.save(c);
         return ResponseEntity.ok(toMap(c));
     }
@@ -206,6 +213,23 @@ public class AdminCampaignController {
         if (v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
         String s = v.toString().trim();
         return s.isEmpty() ? null : new BigDecimal(s);
+    }
+
+    private static void validateDiscountDefinition(Integer type, BigDecimal value,
+                                                     java.time.LocalDateTime start,
+                                                     java.time.LocalDateTime end) {
+        if (type == null || (type != 1 && type != 2)) {
+            throw new IllegalArgumentException("Kiểu giảm giá không hợp lệ");
+        }
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giá trị giảm phải lớn hơn 0");
+        }
+        if (type == 1 && value.compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new IllegalArgumentException("Phần trăm giảm không được vượt quá 100");
+        }
+        if (start != null && end != null && !start.isBefore(end)) {
+            throw new IllegalArgumentException("Ngày bắt đầu phải nhỏ hơn ngày kết thúc");
+        }
     }
 
     @SuppressWarnings("unchecked")

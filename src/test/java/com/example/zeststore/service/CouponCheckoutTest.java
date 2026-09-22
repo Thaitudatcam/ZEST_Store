@@ -77,6 +77,49 @@ class CouponCheckoutTest {
         when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));
         assertThrows(BadRequestException.class, () -> service.validateCoupon("SALE", BigDecimal.valueOf(100), List.of(4), 7));
     }
+    @Test void unacceptedGiftCannotBeAppliedByTypingItsPublicCode() {
+        var c = coupon();
+        var voucher = VoucherNguoiDung.builder().trangThai(TrangThaiVoucher.CHUA_NHAN).build();
+        when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));
+        when(voucherNguoiDungRepository.findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(7, 1))
+                .thenReturn(Optional.of(voucher));
+
+        assertThrows(BadRequestException.class,
+                () -> service.validateCoupon("SALE", BigDecimal.valueOf(100), List.of(4), 7));
+    }
+    @Test void allocatedPersonalVoucherRemainsUsableWhenPublicPoolIsEmpty() {
+        var c = coupon(); c.setCongKhai(false); c.setSoLuong(0); c.setTrangThai(1);
+        var voucher = VoucherNguoiDung.builder().trangThai(TrangThaiVoucher.DA_NHAN).build();
+        when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));
+        when(voucherNguoiDungRepository.findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(7, 1))
+                .thenReturn(Optional.of(voucher));
+
+        Map<String, Object> result = service.validateCoupon(
+                "SALE", BigDecimal.valueOf(100), List.of(4), 7);
+
+        assertEquals("SALE", result.get("maCode"));
+    }
+    @Test void usingAllocatedVoucherDoesNotDecrementQuantityTwice() {
+        var c = coupon(); c.setSoLuong(0); c.setTrangThai(1);
+        var voucher = VoucherNguoiDung.builder().trangThai(TrangThaiVoucher.DA_NHAN).build();
+        when(phieuGiamGiaRepository.findByMaCodeForUpdate("SALE")).thenReturn(Optional.of(c));
+        when(voucherNguoiDungRepository.findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(7, 1))
+                .thenReturn(Optional.of(voucher));
+
+        service.useCoupon("SALE", 7, 9, BigDecimal.TEN, "ONLINE");
+
+        assertEquals(0, c.getSoLuong());
+        assertEquals(TrangThaiVoucher.DA_DUNG, voucher.getTrangThai());
+    }
+    @Test void directUseConsumesLastPoolUnitWithoutTurningCouponOff() {
+        var c = coupon(); c.setSoLuong(1); c.setTrangThai(1);
+        when(phieuGiamGiaRepository.findByMaCodeForUpdate("SALE")).thenReturn(Optional.of(c));
+
+        service.useCoupon("SALE", null, 9, BigDecimal.TEN, "POS");
+
+        assertEquals(0, c.getSoLuong());
+        assertEquals(1, c.getTrangThai());
+    }
     @Test void freeshipEnforcesMinimumAndRemainingUses() {
         var c = coupon(); c.setKieuGiamGia(3); c.setGiaTriDonToiThieu(BigDecimal.valueOf(200));
         when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));
@@ -95,7 +138,7 @@ class CouponCheckoutTest {
         when(phieuGiamGiaRepository.findByMaCodeForUpdate("SHIP")).thenReturn(Optional.of(f));
         when(voucherNguoiDungRepository.findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(7, 1)).thenReturn(Optional.of(voucher));
         service.restoreForOrder(9); service.restoreForOrder(9);
-        assertEquals(1, c.getSoLuong()); assertEquals(1, f.getSoLuong());
+        assertEquals(0, c.getSoLuong()); assertEquals(1, f.getSoLuong());
         assertEquals("RESTORED", first.getLoai()); assertEquals("RESTORED", second.getLoai());
         assertEquals(TrangThaiVoucher.DA_NHAN, voucher.getTrangThai());
         verify(couponUsageLogRepository, times(2)).saveAndFlush(any());

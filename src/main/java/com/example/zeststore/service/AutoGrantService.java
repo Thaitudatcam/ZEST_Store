@@ -140,9 +140,6 @@ public class AutoGrantService {
     private void doGrant(NguoiDung user, PhieuGiamGia coupon, ChuongTrinhQuaTang campaign) {
         if (coupon.getSoLuong() != null) {
             coupon.setSoLuong(coupon.getSoLuong() - 1);
-            if (coupon.getSoLuong() <= 0) {
-                coupon.setTrangThai(0);
-            }
             phieuGiamGiaRepository.save(coupon);
         }
         VoucherNguoiDung v = VoucherNguoiDung.builder()

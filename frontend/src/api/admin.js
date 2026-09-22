@@ -1,6 +1,7 @@
 import api from './axios'
 
 export const getStats = () => api.get('/dashboard/stats').then((r) => r.data)
+export const getSalesSummary = (tuNgay, denNgay) => api.get('/dashboard/summary', { params: { tuNgay, denNgay } }).then((r) => r.data)
 export const getAllOrders = (page = 0, size = 20, loaiDonHang, q, trangThai, tuNgay, denNgay) => api.get('/orders/admin/all', { params: { page, size, loaiDonHang, q, trangThai, tuNgay, denNgay } }).then((r) => r.data)
 export const getCoupons = () => api.get('/coupons').then((r) => r.data)
 export const generateCouponCode = () => api.get('/coupons/generate-code').then((r) => r.data)

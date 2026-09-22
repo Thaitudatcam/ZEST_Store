@@ -39,6 +39,16 @@ public class ThongKeController {
         }
     }
 
+    @GetMapping("/summary")
+    public ResponseEntity<?> getSalesSummary(@RequestParam LocalDateTime tuNgay,
+                                              @RequestParam LocalDateTime denNgay) {
+        try {
+            return ResponseEntity.ok(thongKeService.getSalesSummary(tuNgay, denNgay));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/revenue/day")
     public ResponseEntity<?> getRevenueByDay(
             @RequestParam(required = false) LocalDate tuNgay,

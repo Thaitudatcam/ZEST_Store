@@ -68,23 +68,10 @@ public class PhieuGiamGiaService {
 
     // ========== CRUD ==========
     public List<PhieuGiamGia> getAll() {
-        List<PhieuGiamGia> list = phieuGiamGiaRepository.findByNgayXoaIsNullOrderByNgayTaoDescMaPhieuGiamGiaDesc();
-        LocalDateTime now = LocalDateTime.now();
-        boolean changed = false;
-        for (PhieuGiamGia c : list) {
-            if (c.getTrangThai() == 1) {
-                boolean hetHan = c.getNgayKetThuc() != null && now.isAfter(c.getNgayKetThuc());
-                boolean hetSoLuong = c.getSoLuong() != null && c.getSoLuong() <= 0;
-                if (hetHan || hetSoLuong) {
-                    c.setTrangThai(0);
-                    changed = true;
-                }
-            }
-        }
-        if (changed) {
-            phieuGiamGiaRepository.saveAll(list);
-        }
-        return list;
+        // Availability is derived from status, dates and remaining quantity.
+        // A read endpoint must not permanently turn an expired/depleted coupon
+        // off, otherwise restoring stock or extending dates cannot reactivate it.
+        return phieuGiamGiaRepository.findByNgayXoaIsNullOrderByNgayTaoDescMaPhieuGiamGiaDesc();
     }
 
     public List<Map<String, Object>> getAvailableCoupons(BigDecimal tongTien) {
@@ -182,6 +169,9 @@ public class PhieuGiamGiaService {
             giamGia = c.getGiaTriGiamToiDa();
         }
         int trangThaiThucTe = computeTrangThaiThucTe(c);
+        // A personal voucher already owns one allocated use.  It remains usable
+        // when the unallocated public pool has reached zero.
+        if (isPersonal && trangThaiThucTe == 3) trangThaiThucTe = 2;
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("maCode", c.getMaCode());
         m.put("kieuGiamGia", c.getKieuGiamGia());
@@ -245,19 +235,25 @@ public class PhieuGiamGiaService {
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCode(code)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
 
+        VoucherNguoiDung personal = userId == null ? null : voucherNguoiDungRepository
+                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, coupon.getMaPhieuGiamGia())
+                .orElse(null);
+        boolean hasAllocatedUse = personal != null && TrangThaiVoucher.DA_NHAN.equals(personal.getTrangThai());
+
         if (isCouponUsedByUser(coupon, userId)) {
             throw new BadRequestException("Mã giảm giá đã được sử dụng");
         }
+        if (personal != null && TrangThaiVoucher.CHUA_NHAN.equals(personal.getTrangThai())) {
+            throw new BadRequestException("Vui lòng nhận voucher trong kho voucher trước khi sử dụng");
+        }
 
         if (!Boolean.TRUE.equals(coupon.getCongKhai())) {
-            VoucherNguoiDung personal = userId == null ? null : voucherNguoiDungRepository
-                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, coupon.getMaPhieuGiamGia()).orElse(null);
-            if (personal == null || !TrangThaiVoucher.DA_NHAN.equals(personal.getTrangThai()))
+            if (!hasAllocatedUse)
                 throw new BadRequestException("Mã giảm giá chưa được cấp/nhận cho khách hàng này");
         }
 
         int tt = computeTrangThaiThucTe(coupon);
-        if (tt != 2) {
+        if (tt != 2 && !(hasAllocatedUse && tt == 3)) {
             throw new BadRequestException("Phiếu giảm giá " + trangThaiThucTeText(tt));
         }
 
@@ -410,23 +406,25 @@ public class PhieuGiamGiaService {
                            BigDecimal soTienGiam, String loai) {
         PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(maCode)
                 .orElseThrow(() -> new BadRequestException("Invalid coupon code"));
-        if (computeTrangThaiThucTe(coupon) != 2 || isCouponUsedByUser(coupon, maNguoiDung))
+        VoucherNguoiDung allocatedVoucher = maNguoiDung == null ? null : voucherNguoiDungRepository
+                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(
+                        maNguoiDung, coupon.getMaPhieuGiamGia()).orElse(null);
+        boolean hasAllocatedUse = allocatedVoucher != null
+                && TrangThaiVoucher.DA_NHAN.equals(allocatedVoucher.getTrangThai());
+        int status = computeTrangThaiThucTe(coupon);
+        if ((status != 2 && !(hasAllocatedUse && status == 3)) || isCouponUsedByUser(coupon, maNguoiDung))
             throw new BadRequestException("Mã giảm giá đã hết lượt hoặc khách hàng đã sử dụng");
-        if (coupon.getSoLuong() != null && coupon.getSoLuong() > 0) {
+        if (!hasAllocatedUse && coupon.getSoLuong() != null && coupon.getSoLuong() > 0) {
             coupon.setSoLuong(coupon.getSoLuong() - 1);
-            if (coupon.getSoLuong() <= 0) {
-                coupon.setTrangThai(0);
-            }
             phieuGiamGiaRepository.save(coupon);
         }
         if (maNguoiDung != null) {
-            VoucherNguoiDung v = voucherNguoiDungRepository
-                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(maNguoiDung, coupon.getMaPhieuGiamGia())
-                    .orElseGet(() -> VoucherNguoiDung.builder()
+            VoucherNguoiDung v = allocatedVoucher != null ? allocatedVoucher
+                    : VoucherNguoiDung.builder()
                             .nguoiDung(nguoiDungRepository.getReferenceById(maNguoiDung))
                             .phieuGiamGia(coupon)
                             .trangThai(TrangThaiVoucher.DA_DUNG)
-                            .build());
+                            .build();
             v.setTrangThai(TrangThaiVoucher.DA_DUNG);
             v.setNgaySuDung(LocalDateTime.now());
             voucherNguoiDungRepository.save(v);
@@ -443,19 +441,21 @@ public class PhieuGiamGiaService {
             if ("RESTORED".equals(usage.getLoai())) continue;
             PhieuGiamGia coupon = phieuGiamGiaRepository.findByMaCodeForUpdate(usage.getMaCode()).orElse(null);
             if (coupon == null) continue;
-            boolean depleted = coupon.getSoLuong() != null && coupon.getSoLuong() == 0;
-            if (coupon.getSoLuong() != null) coupon.setSoLuong(Math.addExact(coupon.getSoLuong(), 1));
-            if (depleted && coupon.getNgayXoa() == null
-                    && (coupon.getNgayKetThuc() == null || coupon.getNgayKetThuc().isAfter(LocalDateTime.now())))
-                coupon.setTrangThai(1);
+            VoucherNguoiDung allocatedVoucher = usage.getMaNguoiDung() == null ? null : voucherNguoiDungRepository
+                    .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(
+                            usage.getMaNguoiDung(), coupon.getMaPhieuGiamGia()).orElse(null);
+            // Registered users retain the restored use as a personal voucher.
+            // Anonymous/POS uses have no owner, so their capacity returns to the pool.
+            if (allocatedVoucher == null && coupon.getSoLuong() != null) {
+                coupon.setSoLuong(Math.addExact(coupon.getSoLuong(), 1));
+            }
             phieuGiamGiaRepository.save(coupon);
             usage.setMoTa("Đã hoàn lượt do hủy đơn/thanh toán thất bại. Nguồn: " + usage.getLoai());
             usage.setLoai("RESTORED");
             couponUsageLogRepository.saveAndFlush(usage);
             if (usage.getMaNguoiDung() != null
                     && !couponUsageLogRepository.hasActiveUsage(usage.getMaCode(), usage.getMaNguoiDung())) {
-                voucherNguoiDungRepository.findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(
-                        usage.getMaNguoiDung(), coupon.getMaPhieuGiamGia()).ifPresent(v -> {
+                Optional.ofNullable(allocatedVoucher).ifPresent(v -> {
                     if (TrangThaiVoucher.DA_DUNG.equals(v.getTrangThai())) {
                         v.setTrangThai(TrangThaiVoucher.DA_NHAN);
                         v.setNgaySuDung(null);

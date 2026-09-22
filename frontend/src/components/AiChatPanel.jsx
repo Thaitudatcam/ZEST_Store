@@ -215,13 +215,13 @@ export default function AiChatPanel({ open, onClose, quickPrompts = [] }) {
                           {p.mauSac && p.mauSac.length > 0 && (
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] text-stone">Có màu sắc:</span>
-                              <span className="text-[10px] font-semibold text-ink">{p.mauSac.join(', ')}</span>
+                              <span className="text-[10px] font-semibold text-ink">{[...new Set(p.mauSac)].join(', ')}</span>
                             </div>
                           )}
                           {p.kichCo && p.kichCo.length > 0 && (
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] text-stone">Kích thước:</span>
-                              <span className="text-[10px] font-semibold text-ink">{p.kichCo.join(', ')}</span>
+                              <span className="text-[10px] font-semibold text-ink">{[...new Set(p.kichCo)].join(', ')}</span>
                             </div>
                           )}
                           {p.chatLieu && (

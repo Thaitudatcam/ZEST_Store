@@ -112,26 +112,81 @@ public class ThongKeService {
 
     // === THỐNG KÊ ĐƠN HÀNG ===
     public Map<String, Object> getOrderStats() {
-        List<Object[]> rows = donHangRepository.countOrdersByStatus();
-        long total = 0, pending = 0, completed = 0, cancelled = 0, shipping = 0;
+        return mapOrderStats(donHangRepository.countOrdersByStatus());
+    }
+
+    private Map<String, Object> mapOrderStats(List<Object[]> rows) {
+        long total = 0;
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("pending", 0L);
+        counts.put("confirmed", 0L);
+        counts.put("shipping", 0L);
+        counts.put("delivering", 0L);
+        counts.put("cancelled", 0L);
+        counts.put("completed", 0L);
+        counts.put("returnRequested", 0L);
+        counts.put("returned", 0L);
+        counts.put("failed", 0L);
         for (Object[] row : rows) {
-            Integer status = (Integer) row[0];
-            Long count = (Long) row[1];
+            int status = ((Number) row[0]).intValue();
+            long count = ((Number) row[1]).longValue();
             total += count;
             switch (status) {
-                case 1 -> pending = count;
-                case 2 -> shipping = count;
-                case 4 -> shipping = count;   // "Chờ giao hàng" → shipping (đang giao)
-                case 5 -> cancelled = count;
-                case 6 -> completed = count;  // "Đã giao hàng" → completed (đã giao)
+                case 1 -> counts.put("pending", count);
+                case 2 -> counts.put("confirmed", count);
+                case 3 -> counts.put("shipping", count);
+                case 4 -> counts.put("delivering", count);
+                case 5 -> counts.put("cancelled", count);
+                case 6 -> counts.put("completed", count);
+                case 7 -> counts.put("returnRequested", count);
+                case 8 -> counts.put("returned", count);
+                case 9 -> counts.put("failed", count);
+                default -> { }
             }
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("totalOrders", total);
-        result.put("pending", pending);
-        result.put("shipping", shipping);
-        result.put("completed", completed);
-        result.put("cancelled", cancelled);
+        result.putAll(counts);
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getSalesSummary(LocalDateTime tuNgay, LocalDateTime denNgay) {
+        if (tuNgay.isAfter(denNgay)) {
+            LocalDateTime tmp = tuNgay;
+            tuNgay = denNgay;
+            denNgay = tmp;
+        }
+
+        Map<String, BigDecimal> paymentMethods = new LinkedHashMap<>();
+        paymentMethods.put("tienMat", BigDecimal.ZERO);
+        paymentMethods.put("chuyenKhoan", BigDecimal.ZERO);
+        paymentMethods.put("vnPay", BigDecimal.ZERO);
+        paymentMethods.put("moMo", BigDecimal.ZERO);
+        paymentMethods.put("zaloPay", BigDecimal.ZERO);
+        paymentMethods.put("khac", BigDecimal.ZERO);
+        for (Object[] row : donHangRepository.sumRevenueByPaymentMethod(tuNgay, denNgay)) {
+            int method = ((Number) row[0]).intValue();
+            BigDecimal amount = (BigDecimal) row[1];
+            String key = switch (method) {
+                case 1, 5 -> "tienMat";
+                case 2 -> "vnPay";
+                case 3 -> "moMo";
+                case 4 -> "zaloPay";
+                case 6 -> "chuyenKhoan";
+                default -> "khac";
+            };
+            paymentMethods.merge(key, amount, BigDecimal::add);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("tuNgay", tuNgay);
+        result.put("denNgay", denNgay);
+        result.put("doanhThu", donHangRepository.sumRevenueByDateRange(tuNgay, denNgay));
+        result.put("soHoaDon", donHangRepository.countCompletedOrders(tuNgay, denNgay));
+        result.put("soSanPham", mucDonHangRepository.countProductsSoldInRange(tuNgay, denNgay));
+        result.put("phuongThucThanhToan", paymentMethods);
+        result.put("donHang", mapOrderStats(donHangRepository.countOrdersByStatusInRange(tuNgay, denNgay)));
         return result;
     }
 
@@ -181,6 +236,7 @@ public class ThongKeService {
                     m.put("tongTien", o.getTongTien());
                     m.put("trangThaiDon", o.getTrangThaiDon());
                     m.put("ngayTao", o.getNgayDat());
+                    m.put("ngayDat", o.getNgayDat());
                     m.put("loaiDonHang", o.getLoaiDonHang());
                     return m;
                 }).collect(Collectors.toList());

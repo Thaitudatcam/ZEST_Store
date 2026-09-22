@@ -75,6 +75,9 @@ public class VoucherNguoiDungService {
         if (!Integer.valueOf(1).equals(coupon.getTrangThai())) {
             throw new BadRequestException("Voucher đã ngừng hoạt động");
         }
+        if (!Boolean.TRUE.equals(coupon.getCongKhai())) {
+            throw new BadRequestException("Voucher riêng chỉ có thể nhận từ chương trình hoặc quản trị viên");
+        }
         if (coupon.getNgayBatDau() != null && LocalDateTime.now().isBefore(coupon.getNgayBatDau())) {
             throw new BadRequestException("Voucher chưa đến hạn sử dụng");
         }
@@ -92,12 +95,17 @@ public class VoucherNguoiDungService {
         if (alreadyClaimed) {
             throw new BadRequestException("Bạn đã nhận voucher này rồi");
         }
-        if (couponUsageLogRepository.existsByMaCodeAndMaNguoiDung(maCode, userId)) {
+        if (couponUsageLogRepository.hasActiveUsage(maCode, userId)) {
             throw new BadRequestException("Bạn đã sử dụng mã này");
         }
 
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        if (coupon.getSoLuong() != null) {
+            coupon.setSoLuong(coupon.getSoLuong() - 1);
+            phieuGiamGiaRepository.save(coupon);
+        }
 
         VoucherNguoiDung v = VoucherNguoiDung.builder()
                 .nguoiDung(user)
@@ -116,6 +124,16 @@ public class VoucherNguoiDungService {
         PhieuGiamGia coupon = phieuGiamGiaRepository.findById(couponId)
                 .orElseThrow(() -> new BadRequestException("Mã giảm giá không tồn tại"));
 
+        if (!Integer.valueOf(1).equals(coupon.getTrangThai()) || coupon.getNgayXoa() != null) {
+            throw new BadRequestException("Mã giảm giá đã ngừng hoạt động");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (coupon.getNgayBatDau() != null && now.isBefore(coupon.getNgayBatDau())) {
+            throw new BadRequestException("Mã giảm giá chưa đến hạn sử dụng");
+        }
+        if (coupon.getNgayKetThuc() != null && now.isAfter(coupon.getNgayKetThuc())) {
+            throw new BadRequestException("Mã giảm giá đã hết hạn");
+        }
         if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
             throw new BadRequestException("Mã giảm giá đã hết lượt");
         }
@@ -133,9 +151,6 @@ public class VoucherNguoiDungService {
 
         if (coupon.getSoLuong() != null) {
             coupon.setSoLuong(coupon.getSoLuong() - 1);
-            if (coupon.getSoLuong() <= 0) {
-                coupon.setTrangThai(0);
-            }
             phieuGiamGiaRepository.save(coupon);
         }
 
@@ -163,6 +178,9 @@ public class VoucherNguoiDungService {
         }
         if (v.getTrangThai() != TrangThaiVoucher.CHUA_NHAN) {
             throw new BadRequestException("Voucher không ở trạng thái chờ nhận");
+        }
+        if (v.getNgayHetHan() != null && LocalDateTime.now().isAfter(v.getNgayHetHan())) {
+            throw new BadRequestException("Voucher đã hết thời hạn nhận");
         }
 
         v.setTrangThai(TrangThaiVoucher.DA_NHAN);

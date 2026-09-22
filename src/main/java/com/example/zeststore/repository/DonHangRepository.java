@@ -123,7 +123,8 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
     @Query("SELECT COALESCE(SUM(t.soTien), 0) FROM ThanhToan t "
             + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
-            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay")
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "AND COALESCE(t.thoiGianTt, t.thoiGianTao) BETWEEN :tuNgay AND :denNgay")
     BigDecimal sumRevenueByDateRange(@Param("tuNgay") LocalDateTime tuNgay,
                                      @Param("denNgay") LocalDateTime denNgay);
 
@@ -131,37 +132,55 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     @Query("SELECT d.trangThaiDon, COUNT(d) FROM DonHang d GROUP BY d.trangThaiDon")
     List<Object[]> countOrdersByStatus();
 
-    @Query("SELECT FUNCTION('FORMAT', t.thoiGianTt, 'yyyy-MM-dd'), COALESCE(SUM(t.soTien), 0) "
+    @Query("SELECT d.trangThaiDon, COUNT(d) FROM DonHang d "
+            + "WHERE d.ngayDat BETWEEN :tuNgay AND :denNgay GROUP BY d.trangThaiDon")
+    List<Object[]> countOrdersByStatusInRange(@Param("tuNgay") LocalDateTime tuNgay,
+                                               @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("SELECT FUNCTION('FORMAT', COALESCE(t.thoiGianTt, t.thoiGianTao), 'yyyy-MM-dd'), COALESCE(SUM(t.soTien), 0) "
             + "FROM ThanhToan t WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
-            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay "
-            + "GROUP BY FUNCTION('FORMAT', t.thoiGianTt, 'yyyy-MM-dd') ORDER BY 1")
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "AND COALESCE(t.thoiGianTt, t.thoiGianTao) BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY FUNCTION('FORMAT', COALESCE(t.thoiGianTt, t.thoiGianTao), 'yyyy-MM-dd') ORDER BY 1")
     List<Object[]> sumRevenueByDay(@Param("tuNgay") LocalDateTime tuNgay,
                                    @Param("denNgay") LocalDateTime denNgay);
 
 
-    @Query("SELECT FUNCTION('MONTH', t.thoiGianTt), COALESCE(SUM(t.soTien), 0) "
+    @Query("SELECT FUNCTION('MONTH', COALESCE(t.thoiGianTt, t.thoiGianTao)), COALESCE(SUM(t.soTien), 0) "
             + "FROM ThanhToan t WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
-            + "AND FUNCTION('YEAR', t.thoiGianTt) = :nam "
-            + "GROUP BY FUNCTION('MONTH', t.thoiGianTt) ORDER BY 1")
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "AND FUNCTION('YEAR', COALESCE(t.thoiGianTt, t.thoiGianTao)) = :nam "
+            + "GROUP BY FUNCTION('MONTH', COALESCE(t.thoiGianTt, t.thoiGianTao)) ORDER BY 1")
     List<Object[]> sumRevenueByMonth(@Param("nam") int nam);
 
 
-    @Query("SELECT FUNCTION('YEAR', t.thoiGianTt), COALESCE(SUM(t.soTien), 0) "
+    @Query("SELECT FUNCTION('YEAR', COALESCE(t.thoiGianTt, t.thoiGianTao)), COALESCE(SUM(t.soTien), 0) "
             + "FROM ThanhToan t WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
-            + "GROUP BY FUNCTION('YEAR', t.thoiGianTt) ORDER BY 1")
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "GROUP BY FUNCTION('YEAR', COALESCE(t.thoiGianTt, t.thoiGianTao)) ORDER BY 1")
     List<Object[]> sumRevenueByYear();
 
-    @Query("SELECT t.thoiGianTt, t.soTien FROM ThanhToan t "
+    @Query("SELECT COALESCE(t.thoiGianTt, t.thoiGianTao), t.soTien FROM ThanhToan t "
             + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
-            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay")
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "AND COALESCE(t.thoiGianTt, t.thoiGianTao) BETWEEN :tuNgay AND :denNgay")
     List<Object[]> findRevenueData(@Param("tuNgay") LocalDateTime tuNgay,
                                     @Param("denNgay") LocalDateTime denNgay);
 
     @Query("SELECT COUNT(DISTINCT t.donHang.maDonHang) FROM ThanhToan t "
             + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
-            + "AND t.thoiGianTt BETWEEN :tuNgay AND :denNgay")
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "AND COALESCE(t.thoiGianTt, t.thoiGianTao) BETWEEN :tuNgay AND :denNgay")
     Long countCompletedOrders(@Param("tuNgay") LocalDateTime tuNgay,
                               @Param("denNgay") LocalDateTime denNgay);
+
+    @Query("SELECT t.phuongThuc, COALESCE(SUM(t.soTien), 0) FROM ThanhToan t "
+            + "WHERE t.donHang IS NOT NULL AND t.trangThaiThanhToan = 2 "
+            + "AND t.donHang.trangThaiDon NOT IN (5, 8, 9) "
+            + "AND COALESCE(t.thoiGianTt, t.thoiGianTao) BETWEEN :tuNgay AND :denNgay "
+            + "GROUP BY t.phuongThuc")
+    List<Object[]> sumRevenueByPaymentMethod(@Param("tuNgay") LocalDateTime tuNgay,
+                                              @Param("denNgay") LocalDateTime denNgay);
 
     @Query("SELECT MIN(d.ngayDat) FROM DonHang d")
     LocalDateTime minNgayDat();

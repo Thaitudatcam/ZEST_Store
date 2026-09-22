@@ -216,8 +216,8 @@ public class SanPhamService {
             m.put("giaThapNhat", sp.getGiaThapNhat());
             m.put("tongTonKho", sp.getTongTonKho());
             m.put("chatLieu", sp.getChatLieu() != null ? sp.getChatLieu().getGiaTri() : null);
-            m.put("mauSac", colorsMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
-            m.put("kichCo", sizesMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
+            m.put("mauSac", colorsMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()).stream().distinct().toList());
+            m.put("kichCo", sizesMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()).stream().distinct().toList());
             m.put("thuongHieu", brandMap.get(sp.getMaSanPham()));
             return m;
         }).collect(Collectors.toList());
@@ -309,8 +309,8 @@ public class SanPhamService {
             m.put("giaThapNhat", sp.getGiaThapNhat());
             m.put("tongTonKho", sp.getTongTonKho());
             m.put("chatLieu", sp.getChatLieu() != null ? sp.getChatLieu().getGiaTri() : null);
-            m.put("mauSac", colorsMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
-            m.put("kichCo", sizesMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()));
+            m.put("mauSac", colorsMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()).stream().distinct().toList());
+            m.put("kichCo", sizesMap.getOrDefault(sp.getMaSanPham(), Collections.emptyList()).stream().distinct().toList());
             m.put("thuongHieu", brandMap.get(sp.getMaSanPham()));
             return m;
         }).collect(Collectors.toList());

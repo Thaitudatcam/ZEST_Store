@@ -5,12 +5,14 @@ import { Plus, PenSquare, Trash2, Search, Calendar, RefreshCw } from 'lucide-rea
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 const CAMPAIGN_STATUS = {
+  paused: { label: 'Đã tắt', color: 'bg-bordeaux/10 text-bordeaux border-bordeaux/20' },
   upcoming: { label: 'Sắp diễn ra', color: 'bg-amber-100 text-amber-700 border-amber-200' },
   active: { label: 'Đang quảng', color: 'bg-blue-100 text-blue-700 border-blue-200' },
   ended: { label: 'Đã kết thúc', color: 'bg-stone/10 text-stone border-stone/20' },
 }
 
-function getCampaignStatus(c) {
+export function getCampaignStatus(c) {
+  if (Number(c.trangThai) !== 1) return 'paused'
   const now = new Date()
   const start = c.ngayBatDau ? new Date(c.ngayBatDau) : null
   const end = c.ngayKetThuc ? new Date(c.ngayKetThuc) : null
@@ -112,6 +114,7 @@ export default function AdminCampaigns() {
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
               className="bg-white border border-stone/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/60">
               <option value="">Trạng thái (Tất cả)</option>
+              <option value="paused">Đã tắt</option>
               <option value="upcoming">Sắp diễn ra</option>
               <option value="active">Đang quảng</option>
               <option value="ended">Đã kết thúc</option>
