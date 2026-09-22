@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getStats, getOrderStats, getRevenueByDay, getRevenueByDate, getRevenueByMonth, getRevenueByYear, getRecentOrders, getBestSellingProducts, getAllOrders } from '../../api/admin'
+import { getStats, getOrderStats, getRevenueByDay, getRevenueByDate, getRevenueByMonth, getRevenueByYear, getRecentOrders, getBestSellingProducts, getAllOrders, getSalesSummary } from '../../api/admin'
 import { Package, DollarSign, Users, TrendingUp, ShoppingBag, AlertCircle, CheckCircle, Filter, RefreshCw, Calendar, Clock, BarChart3, ShoppingCart } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { SkeletonTable } from '../../components/Skeleton'
@@ -12,8 +12,10 @@ const STATUS_LIST = [
   { key: 'cancelled', label: 'Đã hủy', color: 'bg-bordeaux', dot: 'bg-bordeaux' },
   { key: 'pending', label: 'Chờ xác nhận', color: 'bg-gold', dot: 'bg-gold' },
   { key: 'confirmed', label: 'Đã xác nhận', color: 'bg-royal', dot: 'bg-royal' },
-  { key: 'shipping', label: 'Chờ giao', color: 'bg-amber-500', dot: 'bg-amber-500' },
-  { key: 'delivering', label: 'Đang giao', color: 'bg-sky-500', dot: 'bg-sky-500' },
+  { key: 'shipping', label: 'Chờ lấy hàng', color: 'bg-amber-500', dot: 'bg-amber-500' },
+  { key: 'delivering', label: 'Chờ giao / Đang giao', color: 'bg-sky-500', dot: 'bg-sky-500' },
+  { key: 'returnRequested', label: 'Yêu cầu trả', color: 'bg-purple-500', dot: 'bg-purple-500' },
+  { key: 'returned', label: 'Đã trả hàng', color: 'bg-orange-500', dot: 'bg-orange-500' },
   { key: 'failed', label: 'Giao thất bại', color: 'bg-stone', dot: 'bg-stone' },
 ]
 
@@ -40,6 +42,8 @@ export default function AdminThongKe() {
   const [dailyRevenue, setDailyRevenue] = useState([])
   const [loading, setLoading] = useState(true)
   const [revenueLoading, setRevenueLoading] = useState(false)
+  const [salesSummary, setSalesSummary] = useState(null)
+  const [filterLoading, setFilterLoading] = useState(false)
 
   // Filter state
   const [tuNgay, setTuNgay] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })
@@ -72,6 +76,29 @@ export default function AdminThongKe() {
 
   useEffect(() => { loadAll(); const id = setInterval(loadAll, 30000); return () => clearInterval(id) }, [loadAll])
 
+  const loadSalesSummary = useCallback(async (from, to, fromTime, toTime) => {
+    setFilterLoading(true)
+    try {
+      const tuNgay = `${from}T${fromTime || '00:00:00'}`
+      const denNgay = `${to}T${toTime || '23:59:59'}`
+      const data = await getSalesSummary(tuNgay, denNgay)
+      setSalesSummary(data)
+    } catch { setSalesSummary(null) }
+    finally { setFilterLoading(false) }
+  }, [])
+
+  const handleFilter = () => {
+    loadSalesSummary(tuNgay, denNgay, tuGio, denGio)
+  }
+
+  const handleResetFilter = () => {
+    const d = new Date(); d.setDate(d.getDate() - 30)
+    const from = d.toISOString().split('T')[0]
+    const to = new Date().toISOString().split('T')[0]
+    setTuNgay(from); setDenNgay(to); setTuGio('00:00:00'); setDenGio('23:59:59')
+    setSalesSummary(null)
+  }
+
   const loadRevenueChart = useCallback(async () => {
     setRevenueLoading(true)
     try {
@@ -101,15 +128,18 @@ export default function AdminThongKe() {
     cancelled: orderStats.cancelled ?? 0,
     shipping: orderStats.shipping ?? 0,
     confirmed: orderStats.confirmed ?? 0,
+    delivering: orderStats.delivering ?? 0,
+    returnRequested: orderStats.returnRequested ?? 0,
+    returned: orderStats.returned ?? 0,
     failed: orderStats.failed ?? orderStats.notReceived ?? 0,
-  } : { completed: 0, pending: 0, cancelled: 0, shipping: 0, confirmed: 0, failed: 0 }
+  } : { completed: 0, pending: 0, cancelled: 0, shipping: 0, confirmed: 0, delivering: 0, returnRequested: 0, returned: 0, failed: 0 }
 
-  const todayInvoiceCount = recentOrders.filter(o => {
+  const todayInvoiceCount = salesSummary?.soHoaDon ?? todayRevenue > 0 ? recentOrders.filter(o => {
     if (!o.ngayDat) return false
     const d = new Date(o.ngayDat)
     const today = new Date()
     return d.toDateString() === today.toDateString()
-  }).length
+  }).length : 0
 
   const todayProductCount = recentOrders.filter(o => {
     if (!o.ngayDat) return false
@@ -117,6 +147,12 @@ export default function AdminThongKe() {
     const today = new Date()
     return d.toDateString() === today.toDateString()
   }).reduce((s, o) => s + (o.soLuongSanPham || o.items?.length || 1), 0)
+
+  const paymentMethods = salesSummary?.phuongThucThanhToan || {}
+  const filteredTotal = salesSummary?.doanhThu ?? 0
+  const filteredTienMat = paymentMethods.tienMat ?? 0
+  const filteredChuyenKhoan = paymentMethods.chuyenKhoan ?? 0
+  const filteredVnPay = paymentMethods.vnPay ?? 0
 
   // Time period revenue
   const periodRevenue = (days) => {
@@ -181,9 +217,9 @@ export default function AdminThongKe() {
           <p className="text-3xl font-bold text-ink mb-5">{VND(todayRevenue || 0)}</p>
           <div className="grid grid-cols-3 gap-3 mb-5">
             {[
-              { label: 'TIỀN MẶT', value: 0, icon: '💵' },
-              { label: 'CHUYỂN KHOẢN', value: 0, icon: '🏦' },
-              { label: 'VNPAY', value: 0, icon: '💳' },
+              { label: 'TIỀN MẶT', value: paymentMethods.tienMat ?? 0, icon: '💵' },
+              { label: 'CHUYỂN KHOẢN', value: paymentMethods.chuyenKhoan ?? 0, icon: '🏦' },
+              { label: 'VNPAY', value: paymentMethods.vnPay ?? 0, icon: '💳' },
             ].map(item => (
               <div key={item.label} className="bg-ivory/50 rounded-xl p-3 text-center border border-stone/5">
                 <p className="text-[10px] text-stone font-semibold uppercase tracking-wide mb-1">{item.label}</p>
@@ -315,10 +351,12 @@ export default function AdminThongKe() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-gold text-noir rounded-xl text-xs font-bold hover:bg-gold-hover transition">
-            <Filter className="h-3.5 w-3.5" /> Lọc dữ liệu
+          <button onClick={handleFilter} disabled={filterLoading}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gold text-noir rounded-xl text-xs font-bold hover:bg-gold-hover transition disabled:opacity-50">
+            <Filter className="h-3.5 w-3.5" /> {filterLoading ? 'Đang lọc...' : 'Lọc dữ liệu'}
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 border border-stone/20 text-stone rounded-xl text-xs font-semibold hover:bg-ivory transition">
+          <button onClick={handleResetFilter}
+            className="flex items-center gap-2 px-5 py-2.5 border border-stone/20 text-stone rounded-xl text-xs font-semibold hover:bg-ivory transition">
             <RefreshCw className="h-3.5 w-3.5" /> Đặt lại
           </button>
         </div>
@@ -327,10 +365,10 @@ export default function AdminThongKe() {
       {/* Payment Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'TỔNG TIỀN LỌC', value: 0, icon: DollarSign, color: 'text-gold bg-gold/10' },
-          { label: 'TIỀN MẶT', value: 0, icon: '💵', color: 'text-emerald-deep bg-emerald-deep/10' },
-          { label: 'CHUYỂN KHOẢN', value: 0, icon: '🏦', color: 'text-royal bg-royal/10' },
-          { label: 'VNPAY', value: 0, icon: '💳', color: 'text-sky-600 bg-sky-50' },
+          { label: 'TỔNG TIỀN LỌC', value: filteredTotal, icon: DollarSign, color: 'text-gold bg-gold/10' },
+          { label: 'TIỀN MẶT', value: filteredTienMat, icon: '💵', color: 'text-emerald-deep bg-emerald-deep/10' },
+          { label: 'CHUYỂN KHOẢN', value: filteredChuyenKhoan, icon: '🏦', color: 'text-royal bg-royal/10' },
+          { label: 'VNPAY', value: filteredVnPay, icon: '💳', color: 'text-sky-600 bg-sky-50' },
         ].map(card => (
           <div key={card.label} className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5 flex items-center gap-4">
             <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center shrink-0`}>
@@ -370,7 +408,7 @@ export default function AdminThongKe() {
                 ) : bestSelling.slice(0, 10).map((p, i) => (
                   <tr key={i} className="hover:bg-ivory/30">
                     <td className="px-4 py-2.5 font-medium text-ink">{p.tenSanPham || p.name || '—'}</td>
-                    <td className="px-4 py-2.5 text-right text-stone">{p.soLuongBan || p.quantity || 0}</td>
+                    <td className="px-4 py-2.5 text-right text-stone">{p.soLuongDaBan || p.soLuongBan || p.quantity || 0}</td>
                     <td className="px-4 py-2.5 text-stone">{p.tenSanPham || '—'}</td>
                     <td className="px-4 py-2.5 text-right font-semibold text-ink">{VND(p.doanhThu || p.revenue || 0)}</td>
                   </tr>
@@ -404,7 +442,7 @@ export default function AdminThongKe() {
                 ) : bestSelling.slice(0, 10).map((p, i) => (
                   <tr key={i} className="hover:bg-ivory/30">
                     <td className="px-4 py-2.5 font-medium text-ink">{p.tenSanPham || p.name || '—'}</td>
-                    <td className="px-4 py-2.5 text-center text-stone">{p.soLuongBan || p.quantity || 0}</td>
+                    <td className="px-4 py-2.5 text-center text-stone">{p.soLuongDaBan || p.soLuongBan || p.quantity || 0}</td>
                     <td className="px-4 py-2.5 text-stone">{p.tenSanPham || '—'}</td>
                     <td className="px-4 py-2.5 text-right font-semibold text-ink">{VND(p.doanhThu || p.revenue || 0)}</td>
                   </tr>
