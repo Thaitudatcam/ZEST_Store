@@ -821,8 +821,16 @@ export default function AdminPOS() {
 
       <PaymentModal open={showPaymentModal} onClose={() => setShowPaymentModal(false)}
         thanhTien={thanhTien} placing={placing} bankInfo={bankInfo}
-        onConfirmPaid={(amount) => { setCustomerPaid(amount); setPaymentMethod(5) }}
-        onConfirmTransfer={(amount) => { setCustomerPaid(amount); setPaymentMethod(6) }}
+        onConfirmPaid={(amount) => {
+          setCustomerPaid(amount)
+          setPaymentMethod(5)
+          setShowConfirmOrder(true)
+        }}
+        onConfirmTransfer={(amount) => {
+          setCustomerPaid(amount)
+          setPaymentMethod(6)
+          setShowConfirmOrder(true)
+        }}
         onTransferTabActive={handleTransferTabActive} />
 
       {cameraOpen && (
