@@ -9,12 +9,16 @@ export function CartProvider({ children }) {
   const [count, setCount] = useState(0)
 
   const refreshCount = useCallback(async () => {
+    if (!user || user.vaiTro !== 'CUSTOMER') {
+      setCount(0)
+      return
+    }
     try {
       const items = await getCart()
       const total = items.reduce((s, i) => s + (i.soLuong || 0), 0)
       setCount(total)
     } catch { setCount(0) }
-  }, [])
+  }, [user])
 
   useEffect(() => { refreshCount() }, [user, refreshCount])
 

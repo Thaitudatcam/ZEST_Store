@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
@@ -119,6 +120,12 @@ public class DonHang {
     @PrePersist
     protected void onCreate() {
         this.ngayDat = LocalDateTime.now();
+        // SQL Server UNIQUE constraints allow only one NULL value. The final
+        // DHxxxx code depends on the generated identity, so use a unique
+        // temporary value for the first INSERT and replace it after save().
+        if (this.maDonHangCode == null || this.maDonHangCode.isBlank()) {
+            this.maDonHangCode = "TMP-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        }
         if (this.trangThaiDon == null) this.trangThaiDon = 1;
         if (this.soTienGiam == null) this.soTienGiam = BigDecimal.ZERO;
         if (this.phiVanChuyen == null) this.phiVanChuyen = BigDecimal.ZERO;

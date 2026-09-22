@@ -45,10 +45,12 @@ public class PhieuGiamGiaService {
     // ========== LIFECYCLE HELPERS ==========
     public static int computeTrangThaiThucTe(PhieuGiamGia c) {
         if (c.getNgayXoa() != null) return 5;
+        // Quantity exhaustion is a derived lifecycle state, even though older
+        // rows may also have trang_thai=0 from the automatic depletion logic.
+        if (c.getSoLuong() != null && c.getSoLuong() <= 0) return 3;
         if (c.getTrangThai() == 0) return 0;
         if (c.getNgayBatDau() != null && c.getNgayBatDau().isAfter(LocalDateTime.now())) return 1;
         if (c.getNgayKetThuc() != null && c.getNgayKetThuc().isBefore(LocalDateTime.now())) return 4;
-        if (c.getSoLuong() != null && c.getSoLuong() <= 0) return 3;
         return 2;
     }
 

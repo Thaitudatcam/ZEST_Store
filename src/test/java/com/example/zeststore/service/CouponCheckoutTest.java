@@ -37,6 +37,16 @@ class CouponCheckoutTest {
         when(sanPhamRepository.findAllById(List.of(4))).thenReturn(List.of(SanPham.builder().maSanPham(4).build()));
         assertThrows(BadRequestException.class, () -> service.validateCoupon("SALE", BigDecimal.valueOf(100), List.of(4), null));
     }
+    @Test void depletedCouponIsReportedAsOutOfUsesEvenWhenAutoDisabled() {
+        var c = coupon();
+        c.setSoLuong(0);
+        c.setTrangThai(0);
+
+        assertEquals(3, PhieuGiamGiaService.computeTrangThaiThucTe(c));
+        assertEquals("Hết lượt", PhieuGiamGiaService.trangThaiThucTeText(
+                PhieuGiamGiaService.computeTrangThaiThucTe(c)));
+        assertEquals("Hết lượt", c.getTrangThaiThucTeText());
+    }
     @Test void restrictedPercentageCouponDiscountsOnlyEligibleProducts() {
         var c = coupon();
         c.setKieuGiamGia(1);

@@ -9,11 +9,15 @@ export function VoucherProvider({ children }) {
   const [voucherCount, setVoucherCount] = useState(0)
 
   const refreshVoucherCount = useCallback(async () => {
+    if (!user || user.vaiTro !== 'CUSTOMER') {
+      setVoucherCount(0)
+      return
+    }
     try {
       const res = await getUnclaimedCount()
       setVoucherCount(res?.count || 0)
     } catch { setVoucherCount(0) }
-  }, [])
+  }, [user])
 
   useEffect(() => { refreshVoucherCount() }, [user, refreshVoucherCount])
 

@@ -94,10 +94,11 @@ public class PhieuGiamGia {
     @com.fasterxml.jackson.annotation.JsonProperty("trangThaiThucTe")
     public int getTrangThaiThucTe() {
         if (ngayXoa != null) return 5;
+        // A depleted coupon is not an administratively cancelled coupon.
+        if (soLuong != null && soLuong <= 0) return 3;
         if (trangThai == 0) return 0;
         if (ngayBatDau != null && ngayBatDau.isAfter(LocalDateTime.now())) return 1;
         if (ngayKetThuc != null && ngayKetThuc.isBefore(LocalDateTime.now())) return 4;
-        if (soLuong != null && soLuong <= 0) return 3;
         return 2;
     }
 
