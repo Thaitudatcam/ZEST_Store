@@ -15,8 +15,6 @@ import java.util.*;
 @RequiredArgsConstructor
 public class GioHangService {
 
-    private static final int MAX_QTY_PER_ITEM = 5;
-
     private int available(BienTheSanPham variant) {
         return Math.max(0, variant.getTonKho() - inventoryService.reserved(variant.getMaBienThe(), null, null));
     }
@@ -114,27 +112,21 @@ public class GioHangService {
         Optional<MucGioHang> existing = mucGioHangRepository
                 .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), maBienThe);
 
-    if (existing.isPresent()) {
-        MucGioHang item = existing.get();
-        int newQuantity = item.getSoLuong() + soLuong;
-        if (newQuantity > MAX_QTY_PER_ITEM) {
-            throw new BadRequestException("Bạn đã có số lượng tối đa sản phẩm này trong giỏ hàng");
+        if (existing.isPresent()) {
+            MucGioHang item = existing.get();
+            int newQuantity = item.getSoLuong() + soLuong;
+            if (newQuantity > available(variant)) {
+                throw new BadRequestException("Insufficient stock. Available: " + available(variant));
+            }
+            item.setSoLuong(newQuantity);
+            mucGioHangRepository.save(item);
+        } else {
+            mucGioHangRepository.save(MucGioHang.builder()
+                    .gioHang(cart)
+                    .bienThe(variant)
+                    .soLuong(soLuong)
+                    .build());
         }
-        if (newQuantity > available(variant)) {
-            throw new BadRequestException("Insufficient stock. Available: " + available(variant));
-        }
-        item.setSoLuong(newQuantity);
-        mucGioHangRepository.save(item);
-    } else {
-        if (soLuong > MAX_QTY_PER_ITEM) {
-            throw new BadRequestException("Bạn đã có số lượng tối đa sản phẩm này trong giỏ hàng");
-        }
-        mucGioHangRepository.save(MucGioHang.builder()
-                .gioHang(cart)
-                .bienThe(variant)
-                .soLuong(soLuong)
-                .build());
-    }
 
         return Map.of("message", "Item added to cart");
     }

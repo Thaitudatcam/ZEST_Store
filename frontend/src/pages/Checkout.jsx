@@ -20,6 +20,8 @@ import SearchableSelect from '../components/SearchableSelect'
 const PAYMENT_OPTIONS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', icon: Truck },
   { value: 2, label: 'Thẻ ATM/Visa/Master/JCB/Gi Pay qua VNPay QR', icon: CreditCard },
+  { value: 3, label: 'Ví điện tử MoMo', icon: Smartphone },
+  { value: 4, label: 'Ví điện tử ZaloPay', icon: Smartphone },
 ]
 
 const flexibleMatch = (name, list, nameKey, extensionKey) => {
@@ -422,8 +424,13 @@ export default function Checkout() {
             tongTien: result.tongTien,
           }
         }})
-      } else if (method === 2) {
-        const paymentRes = await createVnPayPayment(result.maDonHang)
+      } else if ([2, 3, 4].includes(method)) {
+        const createPayment = method === 2
+          ? createVnPayPayment
+          : method === 3
+            ? createMomoPayment
+            : createZaloPayPayment
+        const paymentRes = await createPayment(result.maDonHang)
         sessionStorage.removeItem('onlineCheckoutKey')
         checkoutKey.current = crypto.randomUUID()
         window.location.href = paymentRes.paymentUrl
