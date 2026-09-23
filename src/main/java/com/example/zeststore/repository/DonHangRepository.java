@@ -27,6 +27,12 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
 
     List<DonHang> findByTrangThaiDon(Integer trangThaiDon);
 
+    @Query("SELECT DISTINCT d.maDonHang FROM DonHang d JOIN d.thanhToans t "
+            + "WHERE d.loaiDonHang = 1 AND d.trangThaiDon = 1 "
+            + "AND d.ngayDat <= :threshold "
+            + "AND t.phuongThuc = 1 AND t.trangThaiThanhToan = 1")
+    List<Integer> findExpiredPendingCodOrderIds(@Param("threshold") LocalDateTime threshold);
+
     Page<DonHang> findByTrangThaiDon(Integer trangThaiDon, Pageable pageable);
 
     Page<DonHang> findByLoaiDonHangAndTrangThaiDon(Integer loaiDonHang, Integer trangThaiDon, Pageable pageable);

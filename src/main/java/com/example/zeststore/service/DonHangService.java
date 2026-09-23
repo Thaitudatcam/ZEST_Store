@@ -691,6 +691,62 @@ public class DonHangService {
         phieuGiamGiaService.restoreForOrder(order.getMaDonHang());
     }
 
+    /**
+     * Cancels one expired online COD order. The row lock and all eligibility
+     * checks are repeated here because an administrator can confirm the order
+     * after the scheduler has selected it but before this transaction starts.
+     */
+    @Transactional
+    public boolean autoCancelExpiredCodOrder(Integer orderId, LocalDateTime threshold) {
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (!Integer.valueOf(1).equals(order.getLoaiDonHang())
+                || !Integer.valueOf(1).equals(order.getTrangThaiDon())
+                || order.getNgayDat() == null
+                || order.getNgayDat().isAfter(threshold)) {
+            return false;
+        }
+
+        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
+        boolean hasPendingCod = payments.stream().anyMatch(payment ->
+                Integer.valueOf(1).equals(payment.getPhuongThuc())
+                        && Integer.valueOf(1).equals(payment.getTrangThaiThanhToan()));
+        if (!hasPendingCod) return false;
+
+        cancelLockedOrder(order);
+        order.setTrangThaiDon(5);
+        donHangRepository.save(order);
+
+        String note = "Tự động hủy đơn COD do chờ xác nhận quá hạn";
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order)
+                .trangThaiCu(1)
+                .trangThaiMoi(5)
+                .nguoiCapNhat(systemActor())
+                .ghiChu(note)
+                .khachHangXem(true)
+                .build());
+        orderSseService.sendOrderStatusUpdate(orderId, 5, 1, "system", note);
+
+        if (order.getNguoiDung() != null) {
+            try {
+                thongBaoService.taoThongBao(
+                        order.getNguoiDung().getMaNguoiDung(),
+                        "Đơn hàng #" + orderId + " đã tự động hủy",
+                        "Đơn hàng #" + orderId + " đã bị hủy do chờ xác nhận quá thời hạn.",
+                        "DON_HANG_CAP_NHAT",
+                        "/orders/" + orderId);
+            } catch (Exception ignored) {}
+        }
+        return true;
+    }
+
+    private NguoiDung systemActor() {
+        return nguoiDungRepository.findByVaiTro_TenVaiTroInAndTrangThai(List.of("ADMIN", "STAFF"), 1)
+                .stream().findFirst()
+                .orElseGet(() -> NguoiDung.builder().maNguoiDung(1).build());
+    }
+
     @Transactional
     public Map<String, String> cancelOrder(Integer orderId, Integer userId) {
         DonHang order = donHangRepository.findByIdForUpdate(orderId)
