@@ -9,7 +9,7 @@ export function CartProvider({ children }) {
   const [count, setCount] = useState(0)
 
   const refreshCount = useCallback(async () => {
-    if (!user || user.vaiTro !== 'CUSTOMER') {
+    if (!user) {
       setCount(0)
       return
     }

@@ -20,9 +20,9 @@ import SearchableSelect from '../components/SearchableSelect'
 
 const PAYMENT_OPTIONS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', icon: Truck },
-  { value: 2, label: 'Thẻ ATM/Visa/Master/JCB/Gi Pay qua VNPay QR', icon: CreditCard },
+  { value: 2, label: 'VNPay', icon: CreditCard },
   { value: 3, label: 'VietQR (Quét mã ngân hàng)', icon: QrCode },
-  { value: 4, label: 'Ví điện tử ZaloPay', icon: Smartphone },
+  { value: 4, label: 'ZaloPay', icon: Smartphone },
 ]
 
 const flexibleMatch = (name, list, nameKey, extensionKey) => {

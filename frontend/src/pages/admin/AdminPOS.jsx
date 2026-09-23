@@ -241,10 +241,22 @@ export default function AdminPOS() {
 
   const removeOrder = async (idx) => {
     if (pendingCheckout.current || pendingStock.current) return
+    const target = snapshotOrders()[idx]
+    if (!target) return
     pendingStock.current = true
     setStockBusy(true)
     try {
-      await posApi.clearDraft(orders[idx].checkoutKey)
+      try {
+        await posApi.clearDraft(target.checkoutKey)
+      } catch (clearError) {
+        // An expired hold may already have been removed by the server. In that
+        // case DELETE can fail even though there is nothing left to release.
+        // Only discard the local tab after confirming the remote draft is empty.
+        try {
+          const remote = await posApi.getDraft(target.checkoutKey)
+          if (!Array.isArray(remote?.items) || remote.items.length > 0) throw clearError
+        } catch { throw clearError }
+      }
       const next = removeDraft(snapshotOrders(), currentOrderIdx, idx)
       setOrders(next.orders)
       if (idx === currentOrderIdx) loadDraft(next.orders[next.index])
@@ -394,7 +406,6 @@ export default function AdminPOS() {
           setCoupon(res)
           setCouponAuto(true)
           setCouponInput(res.maCode)
-          setCouponMsg(`Đã tự động áp dụng mã tốt nhất, tiết kiệm ${VND(res.soTienGiam)}`)
         } else {
           setCoupon(null)
           setCouponAuto(true)
