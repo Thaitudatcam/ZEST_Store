@@ -24,6 +24,7 @@ const FILTER_TABS = [
 export default function Orders() {
   const toast = useToast();
   const navigate = useNavigate();
+  const { refreshCount } = useCart();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -88,6 +89,7 @@ export default function Orders() {
           count++;
         }
       }
+      refreshCount()
       toast.success(
         <div className="flex items-center gap-2">
           <span>Đã thêm {count} sản phẩm vào giỏ hàng!</span>
@@ -255,7 +257,7 @@ export default function Orders() {
                 <div className="flex items-center gap-2">
                   <span className="text-stone text-xs">Thanh toán:</span>
                   <span className="font-medium text-xs">
-                    {[1:'COD',2:'VNPay',3:'VietQR',4:'ZaloPay'][o.phuongThucThanhToan] || 'Online'}{' '}
+                    {{1:'COD',2:'VNPay',3:'VietQR',4:'ZaloPay'}[o.phuongThucThanhToan] || 'Online'}{' '}
                     {o.trangThaiThanhToan === 2
                       ? <span className="text-emerald-deep">Đã thanh toán</span>
                       : <span className="text-gold">Chưa thanh toán</span>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getProductBySlug, getProducts } from '../api/products'
-import { addToCart } from '../api/cart'
+import { addToCart, getCart, updateCartItem } from '../api/cart'
 import { getProductReviews } from '../api/reviews'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
@@ -104,12 +104,18 @@ export default function ProductDetail() {
       setBuyingNow(true)
       const variantId = selectedVar || (variants[0]?.maBienThe)
       if (!variantId) return setToast({ message: 'Sản phẩm chưa có biến thể', type: 'error' })
-      await addToCart({ maBienThe: variantId, soLuong: qty })
+      const cart = await getCart()
+      const cartSnapshot = Array.isArray(cart)
+        ? cart.map(item => ({ maBienThe: item.maBienThe, soLuong: item.soLuong, maMucGioHang: item.maMucGioHang }))
+        : []
+      const existing = cartSnapshot.find(item => item.maBienThe === variantId)
+      if (existing) {
+        await updateCartItem(existing.maMucGioHang, { soLuong: qty })
+      } else {
+        await addToCart({ maBienThe: variantId, soLuong: qty })
+      }
       refreshCount()
-      // Checkout reloads the authoritative cart from the server. Passing only
-      // the variant id prevents a stale price/quantity snapshot from causing
-      // a total mismatch when the item already exists in the cart.
-      navigate('/checkout', { state: { selectedVariantIds: [variantId] } })
+      navigate('/checkout', { state: { selectedVariantIds: [variantId], cartSnapshot } })
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Mua thất bại', type: 'error' })
     } finally {

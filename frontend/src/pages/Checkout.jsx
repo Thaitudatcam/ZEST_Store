@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { getCart } from '../api/cart'
+import { getCart, updateCartItem, addToCart, removeCartItem } from '../api/cart'
 import { getProfile, getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 
@@ -10,6 +10,7 @@ import { getProvinces, getDistricts, getWards } from '../api/address'
 import CheckoutCoupons from '../components/CheckoutCoupons'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { useToast } from '../context/ToastContext'
+import { useCart } from '../context/CartContext'
 import { VND } from '../components/ProductCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, ShieldCheck, RefreshCcw, Lock, ShoppingCart } from 'lucide-react'
@@ -56,8 +57,10 @@ export default function Checkout() {
   const location = useLocation()
   const selectedVariantIds = useMemo(() => location.state?.selectedVariantIds
     ?? location.state?.selectedItems?.map(item => item.maBienThe), [location.state])
+  const cartSnapshot = useMemo(() => location.state?.cartSnapshot ?? null, [location.state])
 
   const toast = useToast()
+  const { refreshCount } = useCart()
   const [cart, setCart] = useState([])
   const [addresses, setAddresses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -381,6 +384,38 @@ export default function Checkout() {
     setConfirmOrder(true)
   }
 
+  const restoreCart = async (snapshot) => {
+    const currentCart = await getCart()
+    if (!Array.isArray(currentCart)) return
+    const snapshotMap = new Map(snapshot.map(item => [item.maBienThe, item]))
+
+    for (const item of currentCart) {
+      const snap = snapshotMap.get(item.maBienThe)
+      if (snap) {
+        if (item.soLuong !== snap.soLuong) {
+          try { await updateCartItem(item.maMucGioHang, { soLuong: snap.soLuong }) } catch { /* stock */ }
+        }
+      } else {
+        try { await removeCartItem(item.maMucGioHang) } catch { /* ignore */ }
+      }
+    }
+
+    for (const snap of snapshot) {
+      if (!currentCart.find(item => item.maBienThe === snap.maBienThe)) {
+        let qtyToRestore = snap.soLuong
+        while (qtyToRestore > 0) {
+          try {
+            await addToCart({ maBienThe: snap.maBienThe, soLuong: qtyToRestore })
+            break
+          } catch {
+            qtyToRestore--
+          }
+        }
+      }
+    }
+    refreshCount()
+  }
+
   const handlePlaceOrder = async () => {
     if (pendingCheckout.current || couponPending) return
     pendingCheckout.current = true
@@ -409,6 +444,10 @@ export default function Checkout() {
       }
 
       const result = await placeOrder(orderPayload)
+
+      if (cartSnapshot) {
+        restoreCart(cartSnapshot).catch(() => {})
+      }
 
       const method = result.phuongThucThanhToan
       if (method === 1) {
