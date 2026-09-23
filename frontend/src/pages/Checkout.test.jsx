@@ -42,6 +42,7 @@ const cart = [
   { maBienThe: 22, maSanPham: 2, tenSanPham: 'Polo đen', donGia: 400000, soLuong: 1 },
 ]
 const sale = { maCode: 'SALE10', kieuGiamGia: 1, giaTriGiam: 10, soTienGiam: 60000, giaTriDonToiThieu: 100000, trangThaiThucTe: 2 }
+const alternative = { maCode: 'SAVE30K', kieuGiamGia: 2, giaTriGiam: 30000, soTienGiam: 30000, giaTriDonToiThieu: 0, trangThaiThucTe: 2 }
 const ship = { maCode: 'FREESHIP', kieuGiamGia: 3, giaTriGiam: '0', soTienGiam: 0, trangThaiThucTe: 2 }
 
 function renderCheckout(state = { selectedItems: cart }) {
@@ -60,7 +61,7 @@ function expectTotal(amount) {
 async function chooseCoupon(user, code) {
   const chooser = screen.getByRole('button', { name: /^Chọn mã giảm giá/ })
   if (chooser.getAttribute('aria-expanded') === 'false') await user.click(chooser)
-  await user.click(await screen.findByRole('button', { name: `Dùng mã ${code}` }))
+  await user.click(await screen.findByRole('button', { name: `Chọn mã ${code}` }))
 }
 
 async function selectShippingAddress(user) {
@@ -78,11 +79,38 @@ beforeEach(() => {
   getCart.mockResolvedValue(cart)
   calculateShippingFee.mockResolvedValue({ fee: 30000 })
   api.get.mockResolvedValue({ data: [sale, ship] })
-  api.post.mockImplementation(async (_url, body) => ({ data: body.maCode === 'FREESHIP' ? ship : sale }))
+  api.post.mockImplementation(async (url, body) => {
+    if (url === '/coupons/best-offer') return { data: { found: false } }
+    return { data: body.maCode === 'FREESHIP' ? ship : body.maCode === 'SAVE30K' ? alternative : sale }
+  })
   placeOrder.mockResolvedValue({ maDonHang: 100, phuongThucThanhToan: 1, tongTien: 570000 })
 })
 
 describe('Online checkout coupons', () => {
+  it('automatically applies the best offer and still lets the customer choose another code', async () => {
+    const user = userEvent.setup()
+    api.get.mockResolvedValue({ data: [sale, alternative] })
+    api.post.mockImplementation(async (url, body) => {
+      if (url === '/coupons/best-offer') return { data: { ...sale, found: true, isBest: true } }
+      return { data: body.maCode === 'SAVE30K' ? alternative : sale }
+    })
+
+    renderCheckout()
+
+    expect(await screen.findByText('Tự động chọn mã tốt nhất')).toBeInTheDocument()
+    expect(screen.getByText(/Đã tự động chọn mã tốt nhất SALE10/)).toBeInTheDocument()
+    expect(api.post).toHaveBeenCalledWith('/coupons/best-offer', null, { params: {
+      tongTien: 600000, maSanPhamIds: '1,2', maNguoiDung: undefined, pos: false,
+    } })
+    expectTotal(570000)
+
+    await user.click(screen.getByRole('button', { name: /^Chọn mã giảm giá/ }))
+    await user.click(screen.getByRole('button', { name: 'Chọn mã SAVE30K' }))
+    expect(await screen.findByRole('button', { name: 'Bỏ mã SAVE30K' })).toBeEnabled()
+    expect(screen.queryByText('Tự động chọn mã tốt nhất')).not.toBeInTheDocument()
+    expectTotal(600000)
+  })
+
   it('loads coupons for the selected products and submits the server-validated discount with COD', async () => {
     const user = userEvent.setup()
     // The eligible products only receive 20,000, despite the list estimate of 60,000.
@@ -111,7 +139,7 @@ describe('Online checkout coupons', () => {
     renderCheckout()
     await waitFor(() => expect(screen.getByRole('button', { name: 'ĐẶT HÀNG' })).toBeEnabled())
     await user.type(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' }), ' SALE10 ')
-    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn mã' }))
     expectTotal(570000)
     await user.click(screen.getByRole('button', { name: 'Bỏ mã SALE10' }))
     expectTotal(630000)
@@ -125,7 +153,7 @@ describe('Online checkout coupons', () => {
     await chooseCoupon(user, 'SALE10')
     api.post.mockRejectedValueOnce({ response: { data: { message: 'Mã giảm giá đã hết hạn' } } })
     await user.type(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' }), 'EXPIRED')
-    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn mã' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Mã giảm giá đã hết hạn')
     expect(screen.getByRole('button', { name: 'Bỏ mã SALE10' })).toBeEnabled()
     expectTotal(570000)
@@ -134,15 +162,15 @@ describe('Online checkout coupons', () => {
   it('blocks order placement and duplicate validation while checking a coupon', async () => {
     const user = userEvent.setup()
     let resolveValidation
-    api.post.mockImplementationOnce(() => new Promise(resolve => { resolveValidation = resolve }))
     renderCheckout()
     await waitFor(() => expect(screen.getByRole('button', { name: 'ĐẶT HÀNG' })).toBeEnabled())
+    api.post.mockImplementationOnce(() => new Promise(resolve => { resolveValidation = resolve }))
     await user.type(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' }), 'SALE10')
-    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn mã' }))
     expect(screen.getByRole('button', { name: 'ĐẶT HÀNG' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Áp dụng' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Chọn mã' })).toBeDisabled()
     fireEvent.submit(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' }).closest('form'))
-    expect(api.post).toHaveBeenCalledTimes(1)
+    expect(api.post.mock.calls.filter(([url]) => url === '/coupons/validate')).toHaveLength(1)
     expect(placeOrder).not.toHaveBeenCalled()
     await act(async () => { resolveValidation({ data: sale }) })
     expect(screen.getByRole('button', { name: 'ĐẶT HÀNG' })).toBeEnabled()
@@ -176,7 +204,7 @@ describe('Online checkout coupons', () => {
     await chooseCoupon(user, 'FREESHIP')
     api.post.mockResolvedValueOnce({ data: { ...sale, maCode: 'PRIVATE', exclusive: true } })
     await user.type(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' }), 'PRIVATE')
-    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn mã' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('không thể dùng cùng FREESHIP')
     expect(screen.queryByRole('button', { name: 'Bỏ mã PRIVATE' })).not.toBeInTheDocument()
     expectTotal(600000)
@@ -190,7 +218,7 @@ describe('Online checkout coupons', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Chưa tải được danh sách mã')
     expect(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' })).toBeEnabled()
     await user.click(screen.getByRole('button', { name: 'Thử lại' }))
-    expect(await screen.findByRole('button', { name: 'Dùng mã SALE10' })).toBeEnabled()
+    expect(await screen.findByRole('button', { name: 'Chọn mã SALE10' })).toBeEnabled()
   })
 
   it('disables vouchers whose minimum order or lifecycle requirements are not met', async () => {
@@ -201,8 +229,8 @@ describe('Online checkout coupons', () => {
     ] })
     renderCheckout()
     await user.click(await screen.findByRole('button', { name: /^Chọn mã giảm giá/ }))
-    expect(await screen.findByRole('button', { name: 'Dùng mã MINIMUM' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Dùng mã EXPIRED' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Chọn mã MINIMUM' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Chọn mã EXPIRED' })).toBeDisabled()
     expect(api.post).not.toHaveBeenCalled()
   })
 

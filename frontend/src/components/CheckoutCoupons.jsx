@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Check, ChevronDown, Loader, Ticket, X } from 'lucide-react'
-import { getAvailableCoupons, validateCoupon } from '../api/coupons'
+import { getAvailableCoupons, getBestOffer, validateCoupon } from '../api/coupons'
 import { VND } from './ProductCard'
 
 const offerLabel = (coupon) => {
@@ -21,9 +21,50 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
   const [applying, setApplying] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [autoSelectedCode, setAutoSelectedCode] = useState('')
   const requestId = useRef(0)
   const pending = useRef(false)
+  const autoAttemptedFor = useRef('')
   const busy = disabled || !!applying
+
+  const productIds = [...new Set(cart.map(item => item.maSanPham).filter(Boolean))]
+  const cartKey = cart.map(item => `${item.maBienThe}:${item.soLuong}:${item.donGia}`).join('|')
+  const validationPayload = (maCode) => ({
+    maCode,
+    tongTien: subtotal,
+    maSanPhamIds: productIds,
+    items: cart.filter(item => item.maSanPham).map(item => ({
+      maSanPham: item.maSanPham,
+      thanhTien: Number(item.donGia || 0) * Number(item.soLuong || 1),
+    })),
+  })
+
+  const selectCoupon = (coupon, automatic = false) => {
+    const isShipping = Number(coupon.kieuGiamGia) === 3
+    const otherCoupon = isShipping ? discountCoupon : freeshipVoucher
+    const listedCoupon = coupons.find(item => item.maCode === coupon.maCode)
+    const appliedCoupon = { ...coupon, exclusive: coupon.exclusive ?? listedCoupon?.exclusive ?? false }
+    if (otherCoupon && (appliedCoupon.exclusive || otherCoupon.exclusive)) {
+      setError(`Mã ${appliedCoupon.maCode} không thể dùng cùng ${otherCoupon.maCode}. Vui lòng bỏ mã đang dùng trước.`)
+      return false
+    }
+    onChange(isShipping
+      ? { discountCoupon, freeshipVoucher: appliedCoupon }
+      : { discountCoupon: appliedCoupon, freeshipVoucher })
+    setAutoSelectedCode(automatic ? coupon.maCode : '')
+    setCode('')
+    setMessage(automatic
+      ? `Đã tự động chọn mã tốt nhất ${coupon.maCode}. Bạn vẫn có thể chọn mã khác.`
+      : `Đã chọn mã ${coupon.maCode}.`)
+    return true
+  }
+
+  const unavailableReason = (coupon) => {
+    if (coupon.trangThaiThucTe != null && Number(coupon.trangThaiThucTe) !== 2) return coupon.trangThaiThucTeText || 'Mã chưa khả dụng'
+    if (Number(coupon.giaTriDonToiThieu || 0) > subtotal) return `Mua thêm ${VND(Number(coupon.giaTriDonToiThieu) - subtotal)} để sử dụng`
+    return ''
+  }
+  const usableCount = coupons.filter(coupon => !unavailableReason(coupon)).length
 
   useEffect(() => {
     // Ignore validation responses for a previous cart or an unmounted checkout.
@@ -32,6 +73,8 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
     setApplying('')
     setError('')
     setMessage('')
+    setAutoSelectedCode('')
+    autoAttemptedFor.current = ''
     onPendingChange(false)
     return () => { requestId.current += 1 }
   }, [cart, onPendingChange])
@@ -41,13 +84,52 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
     setLoading(true)
     setLoadError(false)
     setCoupons([])
-    const productIds = [...new Set(cart.map(item => item.maSanPham).filter(Boolean))]
     getAvailableCoupons(subtotal, productIds)
       .then(result => { if (current) setCoupons(Array.isArray(result) ? result : []) })
       .catch(() => { if (current) setLoadError(true) })
       .finally(() => { if (current) setLoading(false) })
     return () => { current = false }
   }, [cart, subtotal, reload])
+
+  useEffect(() => {
+    if (loading || loadError || disabled || usableCount === 0 || pending.current) return
+    if (discountCoupon || freeshipVoucher) return
+    const attemptKey = `${cartKey}|${subtotal}`
+    if (autoAttemptedFor.current === attemptKey) return
+    autoAttemptedFor.current = attemptKey
+
+    let current = true
+    pending.current = true
+    const currentRequest = ++requestId.current
+    setApplying('Mã tốt nhất')
+    onPendingChange(true)
+    setError('')
+    setMessage('')
+
+    getBestOffer(subtotal, productIds)
+      .then(best => {
+        if (!current || currentRequest !== requestId.current || !best?.found || !best.maCode) return null
+        return validateCoupon(validationPayload(best.maCode))
+      })
+      .then(coupon => {
+        if (!coupon || !current || currentRequest !== requestId.current) return
+        selectCoupon(coupon, true)
+      })
+      .catch(() => {
+        // Automatic selection is an enhancement; manual selection stays usable.
+      })
+      .finally(() => {
+        if (current && currentRequest === requestId.current) {
+          pending.current = false
+          setApplying('')
+          onPendingChange(false)
+        }
+      })
+
+    return () => { current = false }
+  // A new cart/subtotal gets one automatic attempt. Manual changes must not retrigger it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey, subtotal, loading, loadError, disabled, usableCount])
 
   const apply = async (requestedCode) => {
     const trimmedCode = requestedCode.trim()
@@ -60,28 +142,10 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
     setMessage('')
     try {
       const coupon = await validateCoupon({
-        maCode: trimmedCode,
-        tongTien: subtotal,
-        maSanPhamIds: [...new Set(cart.map(item => item.maSanPham).filter(Boolean))],
-        items: cart.filter(item => item.maSanPham).map(item => ({
-          maSanPham: item.maSanPham,
-          thanhTien: Number(item.donGia || 0) * Number(item.soLuong || 1),
-        })),
+        ...validationPayload(trimmedCode),
       })
       if (currentRequest !== requestId.current) return
-      const isShipping = Number(coupon.kieuGiamGia) === 3
-      const otherCoupon = isShipping ? discountCoupon : freeshipVoucher
-      const listedCoupon = coupons.find(item => item.maCode === coupon.maCode)
-      const appliedCoupon = { ...coupon, exclusive: coupon.exclusive ?? listedCoupon?.exclusive ?? false }
-      if (otherCoupon && (appliedCoupon.exclusive || otherCoupon.exclusive)) {
-        setError(`Mã ${appliedCoupon.maCode} không thể dùng cùng ${otherCoupon.maCode}. Vui lòng bỏ mã đang dùng trước.`)
-        return
-      }
-      onChange(isShipping
-        ? { discountCoupon, freeshipVoucher: appliedCoupon }
-        : { discountCoupon: appliedCoupon, freeshipVoucher })
-      setCode('')
-      setMessage(`Đã áp dụng mã ${coupon.maCode}.`)
+      selectCoupon(coupon)
     } catch (err) {
       if (currentRequest === requestId.current) {
         setError(err.response?.data?.message || 'Chưa áp dụng được mã giảm giá. Vui lòng thử lại.')
@@ -99,16 +163,10 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
     onChange(Number(coupon.kieuGiamGia) === 3
       ? { discountCoupon, freeshipVoucher: null }
       : { discountCoupon: null, freeshipVoucher })
+    if (autoSelectedCode === coupon.maCode) setAutoSelectedCode('')
     setError('')
     setMessage(`Đã bỏ mã ${coupon.maCode}.`)
   }
-
-  const unavailableReason = (coupon) => {
-    if (coupon.trangThaiThucTe != null && Number(coupon.trangThaiThucTe) !== 2) return coupon.trangThaiThucTeText || 'Mã chưa khả dụng'
-    if (Number(coupon.giaTriDonToiThieu || 0) > subtotal) return `Mua thêm ${VND(Number(coupon.giaTriDonToiThieu) - subtotal)} để sử dụng`
-    return ''
-  }
-  const usableCount = coupons.filter(coupon => !unavailableReason(coupon)).length
 
   return (
     <section aria-label="Mã giảm giá" className="min-w-0 border-y border-stone/10 py-4 space-y-3">
@@ -122,7 +180,7 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
           className="min-w-0 flex-1 rounded-lg border border-stone/20 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:opacity-50" />
         <button type="submit" disabled={busy || !code.trim()}
           className="shrink-0 rounded-lg bg-gold/10 px-3 py-2.5 text-sm font-semibold text-ink hover:bg-gold/20 transition disabled:opacity-40">
-          Áp dụng
+          Chọn mã
         </button>
       </form>
       <button type="button" onClick={() => setExpanded(value => !value)} aria-expanded={expanded} aria-controls={listId}
@@ -148,10 +206,10 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
                             <p className="break-words text-sm font-semibold text-ink">{coupon.maCode}</p>
                             <p className="mt-1 text-xs font-medium text-gold">{offerLabel(coupon)}</p>
                           </div>
-                          <button type="button" aria-label={`Dùng mã ${coupon.maCode}`} onClick={() => apply(coupon.maCode)}
+                          <button type="button" aria-label={`Chọn mã ${coupon.maCode}`} onClick={() => apply(coupon.maCode)}
                             disabled={busy || selected || !!reason}
                             className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-gold/30 px-2.5 text-xs font-semibold text-ink hover:bg-gold/10 disabled:opacity-50">
-                            {selected ? <><Check className="h-3 w-3" /> Đã chọn</> : 'Dùng'}
+                            {selected ? <><Check className="h-3 w-3" /> Đã chọn</> : 'Chọn mã'}
                           </button>
                         </div>
                         <p className="mt-2 text-xs text-stone">{Number(coupon.giaTriDonToiThieu) > 0 ? `Đơn từ ${VND(coupon.giaTriDonToiThieu)}` : 'Không yêu cầu đơn tối thiểu'}</p>
@@ -170,6 +228,7 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
           <div className="min-w-0">
             <p className="flex items-start gap-1.5 text-sm font-semibold text-ink"><Check className="mt-0.5 h-4 w-4 shrink-0 text-gold" /><span className="break-words">{coupon.maCode}</span></p>
             <p className="mt-1 text-xs text-stone">{Number(coupon.kieuGiamGia) === 3 ? offerLabel(coupon) : `Đã giảm ${VND(coupon.soTienGiam)}`}</p>
+            {autoSelectedCode === coupon.maCode && <p className="mt-1 text-xs font-medium text-gold">Tự động chọn mã tốt nhất</p>}
           </div>
           <button type="button" aria-label={`Bỏ mã ${coupon.maCode}`} disabled={busy} onClick={() => remove(coupon)}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-stone hover:bg-gold/10 hover:text-ink disabled:opacity-40">
