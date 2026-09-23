@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4log
+@Slf4j
 public class PaymentService {
 
     private final VnPayService vnPayService;
