@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCampaigns, deleteCampaign, toggleCampaignStatus, launchCampaign } from '../../api/admin'
-import { Plus, PenSquare, Trash2, Search, Calendar, RefreshCw } from 'lucide-react'
+import { Plus, PenSquare, Search, Calendar, RefreshCw } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 const CAMPAIGN_STATUS = {

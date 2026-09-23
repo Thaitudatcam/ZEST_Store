@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getCustomers, toggleCustomerStatus, getEmployees, createEmployee, updateEmployee, toggleEmployeeStatus, getCustomerAddresses, addCustomerAddress, setDefaultCustomerAddress, deleteCustomerAddress, createCustomer } from '../../api/admin'
-import { Search, Eye, Lock, Unlock, Plus, Pencil, X, Filter, Users, UserCheck, UserX, CheckCircle, XCircle, ArrowUpDown, ChevronUp, ChevronDown, RefreshCw, Download, MapPin, Trash2, Star } from 'lucide-react'
+import { Search, Eye, Plus, Pencil, X, RefreshCw, Download, MapPin, Trash2, Star } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { getProvinces, getDistricts, getWards } from '../../api/address'
 
@@ -27,8 +27,6 @@ export default function AdminUsers() {
   const [empPageSize, setEmpPageSize] = useState(5)
   const [sortField, setSortField] = useState('')
   const [sortDir, setSortDir] = useState('asc')
-  const [selectedIds, setSelectedIds] = useState([])
-  const [confirmBulk, setConfirmBulk] = useState(null)
   const [confirmEmpToggle, setConfirmEmpToggle] = useState(null)
   const [confirmSave, setConfirmSave] = useState(false)
   const [showCustForm, setShowCustForm] = useState(false)
@@ -67,27 +65,6 @@ export default function AdminUsers() {
       setSortField(field)
       setSortDir('asc')
     }
-  }
-
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-  }
-
-  const toggleSelectAll = (ids) => {
-    setSelectedIds(prev => prev.length === ids.length ? [] : ids)
-  }
-
-  const handleBulkToggle = async (action) => {
-    try {
-      if (tab === 'employees') {
-        for (const id of selectedIds) await toggleEmployeeStatus(id)
-        loadEmployees()
-      } else {
-        for (const id of selectedIds) await toggleCustomerStatus(id)
-        loadCustomers()
-      }
-      setSelectedIds([]); setConfirmBulk(null); setError('')
-    } catch { setError('Thao tác thất bại'); setConfirmBulk(null) }
   }
 
   useEffect(() => { loadCustomers() }, [])

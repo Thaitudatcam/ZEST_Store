@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAllReviews, deleteReview, restoreReview } from '../../api/admin'
-import { Search, Trash2, Star, RotateCcw, Filter, X, MessageSquare, Eye, EyeOff, BarChart3, ShoppingBag } from 'lucide-react'
+import { Search, Trash2, Star, RotateCcw, X, MessageSquare, Eye, EyeOff } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 
 const STATUS = { ALL: 'all', ACTIVE: 'active', DELETED: 'deleted' }

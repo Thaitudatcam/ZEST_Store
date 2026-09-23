@@ -36,7 +36,6 @@ public class DonHangController {
 
     @GetMapping
     public ResponseEntity<?> getMyOrders(Authentication auth) {
-        Integer userId = userService.getUserByEmail(auth.getName()).getMaNguoiDung();
         return ResponseEntity.ok(donHangService.getOrdersByUser(userService.getUserIdFromAuth(auth)));
     }
 

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +22,6 @@ public class CategoryService {
 
     private final DanhMucRepository danhMucRepository;
     private final SanPhamRepository sanPhamRepository;
-
-    public List<DanhMuc> getAll() {
-        return danhMucRepository.findAll();
-    }
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getAllActive() {

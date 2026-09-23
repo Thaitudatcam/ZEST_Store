@@ -24,7 +24,6 @@ public class ThongKeService {
     private final DonHangRepository donHangRepository;
     private final SanPhamRepository sanPhamRepository;
     private final NguoiDungRepository nguoiDungRepository;
-    private final HanhViNguoiDungRepository hanhViRepository;
     private final MucDonHangRepository mucDonHangRepository;
     private final ThongKeNgayRepository thongKeNgayRepository;
 
@@ -49,19 +48,6 @@ public class ThongKeService {
         stats.put("yearlyRevenue", doanhThuTrongKhoang(startOfYear, now.toLocalDate()));
         return stats;
     }
-    public Map<String, Object> getRevenueByDateRange(LocalDateTime tuNgay, LocalDateTime denNgay) {
-        LocalDate tuDate = tuNgay.toLocalDate();
-        LocalDate denDate = denNgay.toLocalDate();
-        BigDecimal doanhThu = doanhThuTrongKhoang(tuDate, denDate);
-
-        long soDonHoanThanh = donHangRepository.countCompletedOrders(tuNgay, denNgay);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("doanhThu", doanhThu);
-        result.put("soDonHoanThanh", soDonHoanThanh);
-        return result;
-    }
-
     public List<Map<String, Object>> getRevenueByDay(LocalDateTime tuNgay, LocalDateTime denNgay) {
         return donHangRepository.sumRevenueByDay(tuNgay, denNgay).stream().map(row -> {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -187,22 +173,6 @@ Map<String, BigDecimal> paymentMethods = new LinkedHashMap<>();
         result.put("soSanPham", mucDonHangRepository.countProductsSoldInRange(tuNgay, denNgay));
         result.put("phuongThucThanhToan", paymentMethods);
         result.put("donHang", mapOrderStats(donHangRepository.countOrdersByStatusInRange(tuNgay, denNgay)));
-        return result;
-    }
-
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> getTopProducts(String hanhDong, int limit) {
-        LocalDateTime lastMonth = LocalDateTime.now().minusMonths(1);
-        List<Object[]> raw = hanhViRepository.findTopSanPhamByHanhDongAndDateRange(
-                hanhDong, lastMonth, LocalDateTime.now(), limit);
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Object[] row : raw) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("maSanPham", row[0]);
-            item.put("tenSanPham", row[1]);
-            item.put("soLanXem", row[2]);
-            result.add(item);
-        }
         return result;
     }
 

@@ -1,7 +1,5 @@
 package com.example.zeststore.service;
 
-import com.example.zeststore.repository.DonHangRepository;
-import com.example.zeststore.repository.NguoiDungRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,8 +16,6 @@ public class AdminAiService {
 
     private final ThongKeService thongKeService;
     private final OpenAiService openAiService;
-    private final DonHangRepository donHangRepo;
-    private final NguoiDungRepository nguoiDungRepo;
     private final ObjectMapper objectMapper;
 
     public Map<String, Object> ask(String question, Integer adminUserId) {

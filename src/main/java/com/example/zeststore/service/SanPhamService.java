@@ -103,20 +103,6 @@ public class SanPhamService {
         page.getContent().forEach(sp -> sp.setPhanTramGiamGia(pctMap.get(sp.getMaSanPham())));
     }
 
-    @Transactional(readOnly = true)
-    public Page<SanPham> getAdminProducts(String keyword, int page, int size, String sortBy, String sortDir) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<SanPham> result;
-        if (keyword != null && !keyword.isBlank()) {
-            result = sanPhamRepository.searchAdminProductsOrderByLastUpdated(keyword, pageable);
-        } else {
-            result = sanPhamRepository.findAdminProductsOrderByLastUpdated(pageable);
-        }
-        populateStock(result);
-        populateDiscount(result);
-        return result;
-    }
-
     private static final Set<String> SEARCH_STOP_WORDS = Set.of(
             "tôi", "mình", "muốn", "mua", "cần", "có", "không", "bạn", "cho",
             "hãy", "giúp", "tư", "vấn", "gợi", "ý", "thì", "mà", "và", "của",

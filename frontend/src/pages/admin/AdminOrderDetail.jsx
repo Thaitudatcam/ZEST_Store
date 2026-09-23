@@ -5,9 +5,9 @@ import StatusBadge from '../../components/StatusBadge'
 import SafeImg from '../../components/SafeImg'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { ArrowLeft, Package, CreditCard, Truck, Clock, User, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X, Printer, Copy, Store } from 'lucide-react'
+import { ArrowLeft, Package, Truck, Clock, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X, Printer } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { getOrderPrintData, registerOrderPrint } from '../../api/admin'
+import { registerOrderPrint } from '../../api/admin'
 import InvoicePrint from '../../components/InvoicePrint'
 
 const STATUS_STEPS = [

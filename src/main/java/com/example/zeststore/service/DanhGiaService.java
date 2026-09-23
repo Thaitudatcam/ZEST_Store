@@ -27,10 +27,6 @@ public class DanhGiaService {
         return danhGiaRepository.findBySanPham_MaSanPham(productId);
     }
 
-    public List<DanhGia> getReviewsByUser(Integer userId) {
-        return danhGiaRepository.findByNguoiDung_MaNguoiDung(userId);
-    }
-
     public Map<String, Object> getProductReviews(Integer productId) {
         return Map.of(
                 "reviews", getReviewsByProduct(productId),

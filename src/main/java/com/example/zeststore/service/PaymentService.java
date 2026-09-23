@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -142,10 +141,6 @@ public class PaymentService {
                 .orderId(orderId)
                 .message("Redirect to ZaloPay")
                 .build();
-    }
-
-    public Map<String, String> createZaloPayPreview(BigDecimal amount) {
-        return zaloPayService.createPreviewOrder(amount);
     }
 
     public Map<String, Object> handleZaloPayCallback(Map<String, String> body) {

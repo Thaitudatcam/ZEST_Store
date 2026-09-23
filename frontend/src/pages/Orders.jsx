@@ -8,6 +8,7 @@ import { Package, XCircle, ShoppingBag, CheckCircle, Truck, Home, ShoppingCart, 
 import { Link, useNavigate } from "react-router-dom";
 import { VND } from "../components/ProductCard";
 import { useToast } from "../context/ToastContext";
+import { useCart } from "../context/CartContext";
 import ConfirmDialog from "../components/ConfirmDialog";
 
 const FILTER_TABS = [

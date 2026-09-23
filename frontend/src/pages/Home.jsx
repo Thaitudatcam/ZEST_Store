@@ -27,16 +27,13 @@ export default function Home() {
   const productRef = useRef(null)
   const [latestProducts, setLatestProducts] = useState([])
   const [categories, setCategories] = useState([])
-  const [sizes, setSizes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [newsletterEmail, setNewsletterEmail] = useState('')
   const [bestSelling, setBestSelling] = useState([])
   const [forYou, setForYou] = useState([])
   const [forYouTitle, setForYouTitle] = useState('')
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
-  const [filterSize, setFilterSize] = useState('')
   const [sortDir, setSortDir] = useState('desc')
   const [sortBy, setSortBy] = useState('ngayTao')
   const [allProducts, setAllProducts] = useState([])
@@ -63,7 +60,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        const [prodData, catData, sz, best] = await Promise.all([
+        const [prodData, catData, , best] = await Promise.all([
           getProducts({ page: 0, size: 8, sortBy: 'ngayTao', sortDir: 'desc' }),
           getActiveCategories(),
           api.get('/sizes').then(r => r.data),
@@ -72,7 +69,6 @@ export default function Home() {
         setLatestProducts(prodData.content ?? prodData ?? []);
         setBestSelling(Array.isArray(best) ? best : []);
         setCategories(Array.isArray(catData) ? catData : []);
-        setSizes(Array.isArray(sz) ? sz : []);
       } catch {} finally { setLoading(false); }
     })();
     getPersonalized(8).then(d => { setForYou(d); setForYouTitle('Gợi ý cho bạn'); }).catch(() =>
@@ -91,7 +87,7 @@ export default function Home() {
       .catch(() => {})
       .finally(() => { if (!cancelled) setAllLoading(false) })
     return () => { cancelled = true }
-  }, [searchQuery, filterCategory, filterSize, sortBy, sortDir])
+  }, [searchQuery, filterCategory, sortBy, sortDir])
 
   const scrollToProducts = (e) => {
     e.preventDefault()

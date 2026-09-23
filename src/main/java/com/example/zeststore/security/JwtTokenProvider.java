@@ -36,10 +36,6 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public boolean getChoPhepBanHang(String token) {
-        return parseClaims(token).get("choPhepBanHang", Boolean.class);
-    }
-
     public String getEmailFromToken(String token) {
         return parseClaims(token).getSubject();
     }

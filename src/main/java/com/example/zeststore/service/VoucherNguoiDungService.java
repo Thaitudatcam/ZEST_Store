@@ -192,19 +192,6 @@ public class VoucherNguoiDungService {
         return Map.of("message", "Thu hồi voucher thành công");
     }
 
-    // ========== MARK AS USED ==========
-
-    @Transactional
-    public void markAsUsed(Integer userId, Integer maPhieuGiamGia) {
-        voucherNguoiDungRepository
-                .findByNguoiDung_MaNguoiDungAndPhieuGiamGia_MaPhieuGiamGia(userId, maPhieuGiamGia)
-                .ifPresent(v -> {
-                    v.setTrangThai(TrangThaiVoucher.DA_DUNG);
-                    v.setNgaySuDung(LocalDateTime.now());
-                    voucherNguoiDungRepository.save(v);
-                });
-    }
-
     // ========== HELPER ==========
 
     private Map<String, Object> toMap(VoucherNguoiDung v) {

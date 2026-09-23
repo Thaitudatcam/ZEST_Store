@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { createEmployee } from '../../api/admin'
 import { getProvinces, getDistricts, getWards } from '../../api/address'
 import { useToast } from '../../context/ToastContext'
-import { Camera, User, X, Loader, ChevronLeft } from 'lucide-react'
+import { Camera, User, X, Loader } from 'lucide-react'
 
 export default function AdminEmployeeForm() {
   const navigate = useNavigate()
