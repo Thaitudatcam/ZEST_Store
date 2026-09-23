@@ -12,63 +12,12 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Slf4log
 public class PaymentService {
 
     private final VnPayService vnPayService;
-    private final MomoService momoService;
     private final ZaloPayService zaloPayService;
     private final PaymentConfig paymentConfig;
-
-    // ─── MoMo ───
-
-    public PaymentResponse createMomoPayment(Integer orderId) {
-        String paymentUrl = momoService.createPaymentUrl(orderId);
-        return PaymentResponse.builder()
-                .paymentUrl(paymentUrl)
-                .orderId(orderId)
-                .message("Redirect to MoMo")
-                .build();
-    }
-
-    public String handleMomoReturn(Map<String, String> rawParams) {
-        Map<String, String> result = momoService.buildReturnParams(new HashMap<>(rawParams));
-        boolean success = "true".equals(result.get("verified")) && "0".equals(result.get("resultCode"));
-        String redirectBase = paymentConfig.getRedirectBaseUrl();
-
-        if (success && result.get("orderId") != null) {
-            momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
-            return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderIdInt");
-        }
-        if ("true".equals(result.get("verified")) && result.get("orderId") != null) {
-            // A signed unsuccessful return is authoritative enough to release the
-            // reservation immediately.  The IPN handler remains idempotent.
-            momoService.handleFailedPayment(result.get("orderId"));
-            String redirect = redirectBase + "/payment/result?success=false";
-            if (result.get("orderIdInt") != null) redirect += "&orderId=" + result.get("orderIdInt");
-            return redirect;
-        }
-        // An unverified browser return must not be treated as a failed payment;
-        // the signed IPN or the result page will settle it later.
-        String redirect = redirectBase + "/payment/result";
-        if (result.get("orderIdInt") != null) redirect += "&orderId=" + result.get("orderIdInt");
-        return redirect;
-    }
-
-    public Map<String, String> handleMomoIpn(Map<String, Object> body) {
-        Map<String, String> params = new LinkedHashMap<>();
-        body.forEach((k, v) -> params.put(k, v != null ? v.toString() : ""));
-
-        Map<String, String> result = momoService.buildReturnParams(params);
-        boolean success = "true".equals(result.get("verified")) && "0".equals(result.get("resultCode"));
-
-        if (success && result.get("orderId") != null) {
-            momoService.handleSuccessPayment(result.get("orderId"), result.get("transId"));
-        } else if ("true".equals(result.get("verified")) && result.get("orderId") != null) {
-            momoService.handleFailedPayment(result.get("orderId"));
-        }
-        return Map.of("message", "received");
-    }
 
     // ─── VNPay ───
 

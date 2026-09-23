@@ -56,7 +56,7 @@ public class VnPayService {
         params.put("vnp_Locale", "vn");
         params.put("vnp_OrderInfo", orderInfo);
         params.put("vnp_OrderType", "other");
-        params.put("vnp_ReturnUrl", config.getReturnUrl());
+        params.put("vnp_ReturnUrl", paymentConfig.getVnpayReturnUrl());
         params.put("vnp_TxnRef", payment.getMaGiaoDich());
         params.put("vnp_ExpireDate", LocalDateTime.now().plusMinutes(15)
                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));

@@ -11,10 +11,26 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class PaymentConfig {
     private VnpayConfig vnpay = new VnpayConfig();
-    private MomoConfig momo = new MomoConfig();
     private ZalopayConfig zalopay = new ZalopayConfig();
     private VietQrConfig vietqr = new VietQrConfig();
     private String redirectBaseUrl = "http://localhost:5173";
+
+    // Ngrok support for local development callbacks
+    private String ngrokUrl;
+
+    public String getZalopayCallbackUrl() {
+        if (ngrokUrl != null && !ngrokUrl.isBlank()) {
+            return ngrokUrl + "/api/payments/zalopay/callback";
+        }
+        return zalopay.getCallbackUrl();
+    }
+
+    public String getVnpayReturnUrl() {
+        if (ngrokUrl != null && !ngrokUrl.isBlank()) {
+            return ngrokUrl + "/api/payments/vnpay/return";
+        }
+        return vnpay.getReturnUrl();
+    }
 
     @Getter
     @Setter
@@ -32,17 +48,6 @@ public class PaymentConfig {
         private String hashSecret;
         private String url;
         private String returnUrl;
-    }
-
-    @Getter
-    @Setter
-    public static class MomoConfig {
-        private String partnerCode;
-        private String accessKey;
-        private String secretKey;
-        private String endpoint;
-        private String returnUrl;
-        private String ipnUrl;
     }
 
     @Getter

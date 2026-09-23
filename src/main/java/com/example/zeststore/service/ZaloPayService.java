@@ -46,7 +46,8 @@ public class ZaloPayService {
         String appTransId = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
                 + "_" + payment.getMaGiaoDich();
         long appTime = System.currentTimeMillis();
-        String returnUrl = config.getCallbackUrl().replace("/callback", "/return");
+        String callbackUrl = paymentConfig.getZalopayCallbackUrl();
+        String returnUrl = callbackUrl.replace("/callback", "/return");
         String embedData = "{\"redirecturl\":\"" + returnUrl + "\",\"orderId\":" + orderId + "}";
         String items = "[]";
 
