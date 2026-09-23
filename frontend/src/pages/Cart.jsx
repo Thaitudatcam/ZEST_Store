@@ -240,7 +240,7 @@ export default function Cart() {
             <div className="divide-y divide-stone/10 border-b border-stone/15">
               {items.map((i) => (
                 <div key={i.maBienThe}
-                  className={`grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_120px_120px_110px_40px] gap-3 sm:gap-3 items-center px-4 py-4 transition ${
+                  className={`grid grid-cols-[auto_1fr] sm:grid-cols-[1fr_120px_120px_110px_40px] gap-3 sm:gap-3 items-center px-4 py-4 transition ${
                     isUnavailable(i) ? 'bg-stone/5 opacity-70' : ''
                   }`}>
                   {/* Checkbox + Image + Info */}

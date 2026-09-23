@@ -480,13 +480,13 @@ public class DonHangService {
                     order.getMaDonHang(), BigDecimal.ZERO, "ONLINE_FREESHIP");
         }
 
-        // Notify the buyer that the order has been placed (links to their own order detail).
+        // Notify the buyer that the order has been created (pending payment).
         try {
             thongBaoService.taoThongBao(
                     user.getMaNguoiDung(),
-                    "Đặt hàng thành công #" + order.getMaDonHang(),
+                    "Đơn hàng đã được tạo #" + order.getMaDonHang(),
                     "Cảm ơn " + user.getHoTen() + "! Đơn hàng #" + order.getMaDonHang()
-                            + " đã được đặt thành công.",
+                            + " đã được tạo thành công. Vui lòng hoàn tất thanh toán.",
                     "DON_HANG_MOI",
                     "/orders/" + order.getMaDonHang());
         } catch (Exception ignored) {}

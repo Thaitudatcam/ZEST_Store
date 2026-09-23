@@ -29,6 +29,7 @@ public class ZaloPayService {
     private final PaymentConfig paymentConfig;
     private final ThanhToanRepository thanhToanRepository;
     private final ThanhToanService thanhToanService;
+    private final ThongBaoService thongBaoService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
@@ -111,6 +112,19 @@ public class ZaloPayService {
             ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
                     .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
             thanhToanService.completePayment(payment.getMaThanhToan(), zpTransId);
+
+            // Notify buyer that payment was successful
+            if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
+                try {
+                    Integer orderId = payment.getDonHang().getMaDonHang();
+                    thongBaoService.taoThongBao(
+                            payment.getDonHang().getNguoiDung().getMaNguoiDung(),
+                            "Thanh toán thành công #" + orderId,
+                            "Đơn hàng #" + orderId + " đã được thanh toán thành công qua ZaloPay.",
+                            "THANH_TOAN_THANH_CONG",
+                            "/orders/" + orderId);
+                } catch (Exception ignored) {}
+            }
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
@@ -172,12 +186,38 @@ public class ZaloPayService {
                     .orElse(null);
             if (payment != null && payment.getTrangThaiThanhToan() == 1) {
                 thanhToanService.completePayment(payment.getMaThanhToan(), zpTransId);
+
+                // Notify buyer that payment was successful
+                if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
+                    try {
+                        Integer orderId = payment.getDonHang().getMaDonHang();
+                        thongBaoService.taoThongBao(
+                                payment.getDonHang().getNguoiDung().getMaNguoiDung(),
+                                "Thanh toán thành công #" + orderId,
+                                "Đơn hàng #" + orderId + " đã được thanh toán thành công qua ZaloPay.",
+                                "THANH_TOAN_THANH_CONG",
+                                "/orders/" + orderId);
+                        } catch (Exception ignored) {}
+                }
             }
         } else {
             ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
                     .orElse(null);
             if (payment != null && payment.getTrangThaiThanhToan() == 1) {
                 thanhToanService.failPayment(payment.getMaThanhToan());
+
+                // Notify buyer that payment failed/cancelled
+                if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
+                    try {
+                        Integer orderId = payment.getDonHang().getMaDonHang();
+                        thongBaoService.taoThongBao(
+                                payment.getDonHang().getNguoiDung().getMaNguoiDung(),
+                                "Thanh toán không thành công #" + orderId,
+                                "Đơn hàng #" + orderId + " thanh toán qua ZaloPay không thành công hoặc đã bị hủy. Vui lòng thử lại.",
+                                "THANH_TOAN_THAT_BAI",
+                                "/orders/" + orderId);
+                        } catch (Exception ignored) {}
+                }
             }
         }
 
