@@ -1,11 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { getStats, getOrderStats, getRevenueByDay, getRevenueByDate, getRevenueByMonth, getRevenueByYear, getRecentOrders, getBestSellingProducts, getAllOrders, getSalesSummary } from '../../api/admin'
+import { getStats, getOrderStats, getRevenueByMonth, getRevenueByYear, getBestSellingProducts, getSalesSummary } from '../../api/admin'
 import { Package, DollarSign, Users, TrendingUp, ShoppingBag, AlertCircle, CheckCircle, Filter, RefreshCw, Calendar, Clock, BarChart3, ShoppingCart } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { SkeletonTable } from '../../components/Skeleton'
 
 const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
+
+const localDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const atTime = (date, time) => `${date}T${time}`
 
 const STATUS_LIST = [
   { key: 'completed', label: 'Hoàn thành', color: 'bg-emerald-deep', dot: 'bg-emerald-deep' },
@@ -35,42 +44,47 @@ export default function AdminThongKe() {
   const { user } = useAuth()
   const [stats, setStats] = useState(null)
   const [orderStats, setOrderStats] = useState(null)
-  const [todayRevenue, setTodayRevenue] = useState(null)
+  const [todaySummary, setTodaySummary] = useState(null)
+  const [periodSummaries, setPeriodSummaries] = useState({})
   const [revenueData, setRevenueData] = useState([])
-  const [recentOrders, setRecentOrders] = useState([])
   const [bestSelling, setBestSelling] = useState([])
-  const [dailyRevenue, setDailyRevenue] = useState([])
   const [loading, setLoading] = useState(true)
   const [revenueLoading, setRevenueLoading] = useState(false)
-  const [salesSummary, setSalesSummary] = useState(null)
+  const [filteredSummary, setFilteredSummary] = useState(null)
   const [filterLoading, setFilterLoading] = useState(false)
 
   // Filter state
-  const [tuNgay, setTuNgay] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] })
-  const [denNgay, setDenNgay] = useState(() => new Date().toISOString().split('T')[0])
+  const [tuNgay, setTuNgay] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return localDate(d) })
+  const [denNgay, setDenNgay] = useState(() => localDate(new Date()))
   const [tuGio, setTuGio] = useState('00:00:00')
   const [denGio, setDenGio] = useState('23:59:59')
   const [revenueChartMode, setRevenueChartMode] = useState('year')
   const [chartYear, setChartYear] = useState(new Date().getFullYear())
+  const [chartMonth, setChartMonth] = useState(new Date().getMonth() + 1)
 
 
   const loadAll = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
-      const [s, os, rev, recent, best, daily] = await Promise.all([
+      const now = new Date()
+      const today = localDate(now)
+      const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6)
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      const yearStart = new Date(now.getFullYear(), 0, 1)
+      const end = atTime(today, '23:59:59')
+      const [s, os, todayData, weekData, monthData, yearData, best] = await Promise.all([
         getStats().catch(() => null),
         getOrderStats().catch(() => null),
-        getRevenueByDay(today, today).then(r => Array.isArray(r) ? r.reduce((s, d) => s + Number(d.doanhThu || 0), 0) : 0).catch(() => 0),
-        getRecentOrders(10).then(r => Array.isArray(r) ? r : []).catch(() => []),
+        getSalesSummary(atTime(today, '00:00:00'), end).catch(() => null),
+        getSalesSummary(atTime(localDate(weekStart), '00:00:00'), end).catch(() => null),
+        getSalesSummary(atTime(localDate(monthStart), '00:00:00'), end).catch(() => null),
+        getSalesSummary(atTime(localDate(yearStart), '00:00:00'), end).catch(() => null),
         getBestSellingProducts(10).then(r => Array.isArray(r) ? r : []).catch(() => []),
-        getRevenueByDate(370).then(r => Array.isArray(r) ? r : []).catch(() => []),
       ])
       setStats(s)
       setOrderStats(os)
-      setTodayRevenue(rev)
-      setRecentOrders(recent)
+      setTodaySummary(todayData)
+      setPeriodSummaries({ today: todayData, week: weekData, month: monthData, year: yearData })
       setBestSelling(best)
-      setDailyRevenue(daily)
     } catch {} finally { setLoading(false) }
   }, [])
 
@@ -82,8 +96,8 @@ export default function AdminThongKe() {
       const tuNgay = `${from}T${fromTime || '00:00:00'}`
       const denNgay = `${to}T${toTime || '23:59:59'}`
       const data = await getSalesSummary(tuNgay, denNgay)
-      setSalesSummary(data)
-    } catch { setSalesSummary(null) }
+      setFilteredSummary(data)
+    } catch { setFilteredSummary(null) }
     finally { setFilterLoading(false) }
   }, [])
 
@@ -93,11 +107,13 @@ export default function AdminThongKe() {
 
   const handleResetFilter = () => {
     const d = new Date(); d.setDate(d.getDate() - 30)
-    const from = d.toISOString().split('T')[0]
-    const to = new Date().toISOString().split('T')[0]
+    const from = localDate(d)
+    const to = localDate(new Date())
     setTuNgay(from); setDenNgay(to); setTuGio('00:00:00'); setDenGio('23:59:59')
-    setSalesSummary(null)
+    loadSalesSummary(from, to, '00:00:00', '23:59:59')
   }
+
+  useEffect(() => { loadSalesSummary(tuNgay, denNgay, tuGio, denGio) }, [])
 
   const loadRevenueChart = useCallback(async () => {
     setRevenueLoading(true)
@@ -106,20 +122,13 @@ export default function AdminThongKe() {
       if (revenueChartMode === 'year') {
         data = await getRevenueByYear()
       } else {
-        data = await getRevenueByMonth(new Date().getMonth() + 1, chartYear)
+        data = await getRevenueByMonth(chartMonth, chartYear)
       }
       setRevenueData(Array.isArray(data) ? data.map(d => ({ ngay: d.ngay || d.date || d.thang || d.nam, doanhThu: Number(d.doanhThu || d.revenue || 0) })) : [])
     } catch { setRevenueData([]) } finally { setRevenueLoading(false) }
-  }, [revenueChartMode, chartYear])
+  }, [revenueChartMode, chartYear, chartMonth])
 
   useEffect(() => { loadRevenueChart() }, [loadRevenueChart])
-
-  const loadFilteredOrders = useCallback(async () => {
-    try {
-      const data = await getAllOrders(0, 100, undefined, undefined, undefined, tuNgay, denNgay)
-      return data.content || []
-    } catch { return [] }
-  }, [tuNgay, denNgay])
 
   // Compute stats
   const mergedOrders = orderStats ? {
@@ -134,50 +143,30 @@ export default function AdminThongKe() {
     failed: orderStats.failed ?? orderStats.notReceived ?? 0,
   } : { completed: 0, pending: 0, cancelled: 0, shipping: 0, confirmed: 0, delivering: 0, returnRequested: 0, returned: 0, failed: 0 }
 
-  const todayInvoiceCount = salesSummary?.soHoaDon ?? todayRevenue > 0 ? recentOrders.filter(o => {
-    if (!o.ngayDat) return false
-    const d = new Date(o.ngayDat)
-    const today = new Date()
-    return d.toDateString() === today.toDateString()
-  }).length : 0
+  const todayInvoiceCount = Number(todaySummary?.soHoaDon || 0)
+  const todayProductCount = Number(todaySummary?.soSanPham || 0)
+  const todayPayments = todaySummary?.phuongThucThanhToan || {}
 
-  const todayProductCount = recentOrders.filter(o => {
-    if (!o.ngayDat) return false
-    const d = new Date(o.ngayDat)
-    const today = new Date()
-    return d.toDateString() === today.toDateString()
-  }).reduce((s, o) => s + (o.soLuongSanPham || o.items?.length || 1), 0)
+  const filteredPayments = filteredSummary?.phuongThucThanhToan || {}
+  const filteredTotal = Number(filteredSummary?.doanhThu || 0)
+  const filteredTienMat = Number(filteredPayments.tienMat || 0)
+  const filteredChuyenKhoan = Number(filteredPayments.chuyenKhoan || 0)
+  const filteredVnPay = Number(filteredPayments.vnPay || 0)
+  const filteredZaloPay = Number(filteredPayments.zaloPay || 0)
 
-  const paymentMethods = salesSummary?.phuongThucThanhToan || {}
-  const filteredTotal = salesSummary?.doanhThu ?? 0
-  const filteredTienMat = paymentMethods.tienMat ?? 0
-  const filteredChuyenKhoan = paymentMethods.chuyenKhoan ?? 0
-  const filteredVnPay = paymentMethods.vnPay ?? 0
-
-  // Time period revenue
-  const periodRevenue = (days) => {
-    const now = new Date()
-    const from = new Date(now); from.setDate(now.getDate() - days); from.setHours(0, 0, 0, 0)
-    return dailyRevenue
-      .filter(row => row.ngay && new Date(`${row.ngay}T00:00:00`) >= from)
-      .reduce((s, row) => s + Number(row.doanhThu || 0), 0)
-  }
-
-  const periodCounts = (days) => {
-    const now = new Date()
-    const from = new Date(now); from.setDate(now.getDate() - days)
-    const filtered = recentOrders.filter(o => o.ngayDat && new Date(o.ngayDat) >= from)
+  const summaryCard = (key) => {
+    const summary = periodSummaries[key] || {}
+    const orders = summary.donHang || {}
     return {
-      completed: filtered.filter(o => o.trangThaiDon === 6).length,
-      cancelled: filtered.filter(o => o.trangThaiDon === 5).length,
-      failed: filtered.filter(o => o.trangThaiDon === 9).length,
+      revenue: Number(summary.doanhThu || 0),
+      products: Number(summary.soSanPham || 0),
+      counts: {
+        completed: Number(orders.completed || 0),
+        cancelled: Number(orders.cancelled || 0),
+        failed: Number(orders.failed || 0),
+      },
     }
   }
-
-  const todayCounts = periodCounts(0)
-  const weekCounts = periodCounts(7)
-  const monthCounts = periodCounts(30)
-  const yearCounts = periodCounts(365)
 
   const fmt = (n) => {
     if (n >= 1000000000) return (n / 1000000000).toFixed(1) + 'B'
@@ -214,12 +203,13 @@ export default function AdminThongKe() {
               Đã hoàn thành {todayInvoiceCount} hóa đơn hôm nay
             </span>
           </div>
-          <p className="text-3xl font-bold text-ink mb-5">{VND(todayRevenue || 0)}</p>
-          <div className="grid grid-cols-3 gap-3 mb-5">
+          <p className="text-3xl font-bold text-ink mb-5">{VND(todaySummary?.doanhThu || 0)}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
             {[
-              { label: 'TIỀN MẶT', value: paymentMethods.tienMat ?? 0, icon: '💵' },
-              { label: 'CHUYỂN KHOẢN', value: paymentMethods.chuyenKhoan ?? 0, icon: '🏦' },
-              { label: 'VNPAY', value: paymentMethods.vnPay ?? 0, icon: '💳' },
+              { label: 'TIỀN MẶT', value: todayPayments.tienMat ?? 0, icon: '💵' },
+              { label: 'CHUYỂN KHOẢN', value: todayPayments.chuyenKhoan ?? 0, icon: '🏦' },
+              { label: 'VNPAY', value: todayPayments.vnPay ?? 0, icon: '💳' },
+              { label: 'ZALOPAY', value: todayPayments.zaloPay ?? 0, icon: '📱' },
             ].map(item => (
               <div key={item.label} className="bg-ivory/50 rounded-xl p-3 text-center border border-stone/5">
                 <p className="text-[10px] text-stone font-semibold uppercase tracking-wide mb-1">{item.label}</p>
@@ -239,16 +229,16 @@ export default function AdminThongKe() {
       {/* Summary Cards: Today, Week, Month, Year */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'HÔM NAY', revenue: periodRevenue(0), counts: todayCounts },
-          { label: 'TUẦN NÀY', revenue: periodRevenue(7), counts: weekCounts },
-          { label: 'THÁNG NÀY', revenue: periodRevenue(30), counts: monthCounts },
-          { label: 'NĂM NÀY', revenue: periodRevenue(365), counts: yearCounts },
+          { label: 'HÔM NAY', ...summaryCard('today') },
+          { label: '7 NGÀY GẦN NHẤT', ...summaryCard('week') },
+          { label: 'THÁNG NÀY', ...summaryCard('month') },
+          { label: 'NĂM NÀY', ...summaryCard('year') },
         ].map(card => (
           <div key={card.label} className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5">
             <p className="text-[10px] font-bold text-stone uppercase tracking-wider mb-2">{card.label}</p>
             <p className="text-xl font-bold text-ink mb-3">{VND(card.revenue)}</p>
             <div className="flex items-center gap-2 text-[10px]">
-              <span className="text-stone">Sản phẩm đã bán</span>
+              <span className="text-stone">Sản phẩm đã bán: {card.products}</span>
               <span className="text-stone">•</span>
               <span className="text-stone">Hủy đơn ?</span>
             </div>
@@ -280,12 +270,20 @@ export default function AdminThongKe() {
               <option value="month">Theo tháng</option>
             </select>
             {revenueChartMode === 'month' && (
-              <select value={chartYear} onChange={(e) => setChartYear(Number(e.target.value))}
-                className="px-3 py-1.5 border border-stone/20 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-gold/30">
-                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+              <>
+                <select value={chartMonth} onChange={(e) => setChartMonth(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-stone/20 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-gold/30">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                    <option key={month} value={month}>Tháng {month}</option>
+                  ))}
+                </select>
+                <select value={chartYear} onChange={(e) => setChartYear(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-stone/20 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-gold/30">
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </>
             )}
           </div>
         </div>
@@ -363,12 +361,13 @@ export default function AdminThongKe() {
       </div>
 
       {/* Payment Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'TỔNG TIỀN LỌC', value: filteredTotal, icon: DollarSign, color: 'text-gold bg-gold/10' },
           { label: 'TIỀN MẶT', value: filteredTienMat, icon: '💵', color: 'text-emerald-deep bg-emerald-deep/10' },
           { label: 'CHUYỂN KHOẢN', value: filteredChuyenKhoan, icon: '🏦', color: 'text-royal bg-royal/10' },
           { label: 'VNPAY', value: filteredVnPay, icon: '💳', color: 'text-sky-600 bg-sky-50' },
+          { label: 'ZALOPAY', value: filteredZaloPay, icon: '📱', color: 'text-blue-600 bg-blue-50' },
         ].map(card => (
           <div key={card.label} className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5 flex items-center gap-4">
             <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center shrink-0`}>
