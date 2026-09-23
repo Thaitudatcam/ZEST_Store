@@ -37,6 +37,9 @@ export const posApi = {
   validateCoupon: (body) =>
     api.post('/admin/pos/validate-coupon', body).then(r => r.data),
 
+  getBestCoupon: (body) =>
+    api.post('/admin/pos/best-coupon', body).then(r => r.data),
+
   getAvailableCoupons: (total, productIds, userId) =>
     api.get('/coupons/available', { params: { tongTien: total, maSanPhamIds: productIds?.join(','), maNguoiDung: userId ?? 0 } }).then(r => r.data).catch(() => []),
 

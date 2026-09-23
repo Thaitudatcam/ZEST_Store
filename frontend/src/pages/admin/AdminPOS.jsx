@@ -64,6 +64,7 @@ export default function AdminPOS() {
   const [cameraOpen, setCameraOpen] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(initial.customer)
   const [coupon, setCoupon] = useState(initial.coupon)
+  const [couponAuto, setCouponAuto] = useState(Boolean(initial.couponAuto))
   const couponRequest = useRef(0)
   const [couponChecking, setCouponChecking] = useState(false)
   const [couponMsg, setCouponMsg] = useState('')
@@ -128,7 +129,7 @@ export default function AdminPOS() {
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
 
   const snapshotOrders = () => orders.map((o, i) => i === currentOrderIdx
-    ? { ...o, cart, customer: selectedCustomer, coupon, loaiDon: 'TAI_QUAY', customerPaid, paymentMethod }
+    ? { ...o, cart, customer: selectedCustomer, coupon, couponAuto, loaiDon: 'TAI_QUAY', customerPaid, paymentMethod }
     : o)
 
   const liveDrafts = useRef([])
@@ -196,7 +197,7 @@ export default function AdminPOS() {
 
   useEffect(() => {
     sessionStorage.setItem(draftStorageKey, JSON.stringify(snapshotOrders()))
-  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, loaiDon, customerPaid, paymentMethod])
+  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, couponAuto, loaiDon, customerPaid, paymentMethod])
 
   const loadDraft = (draft) => {
     ++stockRequest.current
@@ -205,6 +206,7 @@ export default function AdminPOS() {
     setCart(draft.cart)
     setSelectedCustomer(draft.customer)
     setCoupon(draft.coupon)
+    setCouponAuto(Boolean(draft.couponAuto))
     setCouponInput(draft.coupon?.maCode || '')
     setCustomerPaid(draft.customerPaid || 0)
     setPaymentMethod(draft.paymentMethod || 5)
@@ -338,7 +340,7 @@ export default function AdminPOS() {
         maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
       })
       if (requestId !== couponRequest.current) return
-      if (res.hopLe) { setCoupon(res); setCouponInput(code) }
+      if (res.hopLe) { setCoupon(res); setCouponAuto(false); setCouponInput(code) }
       else { setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không hợp lệ') }
     } catch (err) {
       if (requestId === couponRequest.current) setCouponMsg(err.response?.data?.message || 'Mã giảm giá không hợp lệ')
@@ -354,21 +356,50 @@ export default function AdminPOS() {
     setBankInfo(null)
     setQrDataUrl(null)
     setCoupon(null)
+    setCouponMsg('')
     setCouponChecking(false)
-    if (!cart.length) { setAvailableCoupons([]); return }
-    // Revalidate a restored draft's coupon against its own cart and customer.
-    if (selectedCode) {
+    if (!cart.length) {
+      setCouponAuto(true)
+      setCouponInput('')
+      setAvailableCoupons([])
+      return
+    }
+    const couponPayload = {
+      tongTien: total,
+      maSanPhamIds: [...new Set(cart.map(c => c.maSanPham).filter(Boolean))],
+      items: cart.filter(c => c.maSanPham).map(c => ({ maSanPham: c.maSanPham, thanhTien: c.gia * c.soLuong })),
+      maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
+    }
+    // Preserve a coupon explicitly chosen by staff. Auto-selected coupons are
+    // recalculated whenever the cart or customer changes.
+    if (selectedCode && !couponAuto) {
       setCouponChecking(true)
-      posApi.validateCoupon({ maCode: selectedCode, tongTien: total,
-        maSanPhamIds: [...new Set(cart.map(c => c.maSanPham).filter(Boolean))],
-        items: cart.filter(c => c.maSanPham).map(c => ({ maSanPham: c.maSanPham, thanhTien: c.gia * c.soLuong })),
-        maNguoiDung: selectedCustomer?.maNguoiDung || undefined,
-      }).then(res => {
+      posApi.validateCoupon({ ...couponPayload, maCode: selectedCode }).then(res => {
         if (!active || requestId !== couponRequest.current) return
         if (res.hopLe) setCoupon(res)
         else setCouponMsg(res.lyDoTuChoi || 'Mã giảm giá không còn phù hợp với hóa đơn')
       }).catch(() => {
         if (active && requestId === couponRequest.current) setCouponMsg('Vui lòng áp dụng lại mã giảm giá')
+      }).finally(() => {
+        if (active && requestId === couponRequest.current) setCouponChecking(false)
+      })
+    } else {
+      setCouponChecking(true)
+      posApi.getBestCoupon(couponPayload).then(res => {
+        if (!active || requestId !== couponRequest.current) return
+        if (res.found) {
+          setCoupon(res)
+          setCouponAuto(true)
+          setCouponInput(res.maCode)
+          setCouponMsg(`Đã tự động áp dụng mã tốt nhất, tiết kiệm ${VND(res.soTienGiam)}`)
+        } else {
+          setCoupon(null)
+          setCouponAuto(true)
+          setCouponInput('')
+          setCouponMsg('')
+        }
+      }).catch(() => {
+        if (active && requestId === couponRequest.current) setCouponMsg('Không thể tự động tìm mã tốt nhất')
       }).finally(() => {
         if (active && requestId === couponRequest.current) setCouponChecking(false)
       })
@@ -669,7 +700,7 @@ export default function AdminPOS() {
                 <div className="flex items-center gap-3">
                   <button onClick={() => setShowCustomerPicker(true)} className="text-xs text-[var(--primary-color)] font-semibold hover:underline">Chọn khách hàng</button>
                   {selectedCustomer && (
-                    <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponInput(''); setCouponMsg('') }}
+                    <button onClick={() => { setSelectedCustomer(null); setCoupon(null); setCouponAuto(true); setCouponInput(''); setCouponMsg('') }}
                       className="text-xs text-bordeaux hover:underline font-medium">Gỡ khách</button>
                   )}
                 </div>
@@ -752,6 +783,7 @@ export default function AdminPOS() {
                     <div className="flex-1">
                       <p className="text-xs font-semibold text-emerald-deep">Áp dụng thành công phiếu giảm giá {coupon.maCode} ({coupon.kieuGiamGia === 1 ? `${coupon.giaTriGiam || 10}%` : VND(coupon.soTienGiam)})</p>
                       <p className="text-[11px] text-emerald-deep/70 mt-0.5">Giảm {VND(coupon.soTienGiam)}</p>
+                      {couponAuto && <p className="text-[11px] text-emerald-deep/70 mt-0.5">Hệ thống đã tự chọn mã có lợi nhất</p>}
                     </div>
                   </div>
                 )}

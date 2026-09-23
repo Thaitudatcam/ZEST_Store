@@ -45,6 +45,29 @@ public class POSService {
         }
     }
 
+    public Map<String, Object> getBestCoupon(Integer maNguoiDung, BigDecimal tongTien,
+                                              List<Integer> productIds,
+                                              Map<Integer, BigDecimal> productSubtotals) {
+        Map<String, Object> best = null;
+        for (Map<String, Object> candidate : phieuGiamGiaService
+                .getAvailableCoupons(tongTien, maNguoiDung, productIds)) {
+            if (Integer.valueOf(3).equals(candidate.get("kieuGiamGia"))) continue;
+            Map<String, Object> validated = validateCoupon(
+                    candidate.get("maCode").toString(), maNguoiDung, tongTien, productIds, productSubtotals);
+            if (!Boolean.TRUE.equals(validated.get("hopLe"))) continue;
+            if (best == null || ((BigDecimal) validated.get("soTienGiam"))
+                    .compareTo((BigDecimal) best.get("soTienGiam")) > 0) {
+                best = new LinkedHashMap<>(validated);
+            }
+        }
+        if (best == null) {
+            return Map.of("found", false, "message", "Không có mã giảm giá phù hợp");
+        }
+        best.put("found", true);
+        best.put("isBest", true);
+        return best;
+    }
+
     @Transactional
     public Map<String, Object> createPosOrder(PosOrderRequest request, Integer adminUserId) {
         NguoiDung admin = nguoiDungRepository.findByIdForUpdate(adminUserId)

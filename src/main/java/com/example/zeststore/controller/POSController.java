@@ -70,6 +70,31 @@ public class POSController {
                 productSubtotals.isEmpty() ? null : productSubtotals));
     }
 
+    @PostMapping("/best-coupon")
+    public ResponseEntity<?> getBestCoupon(@RequestBody Map<String, Object> body) {
+        BigDecimal tongTien = body.get("tongTien") != null
+                ? new BigDecimal(body.get("tongTien").toString())
+                : BigDecimal.ZERO;
+        Integer maNguoiDung = body.get("maNguoiDung") != null
+                ? Integer.valueOf(body.get("maNguoiDung").toString())
+                : null;
+        java.util.List<Integer> productIds = body.get("maSanPhamIds") instanceof java.util.List<?> ids
+                ? ids.stream().map(i -> Integer.valueOf(i.toString())).toList() : java.util.List.of();
+        Map<Integer, BigDecimal> productSubtotals = new LinkedHashMap<>();
+        if (body.get("items") instanceof java.util.List<?> items) {
+            for (Object raw : items) {
+                if (!(raw instanceof Map<?, ?> item) || item.get("maSanPham") == null || item.get("thanhTien") == null)
+                    continue;
+                Integer productId = Integer.valueOf(item.get("maSanPham").toString());
+                BigDecimal subtotal = new BigDecimal(item.get("thanhTien").toString());
+                if (subtotal.signum() < 0) throw new BadRequestException("Thành tiền sản phẩm không hợp lệ");
+                productSubtotals.merge(productId, subtotal, BigDecimal::add);
+            }
+        }
+        return ResponseEntity.ok(posService.getBestCoupon(maNguoiDung, tongTien, productIds,
+                productSubtotals.isEmpty() ? null : productSubtotals));
+    }
+
     @PostMapping("/orders")
     public ResponseEntity<?> createOrder(Authentication auth, @Valid @RequestBody PosOrderRequest request) {
         return ResponseEntity.ok(posService.createPosOrder(request, userService.getUserIdFromAuth(auth)));
