@@ -105,4 +105,16 @@ class CodOrderAutoCancellationTest {
         assertFalse(service.autoCancelExpiredCodOrder(22, threshold));
         verifyNoInteractions(inventoryService, phieuGiamGiaService, lichSuDonHangRepository);
     }
+
+    @Test
+    void legacyOrderIsSkippedUntilInventoryIsReconciled() {
+        LocalDateTime threshold = LocalDateTime.now().minusHours(24);
+        DonHang legacy = DonHang.builder().maDonHang(23).loaiDonHang(1).trangThaiDon(1)
+                .ngayDat(threshold.minusMinutes(1)).stockState("LEGACY").build();
+        when(donHangRepository.findByIdForUpdate(23)).thenReturn(Optional.of(legacy));
+
+        assertFalse(service.autoCancelExpiredCodOrder(23, threshold));
+        verifyNoInteractions(thanhToanRepository, inventoryService, phieuGiamGiaService,
+                lichSuDonHangRepository, orderSseService);
+    }
 }

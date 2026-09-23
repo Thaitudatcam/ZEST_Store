@@ -25,6 +25,13 @@ export default function Cart() {
   const [confirmAction, setConfirmAction] = useState(null)
   const { refreshCount } = useCart()
 
+  // Cart responses from older API versions do not always include `tonKho`.
+  // Missing stock information is not the same as zero stock: the server-side
+  // validation still remains the source of truth when the cart is checked.
+  const isUnavailable = (item) => item.ngayXoa || item.sanPhamTrangThai === 0
+    || item.sanPhamNgayXoa || (item.tonKho != null && Number(item.tonKho) <= 0)
+  const availableItems = items.filter((item) => !isUnavailable(item))
+
   const load = () => getCart().then(setItems).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
 
@@ -40,10 +47,11 @@ export default function Cart() {
           for (const issue of issues) {
             if (issue.type === 'insufficient') {
               if (Number(issue.availableStock) <= 0) {
-                // The API does not accept quantity 0. Remove an item that has
-                // sold out instead of repeatedly retrying an invalid update.
-                await removeCartItem(issue.maBienThe)
-                setItems(prev => prev.filter(i => i.maBienThe !== issue.maBienThe))
+                // Keep sold-out items visible so customers understand why
+                // they cannot check out. They can remove the item manually.
+                setItems(prev => prev.map(i => i.maBienThe === issue.maBienThe
+                  ? { ...i, tonKho: 0 }
+                  : i))
                 setSelectedIds(prev => { const next = new Set(prev); next.delete(issue.maBienThe); return next })
               } else {
                 await updateCartItem(issue.maBienThe, { soLuong: issue.availableStock })
@@ -83,7 +91,8 @@ export default function Cart() {
 
   const handleQty = async (vid, delta) => {
     const item = items.find((i) => i.maBienThe === vid)
-    const stock = item.tonKho || 999
+    if (!item || isUnavailable(item)) return
+    const stock = item.tonKho == null ? 999 : Math.max(0, Number(item.tonKho))
     const newQty = Math.max(1, Math.min(stock, (item.soLuong || 1) + delta))
     try {
       await updateCartItem(vid, { soLuong: newQty })
@@ -96,7 +105,8 @@ export default function Cart() {
 
   const handleQtyInput = async (vid, val) => {
     const item = items.find(i => i.maBienThe === vid)
-    const stock = item?.tonKho || 999
+    if (!item || isUnavailable(item)) return
+    const stock = item.tonKho == null ? 999 : Math.max(0, Number(item.tonKho))
     const soLuong = Math.max(1, Math.min(stock, val))
     try {
       await updateCartItem(vid, { soLuong })
@@ -127,6 +137,8 @@ export default function Cart() {
   }
 
   const toggleSelect = (vid) => {
+    const item = items.find((candidate) => candidate.maBienThe === vid)
+    if (!item || isUnavailable(item)) return
     setSelectedIds(prev => {
       const next = new Set(prev)
       if (next.has(vid)) next.delete(vid); else next.add(vid)
@@ -135,10 +147,10 @@ export default function Cart() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === items.length) {
+    if (selectedIds.size === availableItems.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(items.map(i => i.maBienThe)))
+      setSelectedIds(new Set(availableItems.map(i => i.maBienThe)))
     }
   }
 
@@ -147,11 +159,17 @@ export default function Cart() {
       setToast({ message: 'Vui lòng chọn sản phẩm để thanh toán', type: 'info' })
       return
     }
-    navigate('/checkout', { state: { selectedItems: items.filter(i => selectedIds.has(i.maBienThe)) } })
+    const selectedItems = items.filter(i => selectedIds.has(i.maBienThe) && !isUnavailable(i))
+    if (selectedItems.length === 0) {
+      setSelectedIds(new Set())
+      setToast({ message: 'Sản phẩm đã hết hàng, vui lòng chọn sản phẩm khác', type: 'warning' })
+      return
+    }
+    navigate('/checkout', { state: { selectedItems } })
   }
 
   const selectedTotal = items.filter(i => selectedIds.has(i.maBienThe)).reduce((s, i) => s + ((i.donGia || 0) * (i.soLuong || 1)), 0)
-  const allSelected = items.length > 0 && selectedIds.size === items.length
+  const allSelected = availableItems.length > 0 && selectedIds.size === availableItems.length
 
   if (loading) return <LoadingSpinner className="py-20" />
 
@@ -223,13 +241,22 @@ export default function Cart() {
               {items.map((i) => (
                 <div key={i.maBienThe}
                   className={`grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_120px_120px_110px_40px] gap-3 sm:gap-3 items-center px-4 py-4 transition ${
-                    i.ngayXoa ? 'opacity-50' : ''
+                    isUnavailable(i) ? 'bg-stone/5 opacity-70' : ''
                   }`}>
                   {/* Checkbox + Image + Info */}
                   <div className="flex items-center gap-3 col-span-1 sm:col-span-1">
-                    <input type="checkbox" checked={selectedIds.has(i.maBienThe)} onChange={() => toggleSelect(i.maBienThe)}
-                      className="w-4 h-4 rounded border-stone/30 text-[var(--primary-color)] focus:ring-[var(--primary-color)] shrink-0" />
-                    <div className="w-16 h-16 bg-ivory-100 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => !i.ngayXoa && setSelectedItem(i)}>
+                    <input type="checkbox" checked={selectedIds.has(i.maBienThe)} disabled={isUnavailable(i)}
+                      aria-label={`Chọn ${i.tenSanPham || 'sản phẩm'}`}
+                      // Keep selection state controlled by React and handle
+                      // the actual click ourselves; this avoids the native
+                      // checkbox toggle being lost inside the cart row.
+                      onChange={() => {}}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        if (!isUnavailable(i)) toggleSelect(i.maBienThe)
+                      }}
+                      className="w-4 h-4 rounded border-stone/30 text-[var(--primary-color)] focus:ring-[var(--primary-color)] shrink-0 disabled:cursor-not-allowed disabled:opacity-40" />
+                    <div className="w-16 h-16 bg-ivory-100 rounded-lg overflow-hidden shrink-0 cursor-pointer" onClick={() => !isUnavailable(i) && setSelectedItem(i)}>
                       <SafeImg src={i.urlAnh} alt="" className="w-full h-full object-cover" fallback="https://placehold.co/80x80/e2e8f0/475569?text=P" />
                     </div>
                     <div className="min-w-0">
@@ -237,7 +264,11 @@ export default function Cart() {
                       <p className="text-[11px] text-stone">Mã sản phẩm: {i.maSanPhamCode || i.sku || '—'}</p>
                       {i.kichCo && <p className="text-xs text-stone">Kích thước: <span className="font-medium text-ink">{i.kichCo}</span></p>}
                       {i.mauSac && <p className="text-xs text-stone">Màu sắc: <span className="font-medium text-ink">{i.mauSac}</span></p>}
-                      {i.ngayXoa && <span className="text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium">không tồn tại</span>}
+                      {i.ngayXoa
+                        ? <span className="text-[10px] bg-bordeaux/20 text-bordeaux px-1.5 py-0.5 rounded font-medium">không tồn tại</span>
+                        : (i.tonKho != null && Number(i.tonKho) <= 0)
+                          ? <span className="inline-flex mt-1 text-[10px] bg-bordeaux/10 text-bordeaux px-2 py-0.5 rounded-full font-semibold">Hết hàng</span>
+                          : null}
                     </div>
                   </div>
 
@@ -259,15 +290,15 @@ export default function Cart() {
                   {/* Số lượng */}
                   <div className="hidden sm:flex justify-center">
                     <div className="flex items-center border border-stone/20 rounded-lg overflow-hidden">
-                      <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
+                      <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || isUnavailable(i)}
                         className="px-2.5 py-1.5 hover:bg-ivory-100 transition disabled:opacity-30 disabled:cursor-not-allowed">
                         <Minus className="h-3 w-3" />
                       </button>
-                      <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999} disabled={!!i.ngayXoa}
+                      <input type="number" value={i.soLuong || 1} min={1} max={i.tonKho || 999} disabled={isUnavailable(i)}
                         onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
                         onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
                         className="w-10 px-1 py-1.5 border-x border-stone/20 text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-ivory-100" />
-                      <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || i.ngayXoa}
+                      <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || isUnavailable(i)}
                         className="px-2.5 py-1.5 hover:bg-ivory-100 transition disabled:opacity-30 disabled:cursor-not-allowed">
                         <Plus className="h-3 w-3" />
                       </button>
@@ -290,15 +321,15 @@ export default function Cart() {
                   <div className="flex sm:hidden items-center justify-between ml-16 mt-1">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center border border-stone/20 rounded-lg overflow-hidden">
-                        <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || i.ngayXoa}
+                        <button onClick={() => handleQty(i.maBienThe, -1)} disabled={i.soLuong <= 1 || isUnavailable(i)}
                           className="px-2 py-1 hover:bg-ivory-100 transition disabled:opacity-30">
                           <Minus className="h-3 w-3" />
                         </button>
-                        <input type="number" value={i.soLuong || 1} min={1} disabled={!!i.ngayXoa}
+                        <input type="number" value={i.soLuong || 1} min={1} disabled={isUnavailable(i)}
                           onChange={e => { const v = parseInt(e.target.value); if (!v || v < 1) return; setItems(prev => prev.map(x => x.maBienThe === i.maBienThe ? { ...x, soLuong: Math.min(v, i.tonKho || 999) } : x)) }}
                           onBlur={e => { const v = parseInt(e.target.value); if (!v || v < 1) handleQtyInput(i.maBienThe, 1); else handleQtyInput(i.maBienThe, v) }}
                           className="w-10 px-1 py-1 border-x border-stone/20 text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                        <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || i.ngayXoa}
+                        <button onClick={() => handleQty(i.maBienThe, 1)} disabled={i.soLuong >= (i.tonKho || 999) || isUnavailable(i)}
                           className="px-2 py-1 hover:bg-ivory-100 transition disabled:opacity-30">
                           <Plus className="h-3 w-3" />
                         </button>

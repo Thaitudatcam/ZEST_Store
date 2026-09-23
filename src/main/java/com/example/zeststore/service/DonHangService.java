@@ -707,6 +707,13 @@ public class DonHangService {
             return false;
         }
 
+        // Orders created before inventory lifecycle tracking are marked LEGACY
+        // (or may still be null in an older database).  Never release stock for
+        // those rows automatically: the real stock situation is unknown and an
+        // administrator must reconcile it first.  The repository query also
+        // filters these out, but keep this guard for direct/manual invocations.
+        if (!"RESERVED".equals(order.getStockState())) return false;
+
         List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
         boolean hasPendingCod = payments.stream().anyMatch(payment ->
                 Integer.valueOf(1).equals(payment.getPhuongThuc())
