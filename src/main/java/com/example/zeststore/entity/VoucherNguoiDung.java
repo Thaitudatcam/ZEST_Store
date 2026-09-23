@@ -35,6 +35,10 @@ public class VoucherNguoiDung {
     @Column(name = "ngay_het_han")
     private LocalDateTime ngayHetHan;
 
+    /** Số lượt còn lại của riêng khách hàng cho mã này; null = không giới hạn. */
+    @Column(name = "so_luong_con_lai")
+    private Integer soLuongConLai;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ma_chuong_trinh")
     private ChuongTrinhQuaTang chuongTrinhQuaTang;

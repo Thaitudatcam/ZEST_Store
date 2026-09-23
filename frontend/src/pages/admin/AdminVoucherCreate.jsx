@@ -81,7 +81,7 @@ export default function AdminVoucherCreate() {
     if (!form.ngayBatDau) { alert('Vui lòng chọn ngày bắt đầu!'); return false }
     if (!form.ngayKetThuc) { alert('Vui lòng chọn ngày kết thúc!'); return false }
     if (new Date(form.ngayBatDau) >= new Date(form.ngayKetThuc)) { alert('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!'); return false }
-    if (form.soLuong && Number(form.soLuong) <= 0) { alert('Số lượng phải lớn hơn 0!'); return false }
+    if (form.soLuong && Number(form.soLuong) <= 0) { alert('Số lượt mỗi khách hàng phải lớn hơn 0!'); return false }
     if (form.giaTriGiamToiDa && Number(form.giaTriGiamToiDa) <= 0) { alert('Giá trị giảm tối đa phải lớn hơn 0!'); return false }
     if (form.kieuApDung === 'ca-nhan' && selectedUsers.length === 0) { alert('Vui lòng chọn ít nhất 1 khách hàng!'); return false }
     return true
@@ -200,10 +200,11 @@ export default function AdminVoucherCreate() {
                 className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink mb-1.5">Số lượng</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">Lượt sử dụng mỗi khách hàng</label>
               <input type="number" value={form.soLuong} onChange={e => setForm({ ...form, soLuong: e.target.value })}
-                placeholder="Nhập số lượng"
+                placeholder="Ví dụ: 30 lượt / khách hàng"
                 className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
+              <p className="mt-1 text-[11px] text-stone">Mỗi khách hàng được dùng tối đa số lượt này; mỗi đơn thành công giảm 1 lượt riêng của khách đó.</p>
             </div>
           </div>
 

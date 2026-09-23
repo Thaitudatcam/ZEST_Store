@@ -3,7 +3,6 @@ package com.example.zeststore.service;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
-import com.example.zeststore.repository.CouponUsageLogRepository;
 import com.example.zeststore.repository.NguoiDungRepository;
 import com.example.zeststore.repository.PhieuGiamGiaRepository;
 import com.example.zeststore.repository.VoucherNguoiDungRepository;
@@ -24,8 +23,6 @@ public class VoucherNguoiDungService {
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
-    private final PhieuGiamGiaService phieuGiamGiaService;
-    private final CouponUsageLogRepository couponUsageLogRepository;
 
     /**
      * Lấy danh sách voucher cá nhân — chỉ trả về CHUA_NHAN và DA_NHAN,
@@ -95,22 +92,14 @@ public class VoucherNguoiDungService {
         if (alreadyClaimed) {
             throw new BadRequestException("Bạn đã nhận voucher này rồi");
         }
-        if (couponUsageLogRepository.hasActiveUsage(maCode, userId)) {
-            throw new BadRequestException("Bạn đã sử dụng mã này");
-        }
-
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-
-        if (coupon.getSoLuong() != null) {
-            coupon.setSoLuong(coupon.getSoLuong() - 1);
-            phieuGiamGiaRepository.save(coupon);
-        }
 
         VoucherNguoiDung v = VoucherNguoiDung.builder()
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
                 .trangThai(TrangThaiVoucher.DA_NHAN)
+                .soLuongConLai(coupon.getSoLuong())
                 .build();
         voucherNguoiDungRepository.save(v);
 
@@ -149,15 +138,11 @@ public class VoucherNguoiDungService {
         NguoiDung user = nguoiDungRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        if (coupon.getSoLuong() != null) {
-            coupon.setSoLuong(coupon.getSoLuong() - 1);
-            phieuGiamGiaRepository.save(coupon);
-        }
-
         VoucherNguoiDung v = VoucherNguoiDung.builder()
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
                 .trangThai(TrangThaiVoucher.CHUA_NHAN)
+                .soLuongConLai(coupon.getSoLuong())
                 .ngayHetHan(LocalDateTime.now().plusDays(7))
                 .build();
         voucherNguoiDungRepository.save(v);
@@ -203,7 +188,6 @@ public class VoucherNguoiDungService {
 
         v.setTrangThai(TrangThaiVoucher.DA_THU_HOI);
         voucherNguoiDungRepository.save(v);
-        phieuGiamGiaService.restoreCoupon(v.getPhieuGiamGia());
 
         return Map.of("message", "Thu hồi voucher thành công");
     }
@@ -236,6 +220,7 @@ public class VoucherNguoiDungService {
         m.put("ngaySuDung", v.getNgaySuDung());
         m.put("ngayHetHan", v.getNgayHetHan());
         m.put("trangThai", v.getTrangThai().getValue());
+        m.put("soLuongConLai", v.getSoLuongConLai());
         m.put("ngayKetThuc", p.getNgayKetThuc());
         return m;
     }

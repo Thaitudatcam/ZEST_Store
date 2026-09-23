@@ -213,6 +213,7 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
                           </button>
                         </div>
                         <p className="mt-2 text-xs text-stone">{Number(coupon.giaTriDonToiThieu) > 0 ? `Đơn từ ${VND(coupon.giaTriDonToiThieu)}` : 'Không yêu cầu đơn tối thiểu'}</p>
+                        {coupon.soLuongConLai != null && <p className="mt-1 text-xs text-emerald-deep">Còn {coupon.soLuongConLai} lượt của bạn</p>}
                         {coupon.ngayKetThuc && <p className="mt-1 text-xs text-stone">Hạn dùng: {new Date(coupon.ngayKetThuc).toLocaleDateString('vi-VN')}</p>}
                         {coupon.isPersonal && <p className="mt-1 text-xs text-emerald-deep">Ưu đãi dành riêng cho bạn</p>}
                         {coupon.exclusive && <p className="mt-1 text-xs text-stone">Không dùng cùng mã khác</p>}

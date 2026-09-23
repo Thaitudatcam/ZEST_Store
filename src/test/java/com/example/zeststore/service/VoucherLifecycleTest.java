@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class VoucherLifecycleTest {
@@ -48,18 +49,19 @@ class VoucherLifecycleTest {
     }
 
     @Test
-    void publicClaimAllocatesOneUseWithoutTurningCouponOff() {
+    void publicClaimDoesNotConsumeAUse() {
         PhieuGiamGia coupon = coupon(true);
         when(couponRepository.findByMaCodeForUpdate("SALE")).thenReturn(Optional.of(coupon));
         when(userRepository.findById(7)).thenReturn(Optional.of(NguoiDung.builder().maNguoiDung(7).build()));
 
         service.claimVoucher(7, "SALE");
 
-        assertEquals(0, coupon.getSoLuong());
+        assertEquals(1, coupon.getSoLuong());
         assertEquals(1, coupon.getTrangThai());
         ArgumentCaptor<VoucherNguoiDung> saved = ArgumentCaptor.forClass(VoucherNguoiDung.class);
         verify(voucherRepository).save(saved.capture());
         assertEquals(TrangThaiVoucher.DA_NHAN, saved.getValue().getTrangThai());
+        assertEquals(1, saved.getValue().getSoLuongConLai());
     }
 
     @Test
@@ -68,6 +70,26 @@ class VoucherLifecycleTest {
         when(couponRepository.findByMaCodeForUpdate("SALE")).thenReturn(Optional.of(coupon));
 
         assertThrows(BadRequestException.class, () -> service.claimVoucher(7, "SALE"));
+    }
+
+    @Test
+    void privateGrantDoesNotConsumeAUse() {
+        PhieuGiamGia coupon = coupon(false);
+        when(couponRepository.findById(1)).thenReturn(Optional.of(coupon));
+        when(userRepository.findById(7)).thenReturn(Optional.of(NguoiDung.builder().maNguoiDung(7).build()));
+        when(voucherRepository.save(any(VoucherNguoiDung.class))).thenAnswer(invocation -> {
+            VoucherNguoiDung saved = invocation.getArgument(0);
+            saved.setMaVoucherNguoiDung(11);
+            return saved;
+        });
+
+        service.grantVoucher(7, 1);
+
+        assertEquals(1, coupon.getSoLuong());
+        ArgumentCaptor<VoucherNguoiDung> saved = ArgumentCaptor.forClass(VoucherNguoiDung.class);
+        verify(voucherRepository).save(saved.capture());
+        assertEquals(TrangThaiVoucher.CHUA_NHAN, saved.getValue().getTrangThai());
+        assertEquals(1, saved.getValue().getSoLuongConLai());
     }
 
     @Test

@@ -231,7 +231,7 @@ export default function AdminCoupons() {
                 <th className="px-3 py-3 text-center text-xs font-semibold text-stone w-32">KIỂU ÁP DỤNG</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold text-stone">CHI TIẾT ƯU ĐÃI</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold text-stone w-36">THỜI GIAN ÁP DỤNG</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold text-stone w-20">SỐ LƯỢNG</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-stone w-24">LƯỢT / KHÁCH</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold text-stone w-32">TRẠNG THÁI</th>
                 <th className="px-3 py-3 text-center text-xs font-semibold text-stone w-16">HÀNH ĐỘNG</th>
               </tr>
@@ -383,7 +383,7 @@ export default function AdminCoupons() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink mb-1.5">Số lượng</label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">Lượt sử dụng mỗi khách hàng</label>
                     <input type="number" name="soLuong" defaultValue={editing.soLuong ?? ''} placeholder="Để trống = không giới hạn"
                       className="w-full border border-stone/20 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
                   </div>

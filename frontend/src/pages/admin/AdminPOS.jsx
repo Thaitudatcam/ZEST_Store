@@ -767,6 +767,7 @@ export default function AdminPOS() {
                             <div>
                               <p className="text-xs font-bold text-ink">{c.maCode}</p>
                               <p className="text-[11px] text-stone mt-0.5">{c.kieuGiamGia === 1 ? `Giảm ${c.giaTriGiam || 10}%` : `Giảm ${VND(c.soTienGiam)}`}</p>
+                              {c.soLuongConLai != null && <p className="text-[11px] text-emerald-deep mt-0.5">Khách còn {c.soLuongConLai} lượt</p>}
                             </div>
                             <span className="text-xs font-bold text-[var(--primary-color)]">{VND(c.soTienGiam)}</span>
                           </button>

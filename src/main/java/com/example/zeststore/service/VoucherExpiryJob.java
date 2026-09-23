@@ -18,8 +18,6 @@ import java.util.List;
 public class VoucherExpiryJob {
 
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
-    private final PhieuGiamGiaService phieuGiamGiaService;
-
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void expireUnclaimedVouchers() {
@@ -29,7 +27,6 @@ public class VoucherExpiryJob {
         for (VoucherNguoiDung v : expired) {
             v.setTrangThai(TrangThaiVoucher.DA_THU_HOI);
             voucherNguoiDungRepository.save(v);
-            phieuGiamGiaService.restoreCoupon(v.getPhieuGiamGia());
         }
         if (!expired.isEmpty()) {
             log.info("Expired {} unclaimed vouchers", expired.size());

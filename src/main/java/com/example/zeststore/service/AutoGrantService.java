@@ -3,7 +3,6 @@ package com.example.zeststore.service;
 import com.example.zeststore.entity.*;
 import com.example.zeststore.repository.ChuongTrinhQuaTangRepository;
 import com.example.zeststore.repository.NguoiDungRepository;
-import com.example.zeststore.repository.PhieuGiamGiaRepository;
 import com.example.zeststore.repository.VoucherNguoiDungRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ public class AutoGrantService {
 
     private final ChuongTrinhQuaTangRepository campaignRepository;
     private final VoucherNguoiDungRepository voucherNguoiDungRepository;
-    private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     private final NguoiDungRepository nguoiDungRepository;
 
     // ========== DANG_KY_MOI ==========
@@ -83,11 +81,6 @@ public class AutoGrantService {
         int granted = 0;
         int skipped = 0;
         for (NguoiDung user : targets) {
-            if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-                log.warn("Campaign {}: coupon {} het soLuong, stopped after {} grants",
-                        campaign.getMaChuongTrinh(), coupon.getMaCode(), granted);
-                break;
-            }
             if (voucherNguoiDungRepository.existsByNguoiDung_MaNguoiDungAndChuongTrinhQuaTang_MaChuongTrinh(
                     user.getMaNguoiDung(), campaign.getMaChuongTrinh())) {
                 skipped++;
@@ -124,10 +117,6 @@ public class AutoGrantService {
             return;
         }
         PhieuGiamGia coupon = campaign.getPhieuGiamGia();
-        if (coupon.getSoLuong() != null && coupon.getSoLuong() <= 0) {
-            log.warn("Campaign {}: coupon {} out of stock", campaign.getMaChuongTrinh(), coupon.getMaCode());
-            return;
-        }
         doGrant(user, coupon, campaign);
     }
 
@@ -138,15 +127,12 @@ public class AutoGrantService {
     }
 
     private void doGrant(NguoiDung user, PhieuGiamGia coupon, ChuongTrinhQuaTang campaign) {
-        if (coupon.getSoLuong() != null) {
-            coupon.setSoLuong(coupon.getSoLuong() - 1);
-            phieuGiamGiaRepository.save(coupon);
-        }
         VoucherNguoiDung v = VoucherNguoiDung.builder()
                 .nguoiDung(user)
                 .phieuGiamGia(coupon)
                 .chuongTrinhQuaTang(campaign)
                 .trangThai(TrangThaiVoucher.CHUA_NHAN)
+                .soLuongConLai(coupon.getSoLuong())
                 .ngayHetHan(LocalDateTime.now().plusDays(7))
                 .build();
         voucherNguoiDungRepository.save(v);
