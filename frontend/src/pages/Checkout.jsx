@@ -4,7 +4,7 @@ import { getCart } from '../api/cart'
 import { getProfile, getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 
-import { createVnPayPayment, createMomoPayment, createZaloPayPayment, createVietQrPayment, confirmVietQrPayment } from '../api/payment'
+import { createVnPayPayment, createVietQrPayment, createZaloPayPayment, confirmVietQrPayment } from '../api/payment'
 import { getServices, calculateShippingFee } from '../api/ghn'
 import { getProvinces, getDistricts, getWards } from '../api/address'
 import CheckoutCoupons from '../components/CheckoutCoupons'
@@ -20,7 +20,7 @@ import SearchableSelect from '../components/SearchableSelect'
 const PAYMENT_OPTIONS = [
   { value: 1, label: 'Thanh toán khi nhận hàng (COD)', icon: Truck },
   { value: 2, label: 'Thẻ ATM/Visa/Master/JCB/Gi Pay qua VNPay QR', icon: CreditCard },
-  { value: 3, label: 'Ví điện tử MoMo', icon: Smartphone },
+  { value: 3, label: 'VietQR (Quét mã ngân hàng)', icon: QrCode },
   { value: 4, label: 'Ví điện tử ZaloPay', icon: Smartphone },
 ]
 
@@ -428,7 +428,7 @@ export default function Checkout() {
         const createPayment = method === 2
           ? createVnPayPayment
           : method === 3
-            ? createMomoPayment
+            ? createVietQrPayment
             : createZaloPayPayment
         const paymentRes = await createPayment(result.maDonHang)
         sessionStorage.removeItem('onlineCheckoutKey')
@@ -575,18 +575,6 @@ export default function Checkout() {
                   onChange={(code, name) => { setSelectedWardCode(code); setForm((f) => ({ ...f, phuongXa: name })) }}
                 />
               </div>
-              {serviceOptions.length > 0 && (
-                <div>
-                  <label className="text-xs font-medium text-stone uppercase tracking-wide mb-1 block">Đơn vị vận chuyển</label>
-                  <select
-                    value={selectedServiceId}
-                    onChange={(e) => { setSelectedServiceId(Number(e.target.value)); setGhnFee(null); setGhnError(false) }}
-                    className="border border-stone/20 rounded-lg px-3 py-2.5 text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-gold focus:border-gold"
-                  >
-                    {serviceOptions.map((service) => <option key={service.id} value={service.id}>{service.name || `Dịch vụ ${service.id}`}</option>)}
-                  </select>
-                </div>
-              )}
               <div>
                 <label className="text-xs font-medium text-stone uppercase tracking-wide mb-1 block">Địa chỉ</label>
                 <input value={form.diaChiGiaoHang} onChange={(e) => setForm((f) => ({ ...f, diaChiGiaoHang: e.target.value }))} placeholder="Số nhà, đường..."

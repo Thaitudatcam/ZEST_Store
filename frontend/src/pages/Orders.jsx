@@ -255,7 +255,7 @@ export default function Orders() {
                 <div className="flex items-center gap-2">
                   <span className="text-stone text-xs">Thanh toán:</span>
                   <span className="font-medium text-xs">
-                    {o.phuongThucThanhToan === 1 ? 'COD' : 'Online'}{' '}
+                    {[1:'COD',2:'VNPay',3:'VietQR',4:'ZaloPay'][o.phuongThucThanhToan] || 'Online'}{' '}
                     {o.trangThaiThanhToan === 2
                       ? <span className="text-emerald-deep">Đã thanh toán</span>
                       : <span className="text-gold">Chưa thanh toán</span>

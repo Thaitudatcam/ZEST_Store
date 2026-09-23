@@ -158,11 +158,11 @@ public class ThongKeService {
             denNgay = tmp;
         }
 
-        Map<String, BigDecimal> paymentMethods = new LinkedHashMap<>();
+Map<String, BigDecimal> paymentMethods = new LinkedHashMap<>();
         paymentMethods.put("tienMat", BigDecimal.ZERO);
         paymentMethods.put("chuyenKhoan", BigDecimal.ZERO);
         paymentMethods.put("vnPay", BigDecimal.ZERO);
-        paymentMethods.put("moMo", BigDecimal.ZERO);
+        paymentMethods.put("vietQr", BigDecimal.ZERO);
         paymentMethods.put("zaloPay", BigDecimal.ZERO);
         paymentMethods.put("khac", BigDecimal.ZERO);
         for (Object[] row : donHangRepository.sumRevenueByPaymentMethod(tuNgay, denNgay)) {
@@ -171,7 +171,7 @@ public class ThongKeService {
             String key = switch (method) {
                 case 1, 5 -> "tienMat";
                 case 2 -> "vnPay";
-                case 3 -> "moMo";
+                case 3 -> "vietQr";
                 case 4 -> "zaloPay";
                 case 6 -> "chuyenKhoan";
                 default -> "khac";

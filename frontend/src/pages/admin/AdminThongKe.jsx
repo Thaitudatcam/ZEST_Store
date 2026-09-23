@@ -152,6 +152,7 @@ export default function AdminThongKe() {
   const filteredTienMat = Number(filteredPayments.tienMat || 0)
   const filteredChuyenKhoan = Number(filteredPayments.chuyenKhoan || 0)
   const filteredVnPay = Number(filteredPayments.vnPay || 0)
+  const filteredVietQr = Number(filteredPayments.vietQr || 0)
   const filteredZaloPay = Number(filteredPayments.zaloPay || 0)
 
   const summaryCard = (key) => {
@@ -209,6 +210,7 @@ export default function AdminThongKe() {
               { label: 'TIỀN MẶT', value: todayPayments.tienMat ?? 0, icon: '💵' },
               { label: 'CHUYỂN KHOẢN', value: todayPayments.chuyenKhoan ?? 0, icon: '🏦' },
               { label: 'VNPAY', value: todayPayments.vnPay ?? 0, icon: '💳' },
+              { label: 'VIETQR', value: todayPayments.vietQr ?? 0, icon: '📱' },
               { label: 'ZALOPAY', value: todayPayments.zaloPay ?? 0, icon: '📱' },
             ].map(item => (
               <div key={item.label} className="bg-ivory/50 rounded-xl p-3 text-center border border-stone/5">
@@ -362,13 +364,14 @@ export default function AdminThongKe() {
 
       {/* Payment Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {[
-          { label: 'TỔNG TIỀN LỌC', value: filteredTotal, icon: DollarSign, color: 'text-gold bg-gold/10' },
-          { label: 'TIỀN MẶT', value: filteredTienMat, icon: '💵', color: 'text-emerald-deep bg-emerald-deep/10' },
-          { label: 'CHUYỂN KHOẢN', value: filteredChuyenKhoan, icon: '🏦', color: 'text-royal bg-royal/10' },
-          { label: 'VNPAY', value: filteredVnPay, icon: '💳', color: 'text-sky-600 bg-sky-50' },
-          { label: 'ZALOPAY', value: filteredZaloPay, icon: '📱', color: 'text-blue-600 bg-blue-50' },
-        ].map(card => (
+{[
+            { label: 'TỔNG TIỀN LỌC', value: filteredTotal, icon: DollarSign, color: 'text-gold bg-gold/10' },
+            { label: 'TIỀN MẶT', value: filteredTienMat, icon: '💵', color: 'text-emerald-deep bg-emerald-deep/10' },
+            { label: 'CHUYỂN KHOẢN', value: filteredChuyenKhoan, icon: '🏦', color: 'text-royal bg-royal/10' },
+            { label: 'VNPAY', value: filteredVnPay, icon: '💳', color: 'text-sky-600 bg-sky-50' },
+            { label: 'VIETQR', value: filteredVietQr, icon: '📱', color: 'text-emerald-500 bg-emerald-50' },
+            { label: 'ZALOPAY', value: filteredZaloPay, icon: '📱', color: 'text-blue-600 bg-blue-50' },
+          ].map(card => (
           <div key={card.label} className="bg-white rounded-2xl border border-stone/10 shadow-sm p-5 flex items-center gap-4">
             <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center shrink-0`}>
               {typeof card.icon === 'string' ? <span className="text-lg">{card.icon}</span> : <card.icon className="h-5 w-5" />}

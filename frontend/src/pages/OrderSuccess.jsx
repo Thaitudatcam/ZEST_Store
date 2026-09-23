@@ -51,7 +51,7 @@ export default function OrderSuccess() {
               </p>
               <p className="text-stone">
                 <span className="font-semibold text-ink">Phương thức:</span>{' '}
-                <span className="text-ink">{order.phuongThucThanhToan === 1 ? 'Thanh toán khi nhận hàng (COD)' : 'Thanh toán online'}</span>
+                <span className="text-ink">{[1:'Thanh toán khi nhận hàng (COD)',2:'VNPay QR',3:'VietQR',4:'ZaloPay'][order.phuongThucThanhToan] || 'Online'}</span>
               </p>
               <p className="text-stone">
                 <span className="font-semibold text-ink">Tổng thanh toán:</span>{' '}

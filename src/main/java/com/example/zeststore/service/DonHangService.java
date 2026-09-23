@@ -446,7 +446,7 @@ public class DonHangService {
         String paymentRef = "ORD-" + order.getMaDonHang() + "-" + System.currentTimeMillis();
         String nhaCungCap = switch (request.getPhuongThucThanhToan()) {
             case 2 -> "VNPay";
-            case 3 -> "MoMo";
+            case 3 -> "VietQR";
             case 4 -> "ZaloPay";
             default -> "Tiền mặt";
         };
