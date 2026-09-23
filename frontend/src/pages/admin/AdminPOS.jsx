@@ -4,7 +4,7 @@ import api from '../../api/axios'
 import { getActiveCategories } from '../../api/categories'
 import { createCustomer, getOrderPrintData, registerOrderPrint, lookupSku } from '../../api/admin'
 import { posApi } from '../../components/admin/pos/apiClient'
-import { createDraft, appendDraft, removeDraft, sameQuantities } from '../../components/admin/pos/drafts'
+import { createDraft, appendDraft, removeDraft, sameQuantities, isPaymentReady } from '../../components/admin/pos/drafts'
 import OrderTabs from '../../components/admin/pos/OrderTabs'
 import ProductGrid from '../../components/admin/pos/ProductGrid'
 import CartPanel from '../../components/admin/pos/CartPanel'
@@ -78,6 +78,7 @@ export default function AdminPOS() {
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
   const [customerPaid, setCustomerPaid] = useState(initial.customerPaid || 0)
+  const [paymentConfirmedTotal, setPaymentConfirmedTotal] = useState(initial.paymentConfirmedTotal ?? null)
   const [showConfirmOrder, setShowConfirmOrder] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState(initial.paymentMethod || 5)
   const [variantModal, setVariantModal] = useState(null)
@@ -127,9 +128,10 @@ export default function AdminPOS() {
   const total = cart.reduce((s, c) => s + c.gia * c.soLuong, 0)
   const thanhTien = Math.max(0, total - (coupon?.soTienGiam || 0))
   const soLuongSanPham = cart.reduce((s, c) => s + c.soLuong, 0)
+  const paymentReady = isPaymentReady(customerPaid, paymentConfirmedTotal, thanhTien)
 
   const snapshotOrders = () => orders.map((o, i) => i === currentOrderIdx
-    ? { ...o, cart, customer: selectedCustomer, coupon, couponAuto, loaiDon: 'TAI_QUAY', customerPaid, paymentMethod }
+    ? { ...o, cart, customer: selectedCustomer, coupon, couponAuto, loaiDon: 'TAI_QUAY', customerPaid, paymentMethod, paymentConfirmedTotal }
     : o)
 
   const liveDrafts = useRef([])
@@ -197,7 +199,7 @@ export default function AdminPOS() {
 
   useEffect(() => {
     sessionStorage.setItem(draftStorageKey, JSON.stringify(snapshotOrders()))
-  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, couponAuto, loaiDon, customerPaid, paymentMethod])
+  }, [orders, currentOrderIdx, cart, selectedCustomer, coupon, couponAuto, loaiDon, customerPaid, paymentMethod, paymentConfirmedTotal])
 
   const loadDraft = (draft) => {
     ++stockRequest.current
@@ -210,6 +212,7 @@ export default function AdminPOS() {
     setCouponInput(draft.coupon?.maCode || '')
     setCustomerPaid(draft.customerPaid || 0)
     setPaymentMethod(draft.paymentMethod || 5)
+    setPaymentConfirmedTotal(draft.paymentConfirmedTotal ?? null)
     setAvailableCoupons([])
     setCouponMsg('')
     setBankInfo(null)
@@ -829,11 +832,11 @@ export default function AdminPOS() {
                 <button onClick={() => {
                   try {
                     checkoutPayload(paymentMethod)
-                    if (customerPaid < thanhTien) { setShowPaymentModal(true); return }
+                    if (!paymentReady) return
                     setShowConfirmOrder(true)
                   } catch (err) { setMsg({ type: 'error', text: err.message }) }
-                }} disabled={cart.length === 0 || placing || stockBusy || !stockReady}
-                  className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 text-sm tracking-wide mt-2">
+                }} disabled={cart.length === 0 || placing || stockBusy || !stockReady || !paymentReady}
+                  className="w-full py-3 bg-[var(--primary-color)] text-white font-bold rounded-xl hover:bg-[var(--primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed text-sm tracking-wide mt-2">
                   {placing ? 'Đang xử lý...' : 'XÁC NHẬN THANH TOÁN'}
                 </button>
               </div>
@@ -857,12 +860,12 @@ export default function AdminPOS() {
         onConfirmPaid={(amount) => {
           setCustomerPaid(amount)
           setPaymentMethod(5)
-          setShowConfirmOrder(true)
+          setPaymentConfirmedTotal(thanhTien)
         }}
         onConfirmTransfer={(amount) => {
           setCustomerPaid(amount)
           setPaymentMethod(6)
-          setShowConfirmOrder(true)
+          setPaymentConfirmedTotal(thanhTien)
         }}
         onTransferTabActive={handleTransferTabActive} />
 

@@ -1,6 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createDraft, appendDraft, removeDraft, sameQuantities } from './drafts.js'
+import { createDraft, appendDraft, removeDraft, sameQuantities, isPaymentReady } from './drafts.js'
+
+test('checkout stays locked until payment is confirmed for the current total', () => {
+  assert.equal(isPaymentReady(0, null, 180000), false)
+  assert.equal(isPaymentReady(200000, 180000, 180000), true)
+  assert.equal(isPaymentReady(200000, 180000, 190000), false)
+  assert.equal(isPaymentReady(170000, 180000, 180000), false)
+})
 
 test('restored draft must match server quantities, not just product IDs', () => {
   assert.equal(sameQuantities([{ maBienThe: 1, soLuong: 2 }], [{ maBienThe: 1, soLuong: 1 }]), false)

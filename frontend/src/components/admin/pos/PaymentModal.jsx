@@ -13,7 +13,6 @@ export default function PaymentModal({ open, onClose, thanhTien, placing, bankIn
   const inputRef = useRef(null)
 
   const paidAmount = parseCurrency(tienKhachDua)
-  const tienThua = paidAmount - thanhTien
   const isValid = paidAmount >= thanhTien
 
   useEffect(() => {
@@ -116,12 +115,6 @@ export default function PaymentModal({ open, onClose, thanhTien, placing, bankIn
                 className="w-full border border-stone/20 rounded-xl px-4 py-3 text-lg font-bold bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]" />
             </div>
 
-            {tienKhachDua && (
-              <div className={`flex justify-between items-center px-4 py-2.5 rounded-xl ${tienThua >= 0 ? 'bg-emerald-deep/10 text-emerald-deep' : 'bg-bordeaux/10 text-bordeaux'}`}>
-                <span className="text-sm font-semibold">{tienThua >= 0 ? 'Tiền thừa' : 'Thiếu'}</span>
-                <span className="text-lg font-bold">{VND(Math.abs(tienThua))}</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="px-6 py-5 space-y-4">

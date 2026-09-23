@@ -13,7 +13,13 @@ export function sameQuantities(left, right) {
 export function createDraft(id) {
   return { id, checkoutKey: crypto.randomUUID(), cart: [], customer: null, coupon: null,
     loaiDon: 'TAI_QUAY', shippingInfo: {}, shippingFee: null, mienPhiVanChuyen: false,
-    customerPaid: 0, paymentMethod: 5 }
+    customerPaid: 0, paymentMethod: 5, paymentConfirmedTotal: null }
+}
+
+export function isPaymentReady(customerPaid, confirmedTotal, currentTotal) {
+  return confirmedTotal !== null
+    && Number(confirmedTotal) === Number(currentTotal)
+    && Number(customerPaid) >= Number(currentTotal)
 }
 
 export function appendDraft(orders) {
