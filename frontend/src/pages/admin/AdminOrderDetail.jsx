@@ -23,7 +23,7 @@ const STATUS_LABELS = {
   5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
 }
 
-const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'VietQR', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
 function OrderStatusStepper({ currentStatus, history, loaiDonHang, onShowHistory }) {
   const isPos = loaiDonHang === 2

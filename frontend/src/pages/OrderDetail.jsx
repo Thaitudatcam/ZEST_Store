@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getOrderDetail, cancelOrder, confirmReceived } from '../api/orders'
-import { createVnPayPayment, createMomoPayment, createZaloPayPayment, retryPayment } from '../api/payment'
+import { createVnPayPayment, createVietQrPayment, createZaloPayPayment, retryPayment } from '../api/payment'
 import { useOrderStream } from '../hooks/useOrderStream'
 import { useToast } from '../context/ToastContext'
 import { SkeletonPage, SkeletonCard } from '../components/Skeleton'
@@ -18,7 +18,7 @@ const STATUS_LABELS = {
   5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
 }
 
-const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'Momo', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
+const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'VietQR', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
 
 export default function OrderDetail() {
@@ -83,7 +83,7 @@ export default function OrderDetail() {
       const orderIdNum = Number(id)
       let paymentRes
       if (method === 2) paymentRes = await createVnPayPayment(orderIdNum)
-      else if (method === 3) paymentRes = await createMomoPayment(orderIdNum)
+      else if (method === 3) paymentRes = await createVietQrPayment(orderIdNum)
       else if (method === 4) paymentRes = await createZaloPayPayment(orderIdNum)
       if (paymentRes?.paymentUrl) {
         window.location.href = paymentRes.paymentUrl

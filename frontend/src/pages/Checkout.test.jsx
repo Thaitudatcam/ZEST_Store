@@ -32,7 +32,7 @@ vi.mock('../api/ghn', () => ({
   calculateShippingFee: vi.fn(),
 }))
 vi.mock('../api/payment', () => ({
-  createVnPayPayment: vi.fn(), createMomoPayment: vi.fn(), createZaloPayPayment: vi.fn(),
+  createVnPayPayment: vi.fn(), createVietQrPayment: vi.fn(), createZaloPayPayment: vi.fn(),
   createVietQrPayment: vi.fn(), confirmVietQrPayment: vi.fn(),
 }))
 vi.mock('../context/ToastContext', () => ({ useToast: () => ({ error: toastError }) }))
