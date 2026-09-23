@@ -86,7 +86,11 @@ public class GioHangService {
             itemMap.put("soLuong", item.getSoLuong());
             itemMap.put("tonKho", available(variant));
             itemMap.put("thanhTien", donGia.multiply(BigDecimal.valueOf(item.getSoLuong())));
-            itemMap.put("urlAnh", variant != null ? variant.getUrlAnh() : null);
+            String urlAnh = variant != null ? variant.getUrlAnh() : null;
+            if (urlAnh == null && product != null) {
+                urlAnh = product.getUrlAnhDaiDien();
+            }
+            itemMap.put("urlAnh", urlAnh);
             itemMap.put("ngayXoa", variant != null ? variant.getNgayXoa() : null);
             itemMap.put("sanPhamTrangThai", product != null ? product.getTrangThai() : null);
             itemMap.put("sanPhamNgayXoa", product != null ? product.getNgayXoa() : null);
