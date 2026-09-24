@@ -55,7 +55,11 @@ export default function AdminCoupons() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = setTimeout(() => load(filter), 200)
+    return () => clearTimeout(timer)
+    // Only these fields are handled by the server; the remaining filters are local.
+  }, [filter.ngayBatDau, filter.ngayKetThuc, filter.loaiGiam])
 
   const filteredCoupons = coupons.filter(c => {
     if (search) {
@@ -85,7 +89,7 @@ export default function AdminCoupons() {
 
   const handleDelete = async () => {
     if (!confirmDelete) return
-    try { await deleteCoupon(confirmDelete); setConfirmDelete(null); load() }
+    try { await deleteCoupon(confirmDelete); setConfirmDelete(null); load(filter) }
     catch (err) { alert(err.response?.data?.message || 'Lỗi xóa') }
   }
 
@@ -101,7 +105,7 @@ export default function AdminCoupons() {
     try {
       const res = await grantVoucher(user.maNguoiDung, grantModal.maPhieuGiamGia)
       setGrantMsg({ type: 'success', text: res.message || 'Đã cấp thành công!' })
-      setUserResults([]); setUserSearch(''); load()
+      setUserResults([]); setUserSearch(''); load(filter)
     } catch (err) {
       setGrantMsg({ type: 'error', text: err.response?.data?.message || 'Lỗi cấp voucher' })
     } finally { setGranting(false) }
@@ -118,7 +122,7 @@ export default function AdminCoupons() {
       setAllEditCustomers([]); 
       setAllEditCustomersLoaded(false); 
       setEditUserPage(0); 
-      load() 
+      load(filter)
     }
     catch (err) { alert(err.response?.data?.message || 'Lỗi sửa') }
   }
@@ -322,6 +326,7 @@ export default function AdminCoupons() {
               if (v('ngayBatDau')) payload.ngayBatDau = v('ngayBatDau') + 'T00:00:00'
               if (v('ngayKetThuc')) payload.ngayKetThuc = v('ngayKetThuc') + 'T23:59:59'
               if (v('soLuong') !== '') payload.soLuong = n('soLuong')
+              else if (editing.soLuong != null) payload.xoaGioiHanSoLuong = true
               if (v('giaTriGiamToiDa') !== '') payload.giaTriGiamToiDa = n('giaTriGiamToiDa')
               if (v('kieuGiamGia')) payload.kieuGiamGia = n('kieuGiamGia')
               payload.congKhai = editing.congKhai

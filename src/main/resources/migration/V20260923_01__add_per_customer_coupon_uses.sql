@@ -2,10 +2,28 @@
 -- phieu_giam_gia.so_luong becomes the configured limit for EACH customer.
 SET NOCOUNT ON;
 
-IF COL_LENGTH('voucher_nguoi_dung', 'so_luong_con_lai') IS NULL
+IF OBJECT_ID('zest_schema_migration', 'U') IS NULL
 BEGIN
-    ALTER TABLE voucher_nguoi_dung ADD so_luong_con_lai INT NULL;
+    CREATE TABLE zest_schema_migration (
+        version VARCHAR(100) NOT NULL PRIMARY KEY,
+        applied_at DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+    );
 END;
+
+IF NOT EXISTS (SELECT 1 FROM zest_schema_migration WHERE version = 'V20260923_01')
+BEGIN
+    BEGIN TRANSACTION;
+
+    -- On a brand-new database Hibernate creates the application tables after
+    -- Flyway. There is no legacy data to backfill in that case.
+    IF OBJECT_ID('phieu_giam_gia', 'U') IS NOT NULL
+       AND OBJECT_ID('voucher_nguoi_dung', 'U') IS NOT NULL
+       AND OBJECT_ID('coupon_usage_log', 'U') IS NOT NULL
+    BEGIN
+        IF COL_LENGTH('voucher_nguoi_dung', 'so_luong_con_lai') IS NULL
+        BEGIN
+            ALTER TABLE voucher_nguoi_dung ADD so_luong_con_lai INT NULL;
+        END;
 
 -- Reconstruct the originally configured quantity from the legacy shared pool.
 -- The legacy implementation deducted one unit for every non-revoked allocation,
@@ -52,4 +70,9 @@ UPDATE voucher_nguoi_dung
 SET trang_thai = 1
 WHERE trang_thai = 2 AND (so_luong_con_lai IS NULL OR so_luong_con_lai > 0);
 
-DROP TABLE #coupon_limits;
+        DROP TABLE #coupon_limits;
+    END;
+
+    INSERT INTO zest_schema_migration(version) VALUES ('V20260923_01');
+    COMMIT TRANSACTION;
+END;

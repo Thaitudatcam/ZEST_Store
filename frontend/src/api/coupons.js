@@ -9,8 +9,8 @@ export const getAvailableCoupons = (tongTien, maSanPhamIds, maNguoiDung) =>
 
 export const validateCoupon = (data) => api.post('/coupons/validate', data).then((r) => r.data)
 
-export const getBestOffer = (tongTien, maSanPhamIds, maNguoiDung) =>
-  api.post('/coupons/best-offer', null, { params: {
+export const getBestOffer = (tongTien, maSanPhamIds, items, maNguoiDung) =>
+  api.post('/coupons/best-offer', { items }, { params: {
     tongTien,
     maSanPhamIds: Array.isArray(maSanPhamIds) ? maSanPhamIds.join(',') || undefined : maSanPhamIds,
     maNguoiDung,

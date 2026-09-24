@@ -55,6 +55,32 @@ class OrderCheckoutTest {
                 org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class));
     }
 
+    @Test void fromDateOnlyStillFiltersOrders() {
+        when(donHangRepository.findByNgayDatInRange(any(), any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        online.getAllOrders(0, 20, null, null, null,
+                LocalDate.of(2026, 9, 1), null);
+
+        verify(donHangRepository).findByNgayDatInRange(
+                eq(LocalDate.of(2026, 9, 1).atStartOfDay()),
+                eq(java.time.LocalDateTime.of(9999, 12, 31, 23, 59, 59)),
+                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test void toDateOnlyStillFiltersOrders() {
+        when(donHangRepository.findByNgayDatInRange(any(), any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        online.getAllOrders(0, 20, null, null, null,
+                null, LocalDate.of(2026, 9, 2));
+
+        verify(donHangRepository).findByNgayDatInRange(
+                eq(LocalDate.of(1900, 1, 1).atStartOfDay()),
+                eq(LocalDate.of(2026, 9, 3).atStartOfDay()),
+                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class));
+    }
+
     private OrderRequest onlineRequest() {
         var product = SanPham.builder().maSanPham(2).trangThai(1).build();
         var variant = BienTheSanPham.builder().maBienThe(3).sanPham(product).trangThai(1)

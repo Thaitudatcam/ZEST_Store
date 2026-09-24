@@ -106,10 +106,15 @@ export default function AdminVoucherCreate() {
 
       if (form.kieuApDung === 'ca-nhan' && selectedUsers.length > 0) {
         const couponId = result?.maPhieuGiamGia || result?.id
-        if (couponId) {
-          for (const user of selectedUsers) {
-            try { await grantVoucher(user.maNguoiDung, couponId) } catch {}
-          }
+        if (!couponId) throw new Error('Không nhận được mã phiếu giảm giá vừa tạo')
+        const grants = await Promise.allSettled(selectedUsers.map(user =>
+          grantVoucher(user.maNguoiDung, couponId)))
+        const failedUsers = selectedUsers.filter((_, index) => grants[index].status === 'rejected')
+        if (failedUsers.length) {
+          const names = failedUsers.slice(0, 5).map(user => user.hoTen || user.email || `#${user.maNguoiDung}`).join(', ')
+          alert(`Đã tạo mã nhưng chưa cấp được cho ${failedUsers.length} khách hàng: ${names}${failedUsers.length > 5 ? ', ...' : ''}. Vui lòng cấp lại trong trang quản lý mã.`)
+          navigate('/admin/coupons')
+          return
         }
       }
       navigate('/admin/coupons')

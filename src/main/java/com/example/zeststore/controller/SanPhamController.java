@@ -32,10 +32,14 @@ public class SanPhamController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String sizeName,
+            @RequestParam(required = false) String material,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice) {
         return ResponseEntity.ok(sanPhamService.getProducts(
-                keyword, categoryId, minPrice, maxPrice, page, size, sortBy, sortDir));
+                keyword, categoryId, brand, sizeName, material,
+                minPrice, maxPrice, page, size, sortBy, sortDir));
     }
 
     @GetMapping("/search/suggestions")

@@ -18,4 +18,8 @@ public interface CouponUsageLogRepository extends JpaRepository<CouponUsageLog, 
     @org.springframework.data.jpa.repository.Query("select count(l) > 0 from CouponUsageLog l where l.maCode = :code and l.maNguoiDung = :userId and (l.loai is null or l.loai <> 'RESTORED')")
     boolean hasActiveUsage(@org.springframework.data.repository.query.Param("code") String code,
                            @org.springframework.data.repository.query.Param("userId") Integer userId);
+
+    @org.springframework.data.jpa.repository.Query("select count(l) from CouponUsageLog l where l.maCode = :code and l.maNguoiDung = :userId and (l.loai is null or l.loai <> 'RESTORED')")
+    long countActiveUsage(@org.springframework.data.repository.query.Param("code") String code,
+                          @org.springframework.data.repository.query.Param("userId") Integer userId);
 }

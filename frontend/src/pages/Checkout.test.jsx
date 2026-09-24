@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -33,9 +33,10 @@ vi.mock('../api/ghn', () => ({
 }))
 vi.mock('../api/payment', () => ({
   createVnPayPayment: vi.fn(), createVietQrPayment: vi.fn(), createZaloPayPayment: vi.fn(),
-  createVietQrPayment: vi.fn(), confirmVietQrPayment: vi.fn(),
+  confirmVietQrPayment: vi.fn(),
 }))
 vi.mock('../context/ToastContext', () => ({ useToast: () => ({ error: toastError }) }))
+vi.mock('../context/CartContext', () => ({ useCart: () => ({ refreshCount: vi.fn() }) }))
 
 const cart = [
   { maBienThe: 11, maSanPham: 1, tenSanPham: 'Polo trắng', donGia: 100000, soLuong: 2 },
@@ -59,7 +60,7 @@ function expectTotal(amount) {
 }
 
 async function chooseCoupon(user, code) {
-  const chooser = screen.getByRole('button', { name: /^Chọn mã giảm giá/ })
+  const chooser = screen.getByRole('button', { name: /^Chọn mã$/ })
   if (chooser.getAttribute('aria-expanded') === 'false') await user.click(chooser)
   await user.click(await screen.findByRole('button', { name: `Chọn mã ${code}` }))
 }
@@ -99,12 +100,15 @@ describe('Online checkout coupons', () => {
 
     expect(await screen.findByText('Tự động chọn mã tốt nhất')).toBeInTheDocument()
     expect(screen.getByText(/Đã tự động chọn mã tốt nhất SALE10/)).toBeInTheDocument()
-    expect(api.post).toHaveBeenCalledWith('/coupons/best-offer', null, { params: {
+    expect(api.post).toHaveBeenCalledWith('/coupons/best-offer', { items: [
+      { maSanPham: 1, thanhTien: 200000 },
+      { maSanPham: 2, thanhTien: 400000 },
+    ] }, { params: {
       tongTien: 600000, maSanPhamIds: '1,2', maNguoiDung: undefined, pos: false,
     } })
     expectTotal(570000)
 
-    await user.click(screen.getByRole('button', { name: /^Chọn mã giảm giá/ }))
+    await user.click(screen.getByRole('button', { name: /^Chọn mã$/ }))
     await user.click(screen.getByRole('button', { name: 'Chọn mã SAVE30K' }))
     expect(await screen.findByRole('button', { name: 'Bỏ mã SAVE30K' })).toBeEnabled()
     expect(screen.queryByText('Tự động chọn mã tốt nhất')).not.toBeInTheDocument()
@@ -169,7 +173,6 @@ describe('Online checkout coupons', () => {
     await user.click(screen.getByRole('button', { name: 'Chọn mã' }))
     expect(screen.getByRole('button', { name: 'ĐẶT HÀNG' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Chọn mã' })).toBeDisabled()
-    fireEvent.submit(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' }).closest('form'))
     expect(api.post.mock.calls.filter(([url]) => url === '/coupons/validate')).toHaveLength(1)
     expect(placeOrder).not.toHaveBeenCalled()
     await act(async () => { resolveValidation({ data: sale }) })
@@ -187,7 +190,7 @@ describe('Online checkout coupons', () => {
     await chooseCoupon(user, 'SALE10')
     await chooseCoupon(user, 'FREESHIP')
     expectTotal(540000)
-    await user.click(screen.getByRole('radio', { name: /qua VNPay QR/ }))
+    await user.click(screen.getByRole('radio', { name: 'VNPay' }))
     await user.click(screen.getByRole('button', { name: 'ĐẶT HÀNG' }))
     expect(screen.getAllByText('Giảm phí vận chuyển (FREESHIP)')).toHaveLength(2)
     await user.click(screen.getByRole('button', { name: 'XÁC NHẬN ĐẶT HÀNG' }))
@@ -214,7 +217,7 @@ describe('Online checkout coupons', () => {
     const user = userEvent.setup()
     api.get.mockRejectedValueOnce(new Error('Network unavailable'))
     renderCheckout()
-    await user.click(await screen.findByRole('button', { name: /^Chọn mã giảm giá/ }))
+    await user.click(await screen.findByRole('button', { name: /^Chọn mã$/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Chưa tải được danh sách mã')
     expect(screen.getByRole('textbox', { name: 'Nhập mã giảm giá' })).toBeEnabled()
     await user.click(screen.getByRole('button', { name: 'Thử lại' }))
@@ -228,7 +231,7 @@ describe('Online checkout coupons', () => {
       { ...sale, maCode: 'EXPIRED', trangThaiThucTe: 4, trangThaiThucTeText: 'Hết hạn' },
     ] })
     renderCheckout()
-    await user.click(await screen.findByRole('button', { name: /^Chọn mã giảm giá/ }))
+    await user.click(await screen.findByRole('button', { name: /^Chọn mã$/ }))
     expect(await screen.findByRole('button', { name: 'Chọn mã MINIMUM' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Chọn mã EXPIRED' })).toBeDisabled()
     expect(api.post).not.toHaveBeenCalled()

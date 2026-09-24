@@ -59,9 +59,16 @@ public class PhieuGiamGiaController {
             @RequestParam(defaultValue = "0") BigDecimal tongTien,
             @RequestParam(required = false) List<Integer> maSanPhamIds,
             @RequestParam(defaultValue = "false") boolean pos,
+            @RequestBody(required = false) CouponValidateRequest request,
             Authentication auth) {
         Integer userId = auth != null ? userService.getUserIdFromAuth(auth) : null;
-        return ResponseEntity.ok(phieuGiamGiaService.getBestOffer(tongTien, userId, maSanPhamIds, pos));
+        Map<Integer, BigDecimal> productSubtotals = new LinkedHashMap<>();
+        if (request != null && request.getItems() != null) {
+            request.getItems().forEach(item -> productSubtotals.merge(
+                    item.getMaSanPham(), item.getThanhTien(), BigDecimal::add));
+        }
+        return ResponseEntity.ok(phieuGiamGiaService.getBestOffer(tongTien, userId, maSanPhamIds, pos,
+                productSubtotals.isEmpty() ? null : productSubtotals));
     }
 
     @PostMapping("/reserve")

@@ -85,6 +85,9 @@ public class PhieuGiamGiaService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (PhieuGiamGia c : coupons) {
             if (!Boolean.TRUE.equals(c.getCongKhai())) continue;
+            // A finite quota is tracked per customer, so it cannot be offered to
+            // an anonymous POS order that has no customer to decrement.
+            if (userId == null && c.getSoLuong() != null) continue;
             if (isCouponUsedByUser(c, userId)) continue;
             if (userHasVoucherFor(c, userId)) continue;
             if (isCouponApplicableToProducts(c, maSanPhamIds)) {
@@ -370,6 +373,11 @@ public class PhieuGiamGiaService {
 
     // ========== AUTO-APPLY BEST OFFER ==========
     public Map<String, Object> getBestOffer(BigDecimal tongTien, Integer userId, List<Integer> maSanPhamIds, boolean pos) {
+        return getBestOffer(tongTien, userId, maSanPhamIds, pos, null);
+    }
+
+    public Map<String, Object> getBestOffer(BigDecimal tongTien, Integer userId, List<Integer> maSanPhamIds,
+                                             boolean pos, Map<Integer, BigDecimal> productSubtotals) {
         if (tongTien == null) tongTien = BigDecimal.ZERO;
         List<Map<String, Object>> available = getAvailableCoupons(tongTien, userId, maSanPhamIds);
         if (pos) {
@@ -377,10 +385,21 @@ public class PhieuGiamGiaService {
                     .filter(m -> !Integer.valueOf(3).equals(m.get("kieuGiamGia")))
                     .collect(Collectors.toList());
         }
-        if (available.isEmpty()) {
+        BigDecimal orderTotal = tongTien;
+        List<Map<String, Object>> validated = available.stream().map(candidate -> {
+            try {
+                Map<String, Object> result = new LinkedHashMap<>(candidate);
+                result.putAll(validateCoupon((String) candidate.get("maCode"), orderTotal,
+                        maSanPhamIds, userId, productSubtotals));
+                return result;
+            } catch (RuntimeException ignored) {
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+        if (validated.isEmpty()) {
             return Map.of("found", false, "message", "Không có mã giảm giá phù hợp");
         }
-        Map<String, Object> best = available.stream()
+        Map<String, Object> best = validated.stream()
                 .max(Comparator.comparing(m -> (BigDecimal) m.get("soTienGiam")))
                 .orElse(null);
         if (best == null) {
@@ -600,7 +619,10 @@ public class PhieuGiamGiaService {
             for (VoucherNguoiDung voucher : voucherNguoiDungRepository
                     .findByPhieuGiamGia_MaPhieuGiamGia(coupon.getMaPhieuGiamGia())) {
                 if (TrangThaiVoucher.DA_THU_HOI.equals(voucher.getTrangThai())) continue;
-                int used = oldLimit == null ? 0 : Math.max(0, oldLimit
+                int used = oldLimit == null
+                        ? Math.toIntExact(couponUsageLogRepository.countActiveUsage(
+                                coupon.getMaCode(), voucher.getNguoiDung().getMaNguoiDung()))
+                        : Math.max(0, oldLimit
                         - (voucher.getSoLuongConLai() != null ? voucher.getSoLuongConLai()
                         : (TrangThaiVoucher.DA_DUNG.equals(voucher.getTrangThai()) ? 0 : oldLimit)));
                 int remaining = Math.max(0, newLimit - used);
@@ -611,6 +633,17 @@ public class PhieuGiamGiaService {
                 voucherNguoiDungRepository.save(voucher);
             }
             coupon.setSoLuong(newLimit);
+        } else if (Boolean.TRUE.equals(request.getXoaGioiHanSoLuong())) {
+            for (VoucherNguoiDung voucher : voucherNguoiDungRepository
+                    .findByPhieuGiamGia_MaPhieuGiamGia(coupon.getMaPhieuGiamGia())) {
+                if (TrangThaiVoucher.DA_THU_HOI.equals(voucher.getTrangThai())) continue;
+                voucher.setSoLuongConLai(null);
+                if (TrangThaiVoucher.DA_DUNG.equals(voucher.getTrangThai())) {
+                    voucher.setTrangThai(TrangThaiVoucher.DA_NHAN);
+                }
+                voucherNguoiDungRepository.save(voucher);
+            }
+            coupon.setSoLuong(null);
         }
         if (request.getGiaTriGiamToiDa() != null) {
             coupon.setGiaTriGiamToiDa(request.getGiaTriGiamToiDa());
