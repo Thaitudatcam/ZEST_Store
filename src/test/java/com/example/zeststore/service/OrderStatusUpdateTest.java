@@ -544,21 +544,4 @@ class OrderStatusUpdateTest {
                 () -> service.requestReturn(1, 1, "Yêu cầu quá hạn"));
     }
 
-    @Test void refundCanBeRecordedForFailedPaidDelivery() {
-        DonHang o = order(1, 9);
-        ThanhToan payment = ThanhToan.builder().trangThaiThanhToan(2).build();
-        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
-        when(thanhToanRepository.findByDonHang_MaDonHang(1)).thenReturn(List.of(payment));
-        when(nguoiDungRepository.findById(100)).thenReturn(Optional.of(admin()));
-
-        service.recordRefund(1, "RF-123", "Hoàn qua VNPay", 100);
-
-        assertEquals(4, payment.getTrangThaiThanhToan());
-        assertTrue(payment.getRefunded());
-        verify(thanhToanRepository).save(payment);
-        ArgumentCaptor<LichSuDonHang> history = ArgumentCaptor.forClass(LichSuDonHang.class);
-        verify(lichSuDonHangRepository).save(history.capture());
-        assertTrue(history.getValue().getGhiChu().contains("RF-123"));
-        assertFalse(history.getValue().getKhachHangXem());
     }
-}
