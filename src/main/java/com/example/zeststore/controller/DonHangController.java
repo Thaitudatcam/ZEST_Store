@@ -1,7 +1,6 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.dto.request.OrderRequest;
-import com.example.zeststore.dto.request.RefundRequest;
 import com.example.zeststore.dto.request.ReturnRequest;
 import com.example.zeststore.dto.request.StatusUpdateRequest;
 import com.example.zeststore.service.DonHangService;
@@ -151,15 +150,7 @@ public class DonHangController {
                 id, request.getTrangThai(), request.getGhiChu(), request.isThongBaoKhachHang(), userService.getUserIdFromAuth(auth)));
     }
 
-    @PutMapping("/admin/{id}/refund")
-    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
-    public ResponseEntity<?> recordRefund(@PathVariable Integer id, @Valid @RequestBody RefundRequest request,
-                                          Authentication auth) {
-        return ResponseEntity.ok(donHangService.recordRefund(
-                id, request.getMaGiaoDichHoanTien(), request.getGhiChu(), userService.getUserIdFromAuth(auth)));
-    }
-
-    @PutMapping("/admin/{id}/inventory-reconciliation")
+@PutMapping("/admin/{id}/inventory-reconciliation")
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> reconcileLegacyInventory(@PathVariable Integer id,
                                                         @RequestBody Map<String, Boolean> body) {

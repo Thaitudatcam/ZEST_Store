@@ -145,11 +145,9 @@ export default function AdminOrderDetail() {
   const [selectedNextStatus, setSelectedNextStatus] = useState(null)
   const [statusNote, setStatusNote] = useState('')
   const [notifyCustomer, setNotifyCustomer] = useState(false)
-  const [historyModal, setHistoryModal] = useState(false)
-  const [refundModal, setRefundModal] = useState(false)
-  const [refundReference, setRefundReference] = useState('')
-  const [refundNote, setRefundNote] = useState('')
-  const [refunding, setRefunding] = useState(false)
+const [historyModal, setHistoryModal] = useState(false)
+
+  const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
   useEffect(() => {
     setLoading(true)
@@ -180,9 +178,8 @@ export default function AdminOrderDetail() {
   if (!data) return null
 
   const { order, items, payments, history } = data
-  const backTo = order?.loaiDonHang === 2 ? '/admin/orders/pos' : '/admin/orders/online'
+const backTo = order?.loaiDonHang === 2 ? '/admin/orders/pos' : '/admin/orders/online'
 
-  const needsRefund = payments.some(p => p.trangThaiThanhToan === 4 && !p.refunded)
   const nextStatuses = getAdminNextStatuses(order, payments)
   const nextStatusLabel = (nextStatus) => (
     order.trangThaiDon === 7 && nextStatus === 6
@@ -228,31 +225,7 @@ export default function AdminOrderDetail() {
     }
   }
 
-  const handleRecordRefund = async () => {
-    if (!refundReference.trim()) {
-      toast.error('Vui lòng nhập mã giao dịch hoàn tiền')
-      return
-    }
-    setRefunding(true)
-    try {
-      await api.put(`/orders/admin/${id}/refund`, {
-        maGiaoDichHoanTien: refundReference.trim(),
-        ghiChu: refundNote.trim() || null,
-      })
-      const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
-      setData(updated)
-      setRefundModal(false)
-      setRefundReference('')
-      setRefundNote('')
-      toast.success('Đã ghi nhận hoàn tiền')
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Không thể ghi nhận hoàn tiền')
-    } finally {
-      setRefunding(false)
-    }
-  }
-
-  const handlePrintOrder = async () => {
+const handlePrintOrder = async () => {
     setPrintLoading(true)
     try {
       const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
@@ -294,16 +267,8 @@ export default function AdminOrderDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column (2/3) */}
+{/* Left column (2/3) */}
         <div className="lg:col-span-2 space-y-0">
-          {[8, 9].includes(order.trangThaiDon) && needsRefund && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-6 text-sm text-amber-800">
-              <strong>Đơn cần hoàn tiền.</strong> Hãy hoàn tiền cho khách, sau đó ghi nhận mã giao dịch để đối soát.
-              <button onClick={() => setRefundModal(true)} className="ml-3 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">
-                Ghi nhận hoàn tiền
-              </button>
-            </div>
-          )}
           {/* Status Stepper */}
           <OrderStatusStepper currentStatus={order.trangThaiDon} history={history} loaiDonHang={order.loaiDonHang} onShowHistory={() => setHistoryModal(true)} />
 
@@ -398,7 +363,7 @@ export default function AdminOrderDetail() {
                       {p.trangThaiThanhToan === 2 && <span className="text-xs text-green-600">Đã thanh toán</span>}
                       {p.trangThaiThanhToan === 1 && <span className="text-xs text-amber-600">Chờ thanh toán</span>}
                       {p.trangThaiThanhToan === 3 && <span className="text-xs text-red-500">Thất bại</span>}
-                      {p.trangThaiThanhToan === 4 && <span className={`text-xs ${p.refunded ? 'text-blue-600' : 'text-amber-600'}`}>{p.refunded ? 'Đã hoàn tiền' : 'Chờ hoàn tiền'}</span>}
+                      {p.trangThaiThanhToan === 4 && <span className="text-xs text-amber-600">Chờ hoàn tiền</span>}
                     </div>
                   </div>
                 ))}
@@ -521,33 +486,9 @@ export default function AdminOrderDetail() {
                   <span className="font-bold text-lg text-[var(--primary-color)]">{VND(order.tongTien || 0)}</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+</div>
       </div>
-
-      {/* Status Selection Modal */}
-      {refundModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !refunding && setRefundModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-bold text-lg text-gray-800">Ghi nhận hoàn tiền</h2>
-            <p className="mt-1 text-sm text-gray-500">Chỉ xác nhận sau khi giao dịch hoàn tiền đã thành công.</p>
-            <label className="mt-4 block text-sm font-semibold text-gray-700">Mã giao dịch hoàn tiền *</label>
-            <input value={refundReference} onChange={(e) => setRefundReference(e.target.value)} maxLength={100}
-              className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm" />
-            <label className="mt-4 block text-sm font-semibold text-gray-700">Ghi chú</label>
-            <textarea value={refundNote} onChange={(e) => setRefundNote(e.target.value)} maxLength={350} rows={3}
-              className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm" />
-            <div className="mt-5 flex justify-end gap-3">
-              <button disabled={refunding} onClick={() => setRefundModal(false)} className="rounded-xl border px-5 py-2.5 text-sm font-semibold">Đóng</button>
-              <button disabled={refunding || !refundReference.trim()} onClick={handleRecordRefund}
-                className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
-                {refunding ? 'Đang lưu...' : 'Xác nhận đã hoàn tiền'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    </div>
 
       {statusModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setStatusModal(false)}>
@@ -711,8 +652,7 @@ export default function AdminOrderDetail() {
           </div>
         </div>
       )}
-    </div>
+  </div>
+  </div>
   )
 }
-
-function VND(n) { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }

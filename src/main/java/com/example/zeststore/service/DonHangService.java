@@ -719,48 +719,7 @@ public class DonHangService {
         return Map.of("message", "Đã gửi yêu cầu trả hàng");
     }
 
-    @Transactional
-    public Map<String, String> recordRefund(Integer orderId, String refundReference, String note, Integer adminUserId) {
-        DonHang order = donHangRepository.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
-        if (!List.of(8, 9).contains(order.getTrangThaiDon())) {
-            throw new BadRequestException("Chỉ ghi nhận hoàn tiền cho đơn giao thất bại hoặc đã trả hàng");
-        }
-        String reference = refundReference == null ? "" : refundReference.trim();
-        if (reference.isEmpty() || reference.length() > 100) {
-            throw new BadRequestException("Mã giao dịch hoàn tiền không hợp lệ");
-        }
-
-        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
-        List<ThanhToan> refundable = payments.stream()
-                .filter(payment -> (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())
-                        || Integer.valueOf(4).equals(payment.getTrangThaiThanhToan()))
-                        && !Boolean.TRUE.equals(payment.getRefunded()))
-                .toList();
-        if (refundable.isEmpty()) {
-            if (payments.stream().anyMatch(payment -> Boolean.TRUE.equals(payment.getRefunded()))) {
-                return Map.of("message", "Hoàn tiền đã được ghi nhận trước đó");
-            }
-            throw new BadRequestException("Đơn hàng không có khoản thanh toán thành công để hoàn tiền");
-        }
-        refundable.forEach(payment -> {
-            payment.setTrangThaiThanhToan(4);
-            payment.setRefunded(true);
-            thanhToanRepository.save(payment);
-        });
-
-        NguoiDung admin = nguoiDungRepository.findById(adminUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
-        String normalizedNote = note == null ? null : note.trim();
-        String historyNote = "Đã hoàn tiền. Mã giao dịch: " + reference
-                + (normalizedNote == null || normalizedNote.isEmpty() ? "" : ". " + normalizedNote);
-        lichSuDonHangRepository.save(LichSuDonHang.builder()
-                .donHang(order).trangThaiCu(order.getTrangThaiDon()).trangThaiMoi(order.getTrangThaiDon())
-                .nguoiCapNhat(admin).ghiChu(historyNote).khachHangXem(false).build());
-        return Map.of("message", "Đã ghi nhận hoàn tiền");
-    }
-
-    private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
+private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
         int quantity = orderItems.stream().mapToInt(item -> (Integer) item.get("soLuong")).sum();
         if (request.getServiceTypeId() == null) {
             return checkoutShippingService.calculate(request.getToDistrictId(), request.getToWardCode(), quantity);

@@ -25,7 +25,7 @@ const paymentStatusLabel = (payment) => {
   if (payment.trangThaiThanhToan === 1) return 'Chờ thanh toán'
   if (payment.trangThaiThanhToan === 2) return 'Đã thanh toán'
   if (payment.trangThaiThanhToan === 3) return 'Thất bại'
-  if (payment.trangThaiThanhToan === 4) return payment.refunded ? 'Đã hoàn tiền' : 'Chờ hoàn tiền'
+  if (payment.trangThaiThanhToan === 4) return 'Chờ hoàn tiền'
   return 'Chưa thanh toán'
 }
 
