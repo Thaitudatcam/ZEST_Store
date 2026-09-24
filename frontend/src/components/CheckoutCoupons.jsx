@@ -106,7 +106,7 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
     setError('')
     setMessage('')
 
-    getBestOffer(subtotal, productIds)
+    getBestOffer(subtotal, productIds, validationPayload('').items)
       .then(best => {
         if (!current || currentRequest !== requestId.current || !best?.found || !best.maCode) return null
         return validateCoupon(validationPayload(best.maCode))
@@ -185,6 +185,7 @@ export default function CheckoutCoupons({ cart, subtotal, discountCoupon, freesh
           </button>
         ) : (
           <button type="button" disabled={busy} onClick={() => setExpanded(value => !value)}
+            aria-expanded={expanded} aria-controls={listId}
             className="shrink-0 rounded-lg bg-gold/10 px-3 py-2.5 text-sm font-semibold text-ink hover:bg-gold/20 transition disabled:opacity-40">
             Chọn mã
           </button>

@@ -17,6 +17,7 @@ public class UpdateCouponRequest {
     private LocalDateTime ngayKetThuc;
     private Integer trangThai;
     private Integer soLuong;
+    private Boolean xoaGioiHanSoLuong;
     private BigDecimal giaTriGiamToiDa;
     private Boolean exclusive;
     private Boolean congKhai;

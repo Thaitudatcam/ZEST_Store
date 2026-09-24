@@ -4,7 +4,9 @@ import { getProducts } from '../api/products'
 import { getActiveCategories } from '../api/categories'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
-import { ChevronDown, SlidersHorizontal, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
+
+const PAGE_SIZE = 12
 
 function FilterSection({ title, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -26,12 +28,17 @@ export default function ProductListing() {
   const [categories, setCategories] = useState([])
   const [brands, setBrands] = useState([])
   const [sizes, setSizes] = useState([])
+  const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(true)
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalProducts, setTotalProducts] = useState(0)
 
   const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '')
   const [filterBrand, setFilterBrand] = useState(searchParams.get('brand') || '')
   const [filterSize, setFilterSize] = useState(searchParams.get('size') || '')
+  const [filterMaterial, setFilterMaterial] = useState(searchParams.get('material') || '')
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '')
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '')
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'ngayTao')
@@ -43,74 +50,88 @@ export default function ProductListing() {
       getActiveCategories().catch(() => []),
       api.get('/brands').then(r => r.data).catch(() => []),
       api.get('/sizes').then(r => r.data).catch(() => []),
-    ]).then(([cats, brs, sz]) => {
+      api.get('/thuoc-tinh', { params: { loai: 'CHAT_LIEU' } }).then(r => r.data).catch(() => []),
+    ]).then(([cats, brs, sz, mats]) => {
       setCategories(Array.isArray(cats) ? cats : [])
       setBrands(Array.isArray(brs) ? brs : [])
       setSizes(Array.isArray(sz) ? sz : [])
+      setMaterials(Array.isArray(mats) ? mats : [])
     })
   }, [])
 
   useEffect(() => {
-    const kw = searchParams.get('keyword') || ''
-    setKeyword(kw)
+    setKeyword(searchParams.get('keyword') || '')
+    setFilterCategory(searchParams.get('category') || '')
+    setFilterBrand(searchParams.get('brand') || '')
+    setFilterSize(searchParams.get('size') || '')
+    setFilterMaterial(searchParams.get('material') || '')
+    setMinPrice(searchParams.get('minPrice') || '')
+    setMaxPrice(searchParams.get('maxPrice') || '')
+    setSortBy(searchParams.get('sortBy') || 'ngayTao')
+    setSortDir(searchParams.get('sortDir') || 'desc')
+    setPage(Math.max(Number(searchParams.get('page')) || 0, 0))
   }, [searchParams])
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
-    const params = { page: 0, size: 50, sortBy, sortDir }
+    const params = { page, size: PAGE_SIZE, sortBy, sortDir }
     if (keyword) params.keyword = keyword
     if (filterCategory) params.categoryId = filterCategory
+    if (filterBrand) params.brand = filterBrand
+    if (filterSize) params.sizeName = filterSize
+    if (filterMaterial) params.material = filterMaterial
     if (minPrice) params.minPrice = minPrice
     if (maxPrice) params.maxPrice = maxPrice
     getProducts(params)
-      .then(d => setProducts(d.content ?? d ?? []))
-      .catch(() => setProducts([]))
-      .finally(() => setLoading(false))
-  }, [keyword, filterCategory, minPrice, maxPrice, sortBy, sortDir])
+      .then(d => {
+        if (cancelled) return
+        setProducts(d.content ?? d ?? [])
+        setTotalPages(d.totalPages ?? 1)
+        setTotalProducts(d.totalElements ?? (d.content ?? d ?? []).length)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProducts([])
+          setTotalPages(0)
+          setTotalProducts(0)
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [keyword, filterCategory, filterBrand, filterSize, filterMaterial, minPrice, maxPrice, sortBy, sortDir, page])
 
-  const filteredProducts = useMemo(() => {
-    let list = [...products]
-    if (filterBrand) {
-      list = list.filter(p => p.tenThuongHieu === filterBrand)
-    }
-    if (filterSize) {
-      list = list.filter(p => p.bienThes?.some(b => b.kichCo?.kichCo === filterSize))
-    }
-    return list
-  }, [products, filterBrand, filterSize])
+  const filteredProducts = useMemo(() => products, [products])
 
-  const uniqueBrands = useMemo(() => {
-    const set = new Set(products.map(p => p.tenThuongHieu).filter(Boolean))
-    return [...set]
-  }, [products])
-
-  const uniqueMaterials = useMemo(() => {
-    const set = new Set(products.map(p => p.chatLieu?.tenThuocTinh).filter(Boolean))
-    return [...set]
-  }, [products])
+  const changeFilter = (setter, value) => {
+    setter(value)
+    setPage(0)
+  }
 
   const clearFilters = () => {
     setFilterCategory('')
     setFilterBrand('')
     setFilterSize('')
+    setFilterMaterial('')
     setMinPrice('')
     setMaxPrice('')
     setKeyword('')
     setSortBy('ngayTao')
     setSortDir('desc')
+    setPage(0)
     setSearchParams({})
   }
 
-  const hasActiveFilters = keyword || filterCategory || filterBrand || filterSize || minPrice || maxPrice
+  const hasActiveFilters = keyword || filterCategory || filterBrand || filterSize || filterMaterial || minPrice || maxPrice
 
   const sidebarContent = (
     <div className="space-y-0">
       <FilterSection title="KHOẢNG GIÁ (VNĐ)">
         <div className="flex items-center gap-2">
-          <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)}
+          <input type="number" min="0" value={minPrice} onChange={(e) => changeFilter(setMinPrice, e.target.value)}
             placeholder="Từ" className="w-1/2 border border-noir-600/15 rounded-lg px-3 py-2 text-sm bg-ivory text-ink placeholder-stone focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold" />
           <span className="text-stone text-sm">-</span>
-          <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)}
+          <input type="number" min="0" value={maxPrice} onChange={(e) => changeFilter(setMaxPrice, e.target.value)}
             placeholder="Đến" className="w-1/2 border border-noir-600/15 rounded-lg px-3 py-2 text-sm bg-ivory text-ink placeholder-stone focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold" />
         </div>
       </FilterSection>
@@ -118,32 +139,32 @@ export default function ProductListing() {
       <FilterSection title="THƯƠNG HIỆU">
         <div className="space-y-2 max-h-48 overflow-y-auto">
           <label className="flex items-center gap-2.5 text-sm text-ink-soft cursor-pointer hover:text-ink transition">
-            <input type="radio" name="brand" checked={filterBrand === ''} onChange={() => setFilterBrand('')}
+            <input type="radio" name="brand" checked={filterBrand === ''} onChange={() => changeFilter(setFilterBrand, '')}
               className="w-4 h-4 accent-gold" />
             Tất cả
           </label>
-          {uniqueBrands.map(b => (
-            <label key={b} className="flex items-center gap-2.5 text-sm text-ink-soft cursor-pointer hover:text-ink transition">
-              <input type="radio" name="brand" checked={filterBrand === b} onChange={() => setFilterBrand(b)}
+          {brands.map(b => (
+            <label key={b.maThuongHieu || b.tenThuongHieu} className="flex items-center gap-2.5 text-sm text-ink-soft cursor-pointer hover:text-ink transition">
+              <input type="radio" name="brand" checked={filterBrand === b.tenThuongHieu} onChange={() => changeFilter(setFilterBrand, b.tenThuongHieu)}
                 className="w-4 h-4 accent-gold" />
-              {b}
+              {b.tenThuongHieu}
             </label>
           ))}
         </div>
       </FilterSection>
 
-      {uniqueMaterials.length > 0 && (
+      {materials.length > 0 && (
         <FilterSection title="CHẤT LIỆU" defaultOpen={false}>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             <label className="flex items-center gap-2.5 text-sm text-ink-soft cursor-pointer hover:text-ink transition">
-              <input type="radio" name="material" checked={true} readOnly
+              <input type="radio" name="material" checked={filterMaterial === ''} onChange={() => changeFilter(setFilterMaterial, '')}
                 className="w-4 h-4 accent-gold" />
               Tất cả
             </label>
-            {uniqueMaterials.map(m => (
-              <label key={m} className="flex items-center gap-2.5 text-sm text-ink-soft cursor-pointer hover:text-ink transition">
-                <input type="radio" name="material" className="w-4 h-4 accent-gold" />
-                {m}
+            {materials.map(m => (
+              <label key={m.maThuocTinh || m.giaTri} className="flex items-center gap-2.5 text-sm text-ink-soft cursor-pointer hover:text-ink transition">
+                <input type="radio" name="material" checked={filterMaterial === m.giaTri} onChange={() => changeFilter(setFilterMaterial, m.giaTri)} className="w-4 h-4 accent-gold" />
+                {m.giaTri}
               </label>
             ))}
           </div>
@@ -152,14 +173,14 @@ export default function ProductListing() {
 
       <FilterSection title="KÍCH CỠ">
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setFilterSize('')}
+          <button onClick={() => changeFilter(setFilterSize, '')}
             className={`px-3.5 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
               filterSize === ''
                 ? 'bg-gold text-noir border-gold'
                 : 'bg-ivory text-ink-soft border-noir-600/15 hover:border-gold/50'
             }`}>Tất cả</button>
           {sizes.map(s => (
-            <button key={s.maKichCo || s} onClick={() => setFilterSize(s.kichCo || s)}
+            <button key={s.maKichCo || s} onClick={() => changeFilter(setFilterSize, s.kichCo || s)}
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
                 filterSize === (s.kichCo || s)
                   ? 'bg-gold text-noir border-gold'
@@ -186,7 +207,7 @@ export default function ProductListing() {
             <h1 className="text-xl font-bold text-ink">
               {keyword ? `Kết quả tìm kiếm: "${keyword}"` : 'Tất cả sản phẩm'}
             </h1>
-            <p className="text-sm text-stone mt-0.5">{filteredProducts.length} sản phẩm</p>
+            <p className="text-sm text-stone mt-0.5">{totalProducts} sản phẩm</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileFilterOpen(true)}
@@ -194,7 +215,7 @@ export default function ProductListing() {
               <SlidersHorizontal className="h-4 w-4" /> Lọc
             </button>
             <select value={`${sortBy}-${sortDir}`}
-              onChange={(e) => { const [sb, sd] = e.target.value.split('-'); setSortBy(sb); setSortDir(sd) }}
+              onChange={(e) => { const [sb, sd] = e.target.value.split('-'); setSortBy(sb); setSortDir(sd); setPage(0) }}
               className="border border-noir-600/15 rounded-lg px-3 py-2 text-sm bg-ivory text-ink focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold cursor-pointer">
               <option value="ngayTao-desc">Mới nhất</option>
               <option value="giaTrungBinh-asc">Giá tăng dần</option>
@@ -246,6 +267,19 @@ export default function ProductListing() {
                 ))}
               </div>
             )}
+            {!loading && totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <button disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}
+                  className="p-2 rounded-lg border border-noir-600/15 disabled:opacity-40 hover:border-gold">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="px-3 text-sm text-stone">Trang {page + 1}/{totalPages}</span>
+                <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}
+                  className="p-2 rounded-lg border border-noir-600/15 disabled:opacity-40 hover:border-gold">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -267,7 +301,7 @@ export default function ProductListing() {
             <div className="sticky bottom-0 p-4 border-t border-noir-600/10 bg-ivory">
               <button onClick={() => setMobileFilterOpen(false)}
                 className="w-full py-2.5 rounded-lg bg-gold text-noir font-semibold text-sm hover:bg-gold-hover transition cursor-pointer">
-                Áp dụng ({filteredProducts.length} sản phẩm)
+                Áp dụng ({totalProducts} sản phẩm)
               </button>
             </div>
           </div>

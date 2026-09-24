@@ -52,12 +52,39 @@ public class SanPhamService {
     private final InventoryService inventoryService;
     private final CampaignDiscountService campaignDiscountService;
 
-    public Page<SanPham> getProducts(String keyword, Integer categoryId, BigDecimal minPrice,
-                                      BigDecimal maxPrice, int page, int size, String sortBy, String sortDir) {
-        if (keyword != null) return searchProducts(keyword, page, size);
-        if (categoryId != null || minPrice != null || maxPrice != null)
-            return filterProducts(categoryId, minPrice, maxPrice, page, size);
-        return getProducts(page, size, sortBy, sortDir);
+    public Page<SanPham> getProducts(String keyword, Integer categoryId, String brand, String sizeName,
+                                      String material, BigDecimal minPrice, BigDecimal maxPrice,
+                                      int page, int size, String sortBy, String sortDir) {
+        String normalizedKeyword = normalizeFilter(keyword);
+        String normalizedBrand = normalizeFilter(brand);
+        String normalizedSize = normalizeFilter(sizeName);
+        String normalizedMaterial = normalizeFilter(material);
+        Sort sort = buildPublicSort(sortBy, sortDir);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), sort);
+        Page<SanPham> result = sanPhamRepository.filterPublicProducts(
+                normalizedKeyword, categoryId, normalizedBrand, normalizedSize, normalizedMaterial,
+                minPrice, maxPrice, pageable);
+        populateStock(result);
+        populateDiscount(result);
+        return result;
+    }
+
+    private String normalizeFilter(String value) {
+        if (value == null) return null;
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private Sort buildPublicSort(String sortBy, String sortDir) {
+        String property = switch (sortBy == null ? "" : sortBy) {
+            case "gia", "giaTrungBinh" -> "giaTrungBinh";
+            case "tenSanPham" -> "tenSanPham";
+            case "maSanPham" -> "maSanPham";
+            default -> "ngayTao";
+        };
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir)
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(direction, property).and(Sort.by(Sort.Direction.DESC, "maSanPham"));
     }
 
     public Page<SanPham> getProducts(int page, int size, String sortBy, String sortDir) {

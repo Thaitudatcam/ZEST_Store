@@ -93,6 +93,27 @@ class VoucherLifecycleTest {
     }
 
     @Test
+    void scheduledPrivateCouponCanBeGrantedBeforeItsStartDate() {
+        PhieuGiamGia coupon = coupon(false);
+        coupon.setNgayBatDau(LocalDateTime.now().plusDays(10));
+        coupon.setNgayKetThuc(LocalDateTime.now().plusDays(30));
+        when(couponRepository.findById(1)).thenReturn(Optional.of(coupon));
+        when(userRepository.findById(7)).thenReturn(Optional.of(NguoiDung.builder().maNguoiDung(7).build()));
+        when(voucherRepository.save(any(VoucherNguoiDung.class))).thenAnswer(invocation -> {
+            VoucherNguoiDung saved = invocation.getArgument(0);
+            saved.setMaVoucherNguoiDung(12);
+            return saved;
+        });
+
+        service.grantVoucher(7, 1);
+
+        ArgumentCaptor<VoucherNguoiDung> saved = ArgumentCaptor.forClass(VoucherNguoiDung.class);
+        verify(voucherRepository).save(saved.capture());
+        assertEquals(TrangThaiVoucher.CHUA_NHAN, saved.getValue().getTrangThai());
+        assertEquals(coupon.getNgayBatDau().plusDays(7), saved.getValue().getNgayHetHan());
+    }
+
+    @Test
     void expiredGiftCannotBeAcceptedBeforeNightlyCleanupRuns() {
         VoucherNguoiDung voucher = VoucherNguoiDung.builder()
                 .maVoucherNguoiDung(3)

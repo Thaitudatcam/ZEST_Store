@@ -49,6 +49,35 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer> {
                                   @Param("giaMax") BigDecimal giaMax,
                                   Pageable pageable);
 
+    @Query(value = "SELECT s FROM SanPham s LEFT JOIN s.chatLieu cl WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
+            + "(:keyword IS NULL OR LOWER(s.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+            + "OR LOWER(s.moTa) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND "
+            + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc) AND "
+            + "(:chatLieu IS NULL OR LOWER(cl.giaTri) = LOWER(:chatLieu)) AND "
+            + "((:thuongHieu IS NULL AND :kichCo IS NULL AND :giaMin IS NULL AND :giaMax IS NULL) OR EXISTS ("
+            + "SELECT 1 FROM BienTheSanPham b WHERE b.sanPham = s AND b.ngayXoa IS NULL AND b.trangThai = 1 AND "
+            + "(:thuongHieu IS NULL OR LOWER(b.thuongHieu.tenThuongHieu) = LOWER(:thuongHieu)) AND "
+            + "(:kichCo IS NULL OR LOWER(b.kichCo.kichCo) = LOWER(:kichCo)) AND "
+            + "(:giaMin IS NULL OR b.gia >= :giaMin) AND (:giaMax IS NULL OR b.gia <= :giaMax)))",
+            countQuery = "SELECT COUNT(s) FROM SanPham s LEFT JOIN s.chatLieu cl WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
+            + "(:keyword IS NULL OR LOWER(s.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) "
+            + "OR LOWER(s.moTa) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND "
+            + "(:maDanhMuc IS NULL OR s.danhMuc.maDanhMuc = :maDanhMuc) AND "
+            + "(:chatLieu IS NULL OR LOWER(cl.giaTri) = LOWER(:chatLieu)) AND "
+            + "((:thuongHieu IS NULL AND :kichCo IS NULL AND :giaMin IS NULL AND :giaMax IS NULL) OR EXISTS ("
+            + "SELECT 1 FROM BienTheSanPham b WHERE b.sanPham = s AND b.ngayXoa IS NULL AND b.trangThai = 1 AND "
+            + "(:thuongHieu IS NULL OR LOWER(b.thuongHieu.tenThuongHieu) = LOWER(:thuongHieu)) AND "
+            + "(:kichCo IS NULL OR LOWER(b.kichCo.kichCo) = LOWER(:kichCo)) AND "
+            + "(:giaMin IS NULL OR b.gia >= :giaMin) AND (:giaMax IS NULL OR b.gia <= :giaMax)))")
+    Page<SanPham> filterPublicProducts(@Param("keyword") String keyword,
+                                       @Param("maDanhMuc") Integer maDanhMuc,
+                                       @Param("thuongHieu") String thuongHieu,
+                                       @Param("kichCo") String kichCo,
+                                       @Param("chatLieu") String chatLieu,
+                                       @Param("giaMin") BigDecimal giaMin,
+                                       @Param("giaMax") BigDecimal giaMax,
+                                       Pageable pageable);
+
     @Query("SELECT s FROM SanPham s WHERE s.trangThai = 1 AND s.ngayXoa IS NULL AND "
             + "(:keyword IS NULL OR s.tenSanPham LIKE %:keyword% OR s.moTa LIKE %:keyword%)")
     Page<SanPham> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);

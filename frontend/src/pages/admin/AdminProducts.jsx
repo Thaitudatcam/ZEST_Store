@@ -74,13 +74,18 @@ export default function AdminProducts() {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!search.trim()) { setSuggestions([]); setShowSuggestions(false); return }
     const q = search.trim().replace(/\s+/g, ' ')
+    let cancelled = false
     setSearchLoading(true)
     debounceRef.current = setTimeout(() => {
       searchSuggestions(q, 5)
-        .then((data) => { if (q === search.trim()) { setSuggestions(data || []); setShowSuggestions(true) } })
-        .catch(() => { if (q === search.trim()) setSuggestions([]) })
-        .finally(() => { if (q === search.trim()) setSearchLoading(false) })
+        .then((data) => { if (!cancelled) { setSuggestions(data || []); setShowSuggestions(true) } })
+        .catch(() => { if (!cancelled) setSuggestions([]) })
+        .finally(() => { if (!cancelled) setSearchLoading(false) })
     }, 300)
+    return () => {
+      cancelled = true
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [search])
 
   const handleSearch = (val) => {

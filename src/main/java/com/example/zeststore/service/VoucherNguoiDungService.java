@@ -117,9 +117,6 @@ public class VoucherNguoiDungService {
             throw new BadRequestException("Mã giảm giá đã ngừng hoạt động");
         }
         LocalDateTime now = LocalDateTime.now();
-        if (coupon.getNgayBatDau() != null && now.isBefore(coupon.getNgayBatDau())) {
-            throw new BadRequestException("Mã giảm giá chưa đến hạn sử dụng");
-        }
         if (coupon.getNgayKetThuc() != null && now.isAfter(coupon.getNgayKetThuc())) {
             throw new BadRequestException("Mã giảm giá đã hết hạn");
         }
@@ -143,7 +140,10 @@ public class VoucherNguoiDungService {
                 .phieuGiamGia(coupon)
                 .trangThai(TrangThaiVoucher.CHUA_NHAN)
                 .soLuongConLai(coupon.getSoLuong())
-                .ngayHetHan(LocalDateTime.now().plusDays(7))
+                // Scheduled coupons can be granted in advance. Keep the gift
+                // claimable for seven days from its start date.
+                .ngayHetHan((coupon.getNgayBatDau() != null && coupon.getNgayBatDau().isAfter(now)
+                        ? coupon.getNgayBatDau() : now).plusDays(7))
                 .build();
         voucherNguoiDungRepository.save(v);
 

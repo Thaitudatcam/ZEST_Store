@@ -120,6 +120,54 @@ class CouponCheckoutTest {
         assertThrows(BadRequestException.class,
                 () -> service.useCoupon("SALE", null, 9, BigDecimal.TEN, "POS"));
     }
+    @Test void finiteCouponIsNotOfferedToAnonymousPosCustomer() {
+        var finite = coupon(); finite.setTrangThai(1);
+        var unlimited = coupon(); unlimited.setMaPhieuGiamGia(2); unlimited.setMaCode("OPEN");
+        unlimited.setSoLuong(null); unlimited.setTrangThai(1);
+        when(phieuGiamGiaRepository.findValidCoupons(any(), eq(BigDecimal.valueOf(100))))
+                .thenReturn(List.of(finite, unlimited));
+
+        var result = service.getAvailableCoupons(BigDecimal.valueOf(100), null, List.of(4));
+
+        assertEquals(List.of("OPEN"), result.stream().map(item -> item.get("maCode")).toList());
+    }
+    @Test void clearingQuotaMakesExistingVouchersUnlimitedAgain() {
+        var c = coupon(); c.setTrangThai(1);
+        var voucher = VoucherNguoiDung.builder().nguoiDung(NguoiDung.builder().maNguoiDung(7).build())
+                .trangThai(TrangThaiVoucher.DA_DUNG).soLuongConLai(0).build();
+        when(phieuGiamGiaRepository.findById(1)).thenReturn(Optional.of(c));
+        when(voucherNguoiDungRepository.findByPhieuGiamGia_MaPhieuGiamGia(1)).thenReturn(List.of(voucher));
+        when(phieuGiamGiaRepository.save(c)).thenReturn(c);
+        var request = com.example.zeststore.dto.request.UpdateCouponRequest.builder()
+                .xoaGioiHanSoLuong(true).build();
+
+        service.update(1, request);
+
+        assertNull(c.getSoLuong());
+        assertNull(voucher.getSoLuongConLai());
+        assertEquals(TrangThaiVoucher.DA_NHAN, voucher.getTrangThai());
+    }
+    @Test void bestOfferRanksRestrictedCouponsByEligibleSubtotal() {
+        var restricted = coupon();
+        restricted.setTrangThai(1); restricted.setSoLuong(null);
+        restricted.setKieuGiamGia(1); restricted.setGiaTriGiam(BigDecimal.valueOf(50));
+        restricted.setSanPhamApDung(Set.of(SanPham.builder().maSanPham(5).build()));
+        var flat = coupon();
+        flat.setMaPhieuGiamGia(2); flat.setMaCode("FLAT"); flat.setTrangThai(1);
+        flat.setSoLuong(null); flat.setGiaTriGiam(BigDecimal.valueOf(100));
+        when(phieuGiamGiaRepository.findValidCoupons(any(), eq(BigDecimal.valueOf(1000))))
+                .thenReturn(List.of(restricted, flat));
+        when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(restricted));
+        when(phieuGiamGiaRepository.findByMaCode("FLAT")).thenReturn(Optional.of(flat));
+        when(sanPhamRepository.findAllById(any())).thenReturn(List.of(
+                SanPham.builder().maSanPham(5).build(), SanPham.builder().maSanPham(6).build()));
+
+        var result = service.getBestOffer(BigDecimal.valueOf(1000), 7, List.of(5, 6), false,
+                new LinkedHashMap<>(Map.of(5, BigDecimal.valueOf(100), 6, BigDecimal.valueOf(900))));
+
+        assertEquals("FLAT", result.get("maCode"));
+        assertEquals(0, BigDecimal.valueOf(100).compareTo((BigDecimal) result.get("soTienGiam")));
+    }
     @Test void freeshipEnforcesMinimumAndRemainingUses() {
         var c = coupon(); c.setKieuGiamGia(3); c.setGiaTriDonToiThieu(BigDecimal.valueOf(200));
         when(phieuGiamGiaRepository.findByMaCode("SALE")).thenReturn(Optional.of(c));
