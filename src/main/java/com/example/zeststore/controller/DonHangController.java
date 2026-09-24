@@ -1,6 +1,8 @@
 package com.example.zeststore.controller;
 
 import com.example.zeststore.dto.request.OrderRequest;
+import com.example.zeststore.dto.request.RefundRequest;
+import com.example.zeststore.dto.request.ReturnRequest;
 import com.example.zeststore.dto.request.StatusUpdateRequest;
 import com.example.zeststore.service.DonHangService;
 import com.example.zeststore.service.OrderSseService;
@@ -97,6 +99,13 @@ public class DonHangController {
         return ResponseEntity.ok(donHangService.confirmReceived(id, userService.getUserIdFromAuth(auth)));
     }
 
+    @PutMapping("/{id}/return-request")
+    public ResponseEntity<?> requestReturn(Authentication auth, @PathVariable Integer id,
+                                            @Valid @RequestBody ReturnRequest request) {
+        return ResponseEntity.ok(donHangService.requestReturn(
+                id, userService.getUserIdFromAuth(auth), request.getLyDo()));
+    }
+
     @GetMapping("/admin/all")
     @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
     public ResponseEntity<?> getAllOrders(
@@ -140,6 +149,14 @@ public class DonHangController {
                                            Authentication auth) {
         return ResponseEntity.ok(donHangService.updateOrderStatus(
                 id, request.getTrangThai(), request.getGhiChu(), request.isThongBaoKhachHang(), userService.getUserIdFromAuth(auth)));
+    }
+
+    @PutMapping("/admin/{id}/refund")
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    public ResponseEntity<?> recordRefund(@PathVariable Integer id, @Valid @RequestBody RefundRequest request,
+                                          Authentication auth) {
+        return ResponseEntity.ok(donHangService.recordRefund(
+                id, request.getMaGiaoDichHoanTien(), request.getGhiChu(), userService.getUserIdFromAuth(auth)));
     }
 
     @PutMapping("/admin/{id}/inventory-reconciliation")

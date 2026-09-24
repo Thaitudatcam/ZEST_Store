@@ -77,11 +77,15 @@ public class DonHangService {
         boolean hasSearch = q != null && !q.trim().isEmpty();
         boolean hasLoai = loaiDonHang != null;
         boolean hasTrangThai = trangThai != null;
-        boolean hasDate = tuNgay != null && denNgay != null;
+        boolean hasDate = tuNgay != null || denNgay != null;
 
         if (hasDate) {
-            LocalDateTime from = tuNgay.atStartOfDay();
-            LocalDateTime to = denNgay.plusDays(1).atStartOfDay();
+            LocalDateTime from = tuNgay != null
+                    ? tuNgay.atStartOfDay()
+                    : LocalDate.of(1900, 1, 1).atStartOfDay();
+            LocalDateTime to = denNgay != null
+                    ? denNgay.plusDays(1).atStartOfDay()
+                    : LocalDateTime.of(9999, 12, 31, 23, 59, 59);
             if (hasSearch) {
                 if (hasLoai && hasTrangThai) {
                     return donHangRepository.searchByKeywordAndLoaiAndTrangThaiAndNgayDatBetween(q.trim(), loaiDonHang, trangThai, from, to, pageable);
@@ -523,8 +527,12 @@ public class DonHangService {
         Integer oldStatus = order.getTrangThaiDon();
         if (Objects.equals(oldStatus, status)) return order;
         Map<Integer, List<Integer>> transitions = Map.of(
-                1, List.of(2, 5), 2, List.of(3, 5), 3, List.of(4, 5),
-                4, List.of(6, 9));
+                1, List.of(2, 5),
+                2, List.of(3, 5),
+                3, List.of(4, 5),
+                4, List.of(6, 9),
+                6, List.of(7),
+                7, List.of(6, 8));
         if (!transitions.getOrDefault(oldStatus, List.of()).contains(status))
             throw new BadRequestException("Không thể chuyển trạng thái đơn hàng; trả hàng phải qua yêu cầu trả hàng");
         if (Integer.valueOf(5).equals(status)) {
@@ -549,6 +557,13 @@ public class DonHangService {
             // order must remain auditable and be refunded separately, while
             // its reserved/deducted stock is returned to inventory.
             releaseFailedDelivery(order);
+        }
+        if (Integer.valueOf(8).equals(status)) {
+            // Stock is returned only after staff has physically accepted the
+            // returned parcel. A return request (status 7) does not change stock.
+            inventoryService.release(order);
+            phieuGiamGiaService.restoreForOrder(order.getMaDonHang());
+            markRefundRequired(order);
         }
 
         if (Integer.valueOf(6).equals(status)) {
@@ -580,13 +595,16 @@ public class DonHangService {
 
         orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", notifyCustomer ? normalizedNote : null);
 
-        // Notify the order's customer that its status changed (status map: 1=Chờ,2=ĐãXL,3=ĐangGiao,4=ĐãGiao,5=ĐãHủy,6=Hoàn thành,7=Trả hàng).
+        // Notify the order's customer using the same wording as the UI.
         if (notifyCustomer && order.getNguoiDung() != null) {
             String trangThaiText = switch (status) {
                 case 2 -> "đang được xử lý";
-                case 3 -> "đang được giao";
-                case 4 -> "đã được giao";
+                case 3 -> "đang chờ lấy hàng";
+                case 4 -> "đang được giao";
+                case 5 -> "đã bị hủy";
                 case 6 -> "giao hàng thành công";
+                case 7 -> "đã có yêu cầu trả hàng";
+                case 8 -> "đã hoàn tất trả hàng";
                 case 9 -> "giao hàng không thành công";
                 default -> "đã được cập nhật";
             };
@@ -659,6 +677,89 @@ public class DonHangService {
         return Map.of("message", "Order confirmed as received");
     }
 
+    @Transactional
+    public Map<String, String> requestReturn(Integer orderId, Integer userId, String reason) {
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (order.getNguoiDung() == null || !order.getNguoiDung().getMaNguoiDung().equals(userId)) {
+            throw new BadRequestException("Order does not belong to user");
+        }
+        if (!Integer.valueOf(6).equals(order.getTrangThaiDon())) {
+            throw new BadRequestException("Chỉ có thể yêu cầu trả hàng với đơn đã hoàn thành");
+        }
+        LocalDateTime completedAt = lichSuDonHangRepository
+                .findByDonHang_MaDonHangOrderByThoiGianDesc(orderId).stream()
+                .filter(history -> Integer.valueOf(6).equals(history.getTrangThaiMoi()))
+                .map(LichSuDonHang::getThoiGian)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(order.getNgayCapNhat() != null ? order.getNgayCapNhat() : order.getNgayDat());
+        if (completedAt != null && completedAt.isBefore(LocalDateTime.now().minusDays(15))) {
+            throw new BadRequestException("Đã quá thời hạn yêu cầu trả hàng 15 ngày");
+        }
+        String normalizedReason = reason == null ? "" : reason.trim();
+        if (normalizedReason.isEmpty() || normalizedReason.length() > 500) {
+            throw new BadRequestException("Lý do trả hàng không hợp lệ");
+        }
+
+        order.setTrangThaiDon(7);
+        donHangRepository.save(order);
+        NguoiDung user = nguoiDungRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order).trangThaiCu(6).trangThaiMoi(7)
+                .nguoiCapNhat(user).ghiChu(normalizedReason).khachHangXem(true).build());
+        orderSseService.sendOrderStatusUpdate(orderId, 7, 6, "user", normalizedReason);
+        try {
+            thongBaoService.taoThongBaoChoAdmin(
+                    "Yêu cầu trả hàng #" + orderId,
+                    "Khách hàng yêu cầu trả đơn #" + orderId + ": " + normalizedReason,
+                    "DON_HANG_CAP_NHAT", "/admin/orders/" + orderId);
+        } catch (Exception ignored) {}
+        return Map.of("message", "Đã gửi yêu cầu trả hàng");
+    }
+
+    @Transactional
+    public Map<String, String> recordRefund(Integer orderId, String refundReference, String note, Integer adminUserId) {
+        DonHang order = donHangRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        if (!List.of(8, 9).contains(order.getTrangThaiDon())) {
+            throw new BadRequestException("Chỉ ghi nhận hoàn tiền cho đơn giao thất bại hoặc đã trả hàng");
+        }
+        String reference = refundReference == null ? "" : refundReference.trim();
+        if (reference.isEmpty() || reference.length() > 100) {
+            throw new BadRequestException("Mã giao dịch hoàn tiền không hợp lệ");
+        }
+
+        List<ThanhToan> payments = thanhToanRepository.findByDonHang_MaDonHang(orderId);
+        List<ThanhToan> refundable = payments.stream()
+                .filter(payment -> (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())
+                        || Integer.valueOf(4).equals(payment.getTrangThaiThanhToan()))
+                        && !Boolean.TRUE.equals(payment.getRefunded()))
+                .toList();
+        if (refundable.isEmpty()) {
+            if (payments.stream().anyMatch(payment -> Boolean.TRUE.equals(payment.getRefunded()))) {
+                return Map.of("message", "Hoàn tiền đã được ghi nhận trước đó");
+            }
+            throw new BadRequestException("Đơn hàng không có khoản thanh toán thành công để hoàn tiền");
+        }
+        refundable.forEach(payment -> {
+            payment.setTrangThaiThanhToan(4);
+            payment.setRefunded(true);
+            thanhToanRepository.save(payment);
+        });
+
+        NguoiDung admin = nguoiDungRepository.findById(adminUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", adminUserId));
+        String normalizedNote = note == null ? null : note.trim();
+        String historyNote = "Đã hoàn tiền. Mã giao dịch: " + reference
+                + (normalizedNote == null || normalizedNote.isEmpty() ? "" : ". " + normalizedNote);
+        lichSuDonHangRepository.save(LichSuDonHang.builder()
+                .donHang(order).trangThaiCu(order.getTrangThaiDon()).trangThaiMoi(order.getTrangThaiDon())
+                .nguoiCapNhat(admin).ghiChu(historyNote).khachHangXem(false).build());
+        return Map.of("message", "Đã ghi nhận hoàn tiền");
+    }
+
     private BigDecimal recalculateShippingFee(OrderRequest request, List<Map<String, Object>> orderItems) {
         int quantity = orderItems.stream().mapToInt(item -> (Integer) item.get("soLuong")).sum();
         if (request.getServiceTypeId() == null) {
@@ -687,6 +788,17 @@ public class DonHangService {
         }
         inventoryService.release(order);
         phieuGiamGiaService.restoreForOrder(order.getMaDonHang());
+        markRefundRequired(order);
+    }
+
+    private void markRefundRequired(DonHang order) {
+        for (ThanhToan payment : thanhToanRepository.findByDonHang_MaDonHang(order.getMaDonHang())) {
+            if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) {
+                payment.setTrangThaiThanhToan(4);
+                payment.setRefunded(false);
+                thanhToanRepository.save(payment);
+            }
+        }
     }
 
     /**

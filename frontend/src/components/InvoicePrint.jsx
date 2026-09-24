@@ -90,7 +90,7 @@ export default function InvoicePrint({ data }) {
             <div className="space-y-0.5">
               {payments.map((p, i) => (
                 <div key={i} className="flex justify-between">
-                  <span>{PAYMENT_LABELS[p.phuongThuc] || p.nhaCungCap || 'Thanh toán'} {p.trangThaiThanhToan === 2 ? '· Đã thanh toán' : p.trangThaiThanhToan === 1 ? '· Chờ thanh toán' : '· Thất bại'}</span>
+                  <span>{PAYMENT_LABELS[p.phuongThuc] || p.nhaCungCap || 'Thanh toán'} {p.trangThaiThanhToan === 2 ? '· Đã thanh toán' : p.trangThaiThanhToan === 1 ? '· Chờ thanh toán' : p.trangThaiThanhToan === 4 ? (p.refunded ? '· Đã hoàn tiền' : '· Chờ hoàn tiền') : '· Thất bại'}</span>
                   <span>{VND(p.soTien)}</span>
                 </div>
               ))}

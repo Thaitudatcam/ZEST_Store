@@ -15,10 +15,12 @@ const STATUS_LABELS = {
   4: 'Chờ giao hàng',
   5: 'Đã hủy',
   6: 'Giao hàng thành công',
+  7: 'Yêu cầu trả hàng',
+  8: 'Đã trả hàng',
   9: 'Giao hàng không thành công',
 }
 
-const SPECIAL_STATUSES = new Set([5, 9])
+const SPECIAL_STATUSES = new Set([5, 7, 8, 9])
 
 const toStatus = (status) => {
   const value = Number(status)
@@ -48,7 +50,9 @@ function updaterName(entry) {
 export default function OrderStatusStepper({ currentStatus, history = [], loaiDonHang }) {
   const current = toStatus(currentStatus)
   const isPos = Number(loaiDonHang) === 2
-  const steps = isPos
+  const isDeliveryPos = isPos && ([2, 3, 4, 9].includes(current)
+    || history.some((entry) => [2, 3, 4, 9].includes(toStatus(entry.trangThaiMoi))))
+  const steps = isPos && !isDeliveryPos
     ? [NORMAL_STEPS[0], NORMAL_STEPS[NORMAL_STEPS.length - 1]]
     : NORMAL_STEPS
   const special = SPECIAL_STATUSES.has(current)

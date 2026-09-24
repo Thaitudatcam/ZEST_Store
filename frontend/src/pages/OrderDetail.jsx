@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getOrderDetail, cancelOrder, confirmReceived } from '../api/orders'
+import { getOrderDetail, cancelOrder, confirmReceived, requestReturn } from '../api/orders'
 import { createVnPayPayment, createVietQrPayment, createZaloPayPayment, retryPayment } from '../api/payment'
 import { useOrderStream } from '../hooks/useOrderStream'
 import { useToast } from '../context/ToastContext'
@@ -15,11 +15,19 @@ import { Package, MapPin, CreditCard, ExternalLink, ShoppingBag, CheckCircle, Tr
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
+  5: 'Đã hủy', 6: 'Giao hàng thành công', 7: 'Yêu cầu trả hàng',
+  8: 'Đã trả hàng', 9: 'Giao hàng không thành công',
 }
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'VietQR', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
-const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
+const paymentStatusLabel = (payment) => {
+  if (!payment) return 'Chưa thanh toán'
+  if (payment.trangThaiThanhToan === 1) return 'Chờ thanh toán'
+  if (payment.trangThaiThanhToan === 2) return 'Đã thanh toán'
+  if (payment.trangThaiThanhToan === 3) return 'Thất bại'
+  if (payment.trangThaiThanhToan === 4) return payment.refunded ? 'Đã hoàn tiền' : 'Chờ hoàn tiền'
+  return 'Chưa thanh toán'
+}
 
 export default function OrderDetail() {
   const { id } = useParams()
@@ -31,6 +39,9 @@ export default function OrderDetail() {
   const [confirmingReceived, setConfirmingReceived] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [returnModal, setReturnModal] = useState(false)
+  const [returnReason, setReturnReason] = useState('')
+  const [returning, setReturning] = useState(false)
 
   const load = () => getOrderDetail(id).then(setData).finally(() => setLoading(false))
   useEffect(() => { load() }, [id])
@@ -72,6 +83,23 @@ export default function OrderDetail() {
       toast.success('Xác nhận đã nhận hàng thành công')
     } catch (err) { toast.error(err?.response?.data?.message || 'Xác nhận thất bại') }
     finally { setConfirmingReceived(false) }
+  }
+
+  const handleRequestReturn = async () => {
+    const reason = returnReason.trim()
+    if (!reason) {
+      toast.error('Vui lòng nhập lý do trả hàng')
+      return
+    }
+    setReturning(true)
+    try {
+      await requestReturn(id, reason)
+      await load()
+      setReturnModal(false)
+      setReturnReason('')
+      toast.success('Đã gửi yêu cầu trả hàng')
+    } catch (err) { toast.error(err?.response?.data?.message || 'Không thể gửi yêu cầu trả hàng') }
+    finally { setReturning(false) }
   }
 
   const handlePayNow = async (payment) => {
@@ -125,7 +153,8 @@ export default function OrderDetail() {
   const payments = data.payments || []
   // Payment information is returned as a collection by the API.  Do not read
   // payment fields from the order entity (they are not persisted there).
-  const primaryPayment = payments.find(p => p.trangThaiThanhToan === 2)
+  const primaryPayment = payments.find(p => p.trangThaiThanhToan === 4)
+    || payments.find(p => p.trangThaiThanhToan === 2)
     || payments.find(p => p.trangThaiThanhToan === 1)
     || payments[0]
   const paymentMethod = primaryPayment?.phuongThuc
@@ -135,6 +164,7 @@ export default function OrderDetail() {
   const canCancel = !hasSuccessfulPayment && (order.trangThaiDon === 1 || order.trangThaiDon === 2 || order.trangThaiDon === 3)
   const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
   const canConfirmReceived = order.trangThaiDon === 4 && !hasUnpaidOnline
+  const canRequestReturn = order.trangThaiDon === 6
   const canPayNow = payments.some(p => (p.phuongThuc > 1 && (p.trangThaiThanhToan === 1 || p.trangThaiThanhToan === 3)) && order.trangThaiDon === 1)
 
   return (
@@ -260,7 +290,7 @@ export default function OrderDetail() {
           <div className="flex justify-between">
             <span className="text-stone">Trạng thái thanh toán</span>
             <span className={`font-semibold ${paymentStatus === 2 ? 'text-emerald-deep' : paymentStatus === 3 ? 'text-bordeaux' : 'text-gold'}`}>
-              {PAYMENT_STATUS[paymentStatus] || 'Chưa thanh toán'}
+              {paymentStatusLabel(primaryPayment)}
             </span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t border-stone/10 pt-3 mt-2">
@@ -298,6 +328,17 @@ export default function OrderDetail() {
         </div>
       )}
 
+      {canRequestReturn && (
+        <div className="text-center mt-3">
+          <button
+            onClick={() => setReturnModal(true)}
+            className="inline-flex items-center gap-2 border-2 border-gold/40 text-gold-hover px-8 py-3 rounded-xl text-sm font-semibold hover:bg-gold/5 transition"
+          >
+            <Package className="h-4 w-4" /> YÊU CẦU TRẢ HÀNG
+          </button>
+        </div>
+      )}
+
       {/* Pay Now Button */}
       {canPayNow && (
         <div className="text-center mt-3">
@@ -309,6 +350,29 @@ export default function OrderDetail() {
             {paying ? <Loader className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
             THANH TOÁN NGAY
           </button>
+        </div>
+      )}
+
+      {returnModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4" onClick={() => !returning && setReturnModal(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-ink">Yêu cầu trả hàng</h2>
+            <p className="mt-1 text-sm text-stone">Mô tả lý do để cửa hàng kiểm tra và phản hồi.</p>
+            <textarea
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+              maxLength={500}
+              rows={4}
+              className="mt-4 w-full rounded-xl border border-stone/20 px-4 py-3 text-sm focus:border-gold focus:outline-none"
+              placeholder="Lý do trả hàng..."
+            />
+            <div className="mt-5 flex justify-end gap-3">
+              <button disabled={returning} onClick={() => setReturnModal(false)} className="rounded-xl border px-5 py-2.5 text-sm font-semibold">Đóng</button>
+              <button disabled={returning || !returnReason.trim()} onClick={handleRequestReturn} className="rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-noir disabled:opacity-50">
+                {returning ? 'Đang gửi...' : 'Gửi yêu cầu'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

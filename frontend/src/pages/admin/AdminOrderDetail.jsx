@@ -9,6 +9,7 @@ import { ArrowLeft, Package, Truck, Clock, MapPin, CheckCircle, AlertTriangle, X
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { registerOrderPrint } from '../../api/admin'
 import InvoicePrint from '../../components/InvoicePrint'
+import { getAdminNextStatuses } from '../../utils/orderStatus'
 
 const STATUS_STEPS = [
   { status: 1, label: 'Chưa xác nhận', icon: ShoppingBag },
@@ -20,27 +21,30 @@ const STATUS_STEPS = [
 
 const STATUS_LABELS = {
   1: 'Chờ xác nhận', 2: 'Đã xác nhận', 3: 'Chờ lấy hàng', 4: 'Chờ giao hàng',
-  5: 'Đã hủy', 6: 'Giao hàng thành công', 9: 'Giao hàng không thành công',
+  5: 'Đã hủy', 6: 'Giao hàng thành công', 7: 'Yêu cầu trả hàng',
+  8: 'Đã trả hàng', 9: 'Giao hàng không thành công',
 }
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'VietQR', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
 function OrderStatusStepper({ currentStatus, history, loaiDonHang, onShowHistory }) {
   const isPos = loaiDonHang === 2
+  const isDeliveryPos = isPos && ([2, 3, 4, 9].includes(currentStatus)
+    || (history || []).some(h => [2, 3, 4, 9].includes(h.trangThaiMoi)))
 
   const POS_STEPS = [
     { status: 1, label: 'Tạo đơn', icon: ShoppingBag },
     { status: 6, label: 'Hoàn thành', icon: CheckCircle },
   ]
 
-  const steps = isPos ? [1, 6] : [1, 2, 3, 4, 6]
-  const stepDefs = isPos ? POS_STEPS : STATUS_STEPS
-  const isSpecial = [5, 9].includes(currentStatus)
+  const steps = isPos && !isDeliveryPos ? [1, 6] : [1, 2, 3, 4, 6]
+  const stepDefs = isPos && !isDeliveryPos ? POS_STEPS : STATUS_STEPS
+  const isSpecial = [5, 7, 8, 9].includes(currentStatus)
 
   let maxNormalStatus = currentStatus
   if (isSpecial) {
     const normalHistory = (history || [])
-      .filter(h => ![5, 9].includes(h.trangThaiMoi))
+      .filter(h => ![5, 7, 8, 9].includes(h.trangThaiMoi))
       .map(h => h.trangThaiMoi)
     maxNormalStatus = normalHistory.length > 0 ? Math.max(...normalHistory) : -1
   }
@@ -142,6 +146,10 @@ export default function AdminOrderDetail() {
   const [statusNote, setStatusNote] = useState('')
   const [notifyCustomer, setNotifyCustomer] = useState(false)
   const [historyModal, setHistoryModal] = useState(false)
+  const [refundModal, setRefundModal] = useState(false)
+  const [refundReference, setRefundReference] = useState('')
+  const [refundNote, setRefundNote] = useState('')
+  const [refunding, setRefunding] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -174,20 +182,13 @@ export default function AdminOrderDetail() {
   const { order, items, payments, history } = data
   const backTo = order?.loaiDonHang === 2 ? '/admin/orders/pos' : '/admin/orders/online'
 
-  const ONLINE_NEXT_STATUS = { 1: [2, 5], 2: [3, 5], 3: [4], 4: [6, 9] }
-  const POS_NEXT_STATUS = { 1: [6, 5] }
-  const NEXT_STATUS = order.loaiDonHang === 2 ? POS_NEXT_STATUS : ONLINE_NEXT_STATUS
-  const baseNextStatuses = NEXT_STATUS[order.trangThaiDon] || []
-  const hasUnpaidOnline = payments.some(p => p.phuongThuc > 1 && p.trangThaiThanhToan !== 2)
-  const hasSuccessfulPayment = payments.some(p => p.trangThaiThanhToan === 2)
-  // Legacy orders have no trusted stock movement record. The API deliberately
-  // blocks status changes until an admin reconciles inventory first.
-  const needsInventoryReconciliation = order.stockState === 'LEGACY'
-  const nextStatuses = (needsInventoryReconciliation ? [] : baseNextStatuses).filter(s => {
-    if (hasUnpaidOnline && (s === 2 || s === 3 || s === 4 || s === 6)) return false
-    if (hasSuccessfulPayment && (s === 5 || s === 9)) return false
-    return true
-  })
+  const needsRefund = payments.some(p => p.trangThaiThanhToan === 4 && !p.refunded)
+  const nextStatuses = getAdminNextStatuses(order, payments)
+  const nextStatusLabel = (nextStatus) => (
+    order.trangThaiDon === 7 && nextStatus === 6
+      ? 'Từ chối trả hàng (giữ trạng thái hoàn thành)'
+      : STATUS_LABELS[nextStatus]
+  )
 
   const isAdmin = typeof user?.vaiTro === 'object' ? user?.vaiTro?.tenVaiTro === 'ADMIN' : user?.vaiTro === 'ADMIN'
   const isPos = order.loaiDonHang === 2
@@ -224,6 +225,30 @@ export default function AdminOrderDetail() {
     } finally {
       setReconciling(false)
       setReconcileMode(null)
+    }
+  }
+
+  const handleRecordRefund = async () => {
+    if (!refundReference.trim()) {
+      toast.error('Vui lòng nhập mã giao dịch hoàn tiền')
+      return
+    }
+    setRefunding(true)
+    try {
+      await api.put(`/orders/admin/${id}/refund`, {
+        maGiaoDichHoanTien: refundReference.trim(),
+        ghiChu: refundNote.trim() || null,
+      })
+      const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
+      setData(updated)
+      setRefundModal(false)
+      setRefundReference('')
+      setRefundNote('')
+      toast.success('Đã ghi nhận hoàn tiền')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể ghi nhận hoàn tiền')
+    } finally {
+      setRefunding(false)
     }
   }
 
@@ -271,9 +296,12 @@ export default function AdminOrderDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column (2/3) */}
         <div className="lg:col-span-2 space-y-0">
-          {order.trangThaiDon === 9 && hasSuccessfulPayment && (
+          {[8, 9].includes(order.trangThaiDon) && needsRefund && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-6 text-sm text-amber-800">
-              <strong>Đơn giao thất bại đã thanh toán.</strong> Vui lòng hoàn tiền cho khách và lưu mã giao dịch hoàn tiền trong ghi chú nội bộ.
+              <strong>Đơn cần hoàn tiền.</strong> Hãy hoàn tiền cho khách, sau đó ghi nhận mã giao dịch để đối soát.
+              <button onClick={() => setRefundModal(true)} className="ml-3 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">
+                Ghi nhận hoàn tiền
+              </button>
             </div>
           )}
           {/* Status Stepper */}
@@ -370,6 +398,7 @@ export default function AdminOrderDetail() {
                       {p.trangThaiThanhToan === 2 && <span className="text-xs text-green-600">Đã thanh toán</span>}
                       {p.trangThaiThanhToan === 1 && <span className="text-xs text-amber-600">Chờ thanh toán</span>}
                       {p.trangThaiThanhToan === 3 && <span className="text-xs text-red-500">Thất bại</span>}
+                      {p.trangThaiThanhToan === 4 && <span className={`text-xs ${p.refunded ? 'text-blue-600' : 'text-amber-600'}`}>{p.refunded ? 'Đã hoàn tiền' : 'Chờ hoàn tiền'}</span>}
                     </div>
                   </div>
                 ))}
@@ -498,6 +527,28 @@ export default function AdminOrderDetail() {
       </div>
 
       {/* Status Selection Modal */}
+      {refundModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !refunding && setRefundModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-bold text-lg text-gray-800">Ghi nhận hoàn tiền</h2>
+            <p className="mt-1 text-sm text-gray-500">Chỉ xác nhận sau khi giao dịch hoàn tiền đã thành công.</p>
+            <label className="mt-4 block text-sm font-semibold text-gray-700">Mã giao dịch hoàn tiền *</label>
+            <input value={refundReference} onChange={(e) => setRefundReference(e.target.value)} maxLength={100}
+              className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm" />
+            <label className="mt-4 block text-sm font-semibold text-gray-700">Ghi chú</label>
+            <textarea value={refundNote} onChange={(e) => setRefundNote(e.target.value)} maxLength={350} rows={3}
+              className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 text-sm" />
+            <div className="mt-5 flex justify-end gap-3">
+              <button disabled={refunding} onClick={() => setRefundModal(false)} className="rounded-xl border px-5 py-2.5 text-sm font-semibold">Đóng</button>
+              <button disabled={refunding || !refundReference.trim()} onClick={handleRecordRefund}
+                className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                {refunding ? 'Đang lưu...' : 'Xác nhận đã hoàn tiền'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {statusModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setStatusModal(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
@@ -507,7 +558,7 @@ export default function AdminOrderDetail() {
               <select value={selectedNextStatus || ''} onChange={(e) => setSelectedNextStatus(Number(e.target.value))}
                 className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--primary-color)]">
                 {nextStatuses.map(s => (
-                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                  <option key={s} value={s}>{nextStatusLabel(s)}</option>
                 ))}
               </select>
             </div>
@@ -550,7 +601,7 @@ export default function AdminOrderDetail() {
       <ConfirmDialog
         open={confirmStatus !== null}
         title="Xác nhận cập nhật"
-        message={<>Bạn có chắc muốn chuyển đơn hàng <span className="font-semibold">#{order.maDonHang}</span> sang trạng thái <span className="font-semibold text-[var(--primary-color)]">{STATUS_LABELS[confirmStatus]}</span>?</>}
+        message={<>Bạn có chắc muốn chuyển đơn hàng <span className="font-semibold">#{order.maDonHang}</span> sang trạng thái <span className="font-semibold text-[var(--primary-color)]">{nextStatusLabel(confirmStatus)}</span>?</>}
         confirmText="Xác nhận"
         variant={confirmStatus === 5 ? 'danger' : 'gold'}
         loading={updating === confirmStatus}

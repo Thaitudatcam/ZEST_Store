@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -104,6 +105,22 @@ class OrderStatusUpdateTest {
         service.updateOrderStatus(1, 9, null, false, 100);
         assertEquals(9, o.getTrangThaiDon());
         verify(inventoryService).release(o);
+    }
+
+    @Test void failedPaidDeliveryIsMarkedAsRefundRequired() {
+        DonHang o = order(1, 4);
+        ThanhToan payment = ThanhToan.builder().trangThaiThanhToan(2).phuongThuc(2).build();
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(nguoiDungRepository.findById(100)).thenReturn(Optional.of(admin()));
+        when(donHangRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(thanhToanRepository.findByDonHang_MaDonHang(1)).thenReturn(List.of(payment));
+
+        service.updateOrderStatus(1, 9, null, false, 100);
+
+        assertEquals(9, o.getTrangThaiDon());
+        assertEquals(4, payment.getTrangThaiThanhToan());
+        assertFalse(payment.getRefunded());
+        verify(thanhToanRepository).save(payment);
     }
 
     @Test void status1To5_cancelsOrder() {
@@ -456,5 +473,92 @@ class OrderStatusUpdateTest {
 
         service.updateOrderStatus(1, 2, null, false, 100);
         assertEquals(2, o.getTrangThaiDon());
+    }
+
+    @Test void completedOrderCanEnterReturnFlow() {
+        DonHang o = order(1, 6);
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(nguoiDungRepository.findById(100)).thenReturn(Optional.of(admin()));
+        when(donHangRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        service.updateOrderStatus(1, 7, "Khách yêu cầu trả", true, 100);
+
+        assertEquals(7, o.getTrangThaiDon());
+        verify(inventoryService, never()).release(any());
+    }
+
+    @Test void acceptingReturnRestocksAndRestoresVoucher() {
+        DonHang o = order(1, 7);
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(nguoiDungRepository.findById(100)).thenReturn(Optional.of(admin()));
+        when(donHangRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        service.updateOrderStatus(1, 8, "Đã nhận lại hàng", true, 100);
+
+        assertEquals(8, o.getTrangThaiDon());
+        verify(inventoryService).release(o);
+        verify(phieuGiamGiaService).restoreForOrder(1);
+    }
+
+    @Test void rejectingReturnMovesBackToCompletedWithoutChangingStock() {
+        DonHang o = order(1, 7);
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(nguoiDungRepository.findById(100)).thenReturn(Optional.of(admin()));
+        when(donHangRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        service.updateOrderStatus(1, 6, "Không đủ điều kiện trả hàng", true, 100);
+
+        assertEquals(6, o.getTrangThaiDon());
+        verify(inventoryService, never()).release(any());
+    }
+
+    @Test void customerCanRequestReturnForOwnCompletedOrder() {
+        DonHang o = order(1, 6);
+        NguoiDung customer = o.getNguoiDung();
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(nguoiDungRepository.findById(1)).thenReturn(Optional.of(customer));
+
+        service.requestReturn(1, 1, "Sản phẩm không đúng mô tả");
+
+        assertEquals(7, o.getTrangThaiDon());
+        verify(orderSseService).sendOrderStatusUpdate(1, 7, 6, "user", "Sản phẩm không đúng mô tả");
+    }
+
+    @Test void customerCannotRequestReturnBeforeCompletion() {
+        DonHang o = order(1, 4);
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+
+        assertThrows(BadRequestException.class,
+                () -> service.requestReturn(1, 1, "Chưa nhận được hàng"));
+    }
+
+    @Test void customerCannotRequestReturnAfterFifteenDays() {
+        DonHang o = order(1, 6);
+        LichSuDonHang completed = LichSuDonHang.builder()
+                .trangThaiMoi(6).thoiGian(LocalDateTime.now().minusDays(16)).build();
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(lichSuDonHangRepository.findByDonHang_MaDonHangOrderByThoiGianDesc(1))
+                .thenReturn(List.of(completed));
+
+        assertThrows(BadRequestException.class,
+                () -> service.requestReturn(1, 1, "Yêu cầu quá hạn"));
+    }
+
+    @Test void refundCanBeRecordedForFailedPaidDelivery() {
+        DonHang o = order(1, 9);
+        ThanhToan payment = ThanhToan.builder().trangThaiThanhToan(2).build();
+        when(donHangRepository.findByIdForUpdate(1)).thenReturn(Optional.of(o));
+        when(thanhToanRepository.findByDonHang_MaDonHang(1)).thenReturn(List.of(payment));
+        when(nguoiDungRepository.findById(100)).thenReturn(Optional.of(admin()));
+
+        service.recordRefund(1, "RF-123", "Hoàn qua VNPay", 100);
+
+        assertEquals(4, payment.getTrangThaiThanhToan());
+        assertTrue(payment.getRefunded());
+        verify(thanhToanRepository).save(payment);
+        ArgumentCaptor<LichSuDonHang> history = ArgumentCaptor.forClass(LichSuDonHang.class);
+        verify(lichSuDonHangRepository).save(history.capture());
+        assertTrue(history.getValue().getGhiChu().contains("RF-123"));
+        assertFalse(history.getValue().getKhachHangXem());
     }
 }
