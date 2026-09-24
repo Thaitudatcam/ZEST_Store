@@ -2,9 +2,9 @@ package com.example.zeststore.service;
 
 import com.example.zeststore.config.PaymentConfig;
 import com.example.zeststore.entity.ThanhToan;
+import com.example.zeststore.exception.BadRequestException;
 import com.example.zeststore.exception.ResourceNotFoundException;
 import com.example.zeststore.repository.ThanhToanRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class VnPayService {
+
+    public record IpnResult(String rspCode, String message, Integer orderId) {}
 
     private final PaymentConfig paymentConfig;
     private final ThanhToanRepository thanhToanRepository;
@@ -43,15 +45,26 @@ public class VnPayService {
     }
 
     private String buildPaymentUrl(ThanhToan payment, String orderInfo, String ipAddress) {
+        if (!Integer.valueOf(2).equals(payment.getPhuongThuc())) {
+            throw new BadRequestException("Payment method is not VNPay");
+        }
         PaymentConfig.VnpayConfig config = paymentConfig.getVnpay();
         BigDecimal amount = payment.getSoTien().multiply(BigDecimal.valueOf(100));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime localDeadline = payment.getThoiGianTao().plusHours(2);
+        LocalDateTime gatewayExpiry = now.plusMinutes(15).isBefore(localDeadline)
+                ? now.plusMinutes(15) : localDeadline;
+        if (!gatewayExpiry.isAfter(now.plusMinutes(1))) {
+            throw new BadRequestException("Phiên thanh toán đã hết hạn. Vui lòng tạo đơn mới");
+        }
 
         Map<String, String> params = new TreeMap<>();
         params.put("vnp_Version", "2.1.0");
         params.put("vnp_Command", "pay");
         params.put("vnp_TmnCode", config.getTmnCode());
         params.put("vnp_Amount", String.valueOf(amount.longValue()));
-        params.put("vnp_CreateDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+        params.put("vnp_CreateDate", now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
         params.put("vnp_CurrCode", "VND");
         params.put("vnp_IpAddr", ipAddress);
         params.put("vnp_Locale", "vn");
@@ -59,8 +72,7 @@ public class VnPayService {
         params.put("vnp_OrderType", "other");
         params.put("vnp_ReturnUrl", paymentConfig.getVnpayReturnUrl());
         params.put("vnp_TxnRef", payment.getMaGiaoDich());
-        params.put("vnp_ExpireDate", LocalDateTime.now().plusMinutes(15)
-                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+        params.put("vnp_ExpireDate", gatewayExpiry.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
 
         String hashData = buildCreateHashData(params);
         String queryUrl = buildQueryUrl(params);
@@ -107,17 +119,22 @@ public class VnPayService {
     public void handleSuccessPayment(String maGiaoDich, String transactionNo) {
         ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
-        thanhToanService.completePayment(payment.getMaThanhToan(), transactionNo);
+        if (!Integer.valueOf(2).equals(payment.getPhuongThuc()))
+            throw new BadRequestException("Payment method does not match VNPay");
+        ThanhToanService.PaymentTransition transition =
+                thanhToanService.completePaymentWithResult(payment.getMaThanhToan(), transactionNo);
 
         // Notify buyer that payment was successful
-        if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
+        if (transition.changed() && payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
             try {
                 Integer orderId = payment.getDonHang().getMaDonHang();
                 thongBaoService.taoThongBao(
                         payment.getDonHang().getNguoiDung().getMaNguoiDung(),
-                        "Thanh toán thành công #" + orderId,
-                        "Đơn hàng #" + orderId + " đã được thanh toán thành công qua VNPay.",
-                        "THANH_TOAN_THANH_CONG",
+                        transition.requiresRefund() ? "Thanh toán cần đối soát #" + orderId : "Thanh toán thành công #" + orderId,
+                        transition.requiresRefund()
+                                ? "VNPay đã thu tiền sau khi đơn #" + orderId + " đóng. Cửa hàng sẽ đối soát và hoàn tiền."
+                                : "Đơn hàng #" + orderId + " đã được thanh toán thành công qua VNPay.",
+                        transition.requiresRefund() ? "THANH_TOAN_DOI_SOAT" : "THANH_TOAN_THANH_CONG",
                         "/orders/" + orderId);
             } catch (Exception ignored) {}
         }
@@ -127,10 +144,13 @@ public class VnPayService {
     public void handleFailedPayment(String maGiaoDich) {
         ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
-        thanhToanService.failPayment(payment.getMaThanhToan());
+        if (!Integer.valueOf(2).equals(payment.getPhuongThuc()))
+            throw new BadRequestException("Payment method does not match VNPay");
+        ThanhToanService.PaymentTransition transition =
+                thanhToanService.failPaymentWithResult(payment.getMaThanhToan());
 
         // Notify buyer that payment failed/cancelled
-        if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
+        if (transition.changed() && payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
             try {
                 Integer orderId = payment.getDonHang().getMaDonHang();
                 thongBaoService.taoThongBao(
@@ -159,7 +179,35 @@ public class VnPayService {
         result.put("txnRef", txnRef);
         result.put("orderId", orderId != null ? orderId.toString() : null);
         result.put("transactionNo", safeParams.get("vnp_TransactionNo"));
+        result.put("transactionStatus", safeParams.get("vnp_TransactionStatus"));
+        result.put("amount", safeParams.get("vnp_Amount"));
+        result.put("tmnCode", safeParams.get("vnp_TmnCode"));
         return result;
+    }
+
+    @Transactional
+    public IpnResult processIpn(Map<String, String> params) {
+        Map<String, String> result = buildReturnParams(params);
+        Integer orderId = result.get("orderId") == null ? null : Integer.valueOf(result.get("orderId"));
+        if (!"true".equals(result.get("verified"))) return new IpnResult("97", "Invalid checksum", orderId);
+        String txnRef = result.get("txnRef");
+        ThanhToan payment = txnRef == null ? null : thanhToanRepository.findByMaGiaoDich(txnRef).orElse(null);
+        if (payment == null || !Integer.valueOf(2).equals(payment.getPhuongThuc()))
+            return new IpnResult("01", "Order not found", orderId);
+        if (!Objects.equals(paymentConfig.getVnpay().getTmnCode(), result.get("tmnCode")))
+            return new IpnResult("97", "Invalid terminal", orderId);
+        String expectedAmount = payment.getSoTien().multiply(BigDecimal.valueOf(100)).toBigIntegerExact().toString();
+        if (!expectedAmount.equals(result.get("amount")))
+            return new IpnResult("04", "Invalid amount", orderId);
+        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())
+                || Integer.valueOf(4).equals(payment.getTrangThaiThanhToan()))
+            return new IpnResult("02", "Order already confirmed", orderId);
+
+        boolean paid = "00".equals(result.get("responseCode"))
+                && "00".equals(result.get("transactionStatus"));
+        if (paid) handleSuccessPayment(txnRef, result.get("transactionNo"));
+        else handleFailedPayment(txnRef);
+        return new IpnResult("00", "Confirm Success", orderId);
     }
 
     public Integer extractOrderId(String txnRef) {

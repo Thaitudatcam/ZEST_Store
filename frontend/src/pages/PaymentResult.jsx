@@ -11,11 +11,11 @@ export default function PaymentResult() {
   const [done, setDone] = useState(false)
   const [success, setSuccess] = useState(false)
   const [pending, setPending] = useState(false)
+  const [reconciliation, setReconciliation] = useState(false)
   const [loading, setLoading] = useState(true)
   const [manualCheckLoading, setManualCheckLoading] = useState(false)
   const pollRef = useRef(null)
 
-  const successParam = searchParams.get('success')
   const orderId = searchParams.get('orderId')
 
   const checkOrderStatus = async () => {
@@ -33,6 +33,10 @@ export default function PaymentResult() {
           setPending(false); setSuccess(false); setDone(true); setLoading(false)
           return true
         }
+        if (payment.trangThaiThanhToan === 4) {
+          setPending(false); setReconciliation(true); setDone(true); setLoading(false)
+          return true
+        }
       }
     } catch {}
     setManualCheckLoading(false)
@@ -40,13 +44,6 @@ export default function PaymentResult() {
   }
 
   useEffect(() => {
-    if (successParam === 'true' || successParam === 'false') {
-      setSuccess(successParam === 'true')
-      setDone(true)
-      setLoading(false)
-      return
-    }
-
     if (!orderId) {
       setDone(true)
       setLoading(false)
@@ -76,6 +73,10 @@ export default function PaymentResult() {
             setPending(false); setSuccess(false); setDone(true); setLoading(false)
             return
           }
+          if (payment.trangThaiThanhToan === 4) {
+            setPending(false); setReconciliation(true); setDone(true); setLoading(false)
+            return
+          }
         }
       } catch {}
       pollRef.current = setTimeout(poll, 2000)
@@ -85,7 +86,7 @@ export default function PaymentResult() {
     return () => {
       if (pollRef.current) clearTimeout(pollRef.current)
     }
-  }, [successParam, orderId])
+  }, [orderId])
 
   if (loading) {
     return (
@@ -107,17 +108,21 @@ export default function PaymentResult() {
     <div className="max-w-md mx-auto px-4 py-16 text-center">
       {pending ? (
         <Loader className="h-20 w-20 mx-auto text-gold animate-spin mb-4" />
+      ) : reconciliation ? (
+        <Clock className="h-20 w-20 mx-auto text-amber-600 mb-4" />
       ) : success ? (
         <CheckCircle className="h-20 w-20 mx-auto text-emerald-deep mb-4" />
       ) : (
         <XCircle className="h-20 w-20 mx-auto text-bordeaux mb-4" />
       )}
       <h1 className="text-2xl font-bold mb-2">
-        {pending ? 'Đang chờ xác nhận thanh toán' : success ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
+        {pending ? 'Đang chờ xác nhận thanh toán' : reconciliation ? 'Thanh toán đang được đối soát' : success ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
       </h1>
       <p className="text-stone mb-6">
         {pending
           ? 'Cổng thanh toán chưa trả kết quả. Đơn hàng vẫn được giữ, bạn có thể kiểm tra lại sau ít phút.'
+          : reconciliation
+          ? 'Cổng thanh toán đã thu tiền sau khi đơn đóng. Cửa hàng sẽ kiểm tra và hoàn tiền cho bạn.'
           : success
           ? 'Cảm ơn bạn! Đơn hàng đã được xác nhận.'
           : 'Đã có lỗi xảy ra trong quá trình thanh toán.'}

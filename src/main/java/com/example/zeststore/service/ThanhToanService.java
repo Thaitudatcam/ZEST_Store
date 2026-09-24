@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ThanhToanService {
 
+    public record PaymentTransition(ThanhToan payment, boolean changed, boolean requiresRefund) {}
+
     private final ThanhToanRepository thanhToanRepository;
     private final DonHangRepository donHangRepository;
     private final MucDonHangRepository mucDonHangRepository;
@@ -136,8 +138,17 @@ public class ThanhToanService {
 
     @Transactional
     public ThanhToan completePayment(Integer paymentId, String maGiaoDich) {
+        return completePaymentWithResult(paymentId, maGiaoDich).payment();
+    }
+
+    @Transactional
+    public PaymentTransition completePaymentWithResult(Integer paymentId, String maGiaoDich) {
         ThanhToan payment = lockPayment(paymentId);
-        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())) return payment;
+        if (Integer.valueOf(2).equals(payment.getTrangThaiThanhToan())
+                || Integer.valueOf(4).equals(payment.getTrangThaiThanhToan())) {
+            return new PaymentTransition(payment, false,
+                    Integer.valueOf(4).equals(payment.getTrangThaiThanhToan()));
+        }
         if (payment.getDonHang() != null && "LEGACY".equals(payment.getDonHang().getStockState()))
             throw new BadRequestException("Thanh toán đơn cũ cần đối soát kho và hoàn tiền trước khi xử lý");
         // Keep maGiaoDich as the stable merchant reference for repeated gateway callbacks.
@@ -146,11 +157,13 @@ public class ThanhToanService {
         DonHang order = payment.getDonHang();
         if (order == null) {
             payment.setTrangThaiThanhToan(2);
-        } else if (java.util.Set.of(5, 9).contains(order.getTrangThaiDon())) {
-            // A provider can settle after the local reservation has expired. Do not ship twice.
-            if (order.getNguoiDung() == null)
-                throw new BadRequestException("Thanh toán đến muộn cần đối soát thủ công cho khách lẻ");
-            payment.setTrangThaiThanhToan(3);
+        } else if (java.util.Set.of(5, 8, 9).contains(order.getTrangThaiDon())) {
+            // The gateway really collected money after the local order was closed.
+            // Never turn that fact into a generic failure and never revive/ship the order.
+            payment.setTrangThaiThanhToan(4);
+            payment.setRefunded(false);
+            log.error("Thanh toán #{} đã được cổng thu sau khi đơn #{} đóng; cần hoàn tiền/đối soát",
+                    payment.getMaThanhToan(), order.getMaDonHang());
         } else {
             inventoryService.deduct(order);
             payment.setTrangThaiThanhToan(2);
@@ -164,7 +177,8 @@ public class ThanhToanService {
             }
             clearCartForOrder(order);
         }
-        return thanhToanRepository.save(payment);
+        ThanhToan saved = thanhToanRepository.save(payment);
+        return new PaymentTransition(saved, true, Integer.valueOf(4).equals(saved.getTrangThaiThanhToan()));
     }
 
     private void clearCartForOrder(DonHang order) {
@@ -212,7 +226,14 @@ public class ThanhToanService {
 
     @Transactional
     public ThanhToan failPayment(Integer paymentId) {
-        return failLocked(lockPayment(paymentId));
+        return failPaymentWithResult(paymentId).payment();
+    }
+
+    @Transactional
+    public PaymentTransition failPaymentWithResult(Integer paymentId) {
+        ThanhToan payment = lockPayment(paymentId);
+        boolean changed = Integer.valueOf(1).equals(payment.getTrangThaiThanhToan());
+        return new PaymentTransition(failLocked(payment), changed, false);
     }
 
     @Scheduled(fixedRate = 300000)
@@ -246,6 +267,8 @@ public class ThanhToanService {
         if (!Integer.valueOf(1).equals(order.getTrangThaiDon())
                 || !Integer.valueOf(1).equals(payment.getTrangThaiThanhToan()))
             throw new BadRequestException("Đơn đã hủy/đã xử lý. Vui lòng tạo đơn mới");
+        if (payment.getThoiGianTao().plusHours(2).isBefore(LocalDateTime.now().plusMinutes(2)))
+            throw new BadRequestException("Phiên thanh toán sắp hết hạn. Vui lòng tạo đơn mới");
         // Preserve the original deadline and reference; retries do not extend stock holds.
         return payment;
     }

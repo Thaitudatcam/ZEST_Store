@@ -38,14 +38,18 @@ public class ZaloPayService {
         ThanhToan payment = thanhToanRepository
                 .findByDonHang_MaDonHangAndTrangThaiThanhToan(orderId, 1)
                 .orElseThrow(() -> new ResourceNotFoundException("Pending payment for order", orderId));
+        if (!Integer.valueOf(4).equals(payment.getPhuongThuc()))
+            throw new BadRequestException("Payment method is not ZaloPay");
         return buildZaloOrder(payment, "user_" + orderId, orderId, "Thanh toan don hang #" + orderId);
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, String> buildZaloOrder(ThanhToan payment, String appUser, Integer orderId, String description) {
         PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
+        // ZaloPay requires app_trans_id to be unique per day. Include payment id
+        // and a retry nonce, then resolve callbacks by payment id.
         String appTransId = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
-                + "_" + payment.getMaGiaoDich();
+                + "_P" + payment.getMaThanhToan() + "_" + (System.currentTimeMillis() % 1_000_000_000L);
         long appTime = System.currentTimeMillis();
         String callbackUrl = paymentConfig.getZalopayCallbackUrl();
         String returnUrl = callbackUrl.replace("/callback", "/return");
@@ -93,43 +97,69 @@ public class ZaloPayService {
     public boolean verifyCallback(String data, String mac) {
         PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
         String calculated = hmacSHA256(config.getKey2(), data != null ? data : "");
-        return calculated.equals(mac);
+        return mac != null && calculated.equalsIgnoreCase(mac);
     }
 
     @Transactional
     public void handleSuccessCallback(String data) {
         try {
             Map<String, Object> dataMap = objectMapper.readValue(data, Map.class);
-            int returnCode = ((Number) dataMap.get("return_code")).intValue();
-            if (returnCode != 1) return;
-
             String appTransId = (String) dataMap.get("app_trans_id");
             String zpTransId = String.valueOf(dataMap.get("zp_trans_id"));
-
-            String[] parts = appTransId.split("_", 2);
-            String maGiaoDich = parts.length > 1 ? parts[1] : appTransId;
-
-            ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
-                    .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + maGiaoDich));
-            thanhToanService.completePayment(payment.getMaThanhToan(), zpTransId);
-
-            // Notify buyer that payment was successful
-            if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
-                try {
-                    Integer orderId = payment.getDonHang().getMaDonHang();
-                    thongBaoService.taoThongBao(
-                            payment.getDonHang().getNguoiDung().getMaNguoiDung(),
-                            "Thanh toán thành công #" + orderId,
-                            "Đơn hàng #" + orderId + " đã được thanh toán thành công qua ZaloPay.",
-                            "THANH_TOAN_THANH_CONG",
-                            "/orders/" + orderId);
-                } catch (Exception ignored) {}
-            }
+            ThanhToan payment = resolvePayment(appTransId);
+            validateSettledPayment(dataMap, payment);
+            settleAndNotify(payment, zpTransId);
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to handle ZaloPay callback", e);
         }
+    }
+
+    private ThanhToan resolvePayment(String appTransId) {
+        if (appTransId == null || appTransId.isBlank())
+            throw new BadRequestException("Missing app_trans_id");
+        String[] parts = appTransId.split("_", 3);
+        if (parts.length >= 2 && parts[1].startsWith("P")) {
+            try {
+                return thanhToanRepository.findById(Integer.parseInt(parts[1].substring(1)))
+                        .orElseThrow(() -> new ResourceNotFoundException("Payment", parts[1]));
+            } catch (NumberFormatException ex) {
+                throw new BadRequestException("Invalid app_trans_id");
+            }
+        }
+        String reference = appTransId.contains("_") ? appTransId.split("_", 2)[1] : appTransId;
+        return thanhToanRepository.findByMaGiaoDich(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment by ref: " + reference));
+    }
+
+    private void validateSettledPayment(Map<String, Object> gatewayData, ThanhToan payment) {
+        if (!Integer.valueOf(4).equals(payment.getPhuongThuc()))
+            throw new BadRequestException("Payment method does not match ZaloPay");
+        Object appId = gatewayData.get("app_id");
+        if (appId == null || !String.valueOf(paymentConfig.getZalopay().getAppId()).equals(String.valueOf(appId)))
+            throw new BadRequestException("ZaloPay app_id does not match");
+        Object amount = gatewayData.get("amount");
+        if (!(amount instanceof Number)
+                || payment.getSoTien().compareTo(new BigDecimal(amount.toString())) != 0)
+            throw new BadRequestException("ZaloPay amount does not match");
+    }
+
+    private void settleAndNotify(ThanhToan payment, String zpTransId) {
+        ThanhToanService.PaymentTransition transition =
+                thanhToanService.completePaymentWithResult(payment.getMaThanhToan(), zpTransId);
+        if (!transition.changed() || payment.getDonHang() == null || payment.getDonHang().getNguoiDung() == null) return;
+        try {
+            Integer orderId = payment.getDonHang().getMaDonHang();
+            thongBaoService.taoThongBao(
+                    payment.getDonHang().getNguoiDung().getMaNguoiDung(),
+                    transition.requiresRefund() ? "Thanh toán cần đối soát #" + orderId : "Thanh toán thành công #" + orderId,
+                    transition.requiresRefund()
+                            ? "ZaloPay đã thu tiền sau khi đơn #" + orderId + " đóng. Cửa hàng sẽ đối soát và hoàn tiền."
+                            : "Đơn hàng #" + orderId + " đã được thanh toán thành công qua ZaloPay.",
+                    transition.requiresRefund() ? "THANH_TOAN_DOI_SOAT" : "THANH_TOAN_THANH_CONG",
+                    "/orders/" + orderId);
+        } catch (Exception ignored) {}
     }
 
     @SuppressWarnings("unchecked")
@@ -153,91 +183,49 @@ public class ZaloPayService {
     public String handleReturn(Map<String, String> params) {
         String appTransId = params.get("apptransid");
         String base = paymentConfig.getRedirectBaseUrl() + "/payment/result";
-        if (appTransId == null || appTransId.isBlank()) {
-            // Missing gateway parameters are not a verified payment failure.
+        if (appTransId == null || appTransId.isBlank()) return base;
+        ThanhToan payment;
+        try {
+            payment = resolvePayment(appTransId);
+        } catch (RuntimeException ex) {
+            log.warn("Không tìm thấy thanh toán ZaloPay cho {}", appTransId);
             return base;
         }
-
-        String maGiaoDich = appTransId.contains("_") ? appTransId.split("_", 2)[1] : appTransId;
+        Integer orderId = payment.getDonHang() == null ? null : payment.getDonHang().getMaDonHang();
+        String redirect = base + (orderId == null ? "" : "?orderId=" + orderId);
         Map<String, Object> queryResult;
         try {
             queryResult = queryOrder(appTransId);
         } catch (RuntimeException ex) {
             log.warn("Không thể truy vấn trạng thái ZaloPay cho {}", appTransId, ex);
-            return base + "?orderId=" + orderIdFromReference(maGiaoDich);
+            return redirect;
         }
-
-        boolean processing = queryResult.get("is_processing") == Boolean.TRUE;
-        if (processing) {
-            Integer orderId = null;
-            String[] parts = maGiaoDich.split("-", 3);
-            if (parts.length >= 2) try { orderId = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) {}
-            return paymentConfig.getRedirectBaseUrl() + "/payment/result?orderId=" + (orderId != null ? orderId : "");
-        }
-
+        if (queryResult.get("is_processing") == Boolean.TRUE) return redirect;
         Object rawReturnCode = queryResult.get("return_code");
-        if (!(rawReturnCode instanceof Number)) {
-            return base + "?orderId=" + orderIdFromReference(maGiaoDich);
-        }
+        if (!(rawReturnCode instanceof Number)) return redirect;
         int returnCode = ((Number) rawReturnCode).intValue();
         if (returnCode == 1) {
-            String zpTransId = String.valueOf(queryResult.get("zp_trans_id"));
-            ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
-                    .orElse(null);
-            if (payment != null && payment.getTrangThaiThanhToan() == 1) {
-                thanhToanService.completePayment(payment.getMaThanhToan(), zpTransId);
-
-                // Notify buyer that payment was successful
-                if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
-                    try {
-                        Integer orderId = payment.getDonHang().getMaDonHang();
-                        thongBaoService.taoThongBao(
-                                payment.getDonHang().getNguoiDung().getMaNguoiDung(),
-                                "Thanh toán thành công #" + orderId,
-                                "Đơn hàng #" + orderId + " đã được thanh toán thành công qua ZaloPay.",
-                                "THANH_TOAN_THANH_CONG",
-                                "/orders/" + orderId);
-                        } catch (Exception ignored) {}
-                }
-            }
+            queryResult.putIfAbsent("app_id", paymentConfig.getZalopay().getAppId());
+            validateSettledPayment(queryResult, payment);
+            settleAndNotify(payment, String.valueOf(queryResult.get("zp_trans_id")));
         } else {
-            ThanhToan payment = thanhToanRepository.findByMaGiaoDich(maGiaoDich)
-                    .orElse(null);
-            if (payment != null && payment.getTrangThaiThanhToan() == 1) {
-                thanhToanService.failPayment(payment.getMaThanhToan());
-
-                // Notify buyer that payment failed/cancelled
-                if (payment.getDonHang() != null && payment.getDonHang().getNguoiDung() != null) {
-                    try {
-                        Integer orderId = payment.getDonHang().getMaDonHang();
-                        thongBaoService.taoThongBao(
-                                payment.getDonHang().getNguoiDung().getMaNguoiDung(),
-                                "Thanh toán không thành công #" + orderId,
-                                "Đơn hàng #" + orderId + " thanh toán qua ZaloPay không thành công hoặc đã bị hủy. Vui lòng thử lại.",
-                                "THANH_TOAN_THAT_BAI",
-                                "/orders/" + orderId);
-                        } catch (Exception ignored) {}
-                }
-            }
+            failAndNotify(payment);
         }
-
-        Integer orderId = null;
-        String[] parts = maGiaoDich.split("-", 3);
-        if (parts.length >= 2) try { orderId = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) {}
-
-        if (returnCode == 1) {
-            return base + "?success=true&orderId=" + (orderId != null ? orderId : "");
-        }
-        return base + "?success=false&orderId=" + (orderId != null ? orderId : "");
+        return redirect;
     }
 
-    private String orderIdFromReference(String reference) {
-        String[] parts = reference == null ? new String[0] : reference.split("-", 3);
-        if (parts.length >= 2) {
-            try { return String.valueOf(Integer.parseInt(parts[1])); }
-            catch (NumberFormatException ignored) {}
-        }
-        return "";
+    private void failAndNotify(ThanhToan payment) {
+        ThanhToanService.PaymentTransition transition =
+                thanhToanService.failPaymentWithResult(payment.getMaThanhToan());
+        if (!transition.changed() || payment.getDonHang() == null || payment.getDonHang().getNguoiDung() == null) return;
+        try {
+            Integer orderId = payment.getDonHang().getMaDonHang();
+            thongBaoService.taoThongBao(
+                    payment.getDonHang().getNguoiDung().getMaNguoiDung(),
+                    "Thanh toán không thành công #" + orderId,
+                    "Đơn hàng #" + orderId + " thanh toán qua ZaloPay không thành công hoặc đã bị hủy. Vui lòng thử lại.",
+                    "THANH_TOAN_THAT_BAI", "/orders/" + orderId);
+        } catch (Exception ignored) {}
     }
 
     @SuppressWarnings("unchecked")

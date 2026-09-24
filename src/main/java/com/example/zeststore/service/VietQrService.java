@@ -29,14 +29,14 @@ public class VietQrService {
                 .findByDonHang_MaDonHangAndTrangThaiThanhToan(orderId, 1)
                 .orElseThrow(() -> new ResourceNotFoundException("Pending payment for order", orderId));
 
-        if (!Integer.valueOf(6).equals(payment.getPhuongThuc())) {
+        if (!Integer.valueOf(3).equals(payment.getPhuongThuc())) {
             throw new BadRequestException("Payment method is not VietQR");
         }
 
         PaymentConfig.VietQrConfig config = paymentConfig.getVietqr();
         BigDecimal amount = payment.getSoTien();
 
-        String addInfo = "Thanh+toan+don+hang+%" + orderId;
+        String addInfo = URLEncoder.encode("Thanh toan don hang " + orderId, StandardCharsets.UTF_8);
         String qrUrl = String.format(
                 "https://img.vietqr.io/image/%s-%s-%s.jpg?amount=%s&addInfo=%s&accountName=%s",
                 config.getBankBin(),
@@ -64,7 +64,7 @@ public class VietQrService {
         ThanhToan payment = thanhToanRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
         String txId;
-        if (!Integer.valueOf(6).equals(payment.getPhuongThuc())) {
+        if (!java.util.Set.of(3, 6).contains(payment.getPhuongThuc())) {
             throw new BadRequestException("Chỉ xác nhận thủ công giao dịch chuyển khoản VietQR");
         }
         if (payment.getDonHang() != null) {

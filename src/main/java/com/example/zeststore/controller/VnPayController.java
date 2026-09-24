@@ -30,7 +30,7 @@ public class VnPayController {
         response.sendRedirect(paymentService.handleVnPayReturn(params));
     }
 
-    @PostMapping("/ipn")
+    @RequestMapping(value = "/ipn", method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<?> ipnHandler(HttpServletRequest request) {
         Map<String, String> params = extractParams(request);
         return ResponseEntity.ok(paymentService.handleVnPayIpn(params));

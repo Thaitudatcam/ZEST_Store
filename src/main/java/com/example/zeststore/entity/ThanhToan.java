@@ -15,6 +15,15 @@ import java.time.LocalDateTime;
 @Table(name = "thanh_toan")
 public class ThanhToan {
 
+    /**
+     * Payment was returned to the buyer after the gateway had already settled it.
+     * A late gateway callback uses status 4 (paid, refund required) until this flag
+     * is set by the reconciliation/refund workflow.
+     */
+    @Column(name = "refunded", nullable = false)
+    @Builder.Default
+    private Boolean refunded = false;
+
     @Column(name = "gateway_transaction_id", length = 100)
     private String gatewayTransactionId;
 

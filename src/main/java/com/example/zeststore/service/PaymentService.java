@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Service
@@ -34,21 +32,8 @@ public class PaymentService {
         String redirectBase = paymentConfig.getRedirectBaseUrl();
         try {
             Map<String, String> result = vnPayService.buildReturnParams(params);
-            boolean success = "true".equals(result.get("verified")) && "00".equals(result.get("responseCode"));
-
-            if (success && result.get("txnRef") != null) {
-                vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
-                return redirectBase + "/payment/result?success=true&orderId=" + result.get("orderId");
-            }
-            if ("true".equals(result.get("verified")) && result.get("txnRef") != null) {
-                // Do not leave a failed, signed gateway response pending until
-                // the two-hour cleanup job runs.
-                vnPayService.handleFailedPayment(result.get("txnRef"));
-                String redirect = redirectBase + "/payment/result?success=false";
-                if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
-                return redirect;
-            }
-            // Invalid/missing signatures are pending, not a payment failure.
+            // Browser return parameters only drive navigation. The signed,
+            // server-to-server IPN is authoritative for changing payment state.
             String redirect = redirectBase + "/payment/result";
             if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
             return redirect;
@@ -66,15 +51,8 @@ public class PaymentService {
 
     public Map<String, String> handleVnPayIpn(Map<String, String> params) {
         try {
-            Map<String, String> result = vnPayService.buildReturnParams(params);
-            boolean success = "true".equals(result.get("verified")) && "00".equals(result.get("responseCode"));
-
-            if (success && result.get("txnRef") != null) {
-                vnPayService.handleSuccessPayment(result.get("txnRef"), result.get("transactionNo"));
-                return Map.of("RspCode", "00", "Message", "Success");
-            }
-            if ("true".equals(result.get("verified")) && result.get("txnRef") != null) vnPayService.handleFailedPayment(result.get("txnRef"));
-            return Map.of("RspCode", "01", "Message", "Failed");
+            VnPayService.IpnResult result = vnPayService.processIpn(params);
+            return Map.of("RspCode", result.rspCode(), "Message", result.message());
         } catch (Exception e) {
             return Map.of("RspCode", "01", "Message", "Order not found");
         }
@@ -97,8 +75,13 @@ public class PaymentService {
         String mac = body.get("mac");
 
         if (zaloPayService.verifyCallback(data, mac)) {
-            zaloPayService.handleSuccessCallback(data);
-            return Map.of("return_code", 1, "return_message", "success");
+            try {
+                zaloPayService.handleSuccessCallback(data);
+                return Map.of("return_code", 1, "return_message", "success");
+            } catch (RuntimeException ex) {
+                log.error("Không thể xử lý callback ZaloPay", ex);
+                return Map.of("return_code", 0, "return_message", "callback processing failed");
+            }
         }
         return Map.of("return_code", -1, "return_message", "invalid mac");
     }

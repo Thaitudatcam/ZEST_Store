@@ -87,6 +87,8 @@ export default function OrderDetail() {
       else if (method === 4) paymentRes = await createZaloPayPayment(orderIdNum)
       if (paymentRes?.paymentUrl) {
         window.location.href = paymentRes.paymentUrl
+      } else if (paymentRes?.qrUrl) {
+        window.location.href = paymentRes.qrUrl
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Không thể tạo yêu cầu thanh toán')

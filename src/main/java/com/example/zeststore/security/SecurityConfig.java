@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/orders/lookup").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/return").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/vnpay/ipn").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/vnpay/ipn").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/payments/zalopay/return").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/payments/zalopay/callback").permitAll()

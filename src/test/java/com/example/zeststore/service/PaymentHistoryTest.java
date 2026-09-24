@@ -245,7 +245,8 @@ class PaymentHistoryTest {
 
         ThanhToan result = service.completePayment(20, "TXN123");
 
-        assertEquals(3, result.getTrangThaiThanhToan());
+        assertEquals(4, result.getTrangThaiThanhToan());
+        assertFalse(result.getRefunded());
         assertEquals(5, order.getTrangThaiDon());
         verifyNoInteractions(inventoryService);
         verify(lichSuDonHangRepository, never()).save(any());

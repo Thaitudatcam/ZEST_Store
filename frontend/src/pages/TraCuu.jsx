@@ -7,7 +7,7 @@ import OrderCustomerNotes from '../components/OrderCustomerNotes'
 import OrderStatusStepper from '../components/OrderStatusStepper'
 
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'VietQR', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
-const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại' }
+const PAYMENT_STATUS = { 1: 'Chờ thanh toán', 2: 'Đã thanh toán', 3: 'Thất bại', 4: 'Chờ hoàn tiền/đối soát' }
 
 
 export default function TraCuu() {

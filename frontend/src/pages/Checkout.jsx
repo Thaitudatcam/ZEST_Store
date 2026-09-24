@@ -4,7 +4,7 @@ import { getCart, updateCartItem, addToCart, removeCartItem } from '../api/cart'
 import { getProfile, getAddresses, addAddress } from '../api/users'
 import { placeOrder } from '../api/orders'
 
-import { createVnPayPayment, createVietQrPayment, createZaloPayPayment, confirmVietQrPayment } from '../api/payment'
+import { createVnPayPayment, createVietQrPayment, createZaloPayPayment } from '../api/payment'
 import { getServices, calculateShippingFee } from '../api/ghn'
 import { getProvinces, getDistricts, getWards } from '../api/address'
 import CheckoutCoupons from '../components/CheckoutCoupons'
@@ -13,7 +13,7 @@ import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
 import { VND } from '../components/ProductCard'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, ShieldCheck, RefreshCcw, Lock, ShoppingCart } from 'lucide-react'
+import { MapPin, CreditCard, Tag, ArrowLeft, Loader, Check, X, QrCode, Truck, Banknote, Smartphone, Landmark, ChevronRight, Plus, ShieldCheck, RefreshCcw, Lock, ShoppingCart, Clock } from 'lucide-react'
 import api from '../api/axios'
 import SafeImg from '../components/SafeImg'
 import SearchableSelect from '../components/SearchableSelect'
@@ -71,7 +71,6 @@ export default function Checkout() {
   const pendingCheckout = useRef(false)
   const checkoutKey = useRef(sessionStorage.getItem('onlineCheckoutKey') || crypto.randomUUID())
   const [vietQrData, setVietQrData] = useState(null)
-  const [confirmingQr, setConfirmingQr] = useState(false)
   const [discountCoupon, setDiscountCoupon] = useState(null)
   const [freeshipVoucher, setFreeshipVoucher] = useState(null)
   const [couponPending, setCouponPending] = useState(false)
@@ -472,7 +471,12 @@ export default function Checkout() {
         const paymentRes = await createPayment(result.maDonHang)
         sessionStorage.removeItem('onlineCheckoutKey')
         checkoutKey.current = crypto.randomUUID()
-        window.location.href = paymentRes.paymentUrl
+        if (method === 3) {
+          setVietQrData(paymentRes)
+          setQrTimer(900)
+        } else {
+          window.location.href = paymentRes.paymentUrl
+        }
       }
     } catch (err) {
       const message = err.response?.data?.message || Object.values(err.response?.data?.errors || {}).join(', ') || 'Đặt hàng thất bại. Vui lòng thử lại.'
@@ -481,20 +485,6 @@ export default function Checkout() {
     } finally {
       pendingCheckout.current = false
       setPlacing(false)
-    }
-  }
-
-  const handleConfirmQr = async () => {
-    if (!vietQrData) return
-    setConfirmingQr(true)
-    try {
-      await confirmVietQrPayment(vietQrData.paymentId)
-      setVietQrData(null)
-      navigate(`/orders/${vietQrData.orderId}`)
-    } catch (err) {
-      alert('Xác nhận thanh toán thất bại')
-    } finally {
-      setConfirmingQr(false)
     }
   }
 
@@ -798,7 +788,7 @@ export default function Checkout() {
             <p><span className="text-stone">Số tiền:</span> <span className="font-medium text-gold">{VND(vietQrData.amount)}</span></p>
           </div>
 
-          <p className="text-xs text-stone mb-4">Sử dụng ứng dụng ngân hàng để quét mã QR và thanh toán</p>
+          <p className="text-xs text-stone mb-4">Sử dụng ứng dụng ngân hàng để quét mã. Đơn sẽ tự cập nhật sau khi cửa hàng xác nhận đã nhận tiền.</p>
 
           {qrTimer === 0 ? (
             <button onClick={() => { clearInterval(qrPollRef.current); clearInterval(qrTimerRef.current); setVietQrData(null); setVietQrData({ ...vietQrData }) }}
@@ -806,10 +796,10 @@ export default function Checkout() {
               Tạo lại mã QR
             </button>
           ) : (
-            <button onClick={handleConfirmQr} disabled={confirmingQr}
+            <button onClick={() => navigate(`/orders/${vietQrData.orderId}`)}
               className="w-full bg-gold text-noir font-semibold py-3 rounded-xl hover:bg-gold-hover disabled:opacity-50 flex items-center justify-center gap-2">
-              {confirmingQr ? <Loader className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
-              {confirmingQr ? 'Đang xử lý...' : 'Tôi đã thanh toán'}
+              <Clock className="h-5 w-5" />
+              Xem trạng thái đơn hàng
             </button>
           )}
       </div>
