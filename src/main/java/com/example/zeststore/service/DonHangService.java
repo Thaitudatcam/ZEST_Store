@@ -39,6 +39,7 @@ public class DonHangService {
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final InventoryService inventoryService;
     private final CampaignDiscountService campaignDiscountService;
+    private final SalesInvoiceService salesInvoiceService;
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getOrdersByUser(Integer userId) {
@@ -173,6 +174,8 @@ public class DonHangService {
         DonHang order = donHangRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         assertCanPrint(order, isAdmin);
+        var invoice = salesInvoiceService.forOrder(orderId);
+        if (invoice.isPresent()) return salesInvoiceService.registerPrint(invoice.get().getId());
         order.setSoLanIn(order.getSoLanIn() == null ? 1 : order.getSoLanIn() + 1);
         donHangRepository.save(order);
         return buildPrintData(order, isAdmin);
@@ -180,7 +183,10 @@ public class DonHangService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getOrderPrintData(Integer orderId, boolean isAdmin) {
-        return buildPrintData(getOrderById(orderId), isAdmin);
+        DonHang order = getOrderById(orderId);
+        assertCanPrint(order, isAdmin);
+        var invoice = salesInvoiceService.forOrder(orderId);
+        return invoice.isPresent() ? salesInvoiceService.detail(invoice.get().getId()) : buildPrintData(order, isAdmin);
     }
 
     private void assertCanPrint(DonHang order, boolean isAdmin) {
@@ -201,7 +207,8 @@ public class DonHangService {
         List<MucDonHang> items = mucDonHangRepository.findByDonHang_MaDonHang(order.getMaDonHang());
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("maHoaDonCode", "HD-" + order.getMaDonHang());
+        result.put("maHoaDonCode", order.getMaDonHangCode() != null ? order.getMaDonHangCode() : "#" + order.getMaDonHang());
+        result.put("nguoiTaoTen", order.getNguoiTaoTen());
         result.put("soLanIn", order.getSoLanIn() == null ? 0 : order.getSoLanIn());
         result.put("ngayTao", order.getNgayDat());
         result.put("emailKhachHang",
@@ -218,19 +225,20 @@ public class DonHangService {
         orderInfo.put("phiVanChuyen", order.getPhiVanChuyen());
         orderInfo.put("tongTien", order.getTongTien());
         orderInfo.put("loaiDonHang", order.getLoaiDonHang());
+        orderInfo.put("trangThaiDon", order.getTrangThaiDon());
         orderInfo.put("ghiChu", order.getGhiChu());
         orderInfo.put("khachHang", order.getNguoiDung() != null ? order.getNguoiDung().getHoTen() : order.getTenNguoiNhan());
         result.put("donHang", orderInfo);
 
         result.put("chiTiet", items.stream().map(item -> {
             Map<String, Object> im = new LinkedHashMap<>();
-            im.put("maSanPhamCode", item.getBienThe().getSanPham().getMaSanPhamCode());
-            im.put("sku", item.getBienThe().getSku());
-            im.put("tenSanPham", item.getBienThe().getSanPham().getTenSanPham());
+            im.put("maSanPhamCode", item.getMaSanPhamSnapshot() != null ? item.getMaSanPhamSnapshot() : item.getBienThe().getSanPham().getMaSanPhamCode());
+            im.put("sku", item.getSkuSnapshot() != null ? item.getSkuSnapshot() : item.getBienThe().getSku());
+            im.put("tenSanPham", item.getTenSanPhamSnapshot() != null ? item.getTenSanPhamSnapshot() : item.getBienThe().getSanPham().getTenSanPham());
             String thongTin = "";
             if (item.getBienThe().getMauSac() != null) thongTin += item.getBienThe().getMauSac().getMauSac();
             if (item.getBienThe().getKichCo() != null) thongTin += (thongTin.isEmpty() ? "" : " / ") + item.getBienThe().getKichCo().getKichCo();
-            im.put("thongTinBienThe", thongTin);
+            im.put("thongTinBienThe", item.getBienTheSnapshot() != null ? item.getBienTheSnapshot() : thongTin);
             im.put("donGia", item.getDonGia());
             im.put("soLuong", item.getSoLuong());
             im.put("thanhTien", item.getThanhTien());
@@ -407,12 +415,13 @@ public class DonHangService {
                 : freeshipCoupon.getGiaTriGiam().min(phiVanChuyen);
             phiVanChuyen = phiVanChuyen.subtract(giamShip).max(BigDecimal.ZERO);
         }
-        BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen);
+        BigDecimal finalTotal = tongTien.subtract(soTienGiam).add(phiVanChuyen)
+                .setScale(0, java.math.RoundingMode.HALF_UP);
         if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
             finalTotal = BigDecimal.ZERO;
         }
 
-        if (request.getExpectedTotal() != null && request.getExpectedTotal().compareTo(finalTotal) != 0)
+        if (request.getExpectedTotal() != null && request.getExpectedTotal().setScale(0, java.math.RoundingMode.HALF_UP).compareTo(finalTotal) != 0)
             throw new BadRequestException("Giá/khuyến mãi hoặc phí vận chuyển đã thay đổi. Vui lòng tải lại giỏ hàng trước khi thanh toán");
         DonHang order = DonHang.builder()
                 .checkoutKey(checkoutKey)
@@ -593,6 +602,7 @@ public class DonHangService {
                 .khachHangXem(notifyCustomer)
                 .build());
 
+        if (Integer.valueOf(6).equals(status)) salesInvoiceService.issue(orderId, adminUserId);
         orderSseService.sendOrderStatusUpdate(orderId, status, oldStatus, "admin", notifyCustomer ? normalizedNote : null);
 
         // Notify the order's customer using the same wording as the UI.
@@ -672,6 +682,8 @@ public class DonHangService {
                 .nguoiCapNhat(user)
                 .build());
 
+        // Customer confirmation triggers system issuance, not a customer-issued invoice.
+        salesInvoiceService.issue(orderId, null);
         orderSseService.sendOrderStatusUpdate(orderId, 6, oldStatus, "user", null);
 
         return Map.of("message", "Order confirmed as received");

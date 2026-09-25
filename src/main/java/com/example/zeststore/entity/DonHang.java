@@ -117,6 +117,18 @@ public class DonHang {
     @JsonIgnore
     private List<LichSuDonHang> lichSuDonHangs;
 
+    public String getNguoiTaoTen() {
+        if (lichSuDonHangs != null) {
+            var created = lichSuDonHangs.stream().filter(h -> h.getTrangThaiCu() == null)
+                    .min(java.util.Comparator.comparing(LichSuDonHang::getThoiGian,
+                            java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
+            if (created.isPresent() && created.get().getNguoiCapNhat() != null)
+                return created.get().getNguoiCapNhat().getHoTen();
+        }
+        return Integer.valueOf(1).equals(loaiDonHang) && nguoiDung != null
+                ? nguoiDung.getHoTen() : "Chưa có thông tin";
+    }
+
     @PrePersist
     protected void onCreate() {
         this.ngayDat = LocalDateTime.now();

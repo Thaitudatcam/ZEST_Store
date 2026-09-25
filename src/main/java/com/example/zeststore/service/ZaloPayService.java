@@ -47,17 +47,29 @@ public class ZaloPayService {
     private Map<String, String> buildZaloOrder(ThanhToan payment, String appUser, Integer orderId, String description) {
         PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
         // ZaloPay requires app_trans_id to be unique per day. Include payment id
+        long amount;
+        try {
+            amount = payment.getSoTien().longValueExact();
+        } catch (ArithmeticException ex) {
+            throw new BadRequestException("Số tiền đơn cũ có phần lẻ VND, cần đối soát trước khi thanh toán ZaloPay");
+        }
         // and a retry nonce, then resolve callbacks by payment id.
         String appTransId = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
                 + "_P" + payment.getMaThanhToan() + "_" + (System.currentTimeMillis() % 1_000_000_000L);
         long appTime = System.currentTimeMillis();
         String callbackUrl = paymentConfig.getZalopayCallbackUrl();
-        String returnUrl = callbackUrl.replace("/callback", "/return");
-        String embedData = "{\"redirecturl\":\"" + returnUrl + "\",\"orderId\":" + orderId + "}";
+        String returnUrl = paymentConfig.getZalopayReturnUrl();
+        validateReturnUrl(returnUrl);
+        String embedData;
+        try {
+            embedData = objectMapper.writeValueAsString(Map.of("redirecturl", returnUrl, "orderId", orderId));
+        } catch (JsonProcessingException ex) {
+            throw new BadRequestException("Không tạo được đường dẫn quay về từ ZaloPay");
+        }
         String items = "[]";
 
         String macData = config.getAppId() + "|" + appTransId + "|" + appUser
-                + "|" + payment.getSoTien().longValue() + "|" + appTime + "|" + embedData + "|" + items;
+                + "|" + amount + "|" + appTime + "|" + embedData + "|" + items;
         String mac = hmacSHA256(config.getKey1(), macData);
 
         Map<String, Object> body = new LinkedHashMap<>();
@@ -65,12 +77,12 @@ public class ZaloPayService {
         body.put("app_user", appUser);
         body.put("app_trans_id", appTransId);
         body.put("app_time", appTime);
-        body.put("amount", payment.getSoTien().longValue());
+        body.put("amount", amount);
         body.put("item", items);
         body.put("embed_data", embedData);
         body.put("description", description);
         body.put("mac", mac);
-        body.put("callback_url", config.getCallbackUrl());
+        body.put("callback_url", callbackUrl);
 
         try {
             Map<String, Object> zalopayResponse = restTemplate.postForObject(
@@ -98,6 +110,21 @@ public class ZaloPayService {
         PaymentConfig.ZalopayConfig config = paymentConfig.getZalopay();
         String calculated = hmacSHA256(config.getKey2(), data != null ? data : "");
         return mac != null && calculated.equalsIgnoreCase(mac);
+    }
+
+    private void validateReturnUrl(String url) {
+        try {
+            java.net.URI uri = java.net.URI.create(url);
+            String host = uri.getHost();
+            if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null
+                    || host.equalsIgnoreCase("localhost") || host.endsWith(".localhost")
+                    || host.equals("127.0.0.1") || host.equals("[::1]") || uri.getUserInfo() != null) {
+                throw new IllegalArgumentException();
+            }
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("ZaloPay chưa được cấu hình địa chỉ quay về HTTPS công khai. "
+                    + "Vui lòng cấu hình PAYMENT_ZALOPAY_RETURN_URL hoặc payment.ngrok-url; không dùng localhost.");
+        }
     }
 
     @Transactional
@@ -200,13 +227,21 @@ public class ZaloPayService {
             log.warn("Không thể truy vấn trạng thái ZaloPay cho {}", appTransId, ex);
             return redirect;
         }
-        if (queryResult.get("is_processing") == Boolean.TRUE) return redirect;
+        if (queryResult == null || Boolean.TRUE.equals(queryResult.get("is_processing"))) return redirect;
         Object rawReturnCode = queryResult.get("return_code");
         if (!(rawReturnCode instanceof Number)) return redirect;
         int returnCode = ((Number) rawReturnCode).intValue();
         if (returnCode == 1) {
             queryResult.putIfAbsent("app_id", paymentConfig.getZalopay().getAppId());
-            validateSettledPayment(queryResult, payment);
+            try {
+                validateSettledPayment(queryResult, payment);
+            } catch (BadRequestException ex) {
+                // Do not accept a mismatched amount or mutate the payment. Keep
+                // the buyer on the result page while staff reconciles the charge.
+                log.warn("ZaloPay requires reconciliation: payment={}, expected={}, received={}",
+                        payment.getMaThanhToan(), payment.getSoTien(), queryResult.get("amount"));
+                return redirect + (orderId == null ? "?" : "&") + "review=amount";
+            }
             settleAndNotify(payment, String.valueOf(queryResult.get("zp_trans_id")));
         } else {
             failAndNotify(payment);

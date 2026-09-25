@@ -110,7 +110,7 @@ export default function ProductDetail() {
         : []
       const existing = cartSnapshot.find(item => item.maBienThe === variantId)
       if (existing) {
-        await updateCartItem(existing.maMucGioHang, { soLuong: qty })
+        await updateCartItem(existing.maBienThe, { soLuong: qty })
       } else {
         await addToCart({ maBienThe: variantId, soLuong: qty })
       }
@@ -301,6 +301,7 @@ export default function ProductDetail() {
               <div className="mb-5">
                 <p className="text-sm font-semibold text-ink mb-2.5">
                   MÀU SẮC: <span className="font-normal text-stone">{currentGroup?.mauSac?.mauSac || ''}</span>
+                  {currentGroup && !currentGroup.inStock && <span className="ml-2 text-xs font-medium text-bordeaux">(Hết hàng)</span>}
                 </p>
                 <div className="flex gap-2">
                   {colorGroups.map((group, idx) => {
@@ -308,13 +309,16 @@ export default function ProductDetail() {
                     const hasStock = group.inStock
                     return (
                       <button key={group.maMauSac} onClick={() => applyColor(idx)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
+                        aria-label={`${group.mauSac?.mauSac || 'Màu sắc'}${hasStock ? '' : ' — Hết hàng'}`}
+                        aria-pressed={selected}
+                        className={`relative w-10 h-10 rounded-full border-2 transition-all ${
                           selected ? 'border-[var(--primary-color)] ring-2 ring-[var(--primary-color)]/30 scale-110' : 'border-gray-200 hover:border-gray-400'
-                        } ${!hasStock ? 'opacity-40' : ''}`}
-                        title={group.mauSac?.mauSac}>
+                        }`}
+                        title={`${group.mauSac?.mauSac || ''}${hasStock ? '' : ' — Hết hàng'}`}>
                         {group.mauSac?.maMauHex && (
                           <span className="block w-full h-full rounded-full" style={{ backgroundColor: group.mauSac.maMauHex }} />
                         )}
+                        {!hasStock && <span aria-hidden="true" className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white border border-gray-300 text-bordeaux text-xs leading-3 text-center">×</span>}
                       </button>
                     )
                   })}

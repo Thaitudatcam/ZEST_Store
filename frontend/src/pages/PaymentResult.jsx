@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { getOrderDetail } from '../api/orders'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { CheckCircle, XCircle, Loader } from 'lucide-react'
+import { CheckCircle, XCircle, Loader, Clock } from 'lucide-react'
 
 const POLL_TIMEOUT = 15000
 
@@ -15,16 +15,19 @@ export default function PaymentResult() {
   const [loading, setLoading] = useState(true)
   const [manualCheckLoading, setManualCheckLoading] = useState(false)
   const pollRef = useRef(null)
+  const stopPolling = useRef(() => {})
 
   const orderId = searchParams.get('orderId')
+  const amountReview = searchParams.get('review') === 'amount'
 
   const checkOrderStatus = async () => {
     if (!orderId) return
     setManualCheckLoading(true)
     try {
-      const data = await getOrderDetail(orderId)
+      const data = await getOrderDetail(orderId, { timeout: 10000 })
       const payment = (data.payments || [])[0]
       if (payment) {
+        if ([2, 3, 4].includes(payment.trangThaiThanhToan)) stopPolling.current()
         if (payment.trangThaiThanhToan === 2) {
           setPending(false); setSuccess(true); setDone(true); setLoading(false)
           return true
@@ -38,12 +41,12 @@ export default function PaymentResult() {
           return true
         }
       }
-    } catch {}
-    setManualCheckLoading(false)
+    } catch {} finally { setManualCheckLoading(false) }
     return false
   }
 
   useEffect(() => {
+    setSuccess(false); setPending(false); setReconciliation(false); setLoading(true)
     if (!orderId) {
       setDone(true)
       setLoading(false)
@@ -51,6 +54,22 @@ export default function PaymentResult() {
     }
 
     const startedAt = Date.now()
+    let active = true
+    const controller = new AbortController()
+    // Independent deadline: an unresolved HTTP request must not trap the UI.
+    const deadline = setTimeout(() => {
+      if (!active) return
+      active = false
+      controller.abort()
+      clearTimeout(pollRef.current)
+      setPending(true); setDone(true); setLoading(false)
+    }, POLL_TIMEOUT)
+    stopPolling.current = () => {
+      active = false
+      controller.abort()
+      clearTimeout(deadline)
+      clearTimeout(pollRef.current)
+    }
 
     const poll = async () => {
       if (Date.now() - startedAt > POLL_TIMEOUT) {
@@ -62,31 +81,47 @@ export default function PaymentResult() {
       }
 
       try {
-        const data = await getOrderDetail(orderId)
+        const data = await getOrderDetail(orderId, { timeout: 10000, signal: controller.signal })
+        if (!active) return
         const payment = (data.payments || [])[0]
         if (payment) {
           if (payment.trangThaiThanhToan === 2) {
+            clearTimeout(deadline)
             setPending(false); setSuccess(true); setDone(true); setLoading(false)
             return
           }
           if (payment.trangThaiThanhToan === 3) {
+            clearTimeout(deadline)
             setPending(false); setSuccess(false); setDone(true); setLoading(false)
             return
           }
           if (payment.trangThaiThanhToan === 4) {
+            clearTimeout(deadline)
             setPending(false); setReconciliation(true); setDone(true); setLoading(false)
             return
           }
         }
       } catch {}
-      pollRef.current = setTimeout(poll, 2000)
+      if (active) pollRef.current = setTimeout(poll, 2000)
     }
     poll()
 
     return () => {
+      active = false
+      controller.abort()
+      clearTimeout(deadline)
       if (pollRef.current) clearTimeout(pollRef.current)
     }
   }, [orderId])
+
+  if (amountReview) {
+    return <div className="max-w-md mx-auto px-4 py-16 text-center">
+      <Clock className="h-16 w-16 mx-auto text-gold mb-4" />
+      <h1 className="text-2xl font-bold mb-3">Cần kiểm tra số tiền thanh toán</h1>
+      <p className="text-stone mb-6">Kết quả từ cổng thanh toán chưa khớp với đơn hàng. Nếu đã bị trừ tiền, vui lòng không thanh toán lại và liên hệ cửa hàng để đối soát.</p>
+      <Link to={orderId ? `/orders/${orderId}` : '/orders'} className="text-gold underline">Xem đơn hàng</Link>
+    </div>
+  }
 
   if (loading) {
     return (
@@ -120,7 +155,7 @@ export default function PaymentResult() {
       </h1>
       <p className="text-stone mb-6">
         {pending
-          ? 'Cổng thanh toán chưa trả kết quả. Đơn hàng vẫn được giữ, bạn có thể kiểm tra lại sau ít phút.'
+          ? 'Chưa xác minh được kết quả thanh toán. Nếu đã bị trừ tiền, không thanh toán lại; hãy kiểm tra đơn hàng hoặc liên hệ cửa hàng.'
           : reconciliation
           ? 'Cổng thanh toán đã thu tiền sau khi đơn đóng. Cửa hàng sẽ kiểm tra và hoàn tiền cho bạn.'
           : success

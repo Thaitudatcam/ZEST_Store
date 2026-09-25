@@ -392,10 +392,10 @@ export default function Checkout() {
       const snap = snapshotMap.get(item.maBienThe)
       if (snap) {
         if (item.soLuong !== snap.soLuong) {
-          try { await updateCartItem(item.maMucGioHang, { soLuong: snap.soLuong }) } catch { /* stock */ }
+          try { await updateCartItem(item.maBienThe, { soLuong: snap.soLuong }) } catch { /* stock */ }
         }
       } else {
-        try { await removeCartItem(item.maMucGioHang) } catch { /* ignore */ }
+        try { await removeCartItem(item.maBienThe) } catch { /* ignore */ }
       }
     }
 

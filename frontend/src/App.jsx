@@ -28,6 +28,7 @@ import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminInvoices from './pages/admin/AdminInvoices'
+import AdminInvoiceDetail from './pages/admin/AdminInvoiceDetail'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="orders/pos" element={<Navigate to="/admin/orders" replace />} />
         <Route path="orders/:id" element={<AdminOrderDetail />} />
         <Route path="invoices" element={<AdminInvoices />} />
+        <Route path="invoices/:id" element={<AdminInvoiceDetail />} />
 
         <Route path="products" element={<AdminProducts />} />
         <Route path="products/create" element={<AdminProductForm />} />

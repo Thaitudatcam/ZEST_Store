@@ -15,7 +15,18 @@ const ONLINE_STATUS_LIST = [
   { value: 4, label: 'Đang giao' },
   { value: 5, label: 'Đã hủy' },
   { value: 6, label: 'Giao thành công' },
+  { value: 7, label: 'Yêu cầu trả hàng' },
+  { value: 8, label: 'Đã trả hàng' },
+  { value: 9, label: 'Giao không thành công' },
 ]
+
+function paymentSummary(order) {
+  const paid = (order.thanhToans || []).filter(p => p.trangThaiThanhToan === 2)
+    .reduce((sum, p) => sum + Number(p.soTien || 0), 0)
+  if (paid >= Number(order.tongTien) && paid > 0) return 'Đã thanh toán'
+  if (paid > 0) return 'Thanh toán một phần'
+  return 'Chưa thanh toán'
+}
 
 export default function AdminOrders() {
   const toast = useToast()
@@ -30,12 +41,13 @@ export default function AdminOrders() {
   const [tuNgay, setTuNgay] = useState('')
   const [denNgay, setDenNgay] = useState('')
   const [loaiDon, setLoaiDon] = useState(0)
+  const [exporting, setExporting] = useState(false)
 
   const loadOrders = (p = 0) => {
     setLoading(true)
     setError('')
     const keyword = search.trim().replace(/\s+/g, ' ')
-    getAllOrders(p, 10, 1, keyword || undefined, statusFilter > 0 ? statusFilter : undefined,
+    getAllOrders(p, 10, loaiDon || undefined, keyword || undefined, statusFilter > 0 ? statusFilter : undefined,
       tuNgay || undefined, denNgay || undefined)
       .then(data => {
         setOrders(data.content || [])
@@ -45,18 +57,32 @@ export default function AdminOrders() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { loadOrders(0) }, [pathname, search, statusFilter, tuNgay, denNgay])
+  useEffect(() => { loadOrders(0) }, [pathname, search, statusFilter, tuNgay, denNgay, loaiDon])
 
-  const exportExcel = () => {
-    if (orders.length === 0) return
-    const rows = orders.map((o, i) => ({
+  const exportExcel = async () => {
+    if (orders.length === 0 || exporting) return
+    setExporting(true)
+    try {
+    const allOrders = []
+    let exportPage = 0
+    let pages = 1
+    do {
+      const result = await getAllOrders(exportPage, 100, loaiDon || undefined,
+        search.trim().replace(/\s+/g, ' ') || undefined, statusFilter || undefined,
+        tuNgay || undefined, denNgay || undefined)
+      allOrders.push(...(result.content || []))
+      pages = result.totalPages || 0
+      exportPage++
+    } while (exportPage < pages)
+    const rows = [...new Map(allOrders.map(o => [o.maDonHang, o])).values()].map((o, i) => ({
       'STT': i + 1,
       'Mã đơn hàng': o.maDonHangCode || `#${o.maDonHang}`,
-      'Nhân viên tạo': o.nhanVienTao || 'Website',
+      'Người tạo': o.nguoiTaoTen || 'Chưa có thông tin',
       'Khách hàng': o.nguoiDung?.hoTen || o.tenNguoiNhan || '—',
       'SĐT': o.sdtNguoiNhan || o.nguoiDung?.soDienThoai || '—',
       'Ngày tạo': o.ngayDat ? new Date(o.ngayDat).toLocaleString('vi-VN') : '',
       'Tổng tiền': Number(o.tongTien || 0),
+      'Thanh toán': paymentSummary(o),
       'Loại đơn': o.loaiDonHang === 2 ? 'Tại quầy' : 'Online',
       'Trạng thái': ONLINE_STATUS_LIST.find(s => s.value === o.trangThaiDon)?.label || o.trangThaiDon,
     }))
@@ -65,6 +91,8 @@ export default function AdminOrders() {
     XLSX.utils.book_append_sheet(book, sheet, 'Đơn hàng')
     XLSX.writeFile(book, 'danh-sach-don-hang.xlsx')
     toast.success('Đã xuất file Excel')
+    } catch { toast.error('Không thể xuất đầy đủ dữ liệu. Vui lòng thử lại.') }
+    finally { setExporting(false) }
   }
 
   const handleReset = () => {
@@ -83,7 +111,7 @@ export default function AdminOrders() {
         <div className="relative">
           <p className="text-gold text-xs font-bold uppercase tracking-[0.18em] mb-1">Vận hành bán hàng</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-ivory">QUẢN LÝ ĐƠN HÀNG</h1>
-          <p className="text-sm text-ivory/60 mt-1">Quản lý các đơn hàng online, theo dõi trạng thái và xử lý đơn.</p>
+          <p className="text-sm text-ivory/60 mt-1">Quản lý đơn online và tại quầy. Xem chi tiết để xử lý đơn và in phiếu bán hàng.</p>
         </div>
       </div>
 
@@ -99,7 +127,7 @@ export default function AdminOrders() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
               <input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Mã HĐ, tên, SĐT khách..."
+                placeholder="Mã đơn, tên, SĐT khách..."
                 className="w-full pl-9 pr-3 py-2.5 border border-stone/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/40" />
             </div>
           </div>
@@ -125,13 +153,14 @@ export default function AdminOrders() {
               className="w-full px-3 py-2.5 border border-stone/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/40 bg-white">
               <option value={0}>Tất cả</option>
               <option value={1}>Online</option>
+              <option value={2}>Tại quầy</option>
             </select>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={exportExcel} disabled={orders.length === 0}
+          <button onClick={exportExcel} disabled={orders.length === 0 || exporting}
             className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold bg-white border border-stone/20 text-ink rounded-xl hover:bg-ivory disabled:opacity-50 transition">
-            <Download className="h-3.5 w-3.5" /> Xuất Excel
+            <Download className="h-3.5 w-3.5" /> {exporting ? 'Đang xuất…' : 'Xuất tất cả kết quả Excel'}
           </button>
           <button onClick={handleReset}
             className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold bg-gold text-noir rounded-xl hover:bg-gold-hover transition">
@@ -180,13 +209,14 @@ export default function AdminOrders() {
                 <tr>
                   <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">STT</th>
                   <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Mã đơn hàng</th>
-                  <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Nhân viên tạo</th>
+                  <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Người tạo</th>
                   <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Khách hàng</th>
                   <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">SĐT</th>
                   <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Ngày tạo</th>
                   <th className="text-right px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Tổng tiền</th>
                   <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Loại đơn</th>
                   <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Trạng thái</th>
+                  <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Thanh toán</th>
                   <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Hành động</th>
                 </tr>
               </thead>
@@ -195,7 +225,7 @@ export default function AdminOrders() {
                   <tr key={o.maDonHang} className="hover:bg-ivory/50 transition-colors">
                     <td className="px-5 py-3.5 text-stone">{page * 10 + idx + 1}</td>
                     <td className="px-5 py-3.5 font-bold text-ink">{o.maDonHangCode || `#${o.maDonHang}`}</td>
-                    <td className="px-5 py-3.5 text-ink">{o.nhanVienTao || 'Website'}</td>
+                    <td className="px-5 py-3.5 text-ink">{o.nguoiTaoTen || 'Chưa có thông tin'}</td>
                     <td className="px-5 py-3.5">
                       <span className="font-semibold text-ink">{o.nguoiDung?.hoTen || o.tenNguoiNhan || '—'}</span>
                     </td>
@@ -212,6 +242,7 @@ export default function AdminOrders() {
                     <td className="px-5 py-3.5 text-center">
                       <StatusBadge status={o.trangThaiDon} loaiDonHang={o.loaiDonHang} />
                     </td>
+                    <td className="px-5 py-3.5 text-center text-xs">{paymentSummary(o)}</td>
                     <td className="px-5 py-3.5 text-center">
                       <Link to={`/admin/orders/${o.maDonHang}`}
                         className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gold/10 text-gold hover:bg-gold hover:text-noir transition" title="Xem chi tiết">

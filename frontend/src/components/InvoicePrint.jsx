@@ -1,5 +1,3 @@
-import { Printer } from 'lucide-react'
-
 const PAYMENT_LABELS = { 1: 'COD', 2: 'VNPay', 3: 'VietQR', 4: 'ZaloPay', 5: 'Tiền mặt', 6: 'VietQR' }
 
 function VND(n) { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
@@ -21,15 +19,22 @@ export default function InvoicePrint({ data }) {
       <div id="invoice-print" className="p-6 space-y-5 text-[13px]">
         <div className="text-center border-b border-dashed pb-4">
           <h3 className="text-2xl font-bold tracking-wide">ZEST STORE</h3>
-          <p className="text-sm text-stone mt-0.5">{isPos ? 'HÓA ĐƠN BÁN HÀNG TẠI QUẦY' : 'HÓA ĐƠN BÁN HÀNG'}</p>
+          <p className="text-sm text-stone mt-0.5">{data.documentType === 'INVOICE' ? 'HÓA ĐƠN BÁN HÀNG NỘI BỘ' : 'PHIẾU ĐƠN HÀNG'}</p>
           <p className="text-stone mt-0.5">{data.maHoaDonCode}</p>
+          {data.invoice?.status === 'VOID' && <div className="border-2 border-current p-2 mt-2 font-bold">HÓA ĐƠN ĐÃ HỦY<p className="text-sm font-normal">{data.invoice.voidReason}</p></div>}
+          {[5, 8, 9].includes(donHang.trangThaiDon) && (
+            <p className="border-2 border-current p-2 mt-2 font-bold">
+              {{ 5: 'ĐÃ HỦY', 8: 'ĐÃ TRẢ HÀNG', 9: 'GIAO HÀNG KHÔNG THÀNH CÔNG' }[donHang.trangThaiDon]}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-1">
           <div>
             <p><span className="text-stone">Mã đơn:</span> <span className="font-semibold">{donHang.maDonHangCode || data.maHoaDonCode}</span></p>
-            <p><span className="text-stone">Ngày tạo:</span> {data.ngayTao ? new Date(data.ngayTao).toLocaleString('vi-VN') : '-'}</p>
+            <p><span className="text-stone">{data.documentType === 'INVOICE' ? 'Ngày lập:' : 'Ngày tạo:'}</span> {data.ngayTao ? new Date(data.ngayTao).toLocaleString('vi-VN') : '-'}</p>
             <p><span className="text-stone">Loại đơn:</span> {isPos ? 'Tại quầy' : 'Online'}</p>
+            <p><span className="text-stone">{data.documentType === 'INVOICE' ? 'Người lập:' : 'Người tạo:'}</span> {data.nguoiTaoTen || 'Chưa có thông tin'}</p>
           </div>
           <div>
             <p><span className="text-stone">Khách hàng:</span> <span className="font-semibold">{donHang.khachHang || donHang.tenNguoiNhan || 'Khách lẻ'}</span></p>
@@ -38,7 +43,7 @@ export default function InvoicePrint({ data }) {
           </div>
         </div>
 
-        {donHang.diaChiGiaoHang && !isPos && (
+        {donHang.diaChiGiaoHang && (
           <p><span className="text-stone">Địa chỉ giao hàng:</span> {donHang.diaChiGiaoHang}</p>
         )}
 
@@ -103,7 +108,7 @@ export default function InvoicePrint({ data }) {
         )}
 
         <div className="text-center text-stone text-xs pt-2">
-          Cảm ơn quý khách đã mua sắm tại ZEST STORE!
+          Chứng từ nội bộ · Cảm ơn quý khách đã mua sắm tại ZestStore!
         </div>
       </div>
       <style>{`

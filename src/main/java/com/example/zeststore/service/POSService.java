@@ -29,6 +29,7 @@ public class POSService {
     private final InventoryService inventoryService;
     private final CheckoutShippingService checkoutShippingService;
     private final CampaignDiscountService campaignDiscountService;
+    private final SalesInvoiceService salesInvoiceService;
 
     public Map<String, Object> validateCoupon(String maCode, Integer maNguoiDung, BigDecimal tongTien,
                                                List<Integer> productIds,
@@ -241,6 +242,7 @@ public class POSService {
                 .ghiChu(request.isGiaoHang() ? "Bán tại quầy - giao hàng, đã thu tiền" : "Bán tại quầy")
                 .build());
 
+        if (Integer.valueOf(6).equals(order.getTrangThaiDon())) salesInvoiceService.issue(order.getMaDonHang(), adminUserId);
         posCartRepository.deleteByAdmin_MaNguoiDungAndDraftKey(adminUserId, clientKey.trim());
 
         Map<String, Object> result = new LinkedHashMap<>();

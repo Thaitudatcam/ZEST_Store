@@ -40,6 +40,7 @@ class OrderCustomerVisibilityTest {
     @Mock PhieuGiamGiaService phieuGiamGiaService;
     @Mock InventoryService inventoryService;
     @Mock CampaignDiscountService campaignDiscountService;
+    @Mock SalesInvoiceService salesInvoiceService;
     @InjectMocks DonHangService service;
 
     private DonHang order;

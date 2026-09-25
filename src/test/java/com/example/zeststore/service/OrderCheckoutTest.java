@@ -25,6 +25,7 @@ class OrderCheckoutTest {
     @Mock PosCartRepository posCartRepository;
     @Mock InventoryService inventoryService;
     @Mock CampaignDiscountService campaignDiscountService;
+    @Mock SalesInvoiceService salesInvoiceService;
     @Mock CheckoutShippingService checkoutShippingService;
     @InjectMocks POSService pos;
     @InjectMocks DonHangService online;
@@ -156,6 +157,7 @@ class OrderCheckoutTest {
         assertEquals(2, captor.getValue().getLoaiDonHang());
         assertEquals("123 ABC, Phường A", captor.getValue().getDiaChiGiaoHang());
         assertEquals(BigDecimal.valueOf(230000), result.get("thanhToan"));
+        verifyNoInteractions(salesInvoiceService);
         verify(inventoryService).deductPos(any(), eq(1), eq("new"));
         verify(posCartRepository).deleteByAdmin_MaNguoiDungAndDraftKey(1, "new");
         verify(posCartRepository, never()).deleteByAdmin_MaNguoiDung(any());

@@ -109,19 +109,25 @@ public class GioHangService {
                 .orElseThrow(() -> new ResourceNotFoundException("Variant", maBienThe));
 
         ensurePurchasable(variant);
-        if (available(variant) < soLuong) {
-            throw new BadRequestException("Insufficient stock. Available: " + available(variant));
-        }
-
         Optional<MucGioHang> existing = mucGioHangRepository
                 .findByGioHang_MaGioHangAndBienThe_MaBienThe(cart.getMaGioHang(), maBienThe);
+
+        int stock = available(variant);
+        int inCart = existing.map(MucGioHang::getSoLuong).orElse(0);
+        if (stock <= 0) {
+            throw new BadRequestException("Sản phẩm hiện đã hết hàng, không thể thêm vào giỏ.");
+        }
+        if ((long) inCart + soLuong > stock) {
+            int remaining = Math.max(0, stock - inCart);
+            throw new BadRequestException("Giỏ hàng đã có " + inCart + " sản phẩm này. Hiện chỉ có "
+                    + stock + " sản phẩm khả dụng. " + (remaining == 0
+                    ? "Bạn đã đạt số lượng tối đa, không thể thêm nữa."
+                    : "Bạn chỉ có thể thêm tối đa " + remaining + " sản phẩm nữa."));
+        }
 
         if (existing.isPresent()) {
             MucGioHang item = existing.get();
             int newQuantity = item.getSoLuong() + soLuong;
-            if (newQuantity > available(variant)) {
-                throw new BadRequestException("Insufficient stock. Available: " + available(variant));
-            }
             item.setSoLuong(newQuantity);
             mucGioHangRepository.save(item);
         } else {

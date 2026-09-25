@@ -60,6 +60,6 @@ class POSBestCouponTest {
                 mock(LichSuDonHangRepository.class), mock(NguoiDungRepository.class),
                 mock(PhieuGiamGiaRepository.class), mock(PosCartRepository.class), coupons,
                 mock(VoucherNguoiDungRepository.class), mock(InventoryService.class),
-                mock(CheckoutShippingService.class), mock(CampaignDiscountService.class));
+                mock(CheckoutShippingService.class), mock(CampaignDiscountService.class), mock(SalesInvoiceService.class));
     }
 }

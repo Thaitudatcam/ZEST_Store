@@ -77,6 +77,7 @@ export default function AdminPOS() {
   const [payResult, setPayResult] = useState(null)
   const [printInvoice, setPrintInvoice] = useState(null)
   const [confirmAction, setConfirmAction] = useState(null)
+  const [closingOrder, setClosingOrder] = useState(null)
   const [customerPaid, setCustomerPaid] = useState(initial.customerPaid || 0)
   const [paymentConfirmedTotal, setPaymentConfirmedTotal] = useState(initial.paymentConfirmedTotal ?? null)
   const [showConfirmOrder, setShowConfirmOrder] = useState(false)
@@ -261,6 +262,7 @@ export default function AdminPOS() {
       setOrders(next.orders)
       if (idx === currentOrderIdx) loadDraft(next.orders[next.index])
       setCurrentOrderIdx(next.index)
+      setClosingOrder(null)
       await refreshStock().catch(() => {})
     } catch (err) { setMsg({ type: 'error', text: err.response?.data?.message || 'Chưa giải phóng được hàng; vui lòng thử lại' }) }
     finally { pendingStock.current = false; setStockBusy(false) }
@@ -594,7 +596,11 @@ export default function AdminPOS() {
       {/* Order Tabs */}
       {orders.length > 0 && (
         <div className="mb-4">
-          <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={removeOrder} />
+          <OrderTabs orders={orders} currentIdx={currentOrderIdx} onSwitch={switchOrder} onAdd={addNewOrder} onRemove={(idx) => {
+            if (pendingCheckout.current || pendingStock.current) return
+            const target = snapshotOrders()[idx]
+            if (target) setClosingOrder({ checkoutKey: target.checkoutKey, label: `HD${String(idx + 1).padStart(3, '0')} - ${target.customer?.hoTen || 'Khách lẻ'}` })
+          }} />
           <div className="mt-3 flex items-center gap-3 text-sm" role="status" aria-live="polite">
             <span className={stockReady ? 'text-emerald-deep' : 'text-bordeaux'}>
               {stockBusy ? 'Đang cập nhật số lượng giữ hàng…' : stockReady
@@ -1029,7 +1035,7 @@ export default function AdminPOS() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-ivory rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-stone/10 sticky top-0 bg-ivory z-10">
-              <h2 className="font-bold text-lg">Hóa đơn {printInvoice.maHoaDonCode}</h2>
+              <h2 className="font-bold text-lg">{printInvoice.documentType === 'INVOICE' ? 'Hóa đơn' : 'Phiếu đơn hàng'} {printInvoice.maHoaDonCode}</h2>
               <button onClick={goToOrders} className="p-2 text-stone hover:text-ink"><X className="h-5 w-5" /></button>
             </div>
             <InvoicePrint data={printInvoice} />
@@ -1038,6 +1044,20 @@ export default function AdminPOS() {
       )}
 
       <ConfirmDialog open={typeof confirmAction === 'number'} title="Xóa sản phẩm" message="Bạn chắc chắn muốn xóa sản phẩm này?" confirmText="Xóa" onConfirm={() => { removeItem(confirmAction); setConfirmAction(null) }} onCancel={() => setConfirmAction(null)} />
+
+      <ConfirmDialog
+        open={closingOrder !== null}
+        title="Bỏ đơn hàng tại quầy?"
+        message={`Bạn có chắc muốn bỏ đơn ${closingOrder?.label || ''}? Các sản phẩm trong đơn sẽ được bỏ và hàng đang giữ sẽ được giải phóng.`}
+        confirmText="Bỏ đơn hàng"
+        loading={stockBusy}
+        onConfirm={() => {
+          const idx = orders.findIndex(order => order.checkoutKey === closingOrder?.checkoutKey)
+          if (idx >= 0) removeOrder(idx)
+          else setClosingOrder(null)
+        }}
+        onCancel={() => { if (!pendingStock.current) setClosingOrder(null) }}
+      />
 
       <POSConfirmDialog
         open={showConfirmOrder}

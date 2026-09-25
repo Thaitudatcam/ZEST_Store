@@ -32,6 +32,16 @@ public class PaymentConfig {
         return vnpay.getReturnUrl();
     }
 
+    public String getZalopayReturnUrl() {
+        if (zalopay.getReturnUrl() != null && !zalopay.getReturnUrl().isBlank()) {
+            return zalopay.getReturnUrl().trim();
+        }
+        if (ngrokUrl != null && !ngrokUrl.isBlank()) {
+            return ngrokUrl.replaceAll("/+$", "") + "/api/payments/zalopay/return";
+        }
+        return "http://localhost:8080/api/payments/zalopay/return";
+    }
+
     @Getter
     @Setter
     public static class VietQrConfig {
@@ -59,5 +69,6 @@ public class PaymentConfig {
         private String endpoint;
         private String queryEndpoint;
         private String callbackUrl;
+        private String returnUrl;
     }
 }

@@ -36,12 +36,12 @@ export default function AdminLayout() {
   ]
 
   const managementNav = isStaff ? [
-    { label: 'Quản lý hóa đơn', icon: Receipt, children: [
+    { label: 'Quản lý đơn hàng', icon: Receipt, children: [
       { to: '/admin/orders/online', label: 'Đơn hàng' },
       { to: '/admin/invoices', label: 'Hóa đơn' },
     ]},
   ] : [
-    { label: 'Quản lý hóa đơn', icon: Receipt, children: [
+    { label: 'Quản lý đơn hàng', icon: Receipt, children: [
       { to: '/admin/orders/online', label: 'Đơn hàng' },
       { to: '/admin/invoices', label: 'Hóa đơn' },
     ]},

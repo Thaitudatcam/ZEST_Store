@@ -35,7 +35,7 @@ public class PaymentService {
             // Browser return parameters only drive navigation. The signed,
             // server-to-server IPN is authoritative for changing payment state.
             String redirect = redirectBase + "/payment/result";
-            if (result.get("orderId") != null) redirect += "&orderId=" + result.get("orderId");
+            if (result.get("orderId") != null) redirect += "?orderId=" + result.get("orderId");
             return redirect;
         } catch (RuntimeException ex) {
             // A gateway callback must never expose a Spring JSON error page to the buyer.

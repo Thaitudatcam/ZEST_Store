@@ -36,6 +36,7 @@ class OrderStatusUpdateTest {
     @Mock PhieuGiamGiaService phieuGiamGiaService;
     @Mock InventoryService inventoryService;
     @Mock CampaignDiscountService campaignDiscountService;
+    @Mock SalesInvoiceService salesInvoiceService;
     @InjectMocks DonHangService service;
 
     private NguoiDung admin() {
@@ -93,6 +94,7 @@ class OrderStatusUpdateTest {
 
         service.updateOrderStatus(1, 6, null, false, 100);
         assertEquals(6, o.getTrangThaiDon());
+        verify(salesInvoiceService).issue(1, 100);
     }
 
     @Test void status4To9_succeeds() {

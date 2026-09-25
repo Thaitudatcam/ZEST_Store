@@ -9,6 +9,7 @@ import { ArrowLeft, Package, Truck, Clock, MapPin, CheckCircle, AlertTriangle, X
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { registerOrderPrint } from '../../api/admin'
 import InvoicePrint from '../../components/InvoicePrint'
+import OrderInvoiceLink from '../../components/OrderInvoiceLink'
 import { getAdminNextStatuses } from '../../utils/orderStatus'
 
 const STATUS_STEPS = [
@@ -178,7 +179,17 @@ const [historyModal, setHistoryModal] = useState(false)
   if (!data) return null
 
   const { order, items, payments, history } = data
-const backTo = order?.loaiDonHang === 2 ? '/admin/orders/pos' : '/admin/orders/online'
+  const chronologicalHistory = [...(history || [])].sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian))
+  const creationEvent = chronologicalHistory.find(event => event.trangThaiCu == null)
+  const latestEvent = chronologicalHistory[chronologicalHistory.length - 1]
+  const creatorName = creationEvent?.nguoiCapNhat?.hoTen
+    || (order.loaiDonHang === 1 ? order.nguoiDung?.hoTen : null)
+    || 'Chưa có thông tin'
+  const latestUpdateTime = order.ngayCapNhat || latestEvent?.thoiGian
+  const latestUpdaterName = latestEvent
+    ? latestEvent.nguoiCapNhat?.hoTen || 'Hệ thống'
+    : 'Chưa có thông tin'
+  const backTo = order?.loaiDonHang === 2 ? '/admin/orders/pos' : '/admin/orders/online'
 
   const nextStatuses = getAdminNextStatuses(order, payments)
   const nextStatusLabel = (nextStatus) => (
@@ -234,7 +245,7 @@ const handlePrintOrder = async () => {
       setPrintData(d)
       setShowPrint(true)
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Không thể in hóa đơn')
+      toast.error(err.response?.data?.message || 'Không thể in phiếu bán hàng')
     } finally {
       setPrintLoading(false)
     }
@@ -246,6 +257,7 @@ const handlePrintOrder = async () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-8">
+      <OrderInvoiceLink orderId={order.maDonHang} status={order.trangThaiDon} />
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -256,9 +268,9 @@ const handlePrintOrder = async () => {
             Ngày tạo: {order.ngayDat ? new Date(order.ngayDat).toLocaleString('vi-VN') : '—'}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            Tạo bởi: {order.nguoiTao?.hoTen || '---'}
+            Tạo bởi: {creatorName}
             <span className="mx-2">|</span>
-            Cập nhật gần nhất: {order.ngayCapNhat ? new Date(order.ngayCapNhat).toLocaleString('vi-VN') : '---'} {order.nguoiCapNhat ? `- ${order.nguoiCapNhat.hoTen}` : 'Hệ thống'}
+            Cập nhật gần nhất: {latestUpdateTime ? new Date(latestUpdateTime).toLocaleString('vi-VN') : '---'} — {latestUpdaterName}
           </p>
         </div>
         <Link to={backTo} className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
@@ -429,7 +441,7 @@ const handlePrintOrder = async () => {
               <button onClick={handlePrintOrder} disabled={printLoading || !canPrint}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50">
                 {printLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                In hóa đơn
+                In chứng từ
               </button>
               {nextStatuses.length > 0 && (
                 <button onClick={() => {
@@ -576,7 +588,7 @@ const handlePrintOrder = async () => {
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 sticky top-0 bg-white">
               <h3 className="font-bold flex items-center gap-2">
-                <Printer className="h-5 w-5 text-[var(--primary-color)]" /> Hóa đơn {printData.maHoaDonCode}
+                <Printer className="h-5 w-5 text-[var(--primary-color)]" /> {printData.documentType === 'INVOICE' ? 'Hóa đơn' : 'Phiếu đơn hàng'} {printData.maHoaDonCode}
               </h3>
               <button onClick={() => setShowPrint(false)} className="text-gray-400 hover:text-gray-600 transition">
                 <X className="h-5 w-5" />
@@ -603,7 +615,7 @@ const handlePrintOrder = async () => {
           <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
               <h3 className="font-bold text-base text-gray-800 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[var(--primary-color)]" /> Lịch sử thao tác hóa đơn
+                <Clock className="h-5 w-5 text-[var(--primary-color)]" /> Lịch sử thao tác đơn hàng
               </h3>
               <button onClick={() => setHistoryModal(false)} className="text-gray-400 hover:text-gray-600 transition">
                 <X className="h-5 w-5" />

@@ -42,3 +42,4 @@ uploads/
 
 # Local backup from project folder migration
 /.local-backup/
+/.local-tools/

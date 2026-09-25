@@ -18,6 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +55,23 @@ class GioHangQuantityTest {
         when(gioHangRepository.findByNguoiDung_MaNguoiDung(7)).thenReturn(Optional.of(cart));
         when(bienTheRepository.findById(11)).thenReturn(Optional.of(variant));
         when(inventoryService.reserved(11, null, null)).thenReturn(0);
+    }
+
+    @Test
+    void addingPastCartLimitExplainsRemainingQuantityAndDoesNotSave() {
+        MucGioHang existing = MucGioHang.builder().gioHang(cart).bienThe(variant).soLuong(10).build();
+        when(mucGioHangRepository.findByGioHang_MaGioHangAndBienThe_MaBienThe(1, 11))
+                .thenReturn(Optional.of(existing));
+        var error = assertThrows(com.example.zeststore.exception.BadRequestException.class,
+                () -> service.addItem(7, 11, 1));
+        assertTrue(error.getMessage().contains("Giỏ hàng đã có 10"));
+        assertTrue(error.getMessage().contains("đạt số lượng tối đa"));
+        existing.setSoLuong(8);
+        error = assertThrows(com.example.zeststore.exception.BadRequestException.class,
+                () -> service.addItem(7, 11, 3));
+        assertTrue(error.getMessage().contains("thêm tối đa 2"));
+        assertEquals(8, existing.getSoLuong());
+        verify(mucGioHangRepository, never()).save(any(MucGioHang.class));
     }
 
     @Test

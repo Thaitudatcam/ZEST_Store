@@ -38,4 +38,28 @@ public class MucDonHang {
     @NotNull @PositiveOrZero
     @Column(name = "thanh_tien", nullable = false, precision = 18, scale = 2)
     private BigDecimal thanhTien;
+
+    @org.hibernate.annotations.Nationalized
+    @Column(name = "ten_san_pham_snapshot", length = 500)
+    private String tenSanPhamSnapshot;
+    @Column(name = "ma_san_pham_snapshot", length = 100)
+    private String maSanPhamSnapshot;
+    @Column(name = "sku_snapshot", length = 255)
+    private String skuSnapshot;
+    @org.hibernate.annotations.Nationalized
+    @Column(name = "bien_the_snapshot", length = 500)
+    private String bienTheSnapshot;
+
+    @PrePersist
+    protected void captureProduct() {
+        if (bienThe == null) return;
+        if (bienThe.getSanPham() != null) {
+            tenSanPhamSnapshot = bienThe.getSanPham().getTenSanPham();
+            maSanPhamSnapshot = bienThe.getSanPham().getMaSanPhamCode();
+        }
+        skuSnapshot = bienThe.getSku();
+        String color = bienThe.getMauSac() == null ? "" : bienThe.getMauSac().getMauSac();
+        String size = bienThe.getKichCo() == null ? "" : bienThe.getKichCo().getKichCo();
+        bienTheSnapshot = color + (!color.isEmpty() && !size.isEmpty() ? " / " : "") + size;
+    }
 }
