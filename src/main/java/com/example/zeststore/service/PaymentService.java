@@ -31,11 +31,13 @@ public class PaymentService {
     public String handleVnPayReturn(Map<String, String> params) {
         String redirectBase = paymentConfig.getRedirectBaseUrl();
         try {
-            Map<String, String> result = vnPayService.buildReturnParams(params);
-            // Browser return parameters only drive navigation. The signed,
-            // server-to-server IPN is authoritative for changing payment state.
+            // VNPay cannot call an IPN hosted on localhost. Process the signed
+            // browser return as an idempotent fallback; processIpn performs the
+            // same checksum, terminal and amount checks as the server callback.
+            VnPayService.IpnResult result = vnPayService.processIpn(params);
             String redirect = redirectBase + "/payment/result";
-            if (result.get("orderId") != null) redirect += "?orderId=" + result.get("orderId");
+            if (result.orderId() != null) redirect += "?orderId=" + result.orderId();
+            if ("04".equals(result.rspCode())) redirect += (result.orderId() != null ? "&" : "?") + "review=amount";
             return redirect;
         } catch (RuntimeException ex) {
             // A gateway callback must never expose a Spring JSON error page to the buyer.

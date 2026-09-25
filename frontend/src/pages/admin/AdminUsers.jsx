@@ -200,7 +200,7 @@ export default function AdminUsers() {
     setConfirmSave(true)
   }
 
-  useEffect(() => { setPage(0); setEmpPage(0); setSelectedIds([]) }, [search, statusFilter, roleFilter, genderFilter])
+  useEffect(() => { setPage(0); setEmpPage(0) }, [search, statusFilter, roleFilter, genderFilter])
   const sortedCustomers = sortData(filteredCustomers)
   const sortedEmployees = sortData(filteredEmployees)
   const totalPages = Math.ceil(sortedCustomers.length / pageSize)

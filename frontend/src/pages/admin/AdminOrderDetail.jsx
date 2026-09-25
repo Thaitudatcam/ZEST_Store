@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import { ArrowLeft, Package, Truck, Clock, MapPin, CheckCircle, AlertTriangle, XCircle, ShoppingBag, Home, Loader, X, Printer } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { registerOrderPrint } from '../../api/admin'
+import { confirmVietQrPayment } from '../../api/payment'
 import InvoicePrint from '../../components/InvoicePrint'
 import OrderInvoiceLink from '../../components/OrderInvoiceLink'
 import { getAdminNextStatuses } from '../../utils/orderStatus'
@@ -146,7 +147,9 @@ export default function AdminOrderDetail() {
   const [selectedNextStatus, setSelectedNextStatus] = useState(null)
   const [statusNote, setStatusNote] = useState('')
   const [notifyCustomer, setNotifyCustomer] = useState(false)
-const [historyModal, setHistoryModal] = useState(false)
+  const [historyModal, setHistoryModal] = useState(false)
+  const [vietQrToConfirm, setVietQrToConfirm] = useState(null)
+  const [confirmingVietQr, setConfirmingVietQr] = useState(false)
 
   const VND = (n) => { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) } catch { return n } }
 
@@ -218,6 +221,22 @@ const [historyModal, setHistoryModal] = useState(false)
       toast.error(err.response?.data?.message || 'Cập nhật thất bại')
     } finally {
       setUpdating(null)
+    }
+  }
+
+  const handleConfirmVietQr = async () => {
+    if (!vietQrToConfirm || confirmingVietQr) return
+    setConfirmingVietQr(true)
+    try {
+      await confirmVietQrPayment(vietQrToConfirm.maThanhToan || vietQrToConfirm.id)
+      const updated = await api.get(`/orders/admin/detail/${id}`).then(r => r.data)
+      setData(updated)
+      setVietQrToConfirm(null)
+      toast.success('Đã xác nhận nhận tiền VietQR. Đơn hàng đã sẵn sàng để xử lý.')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Không thể xác nhận thanh toán VietQR')
+    } finally {
+      setConfirmingVietQr(false)
     }
   }
 
@@ -366,9 +385,15 @@ const handlePrintOrder = async () => {
               <div className="space-y-2">
                 {payments.map((p) => (
                   <div key={p.maThanhToan || p.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
+                    <div className="flex items-center gap-3">
                       <span className="text-sm font-medium text-gray-700">{PAYMENT_LABELS[p.phuongThuc] || p.phuongThuc}</span>
                       {p.thoiGianTt && <span className="text-xs text-gray-400 ml-2">{new Date(p.thoiGianTt).toLocaleString('vi-VN')}</span>}
+                      {[3, 6].includes(p.phuongThuc) && p.trangThaiThanhToan === 1 && (
+                        <button type="button" onClick={() => setVietQrToConfirm(p)}
+                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition">
+                          Xác nhận đã nhận tiền
+                        </button>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-semibold text-gray-800">{VND(p.soTien || 0)}</p>
@@ -551,6 +576,17 @@ const handlePrintOrder = async () => {
       )}
 
       {/* Confirm Status Dialog */}
+      <ConfirmDialog
+        open={vietQrToConfirm !== null}
+        title="Xác nhận thanh toán VietQR"
+        message={<>Chỉ xác nhận khi bạn đã kiểm tra tài khoản ngân hàng và nhận đủ <span className="font-semibold">{VND(vietQrToConfirm?.soTien || 0)}</span>. Sau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái đã xác nhận.</>}
+        confirmText="Đã nhận đủ tiền"
+        variant="gold"
+        loading={confirmingVietQr}
+        onConfirm={handleConfirmVietQr}
+        onCancel={() => { if (!confirmingVietQr) setVietQrToConfirm(null) }}
+      />
+
       <ConfirmDialog
         open={confirmStatus !== null}
         title="Xác nhận cập nhật"

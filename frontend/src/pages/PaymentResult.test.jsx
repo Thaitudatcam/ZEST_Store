@@ -23,3 +23,14 @@ it('manual success is not overwritten by the old poll deadline', async () => {
   await act(async () => { await vi.advanceTimersByTimeAsync(16000) })
   expect(screen.getByText('Thanh toán thành công')).toBeInTheDocument()
 })
+it('does not let an older failed attempt hide a successful payment', async () => {
+  getOrderDetail.mockResolvedValue({
+    payments: [
+      { trangThaiThanhToan: 3 },
+      { trangThaiThanhToan: 2 },
+    ],
+  })
+  show()
+  expect(await screen.findByText('Thanh toán thành công')).toBeInTheDocument()
+  expect(screen.queryByText('Thanh toán thất bại')).not.toBeInTheDocument()
+})

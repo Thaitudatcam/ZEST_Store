@@ -6,6 +6,16 @@ import { CheckCircle, XCircle, Loader, Clock } from 'lucide-react'
 
 const POLL_TIMEOUT = 15000
 
+const getPaymentStatus = (payments = []) => {
+  // An order may contain an older failed attempt before the current one.
+  // Prefer a conclusive paid/reconciliation state, then a still-pending attempt.
+  if (payments.some((payment) => payment.trangThaiThanhToan === 4)) return 4
+  if (payments.some((payment) => payment.trangThaiThanhToan === 2)) return 2
+  if (payments.some((payment) => payment.trangThaiThanhToan === 1)) return 1
+  if (payments.some((payment) => payment.trangThaiThanhToan === 3)) return 3
+  return null
+}
+
 export default function PaymentResult() {
   const [searchParams] = useSearchParams()
   const [done, setDone] = useState(false)
@@ -25,18 +35,18 @@ export default function PaymentResult() {
     setManualCheckLoading(true)
     try {
       const data = await getOrderDetail(orderId, { timeout: 10000 })
-      const payment = (data.payments || [])[0]
-      if (payment) {
-        if ([2, 3, 4].includes(payment.trangThaiThanhToan)) stopPolling.current()
-        if (payment.trangThaiThanhToan === 2) {
+      const paymentStatus = getPaymentStatus(data.payments)
+      if (paymentStatus !== null) {
+        if ([2, 3, 4].includes(paymentStatus)) stopPolling.current()
+        if (paymentStatus === 2) {
           setPending(false); setSuccess(true); setDone(true); setLoading(false)
           return true
         }
-        if (payment.trangThaiThanhToan === 3) {
+        if (paymentStatus === 3) {
           setPending(false); setSuccess(false); setDone(true); setLoading(false)
           return true
         }
-        if (payment.trangThaiThanhToan === 4) {
+        if (paymentStatus === 4) {
           setPending(false); setReconciliation(true); setDone(true); setLoading(false)
           return true
         }
@@ -83,19 +93,19 @@ export default function PaymentResult() {
       try {
         const data = await getOrderDetail(orderId, { timeout: 10000, signal: controller.signal })
         if (!active) return
-        const payment = (data.payments || [])[0]
-        if (payment) {
-          if (payment.trangThaiThanhToan === 2) {
+        const paymentStatus = getPaymentStatus(data.payments)
+        if (paymentStatus !== null) {
+          if (paymentStatus === 2) {
             clearTimeout(deadline)
             setPending(false); setSuccess(true); setDone(true); setLoading(false)
             return
           }
-          if (payment.trangThaiThanhToan === 3) {
+          if (paymentStatus === 3) {
             clearTimeout(deadline)
             setPending(false); setSuccess(false); setDone(true); setLoading(false)
             return
           }
-          if (payment.trangThaiThanhToan === 4) {
+          if (paymentStatus === 4) {
             clearTimeout(deadline)
             setPending(false); setReconciliation(true); setDone(true); setLoading(false)
             return

@@ -204,7 +204,7 @@ export default function AdminOrders() {
               )}
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[1240px] text-sm">
               <thead className="bg-ivory/50 border-b border-stone/10">
                 <tr>
                   <th className="text-left px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">STT</th>
@@ -217,14 +217,18 @@ export default function AdminOrders() {
                   <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Loại đơn</th>
                   <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Trạng thái</th>
                   <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Thanh toán</th>
-                  <th className="text-center px-5 py-3 font-semibold text-xs text-stone uppercase tracking-wide">Hành động</th>
+                  <th className="sticky right-0 z-10 bg-ivory px-5 py-3 text-center font-semibold text-xs text-stone uppercase tracking-wide shadow-[-8px_0_12px_-12px_rgba(15,15,18,0.45)]">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone/10">
                 {orders.map((o, idx) => (
-                  <tr key={o.maDonHang} className="hover:bg-ivory/50 transition-colors">
+                  <tr key={o.maDonHang} className="group hover:bg-ivory/50 transition-colors">
                     <td className="px-5 py-3.5 text-stone">{page * 10 + idx + 1}</td>
-                    <td className="px-5 py-3.5 font-bold text-ink">{o.maDonHangCode || `#${o.maDonHang}`}</td>
+                    <td className="px-5 py-3.5 font-bold">
+                      <Link to={`/admin/orders/${o.maDonHang}`} className="text-ink hover:text-gold hover:underline" title="Xem chi tiết đơn hàng">
+                        {o.maDonHangCode || `#${o.maDonHang}`}
+                      </Link>
+                    </td>
                     <td className="px-5 py-3.5 text-ink">{o.nguoiTaoTen || 'Chưa có thông tin'}</td>
                     <td className="px-5 py-3.5">
                       <span className="font-semibold text-ink">{o.nguoiDung?.hoTen || o.tenNguoiNhan || '—'}</span>
@@ -243,10 +247,11 @@ export default function AdminOrders() {
                       <StatusBadge status={o.trangThaiDon} loaiDonHang={o.loaiDonHang} />
                     </td>
                     <td className="px-5 py-3.5 text-center text-xs">{paymentSummary(o)}</td>
-                    <td className="px-5 py-3.5 text-center">
+                    <td className="sticky right-0 bg-white px-5 py-3.5 text-center group-hover:bg-ivory shadow-[-8px_0_12px_-12px_rgba(15,15,18,0.45)]">
                       <Link to={`/admin/orders/${o.maDonHang}`}
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gold/10 text-gold hover:bg-gold hover:text-noir transition" title="Xem chi tiết">
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gold/10 px-3 py-2 text-xs font-semibold text-gold hover:bg-gold hover:text-noir transition" title="Xem chi tiết">
                         <Eye className="h-4 w-4" />
+                        <span>Chi tiết</span>
                       </Link>
                     </td>
                   </tr>

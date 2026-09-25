@@ -51,8 +51,27 @@ class PaymentRedirectTest {
     @Test void vnpayUsesAQueryStringNotAnInvalidPath() {
         var vn = mock(VnPayService.class);
         var service = new PaymentService(vn, mock(ZaloPayService.class), new PaymentConfig());
-        when(vn.buildReturnParams(any())).thenReturn(Map.of("orderId", "123"));
+        when(vn.processIpn(any())).thenReturn(new VnPayService.IpnResult("00", "Confirm Success", 123));
         assertEquals("http://localhost:5173/payment/result?orderId=123", service.handleVnPayReturn(Map.of()));
+    }
+
+    @Test void vnpayBrowserReturnProcessesSignedResultAsLocalhostFallback() {
+        var vn = mock(VnPayService.class);
+        var service = new PaymentService(vn, mock(ZaloPayService.class), new PaymentConfig());
+        var params = Map.of("vnp_TxnRef", "ORD-123-abc", "vnp_SecureHash", "signed");
+        when(vn.processIpn(params)).thenReturn(new VnPayService.IpnResult("00", "Confirm Success", 123));
+
+        assertEquals("http://localhost:5173/payment/result?orderId=123", service.handleVnPayReturn(params));
+        verify(vn).processIpn(params);
+    }
+
+    @Test void vnpayAmountMismatchRedirectsToReview() {
+        var vn = mock(VnPayService.class);
+        var service = new PaymentService(vn, mock(ZaloPayService.class), new PaymentConfig());
+        when(vn.processIpn(any())).thenReturn(new VnPayService.IpnResult("04", "Invalid amount", 123));
+
+        assertEquals("http://localhost:5173/payment/result?orderId=123&review=amount",
+                service.handleVnPayReturn(Map.of()));
     }
     @Test void explicitZaloReturnIsIndependentOfServerCallback() {
         var config = new PaymentConfig();
